@@ -834,11 +834,9 @@ public class SortTable extends JApplet {
 		rightSplitPane.setLinkedSplitPane( leftSplitPane );
 		leftSplitPane.setLinkedSplitPane( rightSplitPane );
 		
-		JScrollPane	eat = new JScrollPane();
-		JTable eatTable = new JTable();
-		eat.setViewportView( eatTable );
-		
+		HabitsPanel eat = new HabitsPanel( lang );
 		RecipePanel recipe = new RecipePanel( lang );
+		CostPanel	buy = new CostPanel();
 		
 		if( lang.equals("IS") ) {
 			tabbedPane.addTab( "Listi", rightSplitPane );
@@ -846,14 +844,16 @@ public class SortTable extends JApplet {
 			tabbedPane.addTab( "Gröf", graph );
 			tabbedPane.addTab( "Nánar", detail );
 			tabbedPane.addTab( "Uppskriftir", recipe );
-			tabbedPane.addTab( "Mataræði", eat );
+			tabbedPane.addTab( "Mataræði og Hreyfing", eat );
+			tabbedPane.addTab( "Innkaup og kostnaður", buy );
 		} else {
 			tabbedPane.addTab( "List", rightSplitPane );
 			tabbedPane.addTab( "Image", panel );
 			tabbedPane.addTab( "Graph", graph );
 			tabbedPane.addTab( "Detail", detail );
 			tabbedPane.addTab( "Recipes", recipe );
-			tabbedPane.addTab( "What you eat", eat );
+			tabbedPane.addTab( "Eating and training", eat );
+			tabbedPane.addTab( "Cost of buying", buy );
 		}
 		
 		splitPane = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT, leftSplitPane, tabbedPane );
