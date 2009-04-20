@@ -4614,3 +4614,19 @@ Processing SourcesController#index (for 127.0.0.1 at 2009-04-17 08:48:50) [GET]
 Rendering template within layouts/sources
 Rendering sources/index
 Completed in 94ms (View: 47, DB: 31) | 200 OK [http://localhost/sources]
+  [4;36;1mSQL (17.0ms)[0m   [0;1mSET SQL_AUTO_IS_NULL=0[0m
+
+
+Processing HelloController#index (for 127.0.0.1 at 2009-04-20 00:18:49) [GET]
+Rendering template within layouts/hello
+Rendering hello/index
+Completed in 59ms (View: 54, DB: 17) | 200 OK [http://localhost/]
+  [4;35;1mSQL (1.0ms)[0m   [0mSET SQL_AUTO_IS_NULL=0[0m
+
+
+Processing HazardsController#index (for 127.0.0.1 at 2009-04-20 00:18:55) [GET]
+  [4;36;1mHazard Load (1.0ms)[0m   [0;1mSELECT * FROM `hazards` [0m
+Rendering template within layouts/hazards
+Rendering hazards/index
+Rendered hazards/_welcome (7.0ms)
+Completed in 121ms (View: 100, DB: 2) | 200 OK [http://localhost/hazards]
