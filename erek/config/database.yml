@@ -3,10 +3,10 @@
 development:
       host: localhost
       adapter: jdbc
-      driver: com.microsoft.sqlserver.jdbc.SQLServerDriver
-      url: jdbc:sqlserver://localhost\SQLEXPRESS;integratedSecurity=true
-      username:
-      password:
+      driver: com.mysql.jdbc.Driver
+      url: jdbc:mysql://localhost/erek_dev
+      username: root
+      password: drsmorc.311
 
 # Warning: The database defined as 'test' will be erased and
 # re-generated from your development database when you run 'rake'.
@@ -14,15 +14,15 @@ development:
 test:
       host: localhost
       adapter: jdbc
-      driver: com.microsoft.sqlserver.jdbc.SQLServerDriver
-      url: jdbc:sqlserver://localhost\SQLEXPRESS;integratedSecurity=true
-      username:
-      password:
+      driver: com.mysql.jdbc.Driver
+      url: jdbc:mysql://localhost/erek_test
+      username: root
+      password: drsmorc.311
 
 production:
       host: localhost
       adapter: jdbc
-      driver: com.microsoft.sqlserver.jdbc.SQLServerDriver
-      url: jdbc:sqlserver://localhost\SQLEXPRESS;integratedSecurity=true
-      username:
-      password:
+      driver: com.mysql.jdbc.Driver
+      url: jdbc:mysql://localhost/erek_prod
+      username: root
+      password: drsmorc.311

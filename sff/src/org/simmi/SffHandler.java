@@ -3,7 +3,7 @@
  * and open the template in the editor.
  */
 
-package rawimg;
+package org.simmi;
 
 import java.io.DataInputStream;
 import java.io.File;
