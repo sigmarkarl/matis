@@ -95,9 +95,8 @@ public class SortTable extends JApplet {
 	TableModel 				model;
 	TableModel 				topModel;
 	
-	JScrollPane 			detail;
-	JTable					detailTable;
-	TableModel				detailModel;
+	DetailPanel 			detail;
+	
 	
 	TableRowSorter<TableModel> 	tableSorter;
 	TableRowSorter<TableModel>  leftTableSorter;
@@ -600,7 +599,7 @@ public class SortTable extends JApplet {
 					} else if( tabbedPane.getSelectedComponent() == graph ) {
 						graph.repaint();
 					} else if( tabbedPane.getSelectedComponent() == detail ) {
-						detailTable.tableChanged( new TableModelEvent( detailModel ) );
+						detail.detailTable.tableChanged( new TableModelEvent( detail.detailModel ) );
 					}
 				}
 			}
@@ -750,85 +749,6 @@ public class SortTable extends JApplet {
 		
 		graph = new GraphPanel( lang, new JTable[] {table, leftTable, topTable} );
 		
-		detailTable = new JTable();
-		detailTable.setAutoCreateRowSorter( true );
-		detailModel = new TableModel() {
-
-			@Override
-			public void addTableModelListener(TableModelListener l) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public Class<?> getColumnClass(int columnIndex) {
-				if( columnIndex == 2 ) return Float.class;
-				return String.class;
-			}
-
-			@Override
-			public int getColumnCount() {
-				return 3;
-			}
-
-			@Override
-			public String getColumnName(int columnIndex) {
-				if( lang.equals("IS") ) {
-					if( columnIndex == 0 ) return "Nafn";
-					else if( columnIndex == 1 ) return "Eining";
-					return "Mæligildi";
-				} else {
-					if( columnIndex == 0 ) return "Name";
-					else if( columnIndex == 1 ) return "Unit";
-					return "Measure";
-				}
-			}
-
-			@Override
-			public int getRowCount() {
-				if( model != null ) return model.getColumnCount();
-				return 0;
-			}
-
-			@Override
-			public Object getValueAt(int rowIndex, int columnIndex) {
-				if( model != null ) {
-					if( columnIndex == 0 ) return model.getColumnName( rowIndex );
-					else if( columnIndex == 1 ) return topModel.getValueAt( 1, rowIndex );
-					else {
-						Object val = model.getValueAt( leftTable.getSelectedRow(), rowIndex );
-						if( val instanceof Float ) {
-							return val;
-						}
-						return null;
-					}
-				}
-				return 0;
-			}
-
-			@Override
-			public boolean isCellEditable(int rowIndex, int columnIndex) {
-				// TODO Auto-generated method stub
-				return false;
-			}
-
-			@Override
-			public void removeTableModelListener(TableModelListener l) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void setValueAt(Object value, int rowIndex, int columnIndex) {
-				// TODO Auto-generated method stub
-				
-			}
-			
-		};
-		detailTable.setModel( detailModel );
-		detail = new JScrollPane();
-		detail.setViewportView( detailTable );
-		
 		rightSplitPane = new LinkedSplitPane( JSplitPane.VERTICAL_SPLIT, topScrollPane, scrollPane );
 		leftSplitPane = new LinkedSplitPane( JSplitPane.VERTICAL_SPLIT, topLeftScrollPane, leftComponent );
 		rightSplitPane.setLinkedSplitPane( leftSplitPane );
@@ -844,25 +764,8 @@ public class SortTable extends JApplet {
 		}
 		CostPanel	buy = new CostPanel();
 		
-		if( lang.equals("IS") ) {
-			tabbedPane.addTab( "Listi", rightSplitPane );
-			tabbedPane.addTab( "Myndir", panel );
-			tabbedPane.addTab( "Gröf", graph );
-			tabbedPane.addTab( "Nánar", detail );
-			tabbedPane.addTab( "Uppskriftir", recipe );
-			tabbedPane.addTab( "Mataræði og Hreyfing", eat );
-			tabbedPane.addTab( "Innkaup og kostnaður", buy );
-		} else {
-			tabbedPane.addTab( "List", rightSplitPane );
-			tabbedPane.addTab( "Image", panel );
-			tabbedPane.addTab( "Graph", graph );
-			tabbedPane.addTab( "Detail", detail );
-			tabbedPane.addTab( "Recipes", recipe );
-			tabbedPane.addTab( "Eating and training", eat );
-			tabbedPane.addTab( "Cost of buying", buy );
-		}
-		
 		splitPane = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT, leftSplitPane, tabbedPane );
+		splitPane.setOneTouchExpandable( true );
 		
 		field.getDocument().addDocumentListener( new DocumentListener() {
 
@@ -1078,7 +981,9 @@ public class SortTable extends JApplet {
 			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
 				Object[]	obj = stuff.get(rowIndex+2);
-				return obj[ columnIndex ];
+				if( columnIndex >= 0 ) return obj[ columnIndex ];
+				
+				return null;
 			}
 
 			@Override
@@ -1150,6 +1055,7 @@ public class SortTable extends JApplet {
 			
 		};
 		table.setModel( model );
+		detail = new DetailPanel( lang, model, topModel, leftTable );
 		
 		tableSorter = new MySorter( model ) {
 			@Override
@@ -1199,6 +1105,24 @@ public class SortTable extends JApplet {
 			}
 		};
 		tableSorter.setRowFilter( filter );
+		
+		if( lang.equals("IS") ) {
+			tabbedPane.addTab( "Listi", rightSplitPane );
+			tabbedPane.addTab( "Myndir", panel );
+			tabbedPane.addTab( "Gröf", graph );
+			tabbedPane.addTab( "Nánar", detail );
+			tabbedPane.addTab( "Uppskriftir", recipe );
+			tabbedPane.addTab( "Mataræði og Hreyfing", eat );
+			tabbedPane.addTab( "Innkaup og kostnaður", buy );
+		} else {
+			tabbedPane.addTab( "List", rightSplitPane );
+			tabbedPane.addTab( "Image", panel );
+			tabbedPane.addTab( "Graph", graph );
+			tabbedPane.addTab( "Detail", detail );
+			tabbedPane.addTab( "Recipes", recipe );
+			tabbedPane.addTab( "Eating and training", eat );
+			tabbedPane.addTab( "Cost of buying", buy );
+		}
 		//RowFilter<TableModel, Integer> rf = RowFilter.regexFilter("Milk",1);
 		//leftTableSorter.setRowFilter( rf );
 		//panel.setLayout( new BorderLayout() );
