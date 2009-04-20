@@ -1,0 +1,39 @@
+<%#
+# To change this template, choose Tools | Templates
+# and open the template in the editor.
+%>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+       "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=UTF-8" />
+  <title>Hazards: <%= controller.action_name %></title>
+  <%= stylesheet_link_tag 'view' %>
+</head>
+<body>
+
+<div id="wrapper" class="border">
+<div id="header">
+  <img src="images/eTrace - logo.PNG" width="200" height="50">
+</div>
+<!--p style="color: green"><!--%= flash[:notice] %></p -->
+
+<div id="main">
+  <div id="menu">
+    <%= yield %>
+  </div>
+  <div id="content">
+    hello
+  </div>
+</div>
+<div id="footer_bottom">
+<p>&copy; 2001-2009 deCODE genetics, all rights reserved, deCODE and deCODEme are trademarks of deCODE genetics. (2009-04-06).
+The deCODEme.com website is for informational purposes only and should NOT be used for medical decision making without consulting your physician.
+Some services are not available to residents of certain U.S. states.</p>
+</div>
+</div>
+
+</body>
+</html>

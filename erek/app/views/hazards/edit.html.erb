@@ -1,0 +1,20 @@
+<h1>Editing hazard</h1>
+
+<% form_for(@hazard) do |f| %>
+  <%= f.error_messages %>
+
+  <p>
+    <%= f.label :code %><br />
+    <%= f.text_field :code %>
+  </p>
+  <p>
+    <%= f.label :name %><br />
+    <%= f.text_field :name %>
+  </p>
+  <p>
+    <%= f.submit 'Update' %>
+  </p>
+<% end %>
+
+<%= link_to 'Show', @hazard %> |
+<%= link_to 'Back', hazards_path %>
