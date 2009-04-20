@@ -1,0 +1,18 @@
+<p>
+  <b>Code:</b>
+  <%=h @source.code %>
+</p>
+
+<p>
+  <b>Name:</b>
+  <%=h @source.name %>
+</p>
+
+<p>
+  <b>Url:</b>
+  <%=h @source.url %>
+</p>
+
+
+<%= link_to 'Edit', edit_source_path(@source) %> |
+<%= link_to 'Back', sources_path %>
