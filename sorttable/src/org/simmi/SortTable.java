@@ -835,7 +835,13 @@ public class SortTable extends JApplet {
 		leftSplitPane.setLinkedSplitPane( rightSplitPane );
 		
 		HabitsPanel eat = new HabitsPanel( lang );
-		RecipePanel recipe = new RecipePanel( lang );
+		RecipePanel recipe = null;
+		try {
+			recipe = new RecipePanel( lang );
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		CostPanel	buy = new CostPanel();
 		
 		if( lang.equals("IS") ) {
