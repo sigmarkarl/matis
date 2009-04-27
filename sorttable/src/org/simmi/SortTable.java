@@ -4,22 +4,9 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GradientPaint;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.Image;
-import java.awt.Paint;
 import java.awt.Point;
-import java.awt.RenderingHints;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.FlavorMap;
-import java.awt.datatransfer.UnsupportedFlavorException;
-import java.awt.dnd.DropTarget;
-import java.awt.dnd.DropTargetDragEvent;
-import java.awt.dnd.DropTargetDropEvent;
-import java.awt.dnd.DropTargetEvent;
-import java.awt.dnd.DropTargetListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
@@ -38,10 +25,8 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TooManyListenersException;
 
 import javax.imageio.ImageIO;
-import javax.swing.DropMode;
 import javax.swing.JApplet;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -49,7 +34,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JViewport;
 import javax.swing.RowFilter;
@@ -73,6 +57,9 @@ import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
+import org.simmi.RecipePanel.Recipe;
+import org.simmi.RecipePanel.RecipeIngredient;
+
 public class SortTable extends JApplet {
 	JScrollPane				scrollPane;
 	JScrollPane				leftScrollPane;
@@ -87,6 +74,7 @@ public class SortTable extends JApplet {
 	JTable					topLeftTable;
 	JTextField				field;
 	JTabbedPane				tabbedPane;
+	RecipePanel 			recipe;
 	
 	JComponent				panel;
 	JComponent				graph;
@@ -96,7 +84,7 @@ public class SortTable extends JApplet {
 	TableModel 				topModel;
 	
 	DetailPanel 			detail;
-	
+	int						fInd = 1;	
 	
 	TableRowSorter<TableModel> 	tableSorter;
 	TableRowSorter<TableModel>  leftTableSorter;
@@ -106,6 +94,9 @@ public class SortTable extends JApplet {
 	//List<Object[]>			header;
 	Map<String,Integer>		ngroupMap;
 	List<String>			ngroupList;
+	
+	Map<String,Integer>	foodInd = new HashMap<String,Integer>();
+	Map<String,Integer>	foodNameInd = new HashMap<String,Integer>();
 	
 	String					lang;
 	boolean					hringur = false;
@@ -128,6 +119,8 @@ public class SortTable extends JApplet {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		System.setProperty("file.encoding", "UTF8");
 	}
 	
 	public class MySorter extends TableRowSorter<TableModel> {
@@ -196,7 +189,7 @@ public class SortTable extends JApplet {
 		String line;
 		if( loc.equals("IS") ) {
 			inputStream = this.getClass().getResourceAsStream( "thsGroups.txt" );
-			br = new BufferedReader( new InputStreamReader( inputStream ) );
+			br = new BufferedReader( new InputStreamReader( inputStream, "UTF-8" ) );
 			line = br.readLine();
 			while( line != null ) {
 				String[] split = line.split("\\t");
@@ -230,7 +223,7 @@ public class SortTable extends JApplet {
 		
 		if( loc.equals("IS") ) {
 			inputStream = this.getClass().getResourceAsStream( "Component.txt" );
-			br = new BufferedReader( new InputStreamReader( inputStream ) );
+			br = new BufferedReader( new InputStreamReader( inputStream, "UTF-8" ) );
 			line = br.readLine();
 			int i = 0;
 			while( line != null ) {
@@ -269,9 +262,6 @@ public class SortTable extends JApplet {
 					nutList[0].add( sName );
 					String mName = split[1].substring(1, split[1].length()-1);
 					nutList[1].add( mName );
-					
-					//System.err.println( mName );
-					//System.err.println( nName + " " + sName + "  " + mName + "  " + split[0] + "  " + split[1] + "  " + split[2] + "  " + split[3] );
 				}
 				line = br.readLine();
 			}
@@ -282,16 +272,17 @@ public class SortTable extends JApplet {
 			result.add( l.toArray( new Object[0] ) );
 		}
 		
-		Map<String,Integer>	foodInd = new HashMap<String,Integer>();
 		int i = 0;
 		int k = 0;
 		if( loc.equals("IS") ) {
 			inputStream = this.getClass().getResourceAsStream( "Food.txt" );
-			br = new BufferedReader( new InputStreamReader( inputStream ) );
+			br = new BufferedReader( new InputStreamReader( inputStream, "UTF-8" ) );
 			line = br.readLine();
 			while( line != null ) {
 				String[] split = line.split("\\t");
-				foodInd.put(split[1], k++);
+				foodInd.put(split[1], k);
+				foodNameInd.put(split[2], k);
+				k++;
 				
 				String val = split[6];
 				split[6] = fgroupMap.get( val );
@@ -327,7 +318,7 @@ public class SortTable extends JApplet {
 		String 	prev = "";
 		if( loc.equals("IS") ) {
 			inputStream = this.getClass().getResourceAsStream( "result.txt" );
-			br = new BufferedReader( new InputStreamReader( inputStream ) );
+			br = new BufferedReader( new InputStreamReader( inputStream, "UTF-8" ) );
 			line = br.readLine();
 			while( line != null ) {
 				String[] split = line.split("\\t");
@@ -373,29 +364,21 @@ public class SortTable extends JApplet {
 		
 		return result;
 	}
-	
-	public class SimTableColumn extends TableColumn {
-		TableColumn link;
-		
-		public SimTableColumn() {
-			super();
-		}
-		
-		public void setPreferredWidth( int preferredWidth ) {
-			super.setPreferredWidth(preferredWidth);
-			link.setPreferredWidth(preferredWidth);
-		}
-	}
 
 	String filterText;
 	public void updateFilter() {
 		//currentSorter = (MySorter)leftTableSorter;
 		if( field.getText().length() > 0 ) {
+			fInd = 1;
 			filterText = "(?i).*"+field.getText()+".*";
 			leftTableSorter.setRowFilter( filter ); //RowFilter.regexFilter("(?i)"+field.getText(), 1) );
 			tableSorter.setRowFilter( filter );
-		}
-		else {
+			if( leftTable.getRowCount() == 0 ) {
+				fInd = 0;
+				leftTableSorter.setRowFilter( filter );
+				tableSorter.setRowFilter( filter );
+			}
+		} else {
 			filterText = null;
 			leftTableSorter.setRowFilter( null );
 			tableSorter.setRowFilter( null );
@@ -405,6 +388,8 @@ public class SortTable extends JApplet {
 
 	public String lastResult;
 	public void init() {
+		System.setProperty("file.encoding", "UTF8");
+		
 		lang = "IS";
 		/*String loc = this.getParameter("loc");
 		if( loc != null ) {
@@ -438,7 +423,7 @@ public class SortTable extends JApplet {
 				topTable.moveColumn(column, targetColumn);
 			}*/
 		};
-		table.setColumnSelectionAllowed( true );
+		table.setColumnSelectionAllowed( true );		
 		/*table.setTransferHandler( new TransferHandler() {
 			
 		});*/
@@ -510,6 +495,7 @@ public class SortTable extends JApplet {
 		leftTable.setToolTipText(" ");
 		//leftTable.en
 		topTable = new JTable();
+		topTable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
 		
 		final ByteBuffer	ba = ByteBuffer.allocate(1000000);
 		final CharBuffer	cb = CharBuffer.allocate(1000000);
@@ -609,7 +595,30 @@ public class SortTable extends JApplet {
 			public void mousePressed( MouseEvent e ) {
 				leftTable.requestFocus();
 				if( e.getClickCount() == 2 ) {
-					int r = leftTable.getSelectedRow();
+					if( tabbedPane.getSelectedComponent() == recipe ) {
+						if( recipe.currentRecipe != null ) {
+							//recipe.currentRecipe.ingredients.add( new RecipePanel.RecipeIngredient() );
+							
+							recipe.currentRecipe.destroy();
+							
+							int r = leftTable.getSelectedRow();
+							int rr = leftTable.convertRowIndexToModel( r );
+							Object val = leftTable.getValueAt(r, 1);
+							if( val != null ) {
+								recipe.currentRecipe.addIngredient( val.toString(), 100, "g" );
+							}
+							recipe.recipeDetailTable.revalidate();
+							recipe.recipeDetailTable.repaint();
+							
+							try {
+								recipe.currentRecipe.save();
+							} catch (IOException e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
+						}
+					}
+					/*int r = leftTable.getSelectedRow();
 					if( r >= 0 && r < leftTable.getRowCount() ) {
 						for( int start = 0; start < table.getColumnCount()-1; start++ ) {
 							float min = Float.NEGATIVE_INFINITY;
@@ -628,14 +637,31 @@ public class SortTable extends JApplet {
 								table.moveColumn(ind, start);
 							}
 						}
-					}
+					}*/
 				}
 			}
 		});
 		topLeftTable = new JTable();
 		topLeftTable.addMouseListener( new MouseAdapter() {
 			public void mousePressed( MouseEvent e ) {
-				if( e.getClickCount() == 2 ) {
+				/*TableModel old = table.getModel();
+				TableModel oldTop = topTable.getModel();
+				
+				table.setModel( nullModel );
+				topTable.setModel( nullModel );
+				
+				table.setModel( old );
+				topTable.setModel( oldTop );
+				
+				topTable.tableChanged( new TableModelEvent( topTable.getModel() ) );
+				table.tableChanged( new TableModelEvent( table.getModel() ) );
+				
+				topTable.revalidate();
+				topTable.repaint();
+				table.revalidate();
+				table.repaint();*/
+				
+				/*if( e.getClickCount() == 2 ) {
 					int r = topLeftTable.getSelectedRow();
 					if( r >= 0 && r < topLeftTable.getRowCount() ) {
 						for( int start = 0; start < topTable.getColumnCount()-1; start++ ) {
@@ -656,7 +682,7 @@ public class SortTable extends JApplet {
 							}
 						}
 					}
-				}
+				}*/
 			}
 		});
 		
@@ -755,9 +781,8 @@ public class SortTable extends JApplet {
 		leftSplitPane.setLinkedSplitPane( rightSplitPane );
 		
 		HabitsPanel eat = new HabitsPanel( lang );
-		RecipePanel recipe = null;
 		try {
-			recipe = new RecipePanel( lang );
+			recipe = new RecipePanel( lang, table, leftTable, foodNameInd );
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -898,6 +923,7 @@ public class SortTable extends JApplet {
 		};
 		topLeftTable.setModel( topLeftModel );
 		
+		detail = new DetailPanel( lang, table, topTable, leftTable, stuff, ngroupList, foodNameInd, recipe.recipes );
 		topModel = new TableModel() {
 			@Override
 			public void addTableModelListener(TableModelListener l) {
@@ -910,7 +936,9 @@ public class SortTable extends JApplet {
 
 			@Override
 			public int getColumnCount() {
-				return stuff.get(0).length-2;
+				int cc = detail.countVisible();
+				return cc;
+				//return stuff.get(0).length-2;
 			}
 
 			@Override
@@ -926,7 +954,8 @@ public class SortTable extends JApplet {
 			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
 				Object[]	obj = stuff.get(rowIndex);
-				return obj[ columnIndex+2 ];
+				int realColumnIndex = detail.convertIndex( columnIndex );
+				return obj[ realColumnIndex+2 ];
 			}
 
 			@Override
@@ -945,7 +974,7 @@ public class SortTable extends JApplet {
 		};
 		topTable.setModel( topModel );
 		
-		final TableModel leftModel = new TableModel() {
+		final TableModel leftModel = new TableModel() {			
 			@Override
 			public void addTableModelListener(TableModelListener l) {
 			}
@@ -975,13 +1004,27 @@ public class SortTable extends JApplet {
 
 			@Override
 			public int getRowCount() {
-				return stuff.size()-2;
+				return stuff.size()-2 + recipe.recipes.size();
 			}
 
 			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
-				Object[]	obj = stuff.get(rowIndex+2);
-				if( columnIndex >= 0 ) return obj[ columnIndex ];
+				Object[]	obj = null;
+				if( rowIndex < stuff.size()-2 ) {
+					obj = stuff.get(rowIndex+2);
+					if( columnIndex >= 0 ) return obj[ columnIndex ];
+				}
+				else {
+					int r = rowIndex - (stuff.size()-2);
+					if( r < recipe.recipes.size() ) {
+						Recipe rep = recipe.recipes.get(r);
+						if( columnIndex == 0 ) {
+							return "Uppskrift - "+rep.group;
+						} else {
+							return rep.name + " - " + rep.author;
+						}
+					}
+				}
 				
 				return null;
 			}
@@ -998,16 +1041,14 @@ public class SortTable extends JApplet {
 			@Override
 			public void setValueAt(Object value, int rowIndex, int columnIndex) {				
 			}
-			
 		};
 		leftTable.setModel( leftModel );
 		
 		model = new TableModel() {
+			//Object[] retObj = {};
+			
 			@Override
-			public void addTableModelListener(TableModelListener l) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void addTableModelListener(TableModelListener l) {}
 
 			@Override
 			public Class<?> getColumnClass(int columnIndex) {
@@ -1016,46 +1057,70 @@ public class SortTable extends JApplet {
 
 			@Override
 			public int getColumnCount() {
-				return stuff.get(0).length-2;
+				int cc = topModel.getColumnCount();
+				return cc;
 			}
 
 			@Override
 			public String getColumnName(int columnIndex) {
-				return ngroupList.get(columnIndex);
+				int realColumnIndex = detail.convertIndex( columnIndex );
+				if( realColumnIndex != -1 ) return ngroupList.get(realColumnIndex);
+				return null;
 			}
 
 			@Override
 			public int getRowCount() {
-				return stuff.size()-2;
+				return stuff.size()-2 + recipe.recipes.size();
 			}
 
 			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
-				Object[]	obj = stuff.get(rowIndex+2);
-				return obj[ columnIndex+2 ];
+				Object[]	obj = null;
+				if( rowIndex < stuff.size()-2 ) {
+					obj = stuff.get(rowIndex+2);
+					int realColumnIndex = detail.convertIndex( columnIndex );
+					if( realColumnIndex != -1 ) return obj[ realColumnIndex+2 ];
+				} else {
+					float ret = 0.0f;
+					int i = rowIndex - (stuff.size()-2);
+					Recipe rep = recipe.recipes.get(i);
+					float tot = 0.0f;
+					for( RecipeIngredient rip : rep.ingredients ) {
+						if( foodNameInd.containsKey(rip.stuff) ) {
+							int k = foodNameInd.get( rip.stuff );
+							obj = stuff.get(k+2);
+							int realColumnIndex = detail.convertIndex( columnIndex );
+							if( realColumnIndex != -1 ) {
+								Object		val = obj[ realColumnIndex+2 ];
+								if( val != null && val instanceof Float ) {
+									float d = rip.measure;
+									if( rip.unit.equals("mg") ) d /= 1000.0f;
+									tot += d;
+									
+									float f = (((Float)val) * d) / 100.0f;
+									ret += f;
+								}
+							}
+						}
+					}
+					
+					if( ret != 0.0f ) return (ret * 100.0f) / tot;
+				}
+				return null;
 			}
 
 			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
-				// TODO Auto-generated method stub
 				return false;
 			}
 
 			@Override
-			public void removeTableModelListener(TableModelListener l) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void removeTableModelListener(TableModelListener l) {}
 
 			@Override
-			public void setValueAt(Object value, int rowIndex, int columnIndex) {
-				// TODO Auto-generated method stub
-				
-			}
-			
+			public void setValueAt(Object value, int rowIndex, int columnIndex) {}
 		};
 		table.setModel( model );
-		detail = new DetailPanel( lang, model, topModel, leftTable );
 		
 		tableSorter = new MySorter( model ) {
 			@Override
@@ -1075,6 +1140,12 @@ public class SortTable extends JApplet {
 			}
 		};
 		table.setRowSorter( tableSorter );
+		/*tableSorter.addRowSorterListener( new RowSorterListener() {
+			@Override
+			public void sorterChanged(RowSorterEvent e) {
+				
+			}
+		});*/
 		
 		currentSorter = (MySorter)tableSorter;
 		
@@ -1098,8 +1169,9 @@ public class SortTable extends JApplet {
 			public boolean include(javax.swing.RowFilter.Entry<? extends TableModel, ? extends Integer> entry) {
 				//String filterText = field.getText();
 				if( filterText != null ) {
-					//System.err.println( leftModel.getValueAt( entry.getIdentifier(), 1 ) + " " + filterText );
-					return leftModel.getValueAt( entry.getIdentifier(), 1 ).toString().matches( filterText );
+					Object val = leftModel.getValueAt( entry.getIdentifier(), fInd );
+					if( val != null ) return val.toString().matches( filterText );
+					return false;
 				}
 				return true;
 			}
@@ -1123,6 +1195,7 @@ public class SortTable extends JApplet {
 			tabbedPane.addTab( "Eating and training", eat );
 			tabbedPane.addTab( "Cost of buying", buy );
 		}
+		
 		//RowFilter<TableModel, Integer> rf = RowFilter.regexFilter("Milk",1);
 		//leftTableSorter.setRowFilter( rf );
 		//panel.setLayout( new BorderLayout() );
@@ -1283,5 +1356,4 @@ public class SortTable extends JApplet {
 		//	in.read();
 		return encoding;
 	}
-
 }

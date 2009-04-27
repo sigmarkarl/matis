@@ -1,5 +1,6 @@
 package org.simmi;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Graphics;
@@ -14,6 +15,7 @@ import java.awt.dnd.DropTargetListener;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Enumeration;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
@@ -25,14 +27,22 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
+import javax.swing.JViewport;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.TableColumnModelEvent;
+import javax.swing.event.TableColumnModelListener;
 import javax.swing.event.TableModelListener;
+import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
 public class HabitsPanel extends JSplitPane {
 	int 						min = 0;
 	final Color 				paleGreen = new Color( 20,230,60,96 ); 
-	List<List<String>>	eatList = new ArrayList<List<String>>();
+	List<List<String>>			eatList = new ArrayList<List<String>>();
 	
 	public HabitsPanel( String lang ) {
 		super( JSplitPane.VERTICAL_SPLIT );
@@ -53,7 +63,6 @@ public class HabitsPanel extends JSplitPane {
 				return c;
 			}
 		};
-		JScrollPane timelineScroll = new JScrollPane(timelineTable);
 		
 		final JTable		timelineDataTable = new JTable() {
 			@Override
@@ -72,6 +81,69 @@ public class HabitsPanel extends JSplitPane {
 			}
 		};
 		final JScrollPane timelineDataScroll = new JScrollPane( timelineDataTable );
+		
+		timelineDataTable.getColumnModel().addColumnModelListener( new TableColumnModelListener() {
+			@Override
+			public void columnAdded(TableColumnModelEvent e) {}
+
+			@Override
+			public void columnMarginChanged(ChangeEvent e) {
+				Enumeration<TableColumn> 	tcs = timelineDataTable.getColumnModel().getColumns();
+				int i = 0;
+				while( tcs.hasMoreElements() ) {
+					TableColumn tc = tcs.nextElement();
+					timelineTable.getColumnModel().getColumn(i++).setPreferredWidth(tc.getPreferredWidth());
+				}
+			}
+
+			@Override
+			public void columnMoved(TableColumnModelEvent e) {
+				timelineTable.moveColumn( e.getFromIndex(), e.getToIndex() );		
+			}
+
+			@Override
+			public void columnRemoved(TableColumnModelEvent e) {}
+
+			@Override
+			public void columnSelectionChanged(ListSelectionEvent e) {}
+		});
+		
+		JComponent topComp = new JComponent() {};
+		topComp.setLayout( new BorderLayout() );
+		
+		//topTable.setShowGrid( true );
+		//topTable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
+		//table.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
+		//scrollPane.setViewportView( table );
+		
+		//table.getTableHeader().setVisible( false );
+		//table.setTableHeader( null );
+		
+		/*scrollPane.setVerticalScrollBarPolicy( ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS );
+		scrollPane.setHorizontalScrollBarPolicy( ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS );
+		scrollPane.setRowHeaderView( leftTable );
+		leftScrollPane.setViewport( scrollPane.getRowHeader() );
+		leftScrollPane.setVerticalScrollBarPolicy( ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER );
+		leftScrollPane.setHorizontalScrollBarPolicy( ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS );*/
+		
+		topComp.add( timelineTable );
+		topComp.add( timelineDataTable.getTableHeader(), BorderLayout.SOUTH );
+		
+		JViewport	spec = new JViewport() {
+			public void setView( Component view ) {
+				if( !(view instanceof JTableHeader) ) super.setView( view );
+			}
+		};
+		spec.setView( topComp );
+		
+		timelineDataScroll.setVerticalScrollBarPolicy( ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS );
+		timelineDataScroll.setHorizontalScrollBarPolicy( ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS );
+		
+		timelineDataScroll.setColumnHeader( spec );
+		
+		JScrollPane timelineScroll = new JScrollPane();
+		timelineScroll.setViewport( timelineDataScroll.getColumnHeader() );
+		timelineScroll.setHorizontalScrollBarPolicy( ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER );
 		
 		DropTarget dropTarget = new DropTarget() {
 			public boolean isActive() {
@@ -179,8 +251,9 @@ public class HabitsPanel extends JSplitPane {
 			}
 
 			@Override
-			public String getColumnName(int columnIndex) {
-				return null;
+			public String getColumnName(int arg0) {
+				cal.setTimeInMillis( time+arg0*Timer.ONE_DAY );
+				return cal.get( Calendar.WEEK_OF_YEAR ) + "";
 			}
 
 			@Override
@@ -234,7 +307,6 @@ public class HabitsPanel extends JSplitPane {
 					Point offset = timelineDataScroll.getViewport().getViewPosition();
 					Point p = new Point( offset.x + loc.x, offset.y + loc.y );
 					int c = timelineDataTable.columnAtPoint( p );
-					System.err.println( c );
 					List<String> list = eatList.get(c);
 					if( list == null ) {
 						list = new ArrayList<String>();
