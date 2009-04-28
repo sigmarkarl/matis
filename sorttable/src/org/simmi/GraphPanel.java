@@ -117,7 +117,7 @@ public class GraphPanel extends JTabbedPane {
 					float total = alc + prt + cbh + fat;
 					
 					if( total > 0 ) {
-						if( hringur ) {
+						if( GraphPanel.this.getSelectedComponent() != energy ) {
 							int w = this.getWidth();
 							int h = this.getHeight();
 							
@@ -213,6 +213,7 @@ public class GraphPanel extends JTabbedPane {
 							//int t = Math.min(w, h);
 							int th = (3*h)/4;
 							int tw = (3*w)/4;
+							int tnrw = (1*w)/2;
 							int bil = w/30;
 							
 							g.setColor( Color.darkGray );
@@ -241,61 +242,61 @@ public class GraphPanel extends JTabbedPane {
 							Color y1 = new Color( 200, 200, 100 );
 							
 							Color r2 = new Color( 250, 150, 150 );
-							GradientPaint gp = new GradientPaint( (w-tw)/2-bil, 0,r1, (w-tw)/2+bil, 0, r2 );
+							GradientPaint gp = new GradientPaint( (w-tnrw)/2-bil, 0,r1, (w-tnrw)/2+bil, 0, r2 );
 							g2.setPaint( gp );
 							//int n = (int)((alc*360.0f)/total);
 							int val = (int)(th*alc/100.0);
-							g2.fillRect( (w-tw)/2-bil, (h+th)/2-val, 2*bil, val );
+							g2.fillRect( (w-tnrw)/2-bil, (h+th)/2-val, 2*bil, val );
 							
-							gp = new GradientPaint( (w-tw)/2-2*bil/3, 0, aGray1, (w-tw)/2, 0, aGray2 );
+							gp = new GradientPaint( (w-tnrw)/2-2*bil/3, 0, aGray1, (w-tnrw)/2, 0, aGray2 );
 							g2.setPaint( gp );
-							g2.fillRect( (w-tw)/2-2*bil/3, (h+th)/2-val, 2*bil/3, val );
+							g2.fillRect( (w-tnrw)/2-2*bil/3, (h+th)/2-val, 2*bil/3, val );
 							
 							g2.setPaint(p);
 							g2.setColor( Color.darkGray );
-							g2.drawRect( (w-tw)/2-bil, (h+th)/2-val, 2*bil, val );
+							g2.drawRect( (w-tnrw)/2-bil, (h+th)/2-val, 2*bil, val );
 							
 							Color gn = new Color( 150, 250, 150 );
-							gp = new GradientPaint( (w-tw/3)/2-bil, 0, g1, (w-tw/3)/2+bil, 0, gn );
+							gp = new GradientPaint( (w-tnrw/3)/2-bil, 0, g1, (w-tnrw/3)/2+bil, 0, gn );
 							g2.setPaint( gp );
 							val = (int)(th*prt/100.0);
-							g2.fillRect( (w-tw/3)/2-bil, (h+th)/2-val, 2*bil, val );
+							g2.fillRect( (w-tnrw/3)/2-bil, (h+th)/2-val, 2*bil, val );
 							
-							gp = new GradientPaint( (w-tw/3)/2-2*bil/3, 0, aGray1, (w-tw/3)/2, 0, aGray2 );
+							gp = new GradientPaint( (w-tnrw/3)/2-2*bil/3, 0, aGray1, (w-tnrw/3)/2, 0, aGray2 );
 							g2.setPaint( gp );
-							g2.fillRect( (w-tw/3)/2-2*bil/3, (h+th)/2-val, 2*bil/3, val );
+							g2.fillRect( (w-tnrw/3)/2-2*bil/3, (h+th)/2-val, 2*bil/3, val );
 							
 							g2.setPaint(p);
 							g2.setColor( Color.darkGray );
-							g2.drawRect( (w-tw/3)/2-bil, (h+th)/2-val, 2*bil, val );
+							g2.drawRect( (w-tnrw/3)/2-bil, (h+th)/2-val, 2*bil, val );
 							
 							Color b2 = new Color( 150, 150, 250 );
-							gp = new GradientPaint( (w+tw/3)/2-bil, 0, b1, (w+tw/3)/2+bil, 0, b2 );
+							gp = new GradientPaint( (w+tnrw/3)/2-bil, 0, b1, (w+tnrw/3)/2+bil, 0, b2 );
 							g2.setPaint( gp );
 							val = (int)(th*cbh/100.0);
-							g2.fillRect( (w+tw/3)/2-bil, (h+th)/2-val, 2*bil, val );
+							g2.fillRect( (w+tnrw/3)/2-bil, (h+th)/2-val, 2*bil, val );
 							
-							gp = new GradientPaint( (w+tw/3)/2-2*bil/3, 0, aGray1, (w+tw/3)/2, 0, aGray2 );
+							gp = new GradientPaint( (w+tnrw/3)/2-2*bil/3, 0, aGray1, (w+tnrw/3)/2, 0, aGray2 );
 							g2.setPaint( gp );
-							g2.fillRect( (w+tw/3)/2-2*bil/3, (h+th)/2-val, 2*bil/3, val );
+							g2.fillRect( (w+tnrw/3)/2-2*bil/3, (h+th)/2-val, 2*bil/3, val );
 							
 							g2.setPaint(p);
 							g2.setColor( Color.darkGray );
-							g2.drawRect( (w+tw/3)/2-bil, (h+th)/2-val, 2*bil, val );
+							g2.drawRect( (w+tnrw/3)/2-bil, (h+th)/2-val, 2*bil, val );
 							
 							Color y2 = new Color( 250, 250, 150 );
-							gp = new GradientPaint( (w+tw)/2-bil, 0, y1, (w+tw)/2+bil, 0, y2 );
+							gp = new GradientPaint( (w+tnrw)/2-bil, 0, y1, (w+tnrw)/2+bil, 0, y2 );
 							g2.setPaint( gp );
 							val = (int)(th*fat/100.0);
-							g2.fillRect( (w+tw)/2-bil, (h+th)/2-val, 2*bil, val );
+							g2.fillRect( (w+tnrw)/2-bil, (h+th)/2-val, 2*bil, val );
 							
-							gp = new GradientPaint( (w+tw)/2-2*bil/3, 0, aGray1, (w+tw)/2, 0, aGray2 );
+							gp = new GradientPaint( (w+tnrw)/2-2*bil/3, 0, aGray1, (w+tnrw)/2, 0, aGray2 );
 							g2.setPaint( gp );
-							g2.fillRect( (w+tw)/2-2*bil/3, (h+th)/2-val, 2*bil/3, val );
+							g2.fillRect( (w+tnrw)/2-2*bil/3, (h+th)/2-val, 2*bil/3, val );
 							
 							g2.setPaint(p);
 							g2.setColor( Color.darkGray );
-							g2.drawRect( (w+tw)/2-bil, (h+th)/2-val, 2*bil, val );
+							g2.drawRect( (w+tnrw)/2-bil, (h+th)/2-val, 2*bil, val );
 							
 							/*g2.setColor( Color.darkGray );
 							n = (int)((alc*360.0f)/total);
@@ -353,7 +354,8 @@ public class GraphPanel extends JTabbedPane {
 		
 		energy.addMouseListener( new MouseAdapter() {
 			public void mousePressed( MouseEvent e ) {
-				hringur = !hringur;
+				if( GraphPanel.this.getSelectedComponent() == energy ) GraphPanel.this.setSelectedComponent( energyPart );
+				else GraphPanel.this.setSelectedComponent( energy );
 				energy.repaint();
 			}
 		});

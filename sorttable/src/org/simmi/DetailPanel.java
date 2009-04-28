@@ -9,6 +9,7 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.event.CellEditorListener;
 import javax.swing.event.ChangeEvent;
@@ -20,7 +21,7 @@ import javax.swing.table.TableModel;
 import org.simmi.RecipePanel.Recipe;
 import org.simmi.RecipePanel.RecipeIngredient;
 
-public class DetailPanel extends JScrollPane {
+public class DetailPanel extends JSplitPane {
 	JTable 			detailTable;
 	TableModel		detailModel;
 	List<Boolean>	showColumn;
@@ -59,7 +60,13 @@ public class DetailPanel extends JScrollPane {
 		table.setModel( old );
 	}
 	
-	public DetailPanel( final String lang, final JTable table, final JTable topTable, final JTable leftTable, final List<Object[]> stuff, final List<String> ngroupList, final Map<String,Integer> foodInd, final List<Recipe> recipes ) {
+	public DetailPanel( final String lang, final ImagePanel imgPanel, final JTable table, final JTable topTable, final JTable leftTable, final List<Object[]> stuff, final List<String> ngroupList, final Map<String,Integer> foodInd, final List<Recipe> recipes ) {
+		super( JSplitPane.VERTICAL_SPLIT );
+		this.setOneTouchExpandable( true );
+		this.setDividerLocation( 300 );
+		
+		JScrollPane	detailScroll = new JScrollPane();
+		
 		showColumn = new ArrayList<Boolean>();
 		for( int i = 0; i < stuff.get(0).length-2; i++ ) {
 			showColumn.add( Boolean.TRUE );
@@ -289,6 +296,9 @@ public class DetailPanel extends JScrollPane {
 				updateModels( table, topTable );
 			}
 		});
-		this.setViewportView( detailTable );
+		detailScroll.setViewportView( detailTable );
+		
+		this.setTopComponent( imgPanel );
+		this.setBottomComponent( detailScroll );
 	}
 }

@@ -44,6 +44,7 @@ import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableModel;
@@ -51,7 +52,6 @@ import javax.swing.table.TableModel;
 public class RecipePanel extends JSplitPane {
 	final JTable		recipeTable = new JTable();
 	final JTable		recipeDetailTable = new JTable();
-	JTable				mainTable;
 	Map<String,Integer>	foodInd;
 	
 	public class RecipeIngredient {
@@ -90,11 +90,11 @@ public class RecipePanel extends JSplitPane {
 		}
 		
 		public String toString() {
-			String ret = name+"\n"+group+"\n"+author+"\n";
+			String ret = name+"\n"+group+"\n"+author+"\n\n";
 			for( RecipeIngredient ri : ingredients ) {
-				ret += "\n" + ri.stuff + "\t" + ri.measure + "\t" + ri.unit;
+				ret += ri.stuff + "\t" + ri.measure + "\t" + ri.unit + "\n";
 			}
-			if( desc != null ) ret += "\n\n"+desc;
+			if( desc != null ) ret += "\n"+desc;
 			return ret;
 		}
 		
@@ -128,8 +128,8 @@ public class RecipePanel extends JSplitPane {
 	
 	public RecipePanel( final String lang, final JTable table, final JTable leftTable, final Map<String,Integer> foodNameInd ) throws IOException {
 		super( JSplitPane.VERTICAL_SPLIT );
+		this.setDividerLocation( 300 );
 		
-		mainTable = leftTable;
 		foodInd = foodNameInd;
 		
 		char[]	cbuf = new char[2048];
@@ -142,7 +142,7 @@ public class RecipePanel extends JSplitPane {
 			for( File file : ff ) {
 				FileReader	fr = new FileReader( file );
 				int read = fr.read(cbuf);
-				String recipe = new String( cbuf );
+				String recipe = new String( cbuf, 0, read );
 				String[] spl = recipe.split("\n\n");
 				
 				Recipe rep = null;
@@ -196,6 +196,9 @@ public class RecipePanel extends JSplitPane {
 				recipes.add( new Recipe("Velja nafn", "Velja hóp", "Velja höfund") );
 				recipeTable.revalidate();
 				recipeTable.repaint();
+				
+				table.tableChanged( new TableModelEvent( table.getModel() ) );
+				leftTable.tableChanged( new TableModelEvent( leftTable.getModel() ) );
 			}
 		});
 		recipeScroll.setComponentPopupMenu( popup );
@@ -388,10 +391,8 @@ public class RecipePanel extends JSplitPane {
 				recipeDetailTable.revalidate();
 				recipeDetailTable.repaint();
 				
-				if( mainTable != null ) {
-					mainTable.revalidate();
-					mainTable.repaint();
-				}
+				table.tableChanged( new TableModelEvent( table.getModel() ) );
+				leftTable.tableChanged( new TableModelEvent( leftTable.getModel() ) );				
 			}
 		});
 		
@@ -669,6 +670,7 @@ public class RecipePanel extends JSplitPane {
 		};
 		recipeImage.setPreferredSize( new Dimension(100,100) );		
 		JSplitPane	recipeSplit = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT, recipeScroll, recipeDetailScroll );
+		recipeSplit.setDividerLocation( 300 );
 		JSplitPane  recipeInfoSplit = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT, recipeImage, recipeInfoPane );
 		//JSplitPane	recipe = new JSplitPane( JSplitPane.VERTICAL_SPLIT, recipeSplit, recipeInfoSplit );
 		

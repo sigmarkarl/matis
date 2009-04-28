@@ -76,7 +76,7 @@ public class SortTable extends JApplet {
 	JTabbedPane				tabbedPane;
 	RecipePanel 			recipe;
 	
-	JComponent				panel;
+	ImagePanel				imgPanel;
 	JComponent				graph;
 	Image					img;
 	
@@ -388,6 +388,22 @@ public class SortTable extends JApplet {
 
 	public String lastResult;
 	public void init() {
+		try {
+			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InstantiationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnsupportedLookAndFeelException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		System.setProperty("file.encoding", "UTF8");
 		
 		lang = "IS";
@@ -497,10 +513,8 @@ public class SortTable extends JApplet {
 		topTable = new JTable();
 		topTable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
 		
-		final ByteBuffer	ba = ByteBuffer.allocate(1000000);
 		final CharBuffer	cb = CharBuffer.allocate(1000000);
 		//ba.order( ByteOrder.LITTLE_ENDIAN );
-		final String startTag = "imgurl";
 		leftTable.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
 			@Override
 			public void valueChanged(ListSelectionEvent e) {
@@ -508,83 +522,15 @@ public class SortTable extends JApplet {
 				if( row >= 0 && row < leftTable.getRowCount() ) {
 					final String str = leftTable.getValueAt(row, 1).toString().replaceAll("[ ,]+", "+");
 					//int row = e.getFirstIndex();
-					if( tabbedPane.getSelectedComponent() == panel && !str.equals(lastResult) ) {
-						lastResult = str;
-						Thread t = new Thread() {
-							public void run() {
-								URL url;
-								try {
-									//url = new URL("http://localhost/labbi.html");
-									//url = new URL("http://search.live.com/images/results.aspx?q="+str);
-									url = new URL("http://images.google.com/images?hl=en&q="+str ); //+"&btnG=Search+Images&gbv=2" ); //&btnG=Search+Images" );//hl=en&q=Orange");//+str);
-									System.err.println( "searching for " + str );
-									URLConnection connection = null;
-									connection = url.openConnection();
-									//Proxy proxy = new Proxy( Type.HTTP, new InetSocketAddress("proxy.decode.is",8080) );
-									//connection = url.openConnection( proxy );
-									//connection.setDoOutput( true );
-									if( connection instanceof HttpURLConnection ) {
-										HttpURLConnection httpConnection = (HttpURLConnection)connection;
-										httpConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.6) Gecko/2009020518 Ubuntu/9.04 (jaunty) Firefox/3.0.6" );
-										httpConnection.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,**;q=0.8" );
-										httpConnection.setRequestProperty("Accept-Language", "en-us,en;q=0.5" );
-										//httpConnection.setRequestProperty("Accept-Encoding", "gzip,deflate" );
-										httpConnection.setRequestProperty("Accept-Charset", "ISO-8859-1,utf-8;q=0.7,*;q=0.7" );
-										httpConnection.setRequestProperty("Keep-Alive", "300" );
-									}
-									InputStream stream = connection.getInputStream();
-									//stream = new GZIPInputStream( stream );
-									
-									int total = 0;
-									int read = stream.read(ba.array(), total, ba.limit()-total );
-									total = 0;
-									while( read > 0 ) {
-										total += read;
-										read = stream.read( ba.array(), total, ba.limit()-total );
-									}
-									stream.close();
-									
-									String result = new String( ba.array(), 0, total);
-									int index = result.indexOf( startTag );
-									int val = result.indexOf("http:", index); //index+startTag.length();
-									
-									int stop = result.indexOf( "\\x26", val );
-									if( stop == -1 ) {
-										stop = result.indexOf( '&', val );
-									}
-									
-									String urlstr = result.substring(val, val+20);
-									if( stop != -1 ) {
-										urlstr = result.substring( val, stop );
-									}
-									System.err.println( urlstr );
-									
-									/*while( index > 0 && (result.charAt(val) != 'h' || !(urlstr.endsWith("jpg") || urlstr.endsWith("png") || urlstr.endsWith("gif"))) ) {
-										index = result.indexOf( startTag, val );
-										val = index+startTag.length();
-										stop = result.indexOf( '&', val );
-										urlstr = result.substring( val, stop );
-									}*/
-									
-									if( stop > 0 ) {
-										urlstr = urlstr.replace("%20", " ").replace("%2520", " ");
-										url = new URL( urlstr );
-										connection = url.openConnection();
-										stream = connection.getInputStream();
-										img = ImageIO.read(stream);
-										panel.repaint();
-									}
-								} catch (MalformedURLException e1) {
-									e1.printStackTrace();
-								} catch (IOException e2) {
-									e2.printStackTrace();
-								}
-							}
-						};
-						t.start();
-					} else if( tabbedPane.getSelectedComponent() == graph ) {
+					if( tabbedPane.getSelectedComponent() == graph ) {
 						graph.repaint();
 					} else if( tabbedPane.getSelectedComponent() == detail ) {
+						if( !str.equals(lastResult) ) {
+							lastResult = str;
+							imgPanel.img = null;
+							imgPanel.repaint();
+							//imgPanel.runThread( str );
+						}
 						detail.detailTable.tableChanged( new TableModelEvent( detail.detailModel ) );
 					}
 				}
@@ -753,12 +699,7 @@ public class SortTable extends JApplet {
 		leftComponent.add( leftScrollPane );
 		leftComponent.add( field, BorderLayout.SOUTH );
 		
-		panel = new JComponent() {
-			public void paintComponent( Graphics g ) {
-				super.paintComponent(g);
-				if( img != null ) g.drawImage(img, 0, 0, this.getWidth(), this.getHeight(), this );
-			}
-		};
+		imgPanel = new ImagePanel( leftTable );
 		tabbedPane = new JTabbedPane(JTabbedPane.BOTTOM, JTabbedPane.SCROLL_TAB_LAYOUT);
 		tabbedPane.addChangeListener( new ChangeListener() {
 
@@ -923,7 +864,7 @@ public class SortTable extends JApplet {
 		};
 		topLeftTable.setModel( topLeftModel );
 		
-		detail = new DetailPanel( lang, table, topTable, leftTable, stuff, ngroupList, foodNameInd, recipe.recipes );
+		detail = new DetailPanel( lang, imgPanel, table, topTable, leftTable, stuff, ngroupList, foodNameInd, recipe.recipes );
 		topModel = new TableModel() {
 			@Override
 			public void addTableModelListener(TableModelListener l) {
@@ -1180,7 +1121,7 @@ public class SortTable extends JApplet {
 		
 		if( lang.equals("IS") ) {
 			tabbedPane.addTab( "Listi", rightSplitPane );
-			tabbedPane.addTab( "Myndir", panel );
+			//tabbedPane.addTab( "Myndir", imgPanel );
 			tabbedPane.addTab( "Gröf", graph );
 			tabbedPane.addTab( "Nánar", detail );
 			tabbedPane.addTab( "Uppskriftir", recipe );
@@ -1188,7 +1129,7 @@ public class SortTable extends JApplet {
 			tabbedPane.addTab( "Innkaup og kostnaður", buy );
 		} else {
 			tabbedPane.addTab( "List", rightSplitPane );
-			tabbedPane.addTab( "Image", panel );
+			//tabbedPane.addTab( "Image", imgPanel );
 			tabbedPane.addTab( "Graph", graph );
 			tabbedPane.addTab( "Detail", detail );
 			tabbedPane.addTab( "Recipes", recipe );
@@ -1209,6 +1150,8 @@ public class SortTable extends JApplet {
 		
 		this.setLayout( new BorderLayout() );
 		this.add( splitPane );
+		splitPane.setDividerLocation( 1.0/3.0 );
+		splitPane.setDividerLocation(300);
 		//this.add( panel, BorderLayout.SOUTH );
 		//this.add( field, BorderLayout.SOUTH );
 		
@@ -1224,8 +1167,8 @@ public class SortTable extends JApplet {
 		return splitPane;
 	}
 	
-	public JComponent getImagePanel() {
-		return panel;
+	public ImagePanel getImagePanel() {
+		return imgPanel;
 	}
 	
 	/**
