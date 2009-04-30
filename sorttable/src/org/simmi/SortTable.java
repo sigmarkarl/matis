@@ -447,10 +447,7 @@ public class SortTable extends JApplet {
 		table.getColumnModel().addColumnModelListener( new TableColumnModelListener() {
 
 			@Override
-			public void columnAdded(TableColumnModelEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void columnAdded(TableColumnModelEvent e) {}
 
 			@Override
 			public void columnMarginChanged(ChangeEvent e) {
@@ -474,11 +471,7 @@ public class SortTable extends JApplet {
 			}
 
 			@Override
-			public void columnSelectionChanged(ListSelectionEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
-			
+			public void columnSelectionChanged(ListSelectionEvent e) {}
 		});
 		
 		leftTable = new JTable() {
@@ -721,9 +714,19 @@ public class SortTable extends JApplet {
 		rightSplitPane.setLinkedSplitPane( leftSplitPane );
 		leftSplitPane.setLinkedSplitPane( rightSplitPane );
 		
+		String sessionKey = null;
+		String currentUser = null;
+		try {
+			sessionKey = this.getParameter("fb_sig_session_key");
+	        currentUser = this.getParameter("fb_sig_user");
+		} catch( Exception e ) {
+			e.printStackTrace();
+		}
+		FriendsPanel fp = new FriendsPanel( sessionKey, currentUser );
+		
 		HabitsPanel eat = new HabitsPanel( lang );
 		try {
-			recipe = new RecipePanel( lang, table, leftTable, foodNameInd );
+			recipe = new RecipePanel( fp, lang, table, leftTable, foodNameInd );
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -1119,12 +1122,16 @@ public class SortTable extends JApplet {
 		};
 		tableSorter.setRowFilter( filter );
 		
+		RdsPanel rdsPanel = new RdsPanel( fp );
+		
 		if( lang.equals("IS") ) {
 			tabbedPane.addTab( "Listi", rightSplitPane );
 			//tabbedPane.addTab( "Myndir", imgPanel );
 			tabbedPane.addTab( "Gröf", graph );
 			tabbedPane.addTab( "Nánar", detail );
+			tabbedPane.addTab( "Rds", rdsPanel );
 			tabbedPane.addTab( "Uppskriftir", recipe );
+			if( fp != null ) tabbedPane.addTab( "Vinir", fp );
 			tabbedPane.addTab( "Mataræði og Hreyfing", eat );
 			tabbedPane.addTab( "Innkaup og kostnaður", buy );
 		} else {
@@ -1132,7 +1139,9 @@ public class SortTable extends JApplet {
 			//tabbedPane.addTab( "Image", imgPanel );
 			tabbedPane.addTab( "Graph", graph );
 			tabbedPane.addTab( "Detail", detail );
+			tabbedPane.addTab( "Rds", rdsPanel );
 			tabbedPane.addTab( "Recipes", recipe );
+			if( fp != null ) tabbedPane.addTab( "Friends", fp );
 			tabbedPane.addTab( "Eating and training", eat );
 			tabbedPane.addTab( "Cost of buying", buy );
 		}

@@ -19,7 +19,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -33,6 +36,7 @@ import javax.swing.DropMode;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JEditorPane;
+import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
@@ -53,6 +57,7 @@ public class RecipePanel extends JSplitPane {
 	final JTable		recipeTable = new JTable();
 	final JTable		recipeDetailTable = new JTable();
 	Map<String,Integer>	foodInd;
+	FriendsPanel		fp;
 	
 	public class RecipeIngredient {
 		String	stuff;
@@ -115,7 +120,7 @@ public class RecipePanel extends JSplitPane {
 				f.mkdirs();
 			}
 			String str = this.toString();
-			String fname = Integer.toString( Math.abs( str.hashCode()) );
+			String fname = Integer.toString( Math.abs( str.hashCode() ) );
 			f = new File( f, fname );
 			FileWriter	fw = new FileWriter( f );
 			fw.write( str );
@@ -126,10 +131,11 @@ public class RecipePanel extends JSplitPane {
 	List<Recipe>	recipes;
 	Recipe			currentRecipe;
 	
-	public RecipePanel( final String lang, final JTable table, final JTable leftTable, final Map<String,Integer> foodNameInd ) throws IOException {
+	public RecipePanel( final FriendsPanel fp, final String lang, final JTable table, final JTable leftTable, final Map<String,Integer> foodNameInd ) throws IOException {
 		super( JSplitPane.VERTICAL_SPLIT );
 		this.setDividerLocation( 300 );
 		
+		this.fp = fp;
 		foodInd = foodNameInd;
 		
 		char[]	cbuf = new char[2048];
@@ -193,14 +199,14 @@ public class RecipePanel extends JSplitPane {
 		popup.add( new AbstractAction("Nýja uppskrift"){
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				recipes.add( new Recipe("Velja nafn", "Velja hóp", "Velja höfund") );
+				recipes.add( new Recipe("Velja nafn", "Velja hóp", fp.currentUser) );
 				recipeTable.revalidate();
 				recipeTable.repaint();
 				
 				table.tableChanged( new TableModelEvent( table.getModel() ) );
 				leftTable.tableChanged( new TableModelEvent( leftTable.getModel() ) );
 			}
-		});
+		});		
 		recipeScroll.setComponentPopupMenu( popup );
 		recipeTable.setComponentPopupMenu( popup );
 		
@@ -253,22 +259,19 @@ public class RecipePanel extends JSplitPane {
 
 			@Override
 			public boolean isCellEditable(int arg0, int arg1) {
-				if( arg1 == 0 || arg1 == 2 ) return true;
+				if( arg1 == 0 || arg1 == 1 ) return true;
 				return false;
 			}
 
 			@Override
-			public void removeTableModelListener(TableModelListener arg0) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void removeTableModelListener(TableModelListener arg0) {}
 
 			@Override
 			public void setValueAt(Object arg0, int arg1, int arg2) {
 				Recipe rep = recipes.get(arg1);
 				rep.destroy();
 				if( arg2 == 0 ) rep.name = arg0.toString();
-				else if( arg2 == 2 ) rep.author = arg0.toString();
+				else if( arg2 == 1 ) rep.group = arg0.toString();
 				try {
 					rep.save();
 				} catch (IOException e) {
@@ -378,8 +381,10 @@ public class RecipePanel extends JSplitPane {
 				int[]	rr = recipeTable.getSelectedRows();
 				Set<Recipe>	remSet = new HashSet<Recipe>();
 				for( int r : rr ) {
-					int ri = recipeTable.convertRowIndexToModel(r);
-					remSet.add( recipes.get(ri) );
+					if( r >= 0 && r < recipeTable.getRowCount() ) {
+						int ri = recipeTable.convertRowIndexToModel(r);
+						remSet.add( recipes.get(ri) );
+					}
 				}
 				recipes.removeAll( remSet );
 				for( Recipe rep : remSet ) {
@@ -388,11 +393,61 @@ public class RecipePanel extends JSplitPane {
 				recipeTable.revalidate();
 				recipeTable.repaint();
 				
+				currentRecipe = null;
+				
 				recipeDetailTable.revalidate();
 				recipeDetailTable.repaint();
 				
 				table.tableChanged( new TableModelEvent( table.getModel() ) );
 				leftTable.tableChanged( new TableModelEvent( leftTable.getModel() ) );				
+			}
+		});
+		popup.addSeparator();
+		popup.add( new AbstractAction("Senda völdum vinum") {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				String[]	ids = fp.getSelectedFriendsIds();
+				if( ids.length > 0 ) {
+					try {
+						Set<Recipe>	repSet = new HashSet<Recipe>();
+						int[] rr = recipeTable.getSelectedRows();
+						for( int r : rr ) {
+							int rm = recipeTable.convertRowIndexToModel(r);
+							repSet.add( recipes.get(rm) );
+						}
+						
+						if( repSet.size() > 0 ) {
+							URL url = new URL( "http://test.matis.is/isgem/recipe.php" );
+							HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+							connection.setDoInput(true);
+							connection.setDoOutput(true);
+							connection.setRequestMethod("POST");
+							
+							connection.getOutputStream().write( "ids=simmi".getBytes() );
+							connection.getOutputStream().flush();
+							connection.getOutputStream().close();
+							
+							byte[] bb = new byte[128];
+							connection.getInputStream().read(bb);
+							/*for( String id : ids ) {
+								String val = id+"_";
+								connection.getOutputStream().write( id.getBytes() );
+							}
+							for( Recipe rep : repSet ) {
+								String str = rep.toString();
+								connection.getOutputStream().write( str.getBytes() );
+							}*/
+							//connection.disconnect();
+							JOptionPane.showMessageDialog(RecipePanel.this, "Vinir hafa fengið uppskriftir");
+						} else JOptionPane.showMessageDialog(RecipePanel.this, "Engar uppskriftir valdar");
+					} catch (MalformedURLException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				} else 	JOptionPane.showMessageDialog(RecipePanel.this, "Engir vinir valdir");
 			}
 		});
 		
