@@ -2,6 +2,7 @@ package org.simmi;
 
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +27,7 @@ public class DetailPanel extends JSplitPane {
 	TableModel		detailModel;
 	List<Boolean>	showColumn;
 	TableModel		nullModel;
+	Map<String,String>	groupMap;
 	
 	public int countVisible() {
 		int count = 0;
@@ -60,16 +62,26 @@ public class DetailPanel extends JSplitPane {
 		table.setModel( old );
 	}
 	
-	public DetailPanel( final String lang, final ImagePanel imgPanel, final JTable table, final JTable topTable, final JTable leftTable, final List<Object[]> stuff, final List<String> ngroupList, final Map<String,Integer> foodInd, final List<Recipe> recipes ) {
+	public DetailPanel( final String lang, final ImagePanel imgPanel, final JTable table, final JTable topTable, final JTable leftTable, final List<Object[]> stuff, final List<String> ngroupList, final List<String> ngroupGroups, final Map<String,Integer> foodInd, final List<Recipe> recipes ) {
 		super( JSplitPane.VERTICAL_SPLIT );
 		this.setOneTouchExpandable( true );
 		this.setDividerLocation( 300 );
+		
+		groupMap = new HashMap<String,String>();
+		groupMap.put("1", "Annað");
+		groupMap.put("2", "Fituleysanleg vítamín");
+		groupMap.put("3", "Vatnsleysanleg vítamín");
+		groupMap.put("4", "Steinefni");
+		groupMap.put("5", "Eitur");
+		groupMap.put("6", "Fitusýrur");
+		groupMap.put("7", "Nítröt");
 		
 		JScrollPane	detailScroll = new JScrollPane();
 		
 		showColumn = new ArrayList<Boolean>();
 		for( int i = 0; i < stuff.get(0).length-2; i++ ) {
-			showColumn.add( Boolean.TRUE );
+			if( !ngroupGroups.get(i).equals("6") ) showColumn.add( Boolean.TRUE );
+			else showColumn.add( Boolean.FALSE );
 		}
 		
 		nullModel = new TableModel() {
@@ -188,27 +200,29 @@ public class DetailPanel extends JSplitPane {
 	
 			@Override
 			public Class<?> getColumnClass(int columnIndex) {
-				if( columnIndex == 2 ) return Float.class;
-				else if( columnIndex == 3 ) return Boolean.class;
+				if( columnIndex == 3 ) return Float.class;
+				else if( columnIndex == 4 ) return Boolean.class;
 				return String.class;
 			}
 	
 			@Override
 			public int getColumnCount() {
-				return 4;
+				return 5;
 			}
 	
 			@Override
 			public String getColumnName(int columnIndex) {
 				if( lang.equals("IS") ) {
 					if( columnIndex == 0 ) return "Nafn";
-					else if( columnIndex == 1 ) return "Eining";
-					else if( columnIndex == 2 ) return "Mæligildi";
+					else if( columnIndex == 1 ) return "Hópur";
+					else if( columnIndex == 2 ) return "Eining";
+					else if( columnIndex == 3 ) return "Mæligildi";
 					return "Sýna dálk";
 				} else {
 					if( columnIndex == 0 ) return "Name";
-					else if( columnIndex == 1 ) return "Unit";
-					else if( columnIndex == 2 ) return "Measure";
+					else if( columnIndex == 1 ) return "Group";
+					else if( columnIndex == 2 ) return "Unit";
+					else if( columnIndex == 3 ) return "Measure";
 					return "Show Column";
 				}
 			}
@@ -222,11 +236,15 @@ public class DetailPanel extends JSplitPane {
 			public Object getValueAt(int rowIndex, int columnIndex) {
 				if( columnIndex == 0 ) return ngroupList.get( rowIndex );
 				else if( columnIndex == 1 ) {
+					String ind = ngroupGroups.get( rowIndex );
+					if( groupMap.containsKey(ind) ) {
+						return groupMap.get( ind );
+					} else return "Óþekkt";
+				} else if( columnIndex == 2 ) {
 					Object[]	obj = stuff.get(1);
 					return obj[ rowIndex+2 ];
 					//return topModel.getValueAt( 1, rowIndex );
-				}
-				else if( columnIndex == 2 ) {
+				} else if( columnIndex == 3 ) {
 					int rsel = leftTable.getSelectedRow();
 					if( rsel >= 0 && rsel < leftTable.getRowCount() ) {
 						int lsel = leftTable.convertRowIndexToModel( rsel );
@@ -273,7 +291,7 @@ public class DetailPanel extends JSplitPane {
 	
 			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
-				if( columnIndex == 3 ) return true;
+				if( columnIndex == 4 ) return true;
 				return false;
 			}
 	
@@ -285,7 +303,7 @@ public class DetailPanel extends JSplitPane {
 	
 			@Override
 			public void setValueAt(Object value, int rowIndex, int columnIndex) {
-				if( columnIndex == 3 ) showColumn.set( rowIndex, (Boolean)value );
+				if( columnIndex == 4 ) showColumn.set( rowIndex, (Boolean)value );
 			}
 			
 		};

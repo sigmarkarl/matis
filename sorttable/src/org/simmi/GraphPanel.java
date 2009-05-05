@@ -17,7 +17,7 @@ import javax.swing.JTable;
 public class GraphPanel extends JTabbedPane {
 	JComponent	energy;
 	JComponent	energyPart;
-	JComponent	vitamin;
+	VitaminPanel	vitamin;
 	boolean		hringur = false;
 	
 	JTable		table, leftTable, topTable;
@@ -27,8 +27,14 @@ public class GraphPanel extends JTabbedPane {
 	 */
 	private static final long serialVersionUID = 8830688610876166912L;
 
+	public float stuffYou( String whr ) {
+		int r = leftTable.getSelectedRow();
+		if( r >= 0 && r < leftTable.getRowCount() ) return stuffYou( r, whr );
+		return -1.0f;
+	}
+	
 	public float stuffYou( int row, String whr ) {
-		float f = 0.0f;
+		float f = -1.0f;
 		
 		int col = 0;
 		Object val = topTable.getValueAt(0, col);
@@ -44,7 +50,7 @@ public class GraphPanel extends JTabbedPane {
 		return f;
 	}
 	
-	public GraphPanel( final String lang, JTable[]	tables ) {
+	public GraphPanel( final RdsPanel rdsPanel, final String lang, JTable[]	tables ) {
 		super( JTabbedPane.RIGHT );
 		
 		table = tables[0];
@@ -361,6 +367,8 @@ public class GraphPanel extends JTabbedPane {
 		});
 		
 		SkifuGraph perc = new SkifuGraph( "Hlutföll", new String[] {"Alcohol", "Protein, total", "Carbohydrates, total", "Fat, total", "Ash", "Water"}, tables );
+		
+		vitamin = new VitaminPanel( this, rdsPanel, lang );
 		
 		this.addTab("Hlutföll", perc);
 		this.addTab("Orka", energy);

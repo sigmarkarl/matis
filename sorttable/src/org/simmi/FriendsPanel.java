@@ -214,7 +214,7 @@ public class FriendsPanel extends JScrollPane {
 			int stop = xmling.lastIndexOf("</sex>");
 			if( stop > start  && start > 0 ) {
 				String sex = xmling.substring( start, stop );
-				fres[4] = sex.equals("Male") ? "Karl" : "Kona";
+				fres[4] = sex.equalsIgnoreCase("male") ? "Karl" : "Kona";
 			}
 			
 			start = xmling.indexOf("<is_app_user>")+13;
