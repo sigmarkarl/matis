@@ -9,6 +9,8 @@ import java.awt.Paint;
 import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 
 import javax.swing.JComponent;
 import javax.swing.JTabbedPane;
@@ -57,6 +59,9 @@ public class GraphPanel extends JTabbedPane {
 		leftTable = tables[1];
 		topTable = tables[2];
 		
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		final PrintStream ps = new PrintStream( baos );
+		
 		energy = new JComponent() {
 			public void paintComponent( Graphics g ) {
 				super.paintComponent( g );
@@ -68,16 +73,24 @@ public class GraphPanel extends JTabbedPane {
 				g2.setRenderingHint( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON );
 				g2.setRenderingHint( RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON );
 				
+				int row = leftTable.getSelectedRow();
+				Object oval = leftTable.getValueAt(row, 1);
+				
 				g2.setColor(Color.darkGray);
-				g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/20 ) );
-				if( lang.equals("IS") ) {
-					g2.drawString("Orka (í 100 mg)", 10, this.getHeight()/20 );
-				} else {
-					g2.drawString("Energy (in 100 mg)", 10, this.getHeight()/20 );
+				g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/30 ) );
+				if( oval != null ) {
+					g2.drawString( oval.toString(), 10, this.getHeight()/20 );
 				}
+				
+				String enStr = "";
+				if( lang.equals("IS") ) {
+					enStr = "Orka (í 100g)";
+				} else {
+					enStr = "Energy (in 100g)";
+				}
+				g2.drawString( enStr, 10, (int)(this.getHeight()/11.7) );
 				g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/30 ) );
 				
-				int row = leftTable.getSelectedRow();
 				if( row >= 0 ) {					
 					float alc = 0.0f;
 					float prt = 0.0f;
@@ -98,15 +111,23 @@ public class GraphPanel extends JTabbedPane {
 					
 					if( lang.equals("IS") ) {
 						float f = (17.0f*prt + 17.0f*cbh + 37.0f*fat + 29.0f*alc)*10.0f;
-						float fv = Math.round( f )/100.0f;
 						if( f > 0 ) {
-							g2.drawString(fv+" kJ", 10, this.getHeight()/10 );
-						}
-						
-						f = f/4.184f;
-						fv = Math.round( f )/100.0f;
-						if( f > 0 ) {
-							g2.drawString(fv+" kCal", 10, this.getHeight()/7 );
+							float fv = Math.round( f )/100.0f;
+							float fcal = f/4.184f;
+							float fvcal = Math.round( fcal )/100.0f;
+							
+							ps.flush();
+							baos.reset();
+							ps.printf( "%.1f %s", fvcal, " kCal" );
+							String calStr = baos.toString();
+							int strw = g.getFontMetrics().stringWidth(calStr);
+							g2.drawString(calStr, 10, this.getHeight()/8 );
+							
+							ps.flush();
+							baos.reset();
+							ps.printf(" (%.1f %s)", fv, "kJ" );
+							String kjStr = baos.toString();
+							g2.drawString(kjStr, 15+strw, this.getHeight()/8 );
 						}
 					} else {
 						float f = stuffYou( row, "ENERC_KJ" );

@@ -15,15 +15,20 @@ import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -58,16 +63,43 @@ public class RecipePanel extends JSplitPane {
 	final JTable		recipeDetailTable = new JTable();
 	Map<String,Integer>	foodInd;
 	FriendsPanel		fp;
+	Map<String,Map<String,String>> skmt = new HashMap<String,Map<String,String>>();
+	JComboBox 			skmtCombo;
 	
 	public class RecipeIngredient {
 		String	stuff;
 		float	measure;
 		String	unit;
+		Map<String,String>	values;
 		
 		public RecipeIngredient( String stuff, float measure, String unit ) {
 			this.stuff = stuff;
 			this.measure = measure;
 			this.unit = unit;
+			
+			if( skmt.containsKey( stuff.toLowerCase() ) ) {
+				values = skmt.get( stuff.toLowerCase() );
+			} else {
+				String store = null;
+				int max = 0;
+				
+				List<String> pars = Arrays.asList( stuff.toLowerCase().split("[, ]+") );
+				for( String str : skmt.keySet() ) {
+					List<String> vals = Arrays.asList( str.split("[, ]+") );
+					
+					int count = 0;
+					for( String a : pars ) {
+						if( vals.contains(a) ) count++;
+					}
+					
+					if( count > max ) {
+						max = count;
+						store = str;
+					}
+				}
+				
+				if( store != null ) values = skmt.get( store );
+			}
 		}
 	};
 	
@@ -128,12 +160,38 @@ public class RecipePanel extends JSplitPane {
 		}
 	};
 	
+	public void fillSkmt() throws IOException {
+		InputStream is = this.getClass().getResourceAsStream("skmt.txt");
+		BufferedReader br = new BufferedReader( new InputStreamReader(is) );
+		String line = br.readLine();
+		while( line != null ) {
+			String[] split = line.split("\\t");
+			if( split.length > 1 && split[1].length() > 0 ) {
+				Map<String,String> var = new HashMap<String,String>();
+				String[] subspl = split[1].split("g,[ ]+");
+				for( String str : subspl ) {
+					String[] aspl = str.replace('=', '-').split("-");
+					if( aspl.length > 1 ) {
+						String val = aspl[1];
+						if( !str.equals(subspl[subspl.length-1]) ) val+="g";
+						var.put(aspl[0], val);
+					}
+				}
+				skmt.put(split[0].toLowerCase(), var);
+			}
+			line = br.readLine();
+		}
+		br.close();
+	}
+	
 	List<Recipe>	recipes;
 	Recipe			currentRecipe;
 	
 	public RecipePanel( final FriendsPanel fp, final String lang, final JTable table, final JTable leftTable, final Map<String,Integer> foodNameInd ) throws IOException {
 		super( JSplitPane.VERTICAL_SPLIT );
 		this.setDividerLocation( 300 );
+		
+		fillSkmt();
 		
 		this.fp = fp;
 		foodInd = foodNameInd;
@@ -361,7 +419,7 @@ public class RecipePanel extends JSplitPane {
 					RecipeIngredient ri = rep.ingredients.get( arg1 );
 					if( arg2 == 1 ) {
 						ri.measure = (Float)arg0;
-					} else {
+					} else if( arg0 != null ) {
 						ri.unit = arg0.toString();
 					}
 					try {
@@ -492,8 +550,9 @@ public class RecipePanel extends JSplitPane {
 			}
 		});
 		
-		JComboBox comboBox = new JComboBox( new Object[] {"g","mg","L"} );
-		TableCellEditor cellEditor = new DefaultCellEditor( comboBox );
+		skmtCombo = new JComboBox( new Object[] {"g"} );
+		TableCellEditor cellEditor = new DefaultCellEditor( skmtCombo );
+		//cellEditor.
 		/*cellEditor.addCellEditorListener( new CellEditorListener() {
 			@Override
 			public void editingStopped(ChangeEvent e) {
@@ -513,6 +572,7 @@ public class RecipePanel extends JSplitPane {
 			public void editingCanceled(ChangeEvent e) {}
 		});*/
 		recipeDetailTable.setDefaultEditor( String.class, cellEditor );
+		//recipeDetailTable.setce
 		
 		final JEditorPane	recipeInfo = new JEditorPane();
 		recipeInfo.setEditable( false );
@@ -627,6 +687,15 @@ public class RecipePanel extends JSplitPane {
 						visRect.y = cellRect.y;
 						table.scrollRectToVisible( visRect );
 					}
+					
+					RecipeIngredient rip = currentRecipe.ingredients.get(ri);
+					skmtCombo.removeAllItems();
+					if( rip.values != null ) {
+						for( String str : rip.values.keySet() ) {
+							skmtCombo.addItem( str + " ("+rip.values.get(str)+")" );
+						}
+					}
+					skmtCombo.addItem("g");
 				}
 			}
 		});

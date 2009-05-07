@@ -46,6 +46,7 @@ import javax.swing.RowSorter;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SortOrder;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -63,6 +64,7 @@ import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableColumnModelListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
+import javax.swing.plaf.TableUI;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
@@ -447,7 +449,20 @@ public class SortTable extends JApplet {
 			e.printStackTrace();
 		}
 		
+		for (Object key: UIManager.getDefaults().keySet())
+		{
+		    System.out.println(key);
+		}
+
+		
 		System.setProperty("file.encoding", "UTF8");
+		/*UIManager.put("Panel.background", Color.BLACK);
+		UIManager.put("Component.background", Color.BLACK);
+		UIManager.put("TabbedPane.background", Color.BLACK);
+		UIManager.put("Table.background", Color.BLACK);
+		UIManager.put("Viewport.background", Color.BLACK);
+		UIManager.put("ScrollPane.background", Color.BLACK);*/
+
 		//this.getContentPane().set
 		
 		lang = "IS";
@@ -557,7 +572,8 @@ public class SortTable extends JApplet {
 			public void valueChanged(ListSelectionEvent e) {
 				int row = leftTable.getSelectedRow();
 				if( row >= 0 && row < leftTable.getRowCount() ) {
-					final String str = leftTable.getValueAt(row, 1).toString().replaceAll("[ ,]+", "+");
+					final String oStr = leftTable.getValueAt(row, 1).toString();
+					final String str = oStr.replaceAll("[ ,]+", "+");
 					//int row = e.getFirstIndex();
 					if( tabbedPane.getSelectedComponent() == graph ) {
 						graph.repaint();
@@ -567,6 +583,7 @@ public class SortTable extends JApplet {
 							imgPanel.img = null;
 							imgPanel.repaint();
 							//imgPanel.runThread( str );
+							imgPanel.tryName( oStr );
 						}
 						detail.detailTable.tableChanged( new TableModelEvent( detail.detailModel ) );
 					}
@@ -1303,8 +1320,13 @@ public class SortTable extends JApplet {
 		//this.add( panel, BorderLayout.SOUTH );
 		//this.add( field, BorderLayout.SOUTH );
 		
+		//splitPane.setBackground( Color.white );
+		//tabbedPane.setBackground( Color.white );
+		
 		//scrollPane.setColumnHeaderView( topTable );
 		//topScrollPane.setViewport( scrollPane.getColumnHeader() );
+		
+		//SwingUtilities.updateComponentTreeUI( this );
 	}
 	
 	public JScrollPane getScrollPane() {
