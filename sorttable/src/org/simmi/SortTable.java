@@ -121,9 +121,11 @@ public class SortTable extends JApplet {
 	
 	RowFilter<TableModel,Integer>	filter;
 	
-	static {
+	//static String lof = "org.jvnet.substance.skin.SubstanceRavenGraphiteLookAndFeel";
+	static String lof = "com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel";
+	static void updateLof() {
 		try {
-			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
+			UIManager.setLookAndFeel(lof);
 		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -137,7 +139,9 @@ public class SortTable extends JApplet {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+	}
+	static {
+		updateLof();
 		System.setProperty("file.encoding", "UTF8");
 	}
 	
@@ -431,10 +435,12 @@ public class SortTable extends JApplet {
 		}
 	};
 	 
+	String sessionKey = null;
+	String currentUser = null;
 	public String lastResult;
 	public void init() {
 		try {
-			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
+			UIManager.setLookAndFeel(lof);
 		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -449,21 +455,9 @@ public class SortTable extends JApplet {
 			e.printStackTrace();
 		}
 		
-		for (Object key: UIManager.getDefaults().keySet())
-		{
-		    System.out.println(key);
-		}
-
-		
+		this.getContentPane().setBackground( Color.white );
+		this.setBackground( Color.white );
 		System.setProperty("file.encoding", "UTF8");
-		/*UIManager.put("Panel.background", Color.BLACK);
-		UIManager.put("Component.background", Color.BLACK);
-		UIManager.put("TabbedPane.background", Color.BLACK);
-		UIManager.put("Table.background", Color.BLACK);
-		UIManager.put("Viewport.background", Color.BLACK);
-		UIManager.put("ScrollPane.background", Color.BLACK);*/
-
-		//this.getContentPane().set
 		
 		lang = "IS";
 		/*String loc = this.getParameter("loc");
@@ -479,8 +473,24 @@ public class SortTable extends JApplet {
 			e.printStackTrace();
 		}
 		
-		this.getRootPane().setBackground( Color.white );
-		this.requestFocus();
+		try {
+			sessionKey = SortTable.this.getParameter("fb_sig_session_key");
+	        currentUser = SortTable.this.getParameter("fb_sig_user");
+		} catch( Exception e ) {
+			e.printStackTrace();
+		}
+		
+		SwingUtilities.invokeLater( new Runnable(){
+			@Override
+			public void run() {		
+				initGui( sessionKey, currentUser );
+			}
+		});
+	}
+	
+	public void initGui( String sessionKey, String currentUser ) {
+		SortTable.this.getRootPane().setBackground( Color.white );
+		SortTable.this.requestFocus();
 		
 		scrollPane = new JScrollPane();
 		leftScrollPane = new JScrollPane();
@@ -673,7 +683,7 @@ public class SortTable extends JApplet {
 		final Image matisLogo;
 		URL codeBase = null;
 		try {
-			codeBase = this.getCodeBase();
+			codeBase = SortTable.this.getCodeBase();
 		} catch( Exception e ) {
 			
 		}
@@ -693,7 +703,7 @@ public class SortTable extends JApplet {
 			
 			matisLogo = img;
 		} else {
-			matisLogo = this.getImage( codeBase, "matis.png" );
+			matisLogo = SortTable.this.getImage( codeBase, "matis.png" );
 		}
 		
 		/*JComponent logoPaint = new JComponent() {
@@ -755,29 +765,24 @@ public class SortTable extends JApplet {
 			public void stateChanged(ChangeEvent e) {
 				if( tabbedPane.getSelectedComponent() == rightSplitPane ) {
 					leftScrollPane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_NEVER );
+					leftSplitPane.setDividerLocation(60);
 				} else {
 					leftScrollPane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_ALWAYS );
+					leftSplitPane.setDividerLocation(0);
 				}
 			}
 			
 		});
 		
-		String sessionKey = null;
-		String currentUser = null;
-		try {
-			sessionKey = this.getParameter("fb_sig_session_key");
-	        currentUser = this.getParameter("fb_sig_user");
-		} catch( Exception e ) {
-			e.printStackTrace();
-		}
 		FriendsPanel fp = new FriendsPanel( sessionKey, currentUser );
-		RdsPanel rdsPanel = new RdsPanel( fp, this );
-		graph = new GraphPanel( rdsPanel, lang, new JTable[] {table, leftTable, topTable} );
+		RdsPanel rdsPanel = new RdsPanel( fp, SortTable.this );
 		
 		rightSplitPane = new LinkedSplitPane( JSplitPane.VERTICAL_SPLIT, topScrollPane, scrollPane );
 		leftSplitPane = new LinkedSplitPane( JSplitPane.VERTICAL_SPLIT, topLeftScrollPane, leftComponent );
 		rightSplitPane.setLinkedSplitPane( leftSplitPane );
 		leftSplitPane.setLinkedSplitPane( rightSplitPane );
+		
+		leftSplitPane.setOneTouchExpandable( true );
 		
 		HabitsPanel eat = new HabitsPanel( lang );
 		try {
@@ -922,7 +927,7 @@ public class SortTable extends JApplet {
 		};
 		topLeftTable.setModel( topLeftModel );
 		
-		detail = new DetailPanel( lang, imgPanel, table, topTable, leftTable, stuff, ngroupList, ngroupGroups, foodNameInd, recipe.recipes );
+		detail = new DetailPanel( rdsPanel, lang, imgPanel, table, topTable, leftTable, stuff, ngroupList, ngroupGroups, foodNameInd, recipe.recipes );
 		topModel = new TableModel() {
 			@Override
 			public void addTableModelListener(TableModelListener l) {
@@ -1252,6 +1257,8 @@ public class SortTable extends JApplet {
 		};
 		tableSorter.setRowFilter( filter );
 		
+		graph = new GraphPanel( rdsPanel, lang, new JTable[] {table, leftTable, topTable}, model, topModel );
+		
 		if( lang.equals("IS") ) {
 			tabbedPane.addTab( "Listi", rightSplitPane );
 			//tabbedPane.addTab( "Myndir", imgPanel );
@@ -1289,32 +1296,42 @@ public class SortTable extends JApplet {
 		ed.setContentType("text/html");
 		ed.setEditable( false );
 		ed.setText("<html><body><center><table cellpadding=0><tr><td><img src=\"http://test.matis.is/isgem/Matis_logo.jpg\" hspace=\"5\" width=\"32\" height=\"32\">"
-			+"</td><td align=\"center\"><a href=\"http://www.matis.is\">Matís ehf.</a> - Skúlagata 4 | 101 Reykjavík - Sími 422 50 00 | Fax 422 50 01 - <a href=\"mailto:matis@matis.is\">matis@matis.is</a><br><a href=\"http://www.matis.is/ISGEM/is/skyringar/\">Hjálp</a>"
+			+"</td><td align=\"center\"><a href=\"http://www.matis.is\">Matís ehf.</a> - Skúlagata 4 | 101 Reykjavík - Sími 422 50 00 | Fax 422 50 01 - <a href=\"mailto:matis@matis.is\">matis@matis.is</a><br><a href=\"http://www.matis.is/ISGEM/is/skyringar/\">Hjálp</a> - "
+			+((sessionKey == null || sessionKey.length() == 0)?"<a href=\"http://test.matis.is/isgem/applet.php\">Allur glugginn</a>":"<a href=\"http://apps.facebook.com/matisgem\">Facebook</a>")
+			+" - <a href=\"dark\">Dark</a> - <a href=\"light\">Light</a>"
 			+"</td></tr></table></center></body></html>");
-		Dimension d = new Dimension(1000,36);
+		Dimension d = new Dimension(1000,42);
 		ed.setPreferredSize( d );
 		ed.setSize( d );
 		ed.addHyperlinkListener( new HyperlinkListener() {
 			@Override
 			public void hyperlinkUpdate(HyperlinkEvent e) {
 				if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-					try {
-						Desktop.getDesktop().browse( e.getURL().toURI() );
-					} catch (IOException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					} catch (URISyntaxException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
+					if( e.getDescription().equals("dark") ) {
+						lof = "org.jvnet.substance.skin.SubstanceRavenGraphiteLookAndFeel";
+						updateLof();
+					} else if( e.getDescription().equals("light") ) {
+						lof = "com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel";
+						updateLof();
+					} else {
+						try {
+							Desktop.getDesktop().browse( e.getURL().toURI() );
+						} catch (IOException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						} catch (URISyntaxException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
 					}
 				}
 			}
 		});
 		
-		this.setLayout( new BorderLayout() );
+		SortTable.this.setLayout( new BorderLayout() );
 		splitPane.setBorder( new EmptyBorder(0, 0, 0, 0) );
-		this.add( splitPane );
-		this.add( ed, BorderLayout.SOUTH );
+		SortTable.this.add( splitPane );
+		SortTable.this.add( ed, BorderLayout.SOUTH );
 		splitPane.setDividerLocation( 1.0/3.0 );
 		splitPane.setDividerLocation(300);
 		//this.add( panel, BorderLayout.SOUTH );
@@ -1327,6 +1344,9 @@ public class SortTable extends JApplet {
 		//topScrollPane.setViewport( scrollPane.getColumnHeader() );
 		
 		//SwingUtilities.updateComponentTreeUI( this );
+		
+		SortTable.this.getContentPane().setBackground( Color.white );
+		SortTable.this.setBackground( Color.white );
 	}
 	
 	public JScrollPane getScrollPane() {
@@ -1362,17 +1382,52 @@ public class SortTable extends JApplet {
 			e.printStackTrace();
 		}*/
 		
-		JFrame frame = new JFrame();
-		SortTable sortTable = new SortTable();
-		sortTable.init();
-		frame.setLayout( new BorderLayout() );
-		frame.add( sortTable.getSplitPane() );
-		frame.add( sortTable.getEditor(), BorderLayout.SOUTH );
-		//frame.add( sortTable.getImagePanel(), BorderLayout.SOUTH );
-		//frame.add( sortTable.getSearchField(), BorderLayout.SOUTH );
-		frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
-		frame.setSize(800, 600);
-		frame.setVisible( true );
+		final SortTable sortTable = new SortTable();
+		
+		try {
+			UIManager.setLookAndFeel(lof);
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InstantiationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnsupportedLookAndFeelException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		System.setProperty("file.encoding", "UTF8");
+		sortTable.lang = "IS";
+		
+		ToolTipManager.sharedInstance().setInitialDelay(0);
+		try {
+			sortTable.stuff = sortTable.parseData( sortTable.lang );
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		sortTable.getContentPane().setBackground( Color.white );
+		sortTable.setBackground( Color.white );
+		
+		SwingUtilities.invokeLater( new Runnable(){
+			@Override
+			public void run() {
+				JFrame frame = new JFrame();
+				frame.setBackground( Color.white );
+				frame.getContentPane().setBackground( Color.white );
+				sortTable.initGui( null, null );
+				frame.setLayout( new BorderLayout() );
+				frame.add( sortTable.getSplitPane() );
+				frame.add( sortTable.getEditor(), BorderLayout.SOUTH );
+				frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+				frame.setSize(800, 600);
+				frame.setVisible( true );
+			}
+		});
 	}
 	
 	public JTextField getSearchField() {

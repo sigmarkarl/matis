@@ -62,7 +62,7 @@ public class DetailPanel extends JSplitPane {
 		table.setModel( old );
 	}
 	
-	public DetailPanel( final String lang, final ImagePanel imgPanel, final JTable table, final JTable topTable, final JTable leftTable, final List<Object[]> stuff, final List<String> ngroupList, final List<String> ngroupGroups, final Map<String,Integer> foodInd, final List<Recipe> recipes ) {
+	public DetailPanel( final RdsPanel rdsp, final String lang, final ImagePanel imgPanel, final JTable table, final JTable topTable, final JTable leftTable, final List<Object[]> stuff, final List<String> ngroupList, final List<String> ngroupGroups, final Map<String,Integer> foodInd, final List<Recipe> recipes ) {
 		super( JSplitPane.VERTICAL_SPLIT );
 		this.setOneTouchExpandable( true );
 		this.setDividerLocation( 300 );
@@ -201,13 +201,14 @@ public class DetailPanel extends JSplitPane {
 			@Override
 			public Class<?> getColumnClass(int columnIndex) {
 				if( columnIndex == 3 ) return Float.class;
-				else if( columnIndex == 4 ) return Boolean.class;
+				if( columnIndex == 4 ) return Float.class;
+				else if( columnIndex == 5 ) return Boolean.class;
 				return String.class;
 			}
 	
 			@Override
 			public int getColumnCount() {
-				return 5;
+				return 6;
 			}
 	
 			@Override
@@ -217,12 +218,14 @@ public class DetailPanel extends JSplitPane {
 					else if( columnIndex == 1 ) return "Hópur";
 					else if( columnIndex == 2 ) return "Eining";
 					else if( columnIndex == 3 ) return "Mæligildi";
+					else if( columnIndex == 4 ) return "Rds";
 					return "Sýna dálk";
 				} else {
 					if( columnIndex == 0 ) return "Name";
 					else if( columnIndex == 1 ) return "Group";
 					else if( columnIndex == 2 ) return "Unit";
 					else if( columnIndex == 3 ) return "Measure";
+					else if( columnIndex == 4 ) return "Rds";
 					return "Show Column";
 				}
 			}
@@ -283,6 +286,17 @@ public class DetailPanel extends JSplitPane {
 							return null;
 						}
 					}
+				} else if( columnIndex == 4 ) {
+					String efni = ngroupList.get( rowIndex );
+					String[] split = efni.split("[,-]+");
+					Object[]	obj = stuff.get(1);
+					Object ostr = obj[ rowIndex+2 ];
+					String rdsStr = split[0]+"/"+ostr;
+					String val = rdsp.getRds( rdsStr );
+					if( val != null ) {
+						return Float.parseFloat(val);
+					}
+					return null;
 				} else {
 					return showColumn.get( rowIndex );
 				}
@@ -291,7 +305,7 @@ public class DetailPanel extends JSplitPane {
 	
 			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
-				if( columnIndex == 4 ) return true;
+				if( columnIndex == 5 ) return true;
 				return false;
 			}
 	
@@ -303,7 +317,7 @@ public class DetailPanel extends JSplitPane {
 	
 			@Override
 			public void setValueAt(Object value, int rowIndex, int columnIndex) {
-				if( columnIndex == 4 ) showColumn.set( rowIndex, (Boolean)value );
+				if( columnIndex == 5 ) showColumn.set( rowIndex, (Boolean)value );
 			}
 			
 		};
@@ -315,6 +329,23 @@ public class DetailPanel extends JSplitPane {
 			}
 		});
 		detailScroll.setViewportView( detailTable );
+		
+		for( int rowIndex = 0; rowIndex < detailModel.getRowCount(); rowIndex++ ) {
+			String efni = ngroupList.get( rowIndex );
+			String[] split = efni.split("[,-]+");
+			Object[]	obj = stuff.get(1);
+			Object ostr = obj[ rowIndex+2 ];
+			String rdsStr = split[0]+"/"+ostr;
+			rdsStr = rdsStr.replace(" ", "");
+			String val = rdsp.getRds( rdsStr );
+			if( val != null ) {
+				String ind = ngroupGroups.get( rowIndex );
+				if( groupMap.containsKey(ind) ) {
+					String grp = groupMap.get( ind );
+					rdsp.detailMapping.put(rdsStr, grp);
+				} 
+			}
+		}
 		
 		this.setTopComponent( imgPanel );
 		this.setBottomComponent( detailScroll );

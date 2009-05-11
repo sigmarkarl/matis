@@ -10,20 +10,29 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import javax.swing.JEditorPane;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTable;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
 
-public class RdsPanel extends JScrollPane {
+public class RdsPanel extends JSplitPane {
 	List<Object[]>	rows = new ArrayList<Object[]>();
 	final Color 				paleGreen = new Color( 20,230,60,96 ); 
 	final FriendsPanel fp;
 	TableModel	model;
 	SortTable	st;
+	Map<String,String>	detailMapping = new HashMap<String,String>();
+	final String vurl = "http://www.fa.is/deildir/Efnafraedi/Naeringarfr/naervefur/Templates/glaerur/vatnsvit.htm";
+	final String furl = "http://www.fa.is/deildir/Efnafraedi/Naeringarfr/naervefur/Templates/glaerur/fituvit.htm";
 	
 	public String getRds( String colname ) {
 		String ret = null;
@@ -39,7 +48,12 @@ public class RdsPanel extends JScrollPane {
 		else base+=5;
 		
 		int i = 0;
-		while( !model.getColumnName(i).equals(colname) && i < model.getColumnCount() ) i++;
+		String colName = model.getColumnName(i);
+		while( !colname.contains(colName) ) {
+			i++;
+			if( i == model.getColumnCount() ) break;
+			colName = model.getColumnName(i);
+		}
 		
 		if( i < model.getColumnCount() ) {
 			Object[] obj = rows.get( base );
@@ -50,6 +64,8 @@ public class RdsPanel extends JScrollPane {
 	}
 	
 	public RdsPanel( final FriendsPanel fp, final SortTable st ) {
+		super( JSplitPane.VERTICAL_SPLIT );
+		
 		this.fp = fp;
 		this.st = st;
 		
@@ -161,6 +177,45 @@ public class RdsPanel extends JScrollPane {
 		});
 		
 		table.setModel( model );
-		this.setViewportView( table );
+		table.setColumnSelectionAllowed( true );
+		
+		final JEditorPane editor = new JEditorPane();
+		editor.setEditable( false );
+		editor.setContentType("text/html");
+		try {
+			editor.setPage(vurl);
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
+		table.getSelectionModel().addListSelectionListener( new ListSelectionListener(){
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				int c = table.getSelectedColumn();
+				String cName = table.getColumnName(c);
+				if( detailMapping.containsKey(cName) ) {
+					String vfl = detailMapping.get(cName);
+					try {
+						if( vfl.contains("Vatnsl") && !vurl.equals(editor.getPage().toString()) ) {
+							editor.setPage(vurl);
+						} else if( vfl.contains("Fitul") && !furl.equals(editor.getPage().toString()) ) {
+							editor.setPage(furl);
+						}
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+				}
+			}
+		});
+		
+		JScrollPane tableScrollPane = new JScrollPane( table );
+		JScrollPane editorScroll = new JScrollPane( editor );
+		
+		this.setTopComponent( tableScrollPane );
+		this.setBottomComponent( editorScroll );
+		
+		this.setDividerLocation( 300 );
 	}
 }

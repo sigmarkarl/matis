@@ -328,7 +328,7 @@ public class FriendsPanel extends JScrollPane {
 		offIcon = new ImageIcon( off );
 		
 		String xml = null;
-		if( sessionKey != null ) {
+		if( sessionKey != null && sessionKey.length() > 0 ) {
 			xml = getFriendsXml( sessionKey, currentUser );
 			File f = new File( System.getProperty("user.home"), ".isgem" );
 			f = new File( f, "friends" );
