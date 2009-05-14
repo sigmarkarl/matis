@@ -13,6 +13,8 @@ import java.awt.dnd.DropTargetListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.BufferedReader;
@@ -65,6 +67,7 @@ public class RecipePanel extends JSplitPane {
 	FriendsPanel		fp;
 	Map<String,Map<String,String>> skmt = new HashMap<String,Map<String,String>>();
 	JComboBox 			skmtCombo;
+	int				clearCombo = -1;
 	
 	public class RecipeIngredient {
 		String	stuff;
@@ -412,6 +415,18 @@ public class RecipePanel extends JSplitPane {
 			@Override
 			public void setValueAt(Object arg0, int arg1, int arg2) {
 				int r = recipeTable.getSelectedRow();
+				
+				int nr = recipeDetailTable.getSelectedRow();
+				if( arg2 == 2 && nr != -1 ) {
+					String item = (String)arg0;
+					if( item != null ) {
+						if( !item.equals("g") ) recipeDetailTable.setValueAt(1.0f, nr, 1);
+						else recipeDetailTable.setValueAt(100.0f, nr, 1);
+					}
+						
+					recipeDetailTable.repaint();
+				}
+				
 				int rr = recipeTable.convertRowIndexToModel(r);
 				if( rr >= 0 && rr < recipes.size() ) {
 					Recipe rep = recipes.get(rr);
@@ -552,6 +567,25 @@ public class RecipePanel extends JSplitPane {
 		
 		skmtCombo = new JComboBox( new Object[] {"g"} );
 		TableCellEditor cellEditor = new DefaultCellEditor( skmtCombo );
+		
+		/*skmtCombo.addItemListener( new ItemListener() {
+			Object old = null;
+			@Override
+			public void itemStateChanged(ItemEvent e) {
+				int r = recipeDetailTable.getSelectedRow();
+				if( clearCombo != -1 && clearCombo == r ) {
+					Object obj = recipeDetailTable.getValueAt(r, 2);
+					if( e.getStateChange() == ItemEvent.DESELECTED ) {
+						if( !obj.equals("g") ) {
+							recipeDetailTable.setValueAt(2.0f, r, 1);
+						}
+						else recipeDetailTable.setValueAt(100.0f, r, 1);
+						
+						recipeDetailTable.repaint();
+					}
+				}
+			}
+		});*/
 		//cellEditor.
 		/*cellEditor.addCellEditorListener( new CellEditorListener() {
 			@Override
@@ -674,6 +708,7 @@ public class RecipePanel extends JSplitPane {
 			@Override
 			public void valueChanged(ListSelectionEvent e) {
 				int r = recipeDetailTable.getSelectedRow();
+				
 				int ri = recipeDetailTable.convertRowIndexToModel(r);
 				Object obj = recipeDetailTable.getValueAt(ri, 0);
 				if( obj != null && foodInd.containsKey( obj.toString() ) ) {
@@ -689,6 +724,7 @@ public class RecipePanel extends JSplitPane {
 					}
 					
 					RecipeIngredient rip = currentRecipe.ingredients.get(ri);
+					clearCombo = r;
 					skmtCombo.removeAllItems();
 					if( rip.values != null ) {
 						for( String str : rip.values.keySet() ) {
