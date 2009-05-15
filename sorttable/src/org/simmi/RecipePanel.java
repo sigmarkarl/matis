@@ -11,10 +11,10 @@ import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.awt.dnd.DropTargetListener;
 import java.awt.event.ActionEvent;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.BufferedReader;
@@ -24,10 +24,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -42,6 +44,7 @@ import javax.swing.DefaultCellEditor;
 import javax.swing.DropMode;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JDialog;
 import javax.swing.JEditorPane;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
@@ -49,6 +52,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
+import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.HyperlinkEvent;
@@ -67,7 +71,8 @@ public class RecipePanel extends JSplitPane {
 	FriendsPanel		fp;
 	Map<String,Map<String,String>> skmt = new HashMap<String,Map<String,String>>();
 	JComboBox 			skmtCombo;
-	int				clearCombo = -1;
+	int					clearCombo = -1;
+	char[]				cbuf = new char[2048];
 	
 	public class RecipeIngredient {
 		String	stuff;
@@ -189,17 +194,213 @@ public class RecipePanel extends JSplitPane {
 	
 	List<Recipe>	recipes;
 	Recipe			currentRecipe;
+	JDialog			dialog;
+	JTable			mailTable;
+	JScrollPane		scrollPane;
+	
+	public void checkMail() throws IOException {
+		URL url = new URL( "http://test.matis.is/isgem/getr.php" );
+		HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+		connection.setDoInput(true);
+		connection.setDoOutput(true);
+		connection.setRequestMethod("POST");
+		
+		Integer.toString( Math.abs( this.toString().hashCode()) );
+		String write = "user="+fp.currentUserId;
+		
+		connection.getOutputStream().write( write.getBytes() );
+		connection.getOutputStream().flush();
+		connection.getOutputStream().close();
+		
+		byte[] bb = new byte[8192];
+		connection.getInputStream().read(bb);
+		
+		String s = new String( bb );
+		final String[] ss = s.split("\n");
+		for( int i = 0; i < ss.length-1; i++ ) {
+			String str = ss[i];
+			String splt = str.split("\t")[0];
+			
+			url = new URL( "http://test.matis.is/isgem/getd.php" );
+			connection = (HttpURLConnection)url.openConnection();
+			connection.setDoInput(true);
+			connection.setDoOutput(true);
+			connection.setRequestMethod("POST");
+			
+			Integer.toString( Math.abs( this.toString().hashCode()) );
+			write = "recipe="+splt;
+			
+			connection.getOutputStream().write( write.getBytes() );
+			connection.getOutputStream().flush();
+			connection.getOutputStream().close();
+			
+			insertRecipe( new InputStreamReader( connection.getInputStream() ) );
+		}
+			
+		/*if( ss.length > 1 ) {
+			TableModel model = new TableModel() {
+				@Override
+				public void addTableModelListener(TableModelListener l) {
+					// TODO Auto-generated method stub
+					
+				}
+
+				@Override
+				public Class<?> getColumnClass(int columnIndex) {
+					return String.class;
+				}
+
+				@Override
+				public int getColumnCount() {
+					return 2;
+				}
+
+				@Override
+				public String getColumnName(int columnIndex) {
+					return "";
+				}
+
+				@Override
+				public int getRowCount() {
+					return ss.length-1;
+				}
+
+				@Override
+				public Object getValueAt(int rowIndex, int columnIndex) {
+					String[] str = ss[rowIndex].split("\t");
+					if( columnIndex < str.length ) return str[columnIndex];
+					
+					return "";
+				}
+
+				@Override
+				public boolean isCellEditable(int rowIndex, int columnIndex) {
+					// TODO Auto-generated method stub
+					return false;
+				}
+
+				@Override
+				public void removeTableModelListener(TableModelListener l) {
+					// TODO Auto-generated method stub
+					
+				}
+
+				@Override
+				public void setValueAt(Object aValue, int rowIndex,
+						int columnIndex) {
+				}
+				
+			};
+			mailTable.setModel( model );
+			dialog.setVisible( true );
+		}*/
+	}
+	
+	JTable	theTable;
+	JTable	theLeftTable;
+	public void insertRecipe( Reader r ) throws IOException {
+		int read = r.read(cbuf);
+		if( read > 0 ) {
+			String recipe = new String( cbuf, 0, read );
+			String[] spl = recipe.split("\n\n");
+			
+			Recipe rep = null;
+			if( spl.length >= 1 ) {
+				String[] split = spl[0].split("\n");
+				String about = split[2];
+				for( int i = 3; i < split.length; i++ ) {
+					about += split[i];
+				}
+				rep = new Recipe( split[0], split[1], split[2] );
+			}
+			
+			if( spl.length >= 2 ) {
+				String[] split = spl[1].split("\n");
+				for( String str : split ) {
+					String[] subspl = str.split("\t");
+					if( subspl.length > 2 ) {
+						rep.ingredients.add( new RecipeIngredient(subspl[0], Float.parseFloat(subspl[1]), subspl[2]) );
+					}
+				}
+			}
+			
+			if( spl.length >= 3 ) {
+				rep.desc = "";
+				int i;
+				for( i = 2; i < spl.length-1; i++ ) {
+					rep.desc += spl[i] + "\n\n";
+				}
+				System.err.println("jospl " + spl[i] );
+				rep.desc += spl[i];
+			}
+			
+			if( spl.length >= 1 ) {
+				boolean t = true;
+				int i = Math.abs( rep.toString().hashCode() );
+				for( Recipe rr : recipes ) {
+					int ri = Math.abs( rr.toString().hashCode() );
+					if( ri == i ) {
+						t = false;
+						break;
+					}
+				}
+				if( t ) recipes.add( rep );
+			}
+		
+			recipeTable.tableChanged( new TableModelEvent( recipeTable.getModel() ) );
+			theTable.tableChanged( new TableModelEvent( theTable.getModel() ) );
+			theLeftTable.tableChanged( new TableModelEvent( theLeftTable.getModel() ) );
+		}
+	}
 	
 	public RecipePanel( final FriendsPanel fp, final String lang, final JTable table, final JTable leftTable, final Map<String,Integer> foodNameInd ) throws IOException {
 		super( JSplitPane.VERTICAL_SPLIT );
 		this.setDividerLocation( 300 );
 		
+		theTable = table;
+		theLeftTable = leftTable;
+		
+		mailTable = new JTable();
+		scrollPane = new JScrollPane( mailTable );
+		dialog = new JDialog( SwingUtilities.getWindowAncestor( this ) );
+		dialog.setSize(400, 300);
+		dialog.add( scrollPane );
+		
+		this.addComponentListener( new ComponentListener(){
+		
+			@Override
+			public void componentShown(ComponentEvent e) {
+				try {
+					checkMail();
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+		
+			@Override
+			public void componentResized(ComponentEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+		
+			@Override
+			public void componentMoved(ComponentEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+		
+			@Override
+			public void componentHidden(ComponentEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+		});
+		
 		fillSkmt();
 		
 		this.fp = fp;
 		foodInd = foodNameInd;
-		
-		char[]	cbuf = new char[2048];
 		recipes = new ArrayList<Recipe>();
 		
 		File f = new File( System.getProperty("user.home"), ".isgem" );
@@ -208,45 +409,7 @@ public class RecipePanel extends JSplitPane {
 		if( ff != null ) {
 			for( File file : ff ) {
 				FileReader	fr = new FileReader( file );
-				int read = fr.read(cbuf);
-				String recipe = new String( cbuf, 0, read );
-				String[] spl = recipe.split("\n\n");
-				
-				Recipe rep = null;
-				if( spl.length >= 1 ) {
-					String[] split = spl[0].split("\n");
-					String about = split[2];
-					for( int i = 3; i < split.length; i++ ) {
-						about += split[i];
-					}
-					rep = new Recipe( split[0], split[1], split[2] );
-					recipes.add( rep );
-				}
-				
-				if( spl.length >= 2 ) {
-					String[] split = spl[1].split("\n");
-					for( String str : split ) {
-						String[] subspl = str.split("\t");
-						if( subspl.length > 2 ) {
-							rep.ingredients.add( new RecipeIngredient(subspl[0], Float.parseFloat(subspl[1]), subspl[2]) );
-						} else {
-							System.err.println( "ok " + str );
-						}
-					}
-				}
-				
-				if( spl.length >= 3 ) {
-					rep.desc = "";
-					int i;
-					for( i = 2; i < spl.length-1; i++ ) {
-						System.err.println("jospl " + spl[i] );
-						rep.desc += spl[i] + "\n\n";
-					}
-					System.err.println("jospl " + spl[i] );
-					rep.desc += spl[i];
-				}
-				
-				
+				insertRecipe( fr );	
 				//String str = rep.toString();
 				//System.err.println( str );
 				
@@ -490,13 +653,45 @@ public class RecipePanel extends JSplitPane {
 						}
 						
 						if( repSet.size() > 0 ) {
+							String yourId = fp.currentUserId;
+							
 							URL url = new URL( "http://test.matis.is/isgem/recipe.php" );
 							HttpURLConnection connection = (HttpURLConnection)url.openConnection();
 							connection.setDoInput(true);
 							connection.setDoOutput(true);
 							connection.setRequestMethod("POST");
 							
-							connection.getOutputStream().write( "ids=simmi".getBytes() );
+							Integer.toString( Math.abs( this.toString().hashCode()) );
+							String write = "user="+yourId+"&friends=";
+							
+							String data = "";
+							for( String str : ids ) {
+								if( str.equals( ids[ids.length-1] ) ) data += str;
+								else data += str+";";
+							}
+							write += URLEncoder.encode(data, "UTF8")+"&recipes=";
+							
+							data = "";
+							int i = 0;
+							for( Recipe r : repSet ) {
+								String rstr = r.toString();
+								String ival = Integer.toString( Math.abs( rstr.hashCode()) );
+								if( i < repSet.size()-1 ) data += ival+";";
+								else data += ival;
+								
+								i++;
+							}
+							write += URLEncoder.encode(data, "UTF8");
+							
+							for( Recipe r : repSet ) {
+								String rstr = r.toString();
+								String ival = Integer.toString( Math.abs( rstr.hashCode()) );
+								
+								write += "&"+ival+"=";
+								write += URLEncoder.encode(rstr, "UTF8");	
+							}
+							
+							connection.getOutputStream().write( write.getBytes() );
 							connection.getOutputStream().flush();
 							connection.getOutputStream().close();
 							

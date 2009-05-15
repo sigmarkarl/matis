@@ -146,133 +146,149 @@ public class SkifuGraph extends JComponent {
 			}*/
 			
 			int i = 0;
-			float total = 0.0f;
+			double total = 100.0;
 			for( float f : val ) {
+				if( !using.get(i++) ) {
+					total -= f;
+				}
+			}
+			/*for( float f : val ) {
 				if( using.get(i) ) total += f;
 				i++;
+			}*/
+			
+			//if( total > 0 ) {			
+			int torig = Math.min(w, h);
+			int t = (3*torig)/4;
+			
+			Paint p = g2.getPaint();
+			
+			float tot = 0.0f;
+			float last = 0.0f;
+			i = 0;
+			for( float f : val ) {
+				if( using.get(i) ) {
+					tot += f;
+					Color r1 = darker[i];
+					Color r2 = brighter[i];
+					GradientPaint gp = new GradientPaint( (w-t)/2, (h-t)/2, r1, (w+t)/2, (h+t)/2, r2 );
+					g2.setPaint( gp );
+					int n = (int)((last*360.0)/total);
+					int nn = (int)(((tot)*360.0)/total);
+					g2.fillArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
+					last = tot;
+				}
+				i++;
+			}
+			Color r1 = darker[i];
+			Color r2 = brighter[i];
+			GradientPaint gp = new GradientPaint( (w-t)/2, (h-t)/2, r1, (w+t)/2, (h+t)/2, r2 );
+			g2.setPaint( gp );
+			int n = (int)((last*360.0f)/total);
+			int nn = (int)(((total)*360.0f)/total);
+			g2.fillArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
+			//System.err.println();
+			
+			g2.setPaint(p);
+			
+			g2.setColor( Color.darkGray );
+			tot = 0.0f;
+			last = 0.0f;
+			i = 0;
+			for( float f : val ) {
+				if( using.get(i) ) {
+					tot += f;
+					n = (int)((last*360.0)/total);
+					nn = (int)(((tot)*360.0)/total);
+					g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
+					last = tot;
+				}
+				i++;
+			}
+			n = (int)Math.floor((last*360.0f)/total);
+			nn = (int)Math.ceil(((total)*360.0f)/total);
+			g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
+			last = tot;
+			
+			g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/40 ) );
+			tot = 0.0f;
+			last = 0.0f;
+			i = 0;
+			double tt = (5*torig)/6;
+			for( float f : val ) {
+				if( using.get(i) ) {
+					tot += f;
+					if( f > 1.0f ) {
+						double dn = -(last*2.0*Math.PI)/total;
+						double dnn = -((tot)*2.0*Math.PI)/total;
+						double hrn = (dn+dnn)/2.0;
+						
+						String fstr =  Float.toString(f);
+						int strw = g2.getFontMetrics().stringWidth( fstr );
+						int strh = g2.getFontMetrics().getHeight();
+						g2.drawString( fstr, (int)((w+tt*Math.cos(hrn)-strw)/2.0), (int)((h+tt*Math.sin(hrn)+strh)/2.0) );
+						//g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
+					}
+					last = tot;
+				}
+				i++;
+			}
+			float mun = (float)Math.floor( 10.0f*(total - last) )/10.0f;
+			if( mun > 1.0f ) {
+				double dn = -(last*2.0*Math.PI)/total;
+				double dnn = -((total)*2.0*Math.PI)/total;
+				double hrn = (dn+dnn)/2.0;
+				
+				String fstr =  Float.toString(mun);
+				int strw = g2.getFontMetrics().stringWidth( fstr );
+				int strh = g2.getFontMetrics().getHeight();
+				g2.drawString( fstr, (int)((w+tt*Math.cos(hrn)-strw)/2.0), (int)((h+tt*Math.sin(hrn)+strh)/2.0) );
+				//g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
 			}
 			
-			if( total > 0 ) {				
-				int torig = Math.min(w, h);
-				int t = (3*torig)/4;
-				
-				Paint p = g2.getPaint();
-				
-				float tot = 0.0f;
-				float last = 0.0f;
-				i = 0;
-				for( float f : val ) {
-					if( using.get(i) ) {
-						tot += f;
-						Color r1 = darker[i];
-						Color r2 = brighter[i];
-						GradientPaint gp = new GradientPaint( (w-t)/2, (h-t)/2, r1, (w+t)/2, (h+t)/2, r2 );
-						g2.setPaint( gp );
-						int n = (int)((last*360.0f)/total);
-						int nn = (int)(((tot)*360.0f)/total);
-						g2.fillArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
-						last = tot;
-					}
-					i++;
-				}
-				Color r1 = darker[i];
-				Color r2 = brighter[i];
-				GradientPaint gp = new GradientPaint( (w-t)/2, (h-t)/2, r1, (w+t)/2, (h+t)/2, r2 );
-				g2.setPaint( gp );
-				int n = (int)((last*360.0f)/total);
-				int nn = (int)(((total)*360.0f)/total);
-				g2.fillArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
-				//System.err.println();
-				
-				g2.setPaint(p);
-				
-				g2.setColor( Color.darkGray );
-				tot = 0.0f;
-				last = 0.0f;
-				i = 0;
-				for( float f : val ) {
-					if( using.get(i) ) {
-						tot += f;
-						n = (int)((last*360.0f)/total);
-						nn = (int)(((tot)*360.0f)/total);
-						g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
-						last = tot;
-					}
-					i++;
-				}
-				n = (int)Math.floor((last*360.0f)/total);
-				nn = (int)Math.ceil(((total)*360.0f)/total);
-				g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
-				last = tot;
-				
-				g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/40 ) );
-				tot = 0.0f;
-				last = 0.0f;
-				i = 0;
-				double tt = (5*torig)/6;
-				for( float f : val ) {
-					if( using.get(i) ) {
-						tot += f;
-						if( f > 1.0f ) {
-							double dn = -(last*2.0*Math.PI)/total;
-							double dnn = -((tot)*2.0*Math.PI)/total;
-							double hrn = (dn+dnn)/2.0;
-							
-							String fstr =  Float.toString(f);
-							int strw = g2.getFontMetrics().stringWidth( fstr );
-							int strh = g2.getFontMetrics().getHeight();
-							g2.drawString( fstr, (int)((w+tt*Math.cos(hrn)-strw)/2.0), (int)((h+tt*Math.sin(hrn)+strh)/2.0) );
-							//g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
-						}
-						last = tot;
-					}
-					i++;
-				}								
-				
-				int hh = h/30;
-				int a = 10;
-				for( i = 0; i < 4; i++ ) {
-					g2.setColor( darker[i] );
-					g2.fillRoundRect( (19*w)/20, ((i+1)*this.getHeight())/25-hh/2, hh, hh, a, a );
-					g2.setColor( Color.darkGray );
-					g2.drawRoundRect( (19*w)/20, ((i+1)*this.getHeight())/25-hh/2, hh, hh, a, a );
-					
-					if( !using.get(i) ) {
-						g2.drawLine((19*w)/20, ((i+1)*this.getHeight())/25-hh/2, (19*w)/20+hh, ((i+1)*this.getHeight())/25-hh/2+hh);
-						g2.drawLine((19*w)/20, ((i+1)*this.getHeight())/25-hh/2+hh, (19*w)/20+hh, ((i+1)*this.getHeight())/25-hh/2);
-					}
-					
-					String str = isNames[i];
-					int strw = g2.getFontMetrics().stringWidth(str);
-					g2.drawString(str, (19*w)/20-strw-hh/2, ((i+1)*this.getHeight())/25+hh/4 );
-				}
-				for( i = 4; i < 6; i++ ) {
-					g2.setColor( darker[i] );
-					g2.fillRoundRect( (19*w)/20, h-((i-2)*h)/25-hh/2, hh, hh, a, a );
-					g2.setColor( Color.darkGray );
-					g2.drawRoundRect( (19*w)/20, h-((i-2)*h)/25-hh/2, hh, hh, a, a );
-					
-					if( !using.get(i) ) {
-						g2.drawLine((19*w)/20, h-((i-2)*h)/25-hh/2, (19*w)/20+hh, h-((i-2)*h)/25-hh/2+hh);
-						g2.drawLine((19*w)/20, h-((i-2)*h)/25-hh/2+hh, (19*w)/20+hh, h-((i-2)*h)/25-hh/2);
-					}
-					
-					String str = isNames[i];
-					int strw = g2.getFontMetrics().stringWidth(str);
-					g2.drawString(str, (19*w)/20-strw-hh/2, this.getHeight()-((i-2)*this.getHeight())/25+hh/4 );
-				}
+			int hh = h/30;
+			int a = 10;
+			for( i = 0; i < 4; i++ ) {
 				g2.setColor( darker[i] );
-				g2.fillRoundRect( (19*w)/20, this.getHeight()-((i-5)*this.getHeight())/25-hh/2, hh, hh, a, a );
+				g2.fillRoundRect( (19*w)/20, ((i+1)*this.getHeight())/25-hh/2, hh, hh, a, a );
 				g2.setColor( Color.darkGray );
-				g2.drawRoundRect( (19*w)/20, this.getHeight()-((i-5)*this.getHeight())/25-hh/2, hh, hh, a, a );
-				if( !using.get(6) ) {
-					g2.drawLine((19*w)/20, h-((1)*h)/25-hh/2, (19*w)/20+hh, h-((1)*h)/25-hh/2+hh);
-					g2.drawLine((19*w)/20, h-((1)*h)/25-hh/2+hh, (19*w)/20+hh, h-((1	)*h)/25-hh/2);
-				}				
-				String str = "Annað";
+				g2.drawRoundRect( (19*w)/20, ((i+1)*this.getHeight())/25-hh/2, hh, hh, a, a );
+				
+				if( !using.get(i) ) {
+					g2.drawLine((19*w)/20, ((i+1)*this.getHeight())/25-hh/2, (19*w)/20+hh, ((i+1)*this.getHeight())/25-hh/2+hh);
+					g2.drawLine((19*w)/20, ((i+1)*this.getHeight())/25-hh/2+hh, (19*w)/20+hh, ((i+1)*this.getHeight())/25-hh/2);
+				}
+				
+				String str = isNames[i];
 				int strw = g2.getFontMetrics().stringWidth(str);
-				g2.drawString(str, (19*w)/20-strw-hh/2, this.getHeight()-((i-5)*this.getHeight())/25+hh/4 );
+				g2.drawString(str, (19*w)/20-strw-hh/2, ((i+1)*this.getHeight())/25+hh/4 );
 			}
+			for( i = 4; i < 6; i++ ) {
+				g2.setColor( darker[i] );
+				g2.fillRoundRect( (19*w)/20, h-((i-2)*h)/25-hh/2, hh, hh, a, a );
+				g2.setColor( Color.darkGray );
+				g2.drawRoundRect( (19*w)/20, h-((i-2)*h)/25-hh/2, hh, hh, a, a );
+				
+				if( !using.get(i) ) {
+					g2.drawLine((19*w)/20, h-((i-2)*h)/25-hh/2, (19*w)/20+hh, h-((i-2)*h)/25-hh/2+hh);
+					g2.drawLine((19*w)/20, h-((i-2)*h)/25-hh/2+hh, (19*w)/20+hh, h-((i-2)*h)/25-hh/2);
+				}
+				
+				String str = isNames[i];
+				int strw = g2.getFontMetrics().stringWidth(str);
+				g2.drawString(str, (19*w)/20-strw-hh/2, this.getHeight()-((i-2)*this.getHeight())/25+hh/4 );
+			}
+			g2.setColor( darker[i] );
+			g2.fillRoundRect( (19*w)/20, this.getHeight()-((i-5)*this.getHeight())/25-hh/2, hh, hh, a, a );
+			g2.setColor( Color.darkGray );
+			g2.drawRoundRect( (19*w)/20, this.getHeight()-((i-5)*this.getHeight())/25-hh/2, hh, hh, a, a );
+			if( !using.get(6) ) {
+				g2.drawLine((19*w)/20, h-((1)*h)/25-hh/2, (19*w)/20+hh, h-((1)*h)/25-hh/2+hh);
+				g2.drawLine((19*w)/20, h-((1)*h)/25-hh/2+hh, (19*w)/20+hh, h-((1	)*h)/25-hh/2);
+			}				
+			String str = "Ekki mælt";
+			int strw = g2.getFontMetrics().stringWidth(str);
+			g2.drawString(str, (19*w)/20-strw-hh/2, this.getHeight()-((i-5)*this.getHeight())/25+hh/4 );
 		}
 	}
 }

@@ -33,6 +33,7 @@ public class VApplet extends JApplet {
 	Image				img;
 	Image				mimg;
 	Image				fimg;
+	Image				kimg;
 	final Color			darkGray = new Color( 16,16,16 );
 	final Color			lightGray = new Color( 32,32,32 );
 	List<FancyButton> 	buttons;
@@ -55,6 +56,8 @@ public class VApplet extends JApplet {
 			mimg = ImageIO.read( url );
 			url = this.getClass().getResource("/fiskur.png");
 			fimg = ImageIO.read( url );
+			url = this.getClass().getResource("/bkl.png");
+			kimg = ImageIO.read( url );
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -158,6 +161,10 @@ public class VApplet extends JApplet {
 				g2.drawString( text, 17, 28 );
 				g2.setColor( Color.white );
 				g2.drawString( text, 15, 26 );
+				
+				if( this == buttons.get(0) ) {
+					g2.drawImage( kimg, (w-kimg.getWidth(this))/2, (h-kimg.getHeight(this))/2, this);
+				}
 			} else {
 				Paint p = g2.getPaint();
 				GradientPaint gp = new GradientPaint(0.0f, 0.0f, lightGray, 0.0f, h, darkGray );

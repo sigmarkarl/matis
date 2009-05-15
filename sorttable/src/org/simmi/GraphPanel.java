@@ -1,5 +1,6 @@
 package org.simmi;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
@@ -9,6 +10,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Paint;
 import java.awt.RenderingHints;
+import java.awt.Stroke;
 import java.awt.Toolkit;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -65,6 +67,7 @@ public class GraphPanel extends JTabbedPane {
 		return f;
 	}
 	
+	Font font;
 	public GraphPanel( final RdsPanel rdsPanel, final String lang, JTable[]	tables, TableModel model, TableModel topModel ) {
 		super( JTabbedPane.RIGHT, JTabbedPane.WRAP_TAB_LAYOUT );
 		
@@ -77,6 +80,7 @@ public class GraphPanel extends JTabbedPane {
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		final PrintStream ps = new PrintStream( baos );
 		
+		font = new Font("Arial", Font.BOLD, this.getHeight()/40 );
 		energy = new JComponent() {
 			public void paintComponent( Graphics g ) {
 				super.paintComponent( g );
@@ -90,9 +94,16 @@ public class GraphPanel extends JTabbedPane {
 					Object oval = leftTable.getValueAt(row, 1);
 					
 					g2.setColor(Color.darkGray);
-					g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/30 ) );
+					
+					int htest = this.getHeight()/40;
+					if( font.getSize() != htest ) font = new Font("Arial", Font.BOLD, this.getHeight()/40 );
+					g2.setFont( font );
 					if( oval != null ) {
-						g2.drawString( oval.toString(), 10, this.getHeight()/20 );
+						String sval = oval.toString();
+						if( sval.length() > 25 ) {
+							sval = sval.substring(0, 22)+"...";
+						}
+						g2.drawString( sval, 10, this.getHeight()/25 );
 					}
 					
 					String enStr = "";
@@ -101,8 +112,7 @@ public class GraphPanel extends JTabbedPane {
 					} else {
 						enStr = "Energy (in 100g)";
 					}
-					g2.drawString( enStr, 10, (int)(this.getHeight()/11.7) );
-					g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/30 ) );
+					g2.drawString( enStr, 10, (int)(this.getHeight()/13.7) );
 					
 					if( row >= 0 ) {					
 						float alc = 0.0f;
@@ -122,35 +132,40 @@ public class GraphPanel extends JTabbedPane {
 							fat = stuffYou(row, "FAT");
 						}
 						
+						double alco = alc*29.0;
+						double prto = prt*17.0;
+						double cbho = cbh*17.0;
+						double fato = fat*37.0;
+						double f = (17.0*prt + 17.0*cbh + 37.0*fat + 29.0*alc)*10.0;
+						
 						if( lang.equals("IS") ) {
-							float f = (17.0f*prt + 17.0f*cbh + 37.0f*fat + 29.0f*alc)*10.0f;
 							if( f > 0 ) {
-								float fv = Math.round( f )/100.0f;
-								float fcal = f/4.184f;
-								float fvcal = Math.round( fcal )/100.0f;
+								double fv = Math.round( f )/100.0;
+								double fcal = f/4.184;
+								double fvcal = Math.round( fcal )/100.0;
 								
 								ps.flush();
 								baos.reset();
 								ps.printf( "%.1f %s", fvcal, " kCal" );
 								String calStr = baos.toString();
 								int strw = g.getFontMetrics().stringWidth(calStr);
-								g2.drawString(calStr, 10, this.getHeight()/8 );
+								g2.drawString(calStr, 10, this.getHeight()/9 );
 								
 								ps.flush();
 								baos.reset();
 								ps.printf(" (%.1f %s)", fv, "kJ" );
 								String kjStr = baos.toString();
-								g2.drawString(kjStr, 15+strw, this.getHeight()/8 );
+								g2.drawString(kjStr, 15+strw, this.getHeight()/9 );
 							}
 						} else {
-							float f = stuffYou( row, "ENERC_KJ" );
-							if( f > 0 ) {
-								g2.drawString(f+" kJ", 10, this.getHeight()/10 );
+							float ff = stuffYou( row, "ENERC_KJ" );
+							if( ff > 0 ) {
+								g2.drawString(ff+" kJ", 10, this.getHeight()/10 );
 							}
 							
-							f = stuffYou( row, "ENERC_KCAL" );
-							if( f > 0 ) {
-								g2.drawString(f+" kCal", 10, this.getHeight()/7 );
+							ff = stuffYou( row, "ENERC_KCAL" );
+							if( ff > 0 ) {
+								g2.drawString(ff+" kCal", 10, this.getHeight()/7 );
 							}
 						}
 						
@@ -257,20 +272,47 @@ public class GraphPanel extends JTabbedPane {
 								int bil = w/30;
 								
 								g.setColor( Color.darkGray );
-								g.drawLine( (w-tw)/2, (h-th)/2, (w-tw)/2, (h+th)/2);
+								g.drawLine( (w-tw)/2, (h-th)/2+10, (w-tw)/2, (h+th)/2);
 								g.drawLine( (w-tw)/2, (h+th)/2, (w+tw)/2, (h+th)/2);
 								
 								g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/40 ) );
+								
+								int hh = (h+th)/2;
+								String str = "g";
+								int strw = g.getFontMetrics().stringWidth(str);
+								g.setColor( Color.darkGray );
+								g.drawString( str, (w-tw)/2-strw-10, hh);
 								for( int i = 1; i < 10; i++ ) {
-									int hh = (h+th)/2-(i*th)/10;
-									String str = (i*10.0f)+"g";
-									int strw = g.getFontMetrics().stringWidth(str);
+									hh = (h+th)/2-(i*th)/10;
+									str = i*10.0f+"";
+									strw = g.getFontMetrics().stringWidth(str);
 									g.setColor( Color.darkGray );
 									g.drawString( str, (w-tw)/2-strw-10, hh);
 									g.setColor( Color.lightGray );
 									g.drawLine( (w-tw)/2, hh, (w+tw)/2, hh );
 								}
 								
+								Stroke stroke = g2.getStroke();
+								float[] ff = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+								BasicStroke bs = new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1.0f, ff, 0.0f);
+								g2.setStroke( bs );
+								
+								hh = (h+th)/2;
+								str = "kCal";
+								strw = g.getFontMetrics().stringWidth(str);
+								g.setColor( Color.darkGray );
+								g.drawString( str, (w+tw)/2+10, hh);
+								for( int i = 100; i < 900; i+=100 ) {
+									hh = (int)((h+th)/2-(i*th)/884.0);
+									str = i+"";
+									strw = g.getFontMetrics().stringWidth(str);
+									g.setColor( Color.darkGray );
+									g.drawString( str, (w+tw)/2+10, hh);
+									g.setColor( Color.lightGray );
+									g.drawLine( (w-tw)/2, hh, (w+tw)/2, hh );
+								}
+								
+								g2.setStroke( stroke );
 								Paint p = g2.getPaint();
 								
 								Color aGray1 = new Color( 220, 220, 220, 224 );
@@ -286,57 +328,73 @@ public class GraphPanel extends JTabbedPane {
 								g2.setPaint( gp );
 								//int n = (int)((alc*360.0f)/total);
 								int val = (int)(th*alc/100.0);
-								g2.fillRect( (w-tnrw)/2-bil, (h+th)/2-val, 2*bil, val );
+								g2.fillRect( (w-tnrw)/2-bil, (h+th)/2-val, bil, val );
+								int val2 = (int)(th*alco/3700.0);
+								g2.fillRect( (w-tnrw)/2, (h+th)/2-val2, bil, val2 );
 								
 								gp = new GradientPaint( (w-tnrw)/2-2*bil/3, 0, aGray1, (w-tnrw)/2, 0, aGray2 );
 								g2.setPaint( gp );
-								g2.fillRect( (w-tnrw)/2-2*bil/3, (h+th)/2-val, 2*bil/3, val );
+								g2.fillRect( (w-tnrw)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
+								g2.fillRect( (w-tnrw)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
 								
 								g2.setPaint(p);
 								g2.setColor( Color.darkGray );
-								g2.drawRect( (w-tnrw)/2-bil, (h+th)/2-val, 2*bil, val );
+								g2.drawRect( (w-tnrw)/2-bil, (h+th)/2-val, bil, val );
+								g2.drawRect( (w-tnrw)/2, (h+th)/2-val2, bil, val2 );
 								
 								Color gn = new Color( 150, 250, 150 );
 								gp = new GradientPaint( (w-tnrw/3)/2-bil, 0, g1, (w-tnrw/3)/2+bil, 0, gn );
 								g2.setPaint( gp );
 								val = (int)(th*prt/100.0);
-								g2.fillRect( (w-tnrw/3)/2-bil, (h+th)/2-val, 2*bil, val );
+								g2.fillRect( (w-tnrw/3)/2-bil, (h+th)/2-val, bil, val );
+								val2 = (int)(th*prto/3700.0);
+								g2.fillRect( (w-tnrw/3)/2, (h+th)/2-val2, bil, val2 );
 								
 								gp = new GradientPaint( (w-tnrw/3)/2-2*bil/3, 0, aGray1, (w-tnrw/3)/2, 0, aGray2 );
 								g2.setPaint( gp );
-								g2.fillRect( (w-tnrw/3)/2-2*bil/3, (h+th)/2-val, 2*bil/3, val );
+								g2.fillRect( (w-tnrw/3)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
+								g2.fillRect( (w-tnrw/3)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
 								
 								g2.setPaint(p);
 								g2.setColor( Color.darkGray );
-								g2.drawRect( (w-tnrw/3)/2-bil, (h+th)/2-val, 2*bil, val );
+								g2.drawRect( (w-tnrw/3)/2-bil, (h+th)/2-val, bil, val );
+								g2.drawRect( (w-tnrw/3)/2, (h+th)/2-val2, bil, val2 );
 								
 								Color b2 = new Color( 150, 150, 250 );
 								gp = new GradientPaint( (w+tnrw/3)/2-bil, 0, b1, (w+tnrw/3)/2+bil, 0, b2 );
 								g2.setPaint( gp );
 								val = (int)(th*cbh/100.0);
-								g2.fillRect( (w+tnrw/3)/2-bil, (h+th)/2-val, 2*bil, val );
+								g2.fillRect( (w+tnrw/3)/2-bil, (h+th)/2-val, bil, val );
+								val2 = (int)(th*cbho/3700.0);
+								g2.fillRect( (w+tnrw/3)/2, (h+th)/2-val2, bil, val2 );
 								
 								gp = new GradientPaint( (w+tnrw/3)/2-2*bil/3, 0, aGray1, (w+tnrw/3)/2, 0, aGray2 );
 								g2.setPaint( gp );
-								g2.fillRect( (w+tnrw/3)/2-2*bil/3, (h+th)/2-val, 2*bil/3, val );
+								g2.fillRect( (w+tnrw/3)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
+								g2.fillRect( (w+tnrw/3)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
 								
 								g2.setPaint(p);
 								g2.setColor( Color.darkGray );
-								g2.drawRect( (w+tnrw/3)/2-bil, (h+th)/2-val, 2*bil, val );
+								g2.drawRect( (w+tnrw/3)/2-bil, (h+th)/2-val, bil, val );
+								g2.drawRect( (w+tnrw/3)/2, (h+th)/2-val2, bil, val2 );
 								
 								Color y2 = new Color( 250, 250, 150 );
 								gp = new GradientPaint( (w+tnrw)/2-bil, 0, y1, (w+tnrw)/2+bil, 0, y2 );
 								g2.setPaint( gp );
 								val = (int)(th*fat/100.0);
-								g2.fillRect( (w+tnrw)/2-bil, (h+th)/2-val, 2*bil, val );
+								g2.fillRect( (w+tnrw)/2-bil, (h+th)/2-val, bil, val );
+								val2 = (int)(th*fato/3700.0);
+								g2.fillRect( (w+tnrw)/2, (h+th)/2-val2, bil, val2 );
 								
 								gp = new GradientPaint( (w+tnrw)/2-2*bil/3, 0, aGray1, (w+tnrw)/2, 0, aGray2 );
 								g2.setPaint( gp );
-								g2.fillRect( (w+tnrw)/2-2*bil/3, (h+th)/2-val, 2*bil/3, val );
+								g2.fillRect( (w+tnrw)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
+								g2.fillRect( (w+tnrw)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
 								
 								g2.setPaint(p);
 								g2.setColor( Color.darkGray );
-								g2.drawRect( (w+tnrw)/2-bil, (h+th)/2-val, 2*bil, val );
+								g2.drawRect( (w+tnrw)/2-bil, (h+th)/2-val, bil, val );
+								g2.drawRect( (w+tnrw)/2, (h+th)/2-val2, bil, val2 );
 								
 								/*g2.setColor( Color.darkGray );
 								n = (int)((alc*360.0f)/total);
@@ -351,28 +409,27 @@ public class GraphPanel extends JTabbedPane {
 								g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );*/
 								
 								int a = 10;
-								int hh = this.getHeight()/30;
+								hh = this.getHeight()/30;
 								g2.setColor( r1 );
 								g2.fillRoundRect( (19*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
 								g2.setColor( g1 );
 								g2.fillRoundRect( (19*w)/20, (2*this.getHeight())/25-hh/2, hh, hh, a, a );
 								g2.setColor( b1 );
-								g2.fillRoundRect( (19*w)/20, (3*this.getHeight())/25-hh/2, hh, hh, a, a );
+								g2.fillRoundRect( (15*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
 								g2.setColor( y1 );
-								g2.fillRoundRect( (19*w)/20, (4*this.getHeight())/25-hh/2, hh, hh, a, a );
+								g2.fillRoundRect( (15*w)/20, (2*this.getHeight())/25-hh/2, hh, hh, a, a );
 								
 								g2.setColor( Color.darkGray );
 								g2.drawRoundRect( (19*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
 								g2.drawRoundRect( (19*w)/20, (2*this.getHeight())/25-hh/2, hh, hh, a, a );
-								g2.drawRoundRect( (19*w)/20, (3*this.getHeight())/25-hh/2, hh, hh, a, a );
-								g2.drawRoundRect( (19*w)/20, (4*this.getHeight())/25-hh/2, hh, hh, a, a );
+								g2.drawRoundRect( (15*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
+								g2.drawRoundRect( (15*w)/20, (2*this.getHeight())/25-hh/2, hh, hh, a, a );
 								
 								g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/40 ) );
 								g2.setColor( Color.darkGray );
-								String str;
 								if( lang.equals("IS") ) str = "Alkóhól";
 								else str = "Alcohol";
-								int strw = g2.getFontMetrics().stringWidth(str);
+								strw = g2.getFontMetrics().stringWidth(str);
 								g2.drawString(str, (19*w)/20-strw-hh/2, (1*this.getHeight())/25+hh/4 );
 								if( lang.equals("IS") ) str = "Prótein";
 								else str = "Protein";
@@ -381,11 +438,11 @@ public class GraphPanel extends JTabbedPane {
 								if( lang.equals("IS") ) str = "Kolvetni";
 								else str = "Carbohydrates";
 								strw = g2.getFontMetrics().stringWidth(str);
-								g2.drawString(str, (19*w)/20-strw-hh/2, (3*this.getHeight())/25+hh/4 );
+								g2.drawString(str, (15*w)/20-strw-hh/2, (1*this.getHeight())/25+hh/4 );
 								if( lang.equals("IS") ) str = "Fita";
 								else str = "Fat";
 								strw = g2.getFontMetrics().stringWidth(str);
-								g2.drawString(str, (19*w)/20-strw-hh/2, (4*this.getHeight())/25+hh/4 );
+								g2.drawString(str, (15*w)/20-strw-hh/2, (2*this.getHeight())/25+hh/4 );
 							}
 						}
 					}

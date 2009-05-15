@@ -48,9 +48,10 @@ import org.netbeans.saas.RestResponse;
 
 public class FriendsPanel extends JScrollPane {
 	private final String apiKey = "d8993947d6a37b4bf754d2a578025c31";
-	private final String secret = "c9577f5b3a6c03abb63ebdadb39feea5";
+	private final String secret = "";
 	
 	String currentUser = "Velja höfund";
+	String currentUserId = "0";
 	
 	List<Object[]>	friendList = new ArrayList<Object[]>();
 	JTable table = new JTable();
@@ -207,7 +208,10 @@ public class FriendsPanel extends JScrollPane {
 			final String userid = xmling.substring( xmling.indexOf("<uid>")+5, xmling.lastIndexOf("</uid>") );
 			fres[0] = userid;
 			String uname = xmling.substring( xmling.indexOf("<name>")+6, xmling.lastIndexOf("</name>") );
-			if( i == 0 ) currentUser = uname;
+			if( i == 0 ) {
+				currentUser = uname;
+				currentUserId = userid;
+			}
 			fres[2] = uname;
 			
 			int start = xmling.indexOf("<sex>")+5;

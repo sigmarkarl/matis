@@ -16,7 +16,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -98,6 +97,37 @@ public class ImagePanel extends JComponent {
 			}
 		}
 	}
+	
+	Set<String>	vals = new HashSet<String>();
+	Thread t = null;
+	public void threadRun( final String val, final String oname ) {
+		if( !vals.contains( val ) ) {
+			vals.add( val );
+			t = new Thread() {
+				public void run() {
+					String path;
+					try {
+						path = "http://test.matis.is/isgem/myndir/"+val;//URLEncoder.encode(iName,"UTF-8");
+						URL url = new URL( path );
+						img = ImageIO.read(url);
+						imageCache.put(val, img);
+						imageNameCache.put(oname, val);
+						vals.remove( val );
+					} catch (UnsupportedEncodingException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (MalformedURLException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			};
+			t.start();
+		}
+	}
 
 	public void tryName( String oName ) {
 		if( imageNameCache.containsKey(oName) ) {
@@ -143,25 +173,10 @@ public class ImagePanel extends JComponent {
 			if( val != null ) {
 				if( imageCache.containsKey(val) ) {
 					img = imageCache.get(val);
+					imageNameCache.put(oName, val);
 				} else {
-					String path;
-					try {
-						path = "http://test.matis.is/isgem/myndir/"+val;//URLEncoder.encode(iName,"UTF-8");
-						URL url = new URL( path );
-						img = ImageIO.read(url);
-						imageCache.put(val, img);
-					} catch (UnsupportedEncodingException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (MalformedURLException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+					threadRun(val,oName);
 				}
-				imageNameCache.put(oName, val);
 			}
 		}
 	}

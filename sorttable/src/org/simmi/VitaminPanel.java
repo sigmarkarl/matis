@@ -73,15 +73,13 @@ public class VitaminPanel extends JComponent {
 		g2.setRenderingHint( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON );
 		g2.setRenderingHint( RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON );
 		
-		g2.setColor(Color.darkGray);
-		g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/30 ) );
-		
+		g2.setColor(Color.darkGray);		
 		int row = leftTable.getSelectedRow();
 		if( row >= 0 ) {
 			Object oval = leftTable.getValueAt(row, 1);
 			
 			g2.setColor(Color.darkGray);
-			g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/30 ) );
+			g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/40 ) );
 			if( oval != null ) {
 				g2.drawString(oval.toString(), 10, this.getHeight()/12 );
 			}
@@ -98,10 +96,12 @@ public class VitaminPanel extends JComponent {
 			int h = this.getHeight();
 			
 			//int t = Math.min(w, h);
-			int th = (3*h)/4;
+			int th = (3*h)/5;
 			int tw = (3*w)/4;
 			int tnrw = (1*w)/2;
 			int bil = w/40;
+			
+			g.translate(0, 30);
 			
 			g.setColor( Color.darkGray );
 			g.drawLine( (w-tw)/2, (h-th)/2, (w-tw)/2, (h+th)/2);
@@ -342,6 +342,8 @@ public class VitaminPanel extends JComponent {
 					g.drawLine( (w-tw)/2, hh, (w+tw)/2, hh );
 				}
 			}
+			
+			g.translate(0, -30);
 			
 			String str;
 			g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/40 ) );

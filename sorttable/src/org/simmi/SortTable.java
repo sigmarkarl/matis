@@ -1168,7 +1168,23 @@ public class SortTable extends JApplet {
 								Object		val = obj[ realColumnIndex+2 ];
 								if( val != null && val instanceof Float ) {
 									float d = rip.measure;
-									if( rip.unit.equals("mg") ) d /= 1000.0f;
+									if( !rip.unit.equals("g") ) {
+										String ru = rip.unit;
+										int f = ru.indexOf("(");
+										int n = ru.indexOf(")");
+										if( n > f && f != -1 ) {
+											String subbi = ru.substring(f+1, n);
+											if( subbi.endsWith("g") ) subbi = subbi.substring(0, subbi.length()-1);
+											
+											float fl = 0.0f;
+											try {
+												fl = Float.parseFloat( subbi );
+											} catch( Exception e ) {
+												
+											}
+											d *= fl;
+										}
+									}
 									tot += d;
 									
 									float f = (((Float)val) * d) / 100.0f;
@@ -1269,6 +1285,9 @@ public class SortTable extends JApplet {
 			if( fp != null ) tabbedPane.addTab( "Vinir", fp );
 			tabbedPane.addTab( "Mataræði og Hreyfing", eat );
 			tabbedPane.addTab( "Innkaup og kostnaður", buy );
+			
+			tabbedPane.setEnabledAt( tabbedPane.getTabCount()-2, false );
+			tabbedPane.setEnabledAt( tabbedPane.getTabCount()-1, false );
 		} else {
 			tabbedPane.addTab( "List", rightSplitPane );
 			//tabbedPane.addTab( "Image", imgPanel );
