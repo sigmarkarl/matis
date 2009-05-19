@@ -199,7 +199,6 @@ public class VitaminPanel extends JComponent {
 						lval = Math.max( 0.01, lval );
 						lval = Math.min( 100.0, lval );
 						lval = Math.log10( lval );
-						System.err.println( lval );
 						int val = (int)(th*lval/4.0);
 						
 						int hs = Math.min( start, start-val );

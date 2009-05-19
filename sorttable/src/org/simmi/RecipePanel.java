@@ -1,7 +1,9 @@
 package org.simmi;
 
+import java.awt.BorderLayout;
 import java.awt.Desktop;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Rectangle;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
@@ -39,9 +41,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TooManyListenersException;
 
+import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.DefaultCellEditor;
 import javax.swing.DropMode;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
@@ -419,8 +424,7 @@ public class RecipePanel extends JSplitPane {
 		
 		JScrollPane	recipeScroll = new JScrollPane();
 		
-		JPopupMenu	popup = new JPopupMenu();
-		popup.add( new AbstractAction("Nýja uppskrift"){
+		AbstractAction nu = new AbstractAction("Nýja uppskrift"){
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				recipes.add( new Recipe("Velja nafn", "Velja hóp", fp.currentUser) );
@@ -430,7 +434,10 @@ public class RecipePanel extends JSplitPane {
 				table.tableChanged( new TableModelEvent( table.getModel() ) );
 				leftTable.tableChanged( new TableModelEvent( leftTable.getModel() ) );
 			}
-		});		
+		};
+		
+		JPopupMenu	popup = new JPopupMenu();
+		popup.add( nu );		
 		recipeScroll.setComponentPopupMenu( popup );
 		recipeTable.setComponentPopupMenu( popup );
 		
@@ -611,7 +618,7 @@ public class RecipePanel extends JSplitPane {
 			
 		};
 		
-		popup.add( new AbstractAction("Eyða uppskrift/um") {
+		AbstractAction eu = new AbstractAction("Eyða uppskrift/um") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				int[]	rr = recipeTable.getSelectedRows();
@@ -637,9 +644,11 @@ public class RecipePanel extends JSplitPane {
 				table.tableChanged( new TableModelEvent( table.getModel() ) );
 				leftTable.tableChanged( new TableModelEvent( leftTable.getModel() ) );				
 			}
-		});
+		};
+		popup.add( eu );
 		popup.addSeparator();
-		popup.add( new AbstractAction("Senda völdum vinum") {
+		
+		AbstractAction du = new AbstractAction("Senda völdum vinum") {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				String[]	ids = fp.getSelectedFriendsIds();
@@ -717,7 +726,8 @@ public class RecipePanel extends JSplitPane {
 					}
 				} else 	JOptionPane.showMessageDialog(RecipePanel.this, "Engir vinir valdir");
 			}
-		});
+		};
+		popup.add( du );
 		
 		recipeDetailTable.addKeyListener( new KeyListener() {
 			@Override
@@ -1023,8 +1033,32 @@ public class RecipePanel extends JSplitPane {
 		JComponent	recipeImage = new JComponent() {
 			
 		};
-		recipeImage.setPreferredSize( new Dimension(100,100) );		
-		JSplitPane	recipeSplit = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT, recipeScroll, recipeDetailScroll );
+		recipeImage.setPreferredSize( new Dimension(100,100) );
+		
+		JButton	addRecipeButton = new JButton( nu );
+		addRecipeButton.setText("");
+		addRecipeButton.setToolTipText("Nýja Uppskrift");
+		addRecipeButton.setIcon( new ImageIcon( ImageIO.read( this.getClass().getResource("/nu.png") ) ) );
+		JButton	removeRecipeButton = new JButton( eu );
+		removeRecipeButton.setText("");
+		removeRecipeButton.setToolTipText("Eyða Uppskrift");
+		removeRecipeButton.setIcon( new ImageIcon( ImageIO.read( this.getClass().getResource("/eu.png") ) ) );
+		JButton	shareRecipeButton = new JButton( du );
+		shareRecipeButton.setText("");
+		shareRecipeButton.setToolTipText("Deila Uppskrift");
+		shareRecipeButton.setIcon( new ImageIcon( ImageIO.read( this.getClass().getResource("/du.png") ) ) );
+		JComponent recipeButtons = new JComponent() {};
+		recipeButtons.setLayout( new FlowLayout() );
+		recipeButtons.add( addRecipeButton );
+		recipeButtons.add( removeRecipeButton );
+		recipeButtons.add( shareRecipeButton );
+		
+		JComponent recipeTmpScroll = new JComponent() {};
+		recipeTmpScroll.setLayout( new BorderLayout() );
+		recipeTmpScroll.add( recipeScroll );
+		recipeTmpScroll.add( recipeButtons, BorderLayout.SOUTH );
+		
+		JSplitPane	recipeSplit = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT, recipeTmpScroll, recipeDetailScroll );
 		recipeSplit.setDividerLocation( 300 );
 		JSplitPane  recipeInfoSplit = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT, recipeImage, recipeInfoPane );
 		//JSplitPane	recipe = new JSplitPane( JSplitPane.VERTICAL_SPLIT, recipeSplit, recipeInfoSplit );

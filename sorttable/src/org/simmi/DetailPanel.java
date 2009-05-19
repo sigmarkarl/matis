@@ -240,6 +240,13 @@ public class DetailPanel extends JSplitPane {
 				if( columnIndex == 0 ) return ngroupList.get( rowIndex );
 				else if( columnIndex == 1 ) {
 					String ind = ngroupGroups.get( rowIndex );
+					if( ind.equals("1") ) {
+						String colVal = ngroupList.get( rowIndex );
+						if( colVal.equals("Fita, alls") || colVal.equals("Prótein, alls") || colVal.equals("Kolvetni, alls") || colVal.equals("Alkóhól") ) {
+							return "Orkuefni";
+						}
+					}
+					
 					if( groupMap.containsKey(ind) ) {
 						return groupMap.get( ind );
 					} else return "Óþekkt";
@@ -288,6 +295,34 @@ public class DetailPanel extends JSplitPane {
 					}
 				} else if( columnIndex == 4 ) {
 					String efni = ngroupList.get( rowIndex );
+					if( efni.equals("Fita, alls") ) {
+						String 	val = rdsp.getRds( "Orka-Venjul/kCal" );
+						int		kcal = Integer.parseInt( val );
+						double	kj = 4.184*kcal;
+						double	d = kj*0.3;
+						double	g = d / 37.0;
+						return (float)(Math.floor(10.0*g)/10.0);
+					} else if( efni.equals("Prótein, alls") ) {
+						String 	val = rdsp.getRds( "Orka-Venjul/kCal" );
+						int		kcal = Integer.parseInt( val );
+						double	kj = 4.184*kcal;
+						double	d = kj*0.15;
+						double	g = d / 17.0;
+						return (float)(Math.floor(10.0*g)/10.0);
+					} else if( efni.equals("Kolvetni, alls") ) {
+						String 	val = rdsp.getRds( "Orka-Venjul/kCal" );
+						int		kcal = Integer.parseInt( val );
+						double	kj = 4.184*kcal;
+						double	d = kj*0.55;
+						double	g = d / 17.0;
+						return (float)(Math.floor(10.0*g)/10.0);
+					}/*else if( efni.equals("Alkóhól, alls") ) {
+						String 	val = rdsp.getRds( "Orka-Venjul/kCal" );
+						int		kcal = Integer.parseInt( val );
+						double	kj = 4.184*kcal;
+						double	d = kj*0.3;
+						double	g = d / 37.0;
+					}*/
 					String[] split = efni.split("[,-]+");
 					Object[]	obj = stuff.get(1);
 					Object ostr = obj[ rowIndex+2 ];

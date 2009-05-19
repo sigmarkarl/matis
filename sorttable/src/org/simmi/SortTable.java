@@ -1315,9 +1315,9 @@ public class SortTable extends JApplet {
 		ed.setContentType("text/html");
 		ed.setEditable( false );
 		ed.setText("<html><body><center><table cellpadding=0><tr><td><img src=\"http://test.matis.is/isgem/Matis_logo.jpg\" hspace=\"5\" width=\"32\" height=\"32\">"
-			+"</td><td align=\"center\"><a href=\"http://www.matis.is\">Matís ehf.</a> - Skúlagata 4 | 101 Reykjavík - Sími 422 50 00 | Fax 422 50 01 - <a href=\"mailto:matis@matis.is\">matis@matis.is</a><br><a href=\"http://www.matis.is/ISGEM/is/skyringar/\">Hjálp</a> - "
-			+((sessionKey == null || sessionKey.length() == 0)?"<a href=\"http://test.matis.is/isgem/applet.php\">Allur glugginn</a>":"<a href=\"http://apps.facebook.com/matisgem\">Facebook</a>")
-			+" - <a href=\"dark\">Dark</a> - <a href=\"light\">Light</a>"
+			+"</td><td align=\"center\"><a href=\"http://www.matis.is\">Matís ehf.</a> - Borgartún 21 | 105 Reykjavík - Sími 422 50 00 | Fax 422 50 01 - <a href=\"mailto:matis@matis.is\">matis@matis.is</a><br><a href=\"http://www.matis.is/ISGEM/is/skyringar/\">Hjálp</a> - "
+			+((sessionKey != null && sessionKey.length() > 1)?"<a href=\"http://test.matis.is/isgem/applet.php\">Allur glugginn</a>":"<a href=\"http://apps.facebook.com/matisgem\">Facebook</a>")
+			//+" - <a href=\"dark\">Dark</a> - <a href=\"light\">Light</a>"
 			+"</td></tr></table></center></body></html>");
 		Dimension d = new Dimension(1000,42);
 		ed.setPreferredSize( d );

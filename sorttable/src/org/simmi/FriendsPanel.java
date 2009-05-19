@@ -48,7 +48,7 @@ import org.netbeans.saas.RestResponse;
 
 public class FriendsPanel extends JScrollPane {
 	private final String apiKey = "d8993947d6a37b4bf754d2a578025c31";
-	private final String secret = "";
+	private final String secret = "c9577f5b3a6c03abb63ebdadb39feea5";
 	
 	String currentUser = "Velja höfund";
 	String currentUserId = "0";

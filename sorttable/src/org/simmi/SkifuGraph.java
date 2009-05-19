@@ -147,11 +147,16 @@ public class SkifuGraph extends JComponent {
 			
 			int i = 0;
 			double total = 100.0;
+			double sum = 0.0;
 			for( float f : val ) {
 				if( !using.get(i++) ) {
 					total -= f;
+				} else {
+					sum += f;
 				}
 			}
+			if( !using.get( val.length ) ) total = sum;
+			
 			/*for( float f : val ) {
 				if( using.get(i) ) total += f;
 				i++;
@@ -180,14 +185,16 @@ public class SkifuGraph extends JComponent {
 				}
 				i++;
 			}
-			Color r1 = darker[i];
-			Color r2 = brighter[i];
-			GradientPaint gp = new GradientPaint( (w-t)/2, (h-t)/2, r1, (w+t)/2, (h+t)/2, r2 );
-			g2.setPaint( gp );
-			int n = (int)((last*360.0f)/total);
-			int nn = (int)(((total)*360.0f)/total);
-			g2.fillArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
-			//System.err.println();
+			if( using.get( val.length ) ) {
+				Color r1 = darker[i];
+				Color r2 = brighter[i];
+				GradientPaint gp = new GradientPaint( (w-t)/2, (h-t)/2, r1, (w+t)/2, (h+t)/2, r2 );
+				g2.setPaint( gp );
+				int n = (int)((last*360.0f)/total);
+				int nn = (int)(((total)*360.0f)/total);
+				g2.fillArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
+				//System.err.println();
+			}
 			
 			g2.setPaint(p);
 			
@@ -198,17 +205,18 @@ public class SkifuGraph extends JComponent {
 			for( float f : val ) {
 				if( using.get(i) ) {
 					tot += f;
-					n = (int)((last*360.0)/total);
-					nn = (int)(((tot)*360.0)/total);
+					int n = (int)((last*360.0)/total);
+					int nn = (int)(((tot)*360.0)/total);
 					g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
 					last = tot;
 				}
 				i++;
 			}
-			n = (int)Math.floor((last*360.0f)/total);
-			nn = (int)Math.ceil(((total)*360.0f)/total);
-			g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
-			last = tot;
+			if( using.get( val.length ) ) {
+				int n = (int)Math.floor((last*360.0f)/total);
+				int nn = (int)Math.ceil(((total)*360.0f)/total);
+				g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
+			}
 			
 			g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/40 ) );
 			tot = 0.0f;
@@ -223,7 +231,8 @@ public class SkifuGraph extends JComponent {
 						double dnn = -((tot)*2.0*Math.PI)/total;
 						double hrn = (dn+dnn)/2.0;
 						
-						String fstr =  Float.toString(f);
+						double cmpt = (100.0*f)/total;
+						String fstr =  Double.toString( Math.floor( 10.0*cmpt ) / 10.0 );
 						int strw = g2.getFontMetrics().stringWidth( fstr );
 						int strh = g2.getFontMetrics().getHeight();
 						g2.drawString( fstr, (int)((w+tt*Math.cos(hrn)-strw)/2.0), (int)((h+tt*Math.sin(hrn)+strh)/2.0) );
@@ -233,17 +242,21 @@ public class SkifuGraph extends JComponent {
 				}
 				i++;
 			}
-			float mun = (float)Math.floor( 10.0f*(total - last) )/10.0f;
-			if( mun > 1.0f ) {
-				double dn = -(last*2.0*Math.PI)/total;
-				double dnn = -((total)*2.0*Math.PI)/total;
-				double hrn = (dn+dnn)/2.0;
-				
-				String fstr =  Float.toString(mun);
-				int strw = g2.getFontMetrics().stringWidth( fstr );
-				int strh = g2.getFontMetrics().getHeight();
-				g2.drawString( fstr, (int)((w+tt*Math.cos(hrn)-strw)/2.0), (int)((h+tt*Math.sin(hrn)+strh)/2.0) );
-				//g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
+			if( using.get( val.length ) ) {
+				double cmpt = (100.0*(total - last))/total;
+				double mun = Math.floor( 10.0*cmpt )/10.0;
+				if( mun > 1.0 ) {
+					double dn = -(last*2.0*Math.PI)/total;
+					double dnn = -((total)*2.0*Math.PI)/total;
+					double hrn = (dn+dnn)/2.0;
+					
+					
+					String fstr =  Double.toString(mun);
+					int strw = g2.getFontMetrics().stringWidth( fstr );
+					int strh = g2.getFontMetrics().getHeight();
+					g2.drawString( fstr, (int)((w+tt*Math.cos(hrn)-strw)/2.0), (int)((h+tt*Math.sin(hrn)+strh)/2.0) );
+					//g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
+				}
 			}
 			
 			int hh = h/30;

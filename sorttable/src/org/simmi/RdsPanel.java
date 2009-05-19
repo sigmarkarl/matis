@@ -25,14 +25,15 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
 
 public class RdsPanel extends JSplitPane {
-	List<Object[]>	rows = new ArrayList<Object[]>();
+	List<Object[]>				rows = new ArrayList<Object[]>();
 	final Color 				paleGreen = new Color( 20,230,60,96 ); 
-	final FriendsPanel fp;
-	TableModel	model;
-	SortTable	st;
-	Map<String,String>	detailMapping = new HashMap<String,String>();
-	final String vurl = "http://www.fa.is/deildir/Efnafraedi/Naeringarfr/naervefur/Templates/glaerur/vatnsvit.htm";
-	final String furl = "http://www.fa.is/deildir/Efnafraedi/Naeringarfr/naervefur/Templates/glaerur/fituvit.htm";
+	final FriendsPanel 			fp;
+	TableModel					model;
+	SortTable					st;
+	Map<String,String>			detailMapping = new HashMap<String,String>();
+	final String 				vurl = "http://www.fa.is/deildir/Efnafraedi/Naeringarfr/naervefur/Templates/glaerur/vatnsvit.htm";
+	final String 				furl = "http://www.fa.is/deildir/Efnafraedi/Naeringarfr/naervefur/Templates/glaerur/fituvit.htm";
+	JTable						table;
 	
 	public String getRds( String colname ) {
 		String ret = null;
@@ -70,8 +71,8 @@ public class RdsPanel extends JSplitPane {
 		this.st = st;
 		
 		InputStream inputStream = this.getClass().getResourceAsStream( "rdsage.txt" );
-		BufferedReader br = new BufferedReader( new InputStreamReader( inputStream ) );
 		try {
+			BufferedReader br = new BufferedReader( new InputStreamReader( inputStream, "UTF-8" ) );
 			String line = br.readLine();
 			String[] split = line.split("[\t]+");
 			rows.add( split );
@@ -86,7 +87,7 @@ public class RdsPanel extends JSplitPane {
 			e.printStackTrace();
 		}
 		
-		final JTable	table = new JTable() {
+		table = new JTable() {
 			public Component prepareRenderer( TableCellRenderer renderer, int row, int column ) {
 				Component c = super.prepareRenderer(renderer, row, column);
 				int age = fp.getSelectedAge();
@@ -98,7 +99,9 @@ public class RdsPanel extends JSplitPane {
 				else if( age < 31 ) base+=3;
 				else if( age < 61 ) base+=4;
 				else base+=5;
-				if( row == base ) c.setBackground( paleGreen );
+				
+				int r = table.convertRowIndexToModel(row);
+				if( r != -1 && r == base ) c.setBackground( paleGreen );
 				else if( this.getSelectedRow() != row ) {
 					c.setBackground( Color.white );
 				} else {
@@ -110,7 +113,6 @@ public class RdsPanel extends JSplitPane {
 		table.setAutoCreateRowSorter( true );
 		table.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
 		model = new TableModel() {
-
 			@Override
 			public void addTableModelListener(TableModelListener l) {}
 
@@ -141,21 +143,14 @@ public class RdsPanel extends JSplitPane {
 
 			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
-				// TODO Auto-generated method stub
 				return false;
 			}
 
 			@Override
-			public void removeTableModelListener(TableModelListener l) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void removeTableModelListener(TableModelListener l) {}
 
 			@Override
-			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {}
 			
 		};
 		
