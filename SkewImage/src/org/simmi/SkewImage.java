@@ -146,25 +146,25 @@ public class SkewImage extends JApplet {
 				renderer = new TextRenderer(new Font("SansSerif", Font.BOLD, 36), true, true);
 				
 				try {
-					URL url = this.getClass().getResource("/h0.png");
+					URL url = this.getClass().getResource("/h0a.png");
 					t0 = TextureIO.newTexture( url, false, ".png" );
 					t0.setTexParameteri(GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
 				    t0.setTexParameteri(GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
 				    faspect = t0.getAspectRatio();
 				    
-				    url = this.getClass().getResource("/h1.png");
+				    url = this.getClass().getResource("/h1a.png");
 					t1 = TextureIO.newTexture( url, false, ".png" );
 					t1.setTexParameteri(GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
 				    t1.setTexParameteri(GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
 				    faspect = t1.getAspectRatio();
 				    
-				    url = this.getClass().getResource("/h2.png");
+				    url = this.getClass().getResource("/h2a.png");
 					t2 = TextureIO.newTexture( url, false, ".png" );
 					t2.setTexParameteri(GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
 				    t2.setTexParameteri(GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
 				    faspect = t2.getAspectRatio();
 				    
-				    url = this.getClass().getResource("/h3.png");
+				    url = this.getClass().getResource("/h3a.png");
 					t3 = TextureIO.newTexture( url, false, ".png" );
 					t3.setTexParameteri(GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
 				    t3.setTexParameteri(GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);

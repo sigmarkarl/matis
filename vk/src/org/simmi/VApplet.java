@@ -225,7 +225,7 @@ public class VApplet extends JApplet {
 		e = new JEditorPane();
 		e.setEditable( false );
 		e.setForeground( Color.white );
-		e.setBackground( Color.black );
+		e.setBackground( Color.red );
 		e.setPreferredSize( d );
 		e.setSize( d );
 		e.setContentType("text/html");
