@@ -11,6 +11,8 @@ import java.awt.Point;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -26,6 +28,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import javax.imageio.ImageIO;
 import javax.swing.DefaultRowSorter;
@@ -64,7 +68,6 @@ import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableColumnModelListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
-import javax.swing.plaf.TableUI;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
@@ -293,7 +296,7 @@ public class SortTable extends JApplet {
 			}
 		}
 		
-		List<Object[]>	result = new ArrayList<Object[]>();
+		final List<Object[]>	result = new ArrayList<Object[]>();
 		for( List l : nutList ) {
 			result.add( l.toArray( new Object[0] ) );
 		}
@@ -340,39 +343,79 @@ public class SortTable extends JApplet {
 			}
 		}
 		
-		int 	start = -1;
 		String 	prev = "";
 		if( loc.equals("IS") ) {
-			inputStream = this.getClass().getResourceAsStream( "result.txt" );
-			br = new BufferedReader( new InputStreamReader( inputStream, "UTF-8" ) );
-			line = br.readLine();
-			while( line != null ) {
-				String[] split = line.split("\\t");
-				
-				if( split.length > 4 ) {
-					if( foodInd.containsKey( split[1] ) ) {
-						start = foodInd.get(split[1]);
-					} else {
-						System.err.println( split[1] );
-					}
-					Object[]	objs = result.get(start+2);
-					if( split[5].length() > 0 ) {
-						String replc = split[5].replace(',', '.');
-						replc = replc.replace("<", "");
-						float f = -1.0f;
-						try {
-							f = Float.parseFloat( replc );
-						} catch( Exception e ) {
-							System.err.println( line );
+			new Thread() {
+				public void run() {
+					try {
+						int 	start = -1;
+						
+						File file = new File( System.getProperty("user.home"), ".isgem" );
+						if( !file.exists() ) {
+							file.mkdirs();
 						}
-						int ngroupOffset = ngroupMap.get(split[2]);
-						if( f != -1.0f ) objs[ 2+ngroupOffset ] = f;
-						else objs[ 2+ngroupOffset ] = null;
+						file = new File( file, "result.zip" );
+						if( !file.exists() ) {
+							InputStream inputStream = this.getClass().getResourceAsStream( "result.zip" );
+							FileOutputStream fos = new FileOutputStream( file );
+							
+							byte[] bb = new byte[1024];
+							int r = inputStream.read(bb);
+							while( r > 0 ) {
+								fos.write(bb, 0, r);
+								r = inputStream.read(bb);
+							}
+							fos.close();
+						}
+						
+						//if( f.exists() ) {
+						//inputStream = this.getClass().getResourceAsStream( "result.zip" );
+						ZipFile zipfile = new ZipFile( file );
+						ZipEntry zipentry = zipfile.getEntry("result.txt");
+						InputStream inputStream = zipfile.getInputStream( zipentry );
+						if( inputStream != null ) {
+							BufferedReader br = new BufferedReader( new InputStreamReader( inputStream, "UTF-8" ) );
+							String line = br.readLine();
+							while( line != null ) {
+								String[] split = line.split("\\t");
+								
+								if( split.length > 4 ) {
+									if( foodInd.containsKey( split[1] ) ) {
+										start = foodInd.get(split[1]);
+									} else {
+										System.err.println( split[1] );
+									}
+									Object[]	objs = result.get(start+2);
+									if( split[5].length() > 0 ) {
+										String replc = split[5].replace(',', '.');
+										replc = replc.replace("<", "");
+										float f = -1.0f;
+										try {
+											f = Float.parseFloat( replc );
+										} catch( Exception e ) {
+											System.err.println( line );
+										}
+										int ngroupOffset = ngroupMap.get(split[2]);
+										if( f != -1.0f ) objs[ 2+ngroupOffset ] = f;
+										else objs[ 2+ngroupOffset ] = null;
+									}
+								}
+								line = br.readLine();
+							}
+						}
+						
+						System.err.println("issgem loaded");
+						while( tableSorter == null ) Thread.sleep(100);
+						table.setModel( model );
+						table.setRowSorter( tableSorter );
+						//table.tableChanged( new TableModelEvent( model ) );
+					} catch( Exception e ) {
+						e.printStackTrace();
 					}
 				}
-				line = br.readLine();
-			}
+			}.start();
 		} else {
+			int start = -1;
 			inputStream = this.getClass().getResourceAsStream( "NUT_DATA.txt" );
 			br = new BufferedReader( new InputStreamReader( inputStream ) );
 			line = br.readLine();
@@ -1210,7 +1253,7 @@ public class SortTable extends JApplet {
 			@Override
 			public void setValueAt(Object value, int rowIndex, int columnIndex) {}
 		};
-		table.setModel( model );
+		//table.setModel( model );
 		
 		tableSorter = new MySorter( model ) {
 			@Override
@@ -1229,7 +1272,7 @@ public class SortTable extends JApplet {
 				return leftTableSorter.getViewRowCount();
 			}
 		};
-		table.setRowSorter( tableSorter );
+		//table.setRowSorter( tableSorter );
 		/*tableSorter.addRowSorterListener( new RowSorterListener() {
 			@Override
 			public void sorterChanged(RowSorterEvent e) {

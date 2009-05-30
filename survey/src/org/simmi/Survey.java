@@ -353,30 +353,36 @@ public class Survey extends JApplet {
 		
 		int v = res.get( base );
 		if( v != -1 ) bg[0].setSelected( v );
-		v = res.get( base );
+		else bg[0].bg.clearSelection();
+		v = res.get( base+1 );
 		if( v != -1 ) bg[1].setSelected( v );
-		v = res.get( base );
+		else bg[1].bg.clearSelection();
+		v = res.get( base+2 );
 		if( v != -1 ) bg[2].setSelected( v );
-		v = res.get( base );
+		else bg[2].bg.clearSelection();
+		v = res.get( base+3 );
 		if( v != -1 ) bg[3].setSelected( v );
+		else bg[3].bg.clearSelection();
 	}
 	
 	public void stepInc() {
-		boolean fromFirst = (step == 0);
+		//boolean fromFirst = (step == 0);
 		step = Math.min( flist.size(), step+1 );
 		if( step > 0 ) {
 			updateBtnGrp();
 			
 			loadImage();
-			if( fromFirst ) {
+			/*if( fromFirst ) {
 				Rectangle r = c.getBounds();
 				c.setBounds(r.x, r.y, r.width, r.height);
-				surveyPanel.revalidate();
-				surveyPanel.invalidate();
-				surveyPanel.repaint();
-			}
-			subc.repaint();
+			}*/
 		}
+		
+		Rectangle r = c.getBounds();
+		c.setBounds(r.x, r.y, r.width, r.height);
+		c.revalidate();
+		c.invalidate();
+		c.repaint();
 	}
 	
 	public void stepDec() {
@@ -389,7 +395,9 @@ public class Survey extends JApplet {
 			subc.repaint();
 		} else {
 			step--;
+			updateBtnGrp();
 			loadImage();
+			c.repaint();
 		}
 	}
 	
@@ -404,17 +412,17 @@ public class Survey extends JApplet {
 			this.setLayout( new GridLayout(10, 1) );
 			
 			labels[0] = new JLabel("Hversu aðlaðandi finnst þér þessi vara?");
-			btnGrps[0] = new BtnGrp("Alls ekki aðlaðandi", "Mjög aðlaðandi");
+			btnGrps[0] = new BtnGrp("Alls ekki aðlaðandi", "Mjög aðlaðandi", 0);
 			labels[1] = new JLabel("Hversu náttúruleg finnst þér þessi vara?");
-			btnGrps[1] = new BtnGrp("Alls ekki náttúruleg", "Mjög náttúruleg");
+			btnGrps[1] = new BtnGrp("Alls ekki náttúruleg", "Mjög náttúruleg", 1);
 			labels[2] = new JLabel("Hversu trúverðug finnst þér þessi vara?");
-			btnGrps[2] = new BtnGrp("Alls ekki trúverðug", "Mjög trúverðug");
+			btnGrps[2] = new BtnGrp("Alls ekki trúverðug", "Mjög trúverðug", 2);
 			labels[3] = new JLabel("Hversu handhæg finnst þér þessi vara?");
-			btnGrps[3] = new BtnGrp("Alls ekki handhæg", "Mjög handhæg");
+			btnGrps[3] = new BtnGrp("Alls ekki handhæg", "Mjög handhæg", 3);
 			
 			for( int i = 0; i < labels.length; i++ ) {
-				this.add( btnGrps[i] );
 				this.add( labels[i] );
+				this.add( btnGrps[i] );
 			}
 		} 
 	};
@@ -422,11 +430,14 @@ public class Survey extends JApplet {
 	public class BtnGrp extends JComponent {
 		JRadioButton[]	rad = new JRadioButton[9];
 		ButtonGroup 	bg;
-		String sf;
-		String sl;
+		String 	sf;
+		String 	sl;
+		int		index;
 		
-		public BtnGrp( String sf, String sl ) {
+		public BtnGrp( String sf, String sl, int ind ) {
 			super();
+			
+			this.index = ind;
 			
 			this.sf = sf;
 			this.sl = sl;
@@ -439,7 +450,7 @@ public class Survey extends JApplet {
 				rad[i] = new JRadioButton( new AbstractAction() {
 					@Override
 					public void actionPerformed(ActionEvent e) {
-						updateStuff();
+						updateStuff( (JRadioButton)e.getSource() );
 					}
 				});
 				bg.add( rad[i] );
@@ -454,8 +465,10 @@ public class Survey extends JApplet {
 			return -1;
 		}
 		
-		public void updateStuff() {
-			
+		public void updateStuff( JRadioButton radi ) {
+			int i = -1;
+			while( rad[++i] != radi );
+			res.set( (step-1)*4+index, i );
 		}
 		
 		public void setSelected( int v ) {
@@ -582,6 +595,11 @@ public class Survey extends JApplet {
 				Graphics2D g2 = (Graphics2D)g;
 				g2.drawImage( img, 0, 0, w, h, this );
 				
+				if( step > 0 ) {
+					String str = "Skref "+step+" af "+flist.size();
+					int strw = g2.getFontMetrics().stringWidth( str );
+					g2.drawString(str, (w-strw)/2, h - 60);
+				}
 				/*String str = "Hvað viltu panta?";
 				int strw = g2.getFontMetrics().stringWidth(str);
 				g2.drawString(str, (w-strw)/2, 500);*/
@@ -849,6 +867,9 @@ public class Survey extends JApplet {
 		timer = new Timer( 50, al );
 		timer.setInitialDelay( 0 );
 		timer.setCoalesce( true );
+		
+		Rectangle rc = this.getBounds();
+		this.setBounds(rc.x, rc.y, rc.width, rc.height);
 	}
 	
 	public boolean isVisible() {

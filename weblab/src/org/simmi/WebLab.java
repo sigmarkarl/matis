@@ -3,17 +3,20 @@ package org.simmi;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.Graphics;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
+import java.util.List;
 
 import javax.media.opengl.GL;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLCanvas;
 import javax.media.opengl.GLEventListener;
 import javax.swing.JApplet;
-import javax.swing.JComponent;
 import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.ToolTipManager;
@@ -56,9 +59,160 @@ public class WebLab extends JApplet {
 		
 		canvas = new GLCanvas();
 		
-		subSplit = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT, new JComponent() { public void paintComponent( Graphics g ) { super.paintComponent(g); g.setColor( Color.white ); g.fillRect(0, 0, this.getWidth(), this.getHeight() ); } }, canvas );
+		double[] kdata = { 0.0, 0.0 };
+		double[] adata;
+		int		kk = 0;
+		int 	kvk = 0;
+		
+		double	minw = Double.POSITIVE_INFINITY;
+		double	maxw = Double.NEGATIVE_INFINITY;
+		
+		int lgroups = 5;
+		int groups = 6;
+		
+		double[]	groupData = new double[ groups ];
+		int[]		groupNum = new int[ groups ];
+		
+		double[]	lgroupData = new double[ lgroups ];
+		int[]		lgroupNum = new int[ lgroups ];
+		
+		for( int i = 0; i < lgroups; i++ ) {
+			lgroupData[i] = 0.0;
+			lgroupNum[i] = 0;
+		}
+		
+		int[] ii = {6,7,8,25,30};
+		try {
+			InputStream is = this.getClass().getResourceAsStream("/fisk.txt");
+			List<Object[]>	lobj = TextReader.readText( is, ii );
+			for( Object[] obj : lobj ) {
+				String kyn = (String)obj[2];
+				if( kyn != null ) {
+					String wstr = obj[1].toString();
+					double wval = Double.parseDouble( wstr );
+					
+					if( wval < minw ) minw = wval;
+					if( wval > maxw ) maxw = wval;
+					
+					String str = obj[3].toString();
+					if( kyn.equals("kvk") ) {
+						if( str.length() > 1 ) {
+							kdata[0] += Double.parseDouble( str );
+							kvk++;
+						}
+					} else if( kyn.equals("kk") ) {
+						if( str.length() > 1 ) {
+							kdata[1] += Double.parseDouble( str );
+							kk++;
+						}
+					}
+				}
+			}
+			
+			for( Object[] obj : lobj ) {
+				String kyn = (String)obj[2];
+				if( kyn != null ) {
+					String wstr = obj[1].toString();
+					double wval = Double.parseDouble( wstr );
+					
+					String pstr = obj[3].toString();
+					if( pstr.length() > 1 ) {
+						double pval = Double.parseDouble( pstr );
+						int i = (int)((groups*(wval-minw))/(maxw-minw));
+						
+						if( i < groups ) {
+							groupNum[i]++;
+							groupData[i] += pval;
+						}
+					}
+					
+					String lstr = (String)obj[4];
+					if( lstr != null && lstr.length() > 1 ) {
+						double lval = Double.parseDouble( lstr );
+						int i = (int)((lgroups*(wval-minw))/(maxw-minw));
+						
+						if( i < lgroups ) {
+							lgroupNum[i]++;
+							lgroupData[i] += lval;
+						}
+					}
+				}
+			}
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
+		kdata[0] /= kvk;
+		kdata[1] /= kk;
+		
+		String[] wnames = new String[groups];
+		String last = ""+minw;
+		
+		ByteArrayOutputStream	baos = new ByteArrayOutputStream();
+		PrintStream	ps = new PrintStream( baos );
+		for( int i = 0; i < groups; i++ ) {
+			double next = ((i+1)*(maxw-minw))/groups+minw;
+			ps.printf( "%.2f", (float)next );
+			String str = baos.toString();
+			wnames[i] = last+"-"+str+"/"+groupNum[i];
+			last = str;
+			baos.reset();
+			ps.flush();
+		}
+		
+		for( int i = 0; i < groups; i++ ) {
+			if( groupNum[i] > 0 ) {
+				groupData[i] /= groupNum[i];
+			}
+			else groupData[i] = 0.0;
+		}
+		
+		String[] lnames = new String[lgroups];
+		last = ""+minw;
+		for( int i = 0; i < lgroups; i++ ) {
+			double next = ((i+1)*(maxw-minw))/lgroups+minw;
+			ps.printf( "%.2f", (float)next );
+			String str = baos.toString();
+			lnames[i] = last+"-"+str+"/"+lgroupNum[i];
+			last = str;
+			baos.reset();
+			ps.flush();
+		}
+		
+		for( int i = 0; i < lgroups; i++ ) {
+			if( lgroupNum[i] > 0 ) {
+				lgroupData[i] /= lgroupNum[i];
+			}
+			else lgroupData[i] = 0.0;
+		}
+		
+		String[] names = { "kvk ("+kvk+")", "kk ("+kk+")" };
+		
+		BarDraw histDraw = new BarDraw("Average parasites/kg per weight", wnames, groupData );
+		BarDraw liverDraw = new BarDraw("Average liver fat content (%) per weight", lnames, lgroupData );
+		BarDraw barDraw = new BarDraw( "Average parasites/kg per sex", names, kdata );
+		
+		final BarDraw[]	bds = { histDraw, liverDraw, barDraw };
+		
+		subSplit = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT, barDraw, canvas );
 		editor = new JTextArea();
 		splitPane = new JSplitPane( JSplitPane.VERTICAL_SPLIT, subSplit, editor );
+		
+		MouseAdapter	ma = new MouseAdapter() {
+			int i = 0;
+			public void mousePressed( MouseEvent e ) {
+				i = (i+1)%bds.length;
+				
+				BarDraw bd = bds[i];
+				subSplit.setLeftComponent( bd );
+			}
+		};
+		
+		for( BarDraw bd : bds ) {
+			bd.addMouseListener( ma );
+		}
+		
 		
 		final SurfaceDraw	surfaceDraw = new SurfaceDraw( 128 );
 		canvas.addGLEventListener( new GLEventListener() {

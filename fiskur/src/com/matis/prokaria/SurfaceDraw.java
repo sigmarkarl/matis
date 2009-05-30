@@ -1,4 +1,4 @@
-package org.simmi;
+package com.matis.prokaria;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;

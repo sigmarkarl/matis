@@ -48,7 +48,7 @@ import org.netbeans.saas.RestResponse;
 
 public class FriendsPanel extends JScrollPane {
 	private final String apiKey = "d8993947d6a37b4bf754d2a578025c31";
-	private final String secret = "c9577f5b3a6c03abb63ebdadb39feea5";
+	private final String secret = "";
 	
 	String currentUser = "Velja höfund";
 	String currentUserId = "0";
@@ -103,8 +103,10 @@ public class FriendsPanel extends JScrollPane {
 		if( r >= 0 && r < table.getRowCount() ) {
 			rr = table.convertRowIndexToModel(r);
 		}
-		Object[] obj = friendList.get(rr);
-		sex = (String)obj[4];
+		if( rr < friendList.size() ) {
+			Object[] obj = friendList.get(rr);
+			sex = (String)obj[4];
+		}
 		return sex;
 	}
 	
@@ -115,15 +117,18 @@ public class FriendsPanel extends JScrollPane {
 		if( r >= 0 && r < table.getRowCount() ) {
 			rr = table.convertRowIndexToModel(r);
 		}
-		Object[] obj = friendList.get(rr);
-		Calendar now = Calendar.getInstance();
-		final Calendar cal = new GregorianCalendar();
-		cal.setTime( (Date)obj[3] );
-		int factor = 0;
-		if( now.get(Calendar.DAY_OF_YEAR) < cal.get(Calendar.DAY_OF_YEAR) ) {
-	          factor = -1; //birthday not celebrated
-	    }
-	    age = now.get(Calendar.YEAR) - cal.get(Calendar.YEAR) + factor;
+		
+		if( rr < friendList.size() ) {
+			Object[] obj = friendList.get(rr);
+			Calendar now = Calendar.getInstance();
+			final Calendar cal = new GregorianCalendar();
+			cal.setTime( (Date)obj[3] );
+			int factor = 0;
+			if( now.get(Calendar.DAY_OF_YEAR) < cal.get(Calendar.DAY_OF_YEAR) ) {
+		          factor = -1; //birthday not celebrated
+		    }
+		    age = now.get(Calendar.YEAR) - cal.get(Calendar.YEAR) + factor;
+		}
 		return age;
 	}
 	
@@ -187,10 +192,12 @@ public class FriendsPanel extends JScrollPane {
 			String res = rr.getDataAsString();
 			System.err.println( res );
 			
-			String uds = res.substring( res.indexOf("<uid>")+5 ).replace("</uid>\n  <uid>", ",");
-			String uids = currentUser+","+uds.substring(0, uds.lastIndexOf(','));
+			if( !res.contains("error_response" ) ) {
+				String uds = res.substring( res.indexOf("<uid>")+5 ).replace("</uid>\n  <uid>", ",");
+				String uids = currentUser+","+uds.substring(0, uds.lastIndexOf(','));
 			
-			return getUserInfo( sessionKey, uids, "name,birthday,pic,sex,is_app_user");
+				return getUserInfo( sessionKey, uids, "name,birthday,pic,sex,is_app_user");
+			}
         }
         return null;
 	}
@@ -334,6 +341,9 @@ public class FriendsPanel extends JScrollPane {
 		String xml = null;
 		if( sessionKey != null && sessionKey.length() > 0 ) {
 			xml = getFriendsXml( sessionKey, currentUser );
+		}
+		
+		if( xml != null && sessionKey != null && sessionKey.length() > 0 ) {
 			File f = new File( System.getProperty("user.home"), ".isgem" );
 			f = new File( f, "friends" );
 			if( !f.exists() ) {
