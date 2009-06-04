@@ -174,7 +174,7 @@ public class RecipePanel extends JSplitPane {
 	};
 	
 	public void fillSkmt() throws IOException {
-		InputStream is = this.getClass().getResourceAsStream("skmt.txt");
+		InputStream is = this.getClass().getResourceAsStream("/skmt.txt");
 		BufferedReader br = new BufferedReader( new InputStreamReader(is) );
 		String line = br.readLine();
 		while( line != null ) {
@@ -402,7 +402,16 @@ public class RecipePanel extends JSplitPane {
 			}
 		});
 		
-		fillSkmt();
+		new Thread() {
+			public void run() {
+				try {
+					fillSkmt();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}.start();
 		
 		this.fp = fp;
 		foodInd = foodNameInd;
@@ -1035,23 +1044,24 @@ public class RecipePanel extends JSplitPane {
 		};
 		recipeImage.setPreferredSize( new Dimension(100,100) );
 		
-		JButton	addRecipeButton = new JButton( nu );
+		final JButton	addRecipeButton = new JButton( nu );
 		addRecipeButton.setText("");
 		addRecipeButton.setToolTipText("Nýja Uppskrift");
-		addRecipeButton.setIcon( new ImageIcon( ImageIO.read( this.getClass().getResource("/nu.png") ) ) );
-		JButton	removeRecipeButton = new JButton( eu );
+		final JButton	removeRecipeButton = new JButton( eu );
 		removeRecipeButton.setText("");
 		removeRecipeButton.setToolTipText("Eyða Uppskrift");
-		removeRecipeButton.setIcon( new ImageIcon( ImageIO.read( this.getClass().getResource("/eu.png") ) ) );
-		JButton	shareRecipeButton = new JButton( du );
+		final JButton	shareRecipeButton = new JButton( du );
 		shareRecipeButton.setText("");
 		shareRecipeButton.setToolTipText("Deila Uppskrift");
-		shareRecipeButton.setIcon( new ImageIcon( ImageIO.read( this.getClass().getResource("/du.png") ) ) );
 		JComponent recipeButtons = new JComponent() {};
 		recipeButtons.setLayout( new FlowLayout() );
 		recipeButtons.add( addRecipeButton );
 		recipeButtons.add( removeRecipeButton );
 		recipeButtons.add( shareRecipeButton );
+		
+		addRecipeButton.setIcon( new ImageIcon( ImageIO.read( this.getClass().getResource("/nu.png") ) ) );
+		removeRecipeButton.setIcon( new ImageIcon( ImageIO.read( this.getClass().getResource("/eu.png") ) ) );
+		shareRecipeButton.setIcon( new ImageIcon( ImageIO.read( this.getClass().getResource("/du.png") ) ) );
 		
 		JComponent recipeTmpScroll = new JComponent() {};
 		recipeTmpScroll.setLayout( new BorderLayout() );

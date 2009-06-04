@@ -19,6 +19,7 @@ import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -213,7 +214,7 @@ public class SortTable extends JApplet {
 		BufferedReader br;
 		String line;
 		if( loc.equals("IS") ) {
-			inputStream = this.getClass().getResourceAsStream( "thsGroups.txt" );
+			inputStream = this.getClass().getResourceAsStream( "/thsGroups.txt" );
 			br = new BufferedReader( new InputStreamReader( inputStream, "UTF-8" ) );
 			line = br.readLine();
 			while( line != null ) {
@@ -224,7 +225,7 @@ public class SortTable extends JApplet {
 				line = br.readLine();
 			}
 		} else {
-			inputStream = this.getClass().getResourceAsStream( "FD_GROUP.txt" );
+			inputStream = ClassLoader.getSystemResourceAsStream( "FD_GROUP.txt" );
 			br = new BufferedReader( new InputStreamReader( inputStream ) );
 			line = br.readLine();
 			while( line != null ) {
@@ -249,7 +250,7 @@ public class SortTable extends JApplet {
 		ngroupGroups = new ArrayList<String>();
 		
 		if( loc.equals("IS") ) {
-			inputStream = this.getClass().getResourceAsStream( "Component.txt" );
+			inputStream = this.getClass().getResourceAsStream( "/Component.txt" );
 			br = new BufferedReader( new InputStreamReader( inputStream, "UTF-8" ) );
 			line = br.readLine();
 			int i = 0;
@@ -272,7 +273,7 @@ public class SortTable extends JApplet {
 				line = br.readLine();
 			}
 		} else {
-			inputStream = this.getClass().getResourceAsStream( "NUTR_DEF.txt" );
+			inputStream = ClassLoader.getSystemResourceAsStream( "NUTR_DEF.txt" );
 			br = new BufferedReader( new InputStreamReader( inputStream ) );
 			line = br.readLine();
 			int i = 0;
@@ -304,7 +305,7 @@ public class SortTable extends JApplet {
 		int i = 0;
 		int k = 0;
 		if( loc.equals("IS") ) {
-			inputStream = this.getClass().getResourceAsStream( "Food.txt" );
+			inputStream = this.getClass().getResourceAsStream( "/Food.txt" );
 			br = new BufferedReader( new InputStreamReader( inputStream, "UTF-8" ) );
 			line = br.readLine();
 			while( line != null ) {
@@ -325,7 +326,7 @@ public class SortTable extends JApplet {
 				line = br.readLine();
 			}
 		} else {
-			inputStream = this.getClass().getResourceAsStream( "FOOD_DES.txt" );
+			inputStream = ClassLoader.getSystemResourceAsStream( "FOOD_DES.txt" );
 			br = new BufferedReader( new InputStreamReader( inputStream ) );
 			line = br.readLine();
 			while( line != null ) {
@@ -355,11 +356,13 @@ public class SortTable extends JApplet {
 							file.mkdirs();
 						}
 						file = new File( file, "result.zip" );
-						if( !file.exists() ) {
-							InputStream inputStream = this.getClass().getResourceAsStream( "result.zip" );
+						if( !file.exists() || file.length() != 3200582 ) {
+							if( !file.exists() ) System.err.println( "hey file" );
+							
+							InputStream inputStream = ClassLoader.getSystemResourceAsStream( "/result.zip" );
 							FileOutputStream fos = new FileOutputStream( file );
 							
-							byte[] bb = new byte[1024];
+							byte[] bb = new byte[3200582];
 							int r = inputStream.read(bb);
 							while( r > 0 ) {
 								fos.write(bb, 0, r);
@@ -383,7 +386,7 @@ public class SortTable extends JApplet {
 									if( foodInd.containsKey( split[1] ) ) {
 										start = foodInd.get(split[1]);
 									} else {
-										System.err.println( split[1] );
+										//System.err.println( split[1] );
 									}
 									Object[]	objs = result.get(start+2);
 									if( split[5].length() > 0 ) {
@@ -393,7 +396,6 @@ public class SortTable extends JApplet {
 										try {
 											f = Float.parseFloat( replc );
 										} catch( Exception e ) {
-											System.err.println( line );
 										}
 										int ngroupOffset = ngroupMap.get(split[2]);
 										if( f != -1.0f ) objs[ 2+ngroupOffset ] = f;
@@ -416,7 +418,7 @@ public class SortTable extends JApplet {
 			}.start();
 		} else {
 			int start = -1;
-			inputStream = this.getClass().getResourceAsStream( "NUT_DATA.txt" );
+			inputStream = ClassLoader.getSystemResourceAsStream( "NUT_DATA.txt" );
 			br = new BufferedReader( new InputStreamReader( inputStream ) );
 			line = br.readLine();
 			while( line != null ) {
@@ -818,6 +820,21 @@ public class SortTable extends JApplet {
 		});
 		
 		FriendsPanel fp = new FriendsPanel( sessionKey, currentUser );
+		
+		try {
+			URL url = new URL( "http://test.matis.is" );
+			URLConnection	uc = url.openConnection();
+			uc.setDefaultUseCaches( true );
+			uc.setUseCaches( true );
+		} catch (MalformedURLException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
 		RdsPanel rdsPanel = new RdsPanel( fp, SortTable.this );
 		
 		rightSplitPane = new LinkedSplitPane( JSplitPane.VERTICAL_SPLIT, topScrollPane, scrollPane );
@@ -1359,7 +1376,7 @@ public class SortTable extends JApplet {
 		ed.setEditable( false );
 		ed.setText("<html><body><center><table cellpadding=0><tr><td><img src=\"http://test.matis.is/isgem/Matis_logo.jpg\" hspace=\"5\" width=\"32\" height=\"32\">"
 			+"</td><td align=\"center\"><a href=\"http://www.matis.is\">Matís ehf.</a> - Borgartún 21 | 105 Reykjavík - Sími 422 50 00 | Fax 422 50 01 - <a href=\"mailto:matis@matis.is\">matis@matis.is</a><br><a href=\"http://www.matis.is/ISGEM/is/skyringar/\">Hjálp</a> - "
-			+((sessionKey != null && sessionKey.length() > 1)?"<a href=\"http://test.matis.is/isgem/applet.php\">Allur glugginn</a>":"<a href=\"http://apps.facebook.com/matisgem\">Facebook</a>")
+			+((sessionKey != null && sessionKey.length() > 1)?"<a href=\"http://test.matis.is/isgem\">Allur glugginn</a>":"<a href=\"http://apps.facebook.com/matisgem\">Facebook</a>")
 			//+" - <a href=\"dark\">Dark</a> - <a href=\"light\">Light</a>"
 			+"</td></tr></table></center></body></html>");
 		Dimension d = new Dimension(1000,42);

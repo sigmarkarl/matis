@@ -122,7 +122,6 @@ public class Report extends JApplet {
         	cell = row.getCell(i);
         }
         
-        //Object[] oargs = jobstr.toArray( new Object[0] ); 
 		String str = "(";
 		for( Object o : jobstr ) {
 			if( o instanceof Integer ) {
@@ -176,11 +175,10 @@ public class Report extends JApplet {
 		}
 		ps.close();
 		
-		String type = "('2310','2311','2498','2710','2999')";
-		
-		int k = 2;
+/********** plan ***************/
+		int k = 3;
 		for( Object o : jobstr ) {
-			sql = "select be.No_, be.Type, bl.Description, sum(be.\"Total Cost\"), sum(\"Total Price\") as Cost from dbo.\"Matís ohf_$Job Budget Entry\" be, dbo.\"Matís ohf_$Job Budget Line\" bl where be.\"Job No_\" = '"+o.toString()+"' and be.No_ = bl.No_ and bl.\"Job No_\" = be.\"Job No_\" and be.Date >= '2009-01-01' group by be.No_, be.Type, bl.Description";
+			sql = "select be.No_, be.Type, bl.Description, sum(be.\"Total Cost\"), sum(be.\"Total Price\") as Cost from dbo.\"Matís ohf_$Job Budget Entry\" be, dbo.\"Matís ohf_$Job Budget Line\" bl where be.\"Job No_\" = '"+o.toString()+"' and be.No_ = bl.No_ and bl.\"Job No_\" = be.\"Job No_\" and be.Date >= '2009-01-01' and be.Date < '2009-04-01' group by be.No_, be.Type, bl.Description";
 			
 			ps = con.prepareStatement( sql );
 			rs = ps.executeQuery();
@@ -345,6 +343,177 @@ public class Report extends JApplet {
 			
 			k += 2;
 		}
+		
+/************ real ******************/
+		
+		k = 2;
+		for( Object o : jobstr ) {
+			//sql = "select be.No_, be.Type, bl.Description, sum(be.\"Total Cost\"), sum(\"Total Price\") as Cost from dbo.\"Matís ohf_$Job Ledger Entry\" be, dbo.\"Matís ohf_$Job Budget Line\" bl where be.\"Job No_\" = '"+o.toString()+"' and be.No_ = bl.No_ and bl.\"Job No_\" = be.\"Job No_\" and be.\"Posting Date\" >= '2009-01-01' and be.\"Posting Date\" < '2009-04-01' group by be.No_, be.Type, bl.Description";
+			sql = "select le.No_, le.Type, sum(le.\"Total Cost\"), sum(le.\"Total Price\") as Cost from dbo.\"Matís ohf_$Job Ledger Entry\" le where le.\"Job No_\" = '"+o.toString()+"' and le.\"Posting Date\" >= '2009-01-01' and le.\"Posting Date\" < '2009-04-01' group by le.No_, le.Type";
+			
+			ps = con.prepareStatement( sql );
+			rs = ps.executeQuery();
+			
+			costMap.clear();
+			costList.clear();
+			while( rs.next() ) {
+				String nostr = rs.getString(1);
+				Cost cost = new Cost( Long.parseLong(nostr), rs.getString(2), "", rs.getDouble(3), rs.getDouble(4) );
+				costMap.put( nostr, cost );
+				costList.add( cost );
+			}
+			
+			ps.close();
+			
+			for( i = 9; i < 40; i++ ) {
+				row = sheet.getRow(i);
+				if( row != null ) {
+					boolean unsucc = true;
+					
+					cell = row.getCell(0);
+					if( cell != null ) {
+						int 	d = (int)cell.getNumericCellValue();
+						String 	dstr = Integer.toString(d);
+						if( d > 0 ) {
+							if( costMap.containsKey( dstr) ) {
+								Cost cost = costMap.get( dstr );
+								cell = row.getCell( k );
+								if( d >= 1000 && d < 2000 ) cell.setCellValue( cost.p );
+								else cell.setCellValue( cost.c );
+							} else {
+								double tot = 0.0;
+								
+								if( dstr.endsWith("99") ) {
+									for( Cost c : costList ) {
+										if( c.no >= d-999 && c.no < d+1 ) tot += c.c;
+									}
+								} else if( dstr.endsWith("98") ) {
+									for( Cost c : costList ) {
+										if( c.no >= d-98 && c.no < d+2 ) tot += c.c;
+									}
+								} else if( dstr.equals("1993") ) {
+									for( Cost c : costList ) {
+										if( c.no >= d-993 && c.no < d+7 ) tot += c.p;
+									}
+								}
+								cell = row.getCell( k );
+								cell.setCellValue( tot );		
+							}
+							
+							unsucc = false;
+						}
+						
+					}
+					
+					if( unsucc ) {
+						cell = row.getCell(1);
+						if( cell != null && cell.getCellType() == XSSFCell.CELL_TYPE_STRING ) {
+							String 	dstr = cell.getStringCellValue();
+							if( dstr.equals("Kostnaður samtals") ) {
+								double tot = 0.0;
+								for( String no : costMap.keySet() ) {
+									Cost c = costMap.get(no);
+									tot += c.c;
+								}
+								cell = row.getCell(k);
+								cell.setCellValue(tot);
+							} else if( dstr.equals("Raun launakostnaður -fjárhagsbókh") ) {
+								double tot = 0.0;
+								for( String no : costMap.keySet() ) {
+									Cost c = costMap.get(no);
+									if( c.type.contains("0") ) tot += c.c;
+								}
+								cell = row.getCell(k);
+								cell.setCellValue(tot);
+							}
+						}
+					}
+				}
+			}
+			
+			sql = "select le.No_, le.Type, sum(le.\"Total Cost\"), sum(le.\"Total Price\") as Cost from dbo.\"Matís ohf_$Job Ledger Entry\" le where le.\"Job No_\" = '"+o.toString()+"' group by le.No_, le.Type";
+			
+			ps = con.prepareStatement( sql );
+			rs = ps.executeQuery();
+			
+			costMap.clear();
+			costList.clear();
+			while( rs.next() ) {
+				String nostr = rs.getString(1);
+				Cost cost = new Cost( Long.parseLong(nostr), rs.getString(2), "", rs.getDouble(3), rs.getDouble(4) );
+				costMap.put( nostr, cost );
+				costList.add( cost );
+			}
+			
+			ps.close();
+			
+			for( i = 40; i < 100; i++ ) {
+				row = sheet.getRow(i);
+				if( row != null ) {
+					boolean unsucc = true;
+					
+					cell = row.getCell(0);
+					if( cell != null ) {
+						int 	d = (int)cell.getNumericCellValue();
+						String 	dstr = Integer.toString(d);
+						if( d > 0 ) {
+							if( costMap.containsKey( dstr) ) {
+								Cost cost = costMap.get( dstr );
+								cell = row.getCell( k );
+								if( d >= 1000 && d < 2000 ) cell.setCellValue( cost.p );
+								else cell.setCellValue( cost.c );
+							} else {
+								double tot = 0.0;
+								
+								if( dstr.endsWith("99") ) {
+									for( Cost c : costList ) {
+										if( c.no >= d-999 && c.no < d+1 ) tot += c.c;
+									}
+								} else if( dstr.endsWith("98") ) {
+									for( Cost c : costList ) {
+										if( c.no >= d-98 && c.no < d+2 ) tot += c.c;
+									}
+								} else if( dstr.equals("1993") ) {
+									for( Cost c : costList ) {
+										if( c.no >= d-993 && c.no < d+7 ) tot += c.p;
+									}
+								}
+								cell = row.getCell( k );
+								cell.setCellValue( tot );		
+							}
+							
+							unsucc = false;
+						}
+					}
+					
+					if( unsucc ) {
+						cell = row.getCell(1);
+						if( cell != null && cell.getCellType() == XSSFCell.CELL_TYPE_STRING ) {
+							String 	dstr = cell.getStringCellValue();
+							if( dstr.equals("Kostnaður samtals") ) {
+								double tot = 0.0;
+								for( String no : costMap.keySet() ) {
+									Cost c = costMap.get(no);
+									tot += c.c;
+								}
+								cell = row.getCell(k);
+								cell.setCellValue(tot);
+							} else if( dstr.equals("Raun launakostnaður -fjárhagsbókh") ) {
+								double tot = 0.0;
+								for( String no : costMap.keySet() ) {
+									Cost c = costMap.get(no);
+									if( c.type.contains("0") ) tot += c.c;
+								}
+								cell = row.getCell(k);
+								cell.setCellValue(tot);
+							}
+						}
+					}
+				}
+			}
+			
+			k += 2;
+		}		
 		
 		workbook.write( new FileOutputStream("/home/sigmar/Desktop/simmi.xlsx") );
 	}

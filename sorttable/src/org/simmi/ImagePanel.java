@@ -52,7 +52,7 @@ public class ImagePanel extends JComponent {
 		imageCache = new HashMap<String,Image>();
 		imageNameCache = new HashMap<String,String>();
 		 
-		InputStream inputStream = this.getClass().getResourceAsStream("myndir.txt");
+		InputStream inputStream = this.getClass().getResourceAsStream("/myndir.txt");
 		BufferedReader br = new BufferedReader( new InputStreamReader( inputStream ) );
 		String line;
 		try {

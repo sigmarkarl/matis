@@ -70,7 +70,7 @@ public class RdsPanel extends JSplitPane {
 		this.fp = fp;
 		this.st = st;
 		
-		InputStream inputStream = this.getClass().getResourceAsStream( "rdsage.txt" );
+		InputStream inputStream = this.getClass().getResourceAsStream( "/rdsage.txt" );
 		try {
 			BufferedReader br = new BufferedReader( new InputStreamReader( inputStream, "UTF-8" ) );
 			String line = br.readLine();
@@ -177,12 +177,16 @@ public class RdsPanel extends JSplitPane {
 		final JEditorPane editor = new JEditorPane();
 		editor.setEditable( false );
 		editor.setContentType("text/html");
-		try {
-			editor.setPage(vurl);
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
+		new Thread() {
+			public void run() {
+				try {
+					editor.setPage(vurl);
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+		}.start();
 		
 		table.getSelectionModel().addListSelectionListener( new ListSelectionListener(){
 			@Override
