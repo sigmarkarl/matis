@@ -359,7 +359,7 @@ public class SortTable extends JApplet {
 						if( !file.exists() || file.length() != 3200582 ) {
 							if( !file.exists() ) System.err.println( "hey file" );
 							
-							InputStream inputStream = ClassLoader.getSystemResourceAsStream( "/result.zip" );
+							InputStream inputStream = this.getClass().getResourceAsStream( "/result.zip" );
 							FileOutputStream fos = new FileOutputStream( file );
 							
 							byte[] bb = new byte[3200582];
