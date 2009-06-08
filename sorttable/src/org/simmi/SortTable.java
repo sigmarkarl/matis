@@ -351,7 +351,7 @@ public class SortTable extends JApplet {
 					try {
 						int 	start = -1;
 						
-						File file = new File( System.getProperty("user.home"), ".isgem" );
+						/*File file = new File( System.getProperty("user.home"), ".isgem" );
 						if( !file.exists() ) {
 							file.mkdirs();
 						}
@@ -359,7 +359,7 @@ public class SortTable extends JApplet {
 						if( !file.exists() || file.length() != 3200582 ) {
 							if( !file.exists() ) System.err.println( "hey file" );
 							
-							InputStream inputStream = this.getClass().getResourceAsStream( "/result.zip" );
+							InputStream inputStream = this.getClass().getResourceAsStream( "/result.txt" );
 							FileOutputStream fos = new FileOutputStream( file );
 							
 							byte[] bb = new byte[3200582];
@@ -374,8 +374,10 @@ public class SortTable extends JApplet {
 						//if( f.exists() ) {
 						//inputStream = this.getClass().getResourceAsStream( "result.zip" );
 						ZipFile zipfile = new ZipFile( file );
-						ZipEntry zipentry = zipfile.getEntry("result.txt");
-						InputStream inputStream = zipfile.getInputStream( zipentry );
+						ZipEntry zipentry = zipfile.getEntry("result.txt");*/
+						//InputStream inputStream = zipfile.getInputStream( zipentry );
+						
+						InputStream inputStream = this.getClass().getResourceAsStream( "/result.txt" );
 						if( inputStream != null ) {
 							BufferedReader br = new BufferedReader( new InputStreamReader( inputStream, "UTF-8" ) );
 							String line = br.readLine();
@@ -386,7 +388,7 @@ public class SortTable extends JApplet {
 									if( foodInd.containsKey( split[1] ) ) {
 										start = foodInd.get(split[1]);
 									} else {
-										//System.err.println( split[1] );
+										
 									}
 									Object[]	objs = result.get(start+2);
 									if( split[5].length() > 0 ) {
@@ -407,15 +409,15 @@ public class SortTable extends JApplet {
 						}
 						
 						System.err.println("issgem loaded");
-						while( tableSorter == null ) Thread.sleep(100);
+						/*while( tableSorter == null ) Thread.sleep(100);
 						table.setModel( model );
-						table.setRowSorter( tableSorter );
+						table.setRowSorter( tableSorter );*/
 						//table.tableChanged( new TableModelEvent( model ) );
 					} catch( Exception e ) {
 						e.printStackTrace();
 					}
 				}
-			}.start();
+			}.run();
 		} else {
 			int start = -1;
 			inputStream = ClassLoader.getSystemResourceAsStream( "NUT_DATA.txt" );
@@ -1359,6 +1361,9 @@ public class SortTable extends JApplet {
 			tabbedPane.addTab( "Eating and training", eat );
 			tabbedPane.addTab( "Cost of buying", buy );
 		}
+		
+		table.setModel( model );
+		table.setRowSorter( tableSorter );
 		
 		//RowFilter<TableModel, Integer> rf = RowFilter.regexFilter("Milk",1);
 		//leftTableSorter.setRowFilter( rf );
