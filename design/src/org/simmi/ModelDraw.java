@@ -1,7 +1,12 @@
 package org.simmi;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -13,8 +18,8 @@ import java.util.Set;
 import javax.media.opengl.GL;
 
 public class ModelDraw {
-	public static native int loadFromBuffer( ByteBuffer buffer, int count );
-	public static native void getVertices( ByteBuffer buffer, int optCount );
+	public static native int loadFromFile( String fname );
+	public static native void getVertices( ByteBuffer buffer, int optCount, String fname );
 	
 	static {
     	System.loadLibrary("relatron");
@@ -48,17 +53,48 @@ public class ModelDraw {
 					read = inputStream.read( bb );
 				}
 				inputStream.close();
-				System.err.println( "done reading" );
+				System.err.println( "done reading " + total );
 			} else {
 				System.err.println( "not found" );
 			}
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
-		int faces = ModelDraw.loadFromBuffer( directBuffer, total );
-		fileBuffer = ByteBuffer.allocateDirect( 4*faces*6*3 );
-		fileBuffer.order( ByteOrder.nativeOrder() );
-		ModelDraw.getVertices( fileBuffer, 0 );
+		
+		File f = new File( System.getProperty("user.home"), "tmp.3ds" );
+		//File f = File.createTempFile("tmp", ".3ds");
+		if( !f.exists() ) {
+			FileOutputStream fos;
+			try {
+				fos = new FileOutputStream(f);
+				
+				byte[] bb = new byte[ total ];
+				for( int i = 0; i < total; i++ ) {
+					bb[i] = directBuffer.get(i);
+				}
+				//BufferedWriter bw = new BufferedWriter( new OutputStreamWriter(fos) );
+				fos.write( bb );
+				//bw.flush();
+				fos.close();
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		int faces;
+		try {
+			faces = ModelDraw.loadFromFile( f.getCanonicalPath() );
+			fileBuffer = ByteBuffer.allocateDirect( 4*faces*6*3 );
+			fileBuffer.order( ByteOrder.nativeOrder() );
+			ModelDraw.getVertices( fileBuffer, 0, f.getCanonicalPath() );
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 		FloatBuffer ff = fileBuffer.asFloatBuffer();
 		float val = 1000.0f;

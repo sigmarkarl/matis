@@ -244,7 +244,7 @@ public class Report extends JApplet {
 			for (Object o : jobstr) {
 				sql = "select be.No_, be.Type, bl.Description, sum(be.\"Total Cost\") as Cost, sum(be.\"Total Price\") as Price from dbo.\"Matís ohf_$Job Budget Entry\" be, dbo.\"Matís ohf_$Job Budget Line\" bl where be.\"Job No_\" = '"
 						+ o.toString()
-						+ "' and be.No_ = bl.No_ and bl.\"Job No_\" = be.\"Job No_\" and be.Date >= '"+startDate+"' and be.Date < '"+endDate+"' group by be.No_, be.Type, bl.Description";
+						+ "' and be.No_ = bl.No_ and bl.\"Job No_\" = be.\"Job No_\" and be.Date >= '"+startDate+"' and be.Date <= '"+endDate+"' group by be.No_, be.Type, bl.Description";
 	
 				ps = con.prepareStatement(sql);
 				rs = ps.executeQuery();
@@ -328,6 +328,20 @@ public class Report extends JApplet {
 									}
 									cell = row.getCell(k);
 									cell.setCellValue(tot);
+								} else if (dstr.equals("Afkoma (v/útselds taxta)")) {
+									double tot = 0.0;
+									double ctot = 0.0;
+									for (String no : costMap.keySet()) {
+										Cost c = costMap.get(no);
+										if( c.type.contains("0") ) tot += c.p;
+										else tot += c.c;
+										
+										if (c.no >= 1000 && c.no < 2000 ) {
+											ctot += c.p;
+										}
+									}
+									cell = row.getCell(k);
+									cell.setCellValue(ctot-tot);
 								}
 							}
 						}
@@ -336,7 +350,7 @@ public class Report extends JApplet {
 	
 				sql = "select be.No_, be.Type, bl.Description, sum(be.\"Total Cost\") as Cost, sum(\"Total Price\") as Price from dbo.\"Matís ohf_$Job Budget Entry\" be, dbo.\"Matís ohf_$Job Budget Line\" bl where be.\"Job No_\" = '"
 						+ o.toString()
-						+ "' and be.No_ = bl.No_ and bl.\"Job No_\" = be.\"Job No_\" and be.Date < '"+endDate+"' group by be.No_, be.Type, bl.Description";
+						+ "' and be.No_ = bl.No_ and bl.\"Job No_\" = be.\"Job No_\" and be.Date <= '"+endDate+"' group by be.No_, be.Type, bl.Description";
 	
 				System.err.println( "about to exec "+sql);
 				ps = con.prepareStatement(sql);
@@ -432,6 +446,20 @@ public class Report extends JApplet {
 									}
 									cell = row.getCell(k);
 									cell.setCellValue(tot);
+								} else if (dstr.equals("Afkoma (v/útselds taxta)")) {
+									double tot = 0.0;
+									double ctot = 0.0;
+									for (String no : costMap.keySet()) {
+										Cost c = costMap.get(no);
+										if( c.type.contains("0") ) tot += c.p;
+										else tot += c.c;
+										
+										if (c.no >= 1000 && c.no < 2000 ) {
+											ctot += c.p;
+										}
+									}
+									cell = row.getCell(k);
+									cell.setCellValue(ctot-tot);
 								}
 							}
 						}
@@ -449,7 +477,7 @@ public class Report extends JApplet {
 				// "select be.No_, be.Type, bl.Description, sum(be.\"Total Cost\"), sum(\"Total Price\") as Cost from dbo.\"Matís ohf_$Job Ledger Entry\" be, dbo.\"Matís ohf_$Job Budget Line\" bl where be.\"Job No_\" = '"+o.toString()+"' and be.No_ = bl.No_ and bl.\"Job No_\" = be.\"Job No_\" and be.\"Posting Date\" >= '2009-01-01' and be.\"Posting Date\" < '2009-04-01' group by be.No_, be.Type, bl.Description";
 				sql = "select le.No_, le.Type, sum(le.\"Total Cost\") as Cost, sum(le.\"Total Price\") as Price from dbo.\"Matís ohf_$Job Ledger Entry\" le where le.\"Job No_\" = '"
 						+ o.toString()
-						+ "' and le.\"Posting Date\" >= '"+startDate+"' and le.\"Posting Date\" < '"+endDate+"' group by le.No_, le.Type";
+						+ "' and le.\"Posting Date\" >= '"+startDate+"' and le.\"Posting Date\" <= '"+endDate+"' group by le.No_, le.Type";
 	
 				ps = con.prepareStatement(sql);
 				rs = ps.executeQuery();
@@ -525,8 +553,7 @@ public class Report extends JApplet {
 									}
 									cell = row.getCell(k);
 									cell.setCellValue(tot);
-								} else if (dstr
-										.equals("Raun launakostnaður -fjárhagsbókh")) {
+								} else if (dstr.equals("Raun launakostnaður -fjárhagsbókh")) {
 									double tot = 0.0;
 									for (String no : costMap.keySet()) {
 										Cost c = costMap.get(no);
@@ -534,6 +561,20 @@ public class Report extends JApplet {
 									}
 									cell = row.getCell(k);
 									cell.setCellValue(tot);
+								} else if (dstr.equals("Afkoma (v/útselds taxta)")) {
+									double tot = 0.0;
+									double ctot = 0.0;
+									for (String no : costMap.keySet()) {
+										Cost c = costMap.get(no);
+										if( c.type.contains("0") ) tot += c.p;
+										else tot += c.c;
+										
+										if (c.no >= 1000 && c.no < 2000 ) {
+											ctot += c.p;
+										}
+									}
+									cell = row.getCell(k);
+									cell.setCellValue(ctot-tot);
 								}
 							}
 						}
@@ -541,7 +582,7 @@ public class Report extends JApplet {
 				}
 	
 				sql = "select le.No_, le.Type, sum(le.\"Total Cost\") as Cost, sum(le.\"Total Price\") as Price from dbo.\"Matís ohf_$Job Ledger Entry\" le where le.\"Job No_\" = '"
-						+ o.toString() + "' and le.\"Posting Date\" < '"+endDate+"' group by le.No_, le.Type";
+						+ o.toString() + "' and le.\"Posting Date\" <= '"+endDate+"' group by le.No_, le.Type";
 	
 				ps = con.prepareStatement(sql);
 				rs = ps.executeQuery();
@@ -625,6 +666,20 @@ public class Report extends JApplet {
 									}
 									cell = row.getCell(k);
 									cell.setCellValue(tot);
+								} else if (dstr.equals("Afkoma (v/útselds taxta)")) {
+									double tot = 0.0;
+									double ctot = 0.0;
+									for (String no : costMap.keySet()) {
+										Cost c = costMap.get(no);
+										if( c.type.contains("0") ) tot += c.p;
+										else tot += c.c;
+										
+										if (c.no >= 1000 && c.no < 2000 ) {
+											ctot += c.p;
+										}
+									}
+									cell = row.getCell(k);
+									cell.setCellValue(ctot-tot);
 								}
 							}
 						}
