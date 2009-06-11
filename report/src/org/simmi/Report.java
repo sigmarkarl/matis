@@ -10,7 +10,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.Reader;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.sql.Connection;
@@ -25,6 +24,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.Map.Entry;
 
 import javax.imageio.ImageIO;
 import javax.swing.JApplet;
@@ -37,6 +38,8 @@ import javax.swing.UnsupportedLookAndFeelException;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFComment;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -47,9 +50,16 @@ public class Report extends JApplet {
 	BufferedImage 	pdfImg;
 	BufferedImage 	xlsImg;
 	XSSFWorkbook 	workbook;
+	Map<Long,String>	ledgerMap;
 
 	public Report() {
 		super();
+		
+		ledgerMap = new HashMap<Long,String>();
+		ledgerMap.put((long)103, "1050");
+		ledgerMap.put((long)106, "1050");
+		ledgerMap.put((long)20001, "1040");
+		ledgerMap.put((long)20002, "1040");
 
 		try {
 			xlsImg = ImageIO.read(this.getClass().getResource("/xlsx.png"));
@@ -89,18 +99,20 @@ public class Report extends JApplet {
 	};
 
 	class Cost {
-		long no;
-		String type;
-		String name;
-		double c;
-		double p;
+		long	no;
+		String 	subno;
+		String 	type;
+		String 	name;
+		double 	c;
+		double 	p;
 
-		public Cost(long no, String type, String name, double c, double p) {
+		public Cost(long no, String type, String name, double c, double p, String subno) {
 			this.no = no;
 			this.type = type;
 			this.name = name;
 			this.c = c;
 			this.p = p;
+			this.subno = subno;
 		}
 	};
 
@@ -132,13 +144,82 @@ public class Report extends JApplet {
 	
 			workbook = new XSSFWorkbook(filename);
 			XSSFSheet sheet = workbook.getSheet("Skýrsla sviðstjóra v2");
-			XSSFRow row = sheet.getRow(2);
-	
-			System.err.println("sko");
+			XSSFRow row = sheet.getRow(0);
+			XSSFCell cell = row.getCell(1);
+			String cellv = cell.getStringCellValue();
+			String[] splt = cellv.split(":");
+			String str = null;
+			if( splt.length > 1 ) {
+				str = splt[1].trim();
+			}
+			row = sheet.getRow(2);
 			
-			List<Object> jobstr = new ArrayList<Object>();
+			XSSFCell[] lastGoodCell = null;
+			XSSFCell[] lastGoodCell2 = null;
 			int i = 2;
-			XSSFCell cell = row.getCell(i);
+			if( str != null ) {
+				String sql = "SELECT No_ FROM \"Matís ohf_$Job\" where \"Global Dimension 1 Code\" = '"+str+"' and \"Job Posting Group\" != 'INNSELD' and \"Completion Date\" < '1900-01-01'";
+				PreparedStatement ps = con.prepareStatement(sql);
+				ResultSet rs = ps.executeQuery();
+		
+				cell = row.getCell(i);
+				while (rs.next()) {
+					String val = rs.getString(1);
+					
+					if( cell == null ) {
+						if( lastGoodCell != null ) {
+							for( int k = 2; k < 100; k++ ) {
+								XSSFRow		rr = sheet.getRow(k);
+								if( rr != null ) {
+									XSSFCell 	cc = lastGoodCell[k];
+									XSSFCell 	cc2 = lastGoodCell2[k];
+									XSSFCell 	oc = rr.createCell(i);
+									XSSFCell 	oc2 = rr.createCell(i+1);
+									if( cc != null ) {
+										XSSFComment comment = cc.getCellComment();
+										if( comment != null ) oc.setCellComment( comment );
+										XSSFCellStyle style = cc.getCellStyle();
+										if( style != null ) oc.setCellStyle( style );
+										int type = cc.getCellType();
+										oc.setCellType( type );
+										String rawValue = cc.getRawValue();
+										if( rawValue != null ) oc.setRawValue( rawValue );
+										
+										comment = cc2.getCellComment();
+										if( comment != null ) oc2.setCellComment( comment );
+										style = cc2.getCellStyle();
+										if( style != null ) oc2.setCellStyle( style );
+										type = cc2.getCellType();
+										oc2.setCellType( type );
+										rawValue = cc2.getRawValue();
+										if( rawValue != null ) oc2.setRawValue( rawValue );
+									}
+								}
+							}
+						}
+						cell = row.getCell(i);
+					} else if( lastGoodCell == null ) {
+						lastGoodCell = new XSSFCell[100];
+						lastGoodCell2 = new XSSFCell[100];
+						for( int k = 2; k < 100; k++ ) {
+							XSSFRow	rr = sheet.getRow(k);
+							if( rr != null ) {
+								lastGoodCell[k] = rr.getCell(i);
+								lastGoodCell2[k] = rr.getCell(i+1);
+							}
+						}
+					}
+					cell.setCellValue( val );
+					
+					i += 2;
+					cell = row.getCell(i);
+				}
+				rs.close();
+			}
+				
+			List<Object> jobstr = new ArrayList<Object>();
+			i = 2;
+			cell = row.getCell(i);
 			while (cell != null
 					&& ((cell.getCellType() == Cell.CELL_TYPE_NUMERIC && cell
 							.getNumericCellValue() > 0) || (cell.getCellType() == Cell.CELL_TYPE_STRING && cell
@@ -154,7 +235,7 @@ public class Report extends JApplet {
 				cell = row.getCell(i);
 			}
 	
-			String str = "(";
+			str = "(";
 			for (Object o : jobstr) {
 				if (o instanceof Integer) {
 					str += "'" + Integer.toString((Integer) o) + "'";
@@ -166,8 +247,6 @@ public class Report extends JApplet {
 					str += ", ";
 			}
 			str += ")";
-	
-			System.err.println(str);
 	
 			String sql = "select * from dbo.job_excel where No_ in " + str;
 			PreparedStatement ps = con.prepareStatement(sql);
@@ -183,31 +262,27 @@ public class Report extends JApplet {
 				if( i < jobstr.size() ) {
 					row = sheet.getRow(3);
 					cell = row.getCell(2 + 2*i);
-					if (cell != null) {
-						cell.setCellType(Cell.CELL_TYPE_STRING);
-						cell.setCellValue(rs.getString(2));
-					}
+					if( cell == null ) cell = row.createCell(2 + 2*i);
+					cell.setCellType(Cell.CELL_TYPE_STRING);
+					cell.setCellValue(rs.getString(2));
 		
 					row = sheet.getRow(4);
 					cell = row.getCell(2 + 2*i);
-					if (cell != null) {
-						cell.setCellType(Cell.CELL_TYPE_STRING);
-						cell.setCellValue(rs.getString(3));
-					}
+					if( cell == null ) cell = row.createCell(2 + 2*i);
+					cell.setCellType(Cell.CELL_TYPE_STRING);
+					cell.setCellValue(rs.getString(3));
 		
 					row = sheet.getRow(5);
 					cell = row.getCell(2 + 2*i);
-					if (cell != null) {
-						cell.setCellType(Cell.CELL_TYPE_STRING);
-						cell.setCellValue(rs.getDate(4).toString());
-					}
+					if( cell == null ) cell = row.createCell(2 + 2*i);
+					cell.setCellType(Cell.CELL_TYPE_STRING);
+					cell.setCellValue(rs.getDate(4).toString());
 		
 					row = sheet.getRow(6);
 					cell = row.getCell(2 + 2*i);
-					if (cell != null) {
-						cell.setCellType(Cell.CELL_TYPE_STRING);
-						cell.setCellValue(rs.getDate(5).toString());
-					}
+					if( cell == null ) cell = row.createCell(2 + 2*i);
+					cell.setCellType(Cell.CELL_TYPE_STRING);
+					cell.setCellValue(rs.getDate(5).toString());
 					// jobs.add( new Job( rs.getString(1), rs.getString(2),
 					// rs.getString(3), rs.getDate(4), rs.getDate(5) ) );
 					//i += 2;
@@ -254,7 +329,7 @@ public class Report extends JApplet {
 				while (rs.next()) {
 					String nostr = rs.getString(1);
 					Cost cost = new Cost(Long.parseLong(nostr), rs.getString(2), rs
-							.getString(3), rs.getDouble(4), rs.getDouble(5));
+							.getString(3), rs.getDouble(4), rs.getDouble(5), null);
 					costMap.put(nostr, cost);
 					costList.add(cost);
 				}
@@ -274,6 +349,7 @@ public class Report extends JApplet {
 								if (costMap.containsKey(dstr)) {
 									Cost cost = costMap.get(dstr);
 									cell = row.getCell(k);
+									if( cell == null ) cell = row.createCell(k);
 									if (d >= 1000 && d < 2000)
 										cell.setCellValue(cost.p);
 									else
@@ -298,6 +374,7 @@ public class Report extends JApplet {
 										}
 									}
 									cell = row.getCell(k);
+									if( cell == null ) cell = row.createCell(k);
 									cell.setCellValue(tot);
 								}
 	
@@ -319,14 +396,16 @@ public class Report extends JApplet {
 										else tot += c.c;
 									}
 									cell = row.getCell(k);
+									if( cell == null ) cell = row.createCell(k);
 									cell.setCellValue(tot);
-								} else if (dstr.equals("Raun launakostnaður -fjárhagsbókh")) {
+								} else if (dstr.equals("Kostnaður v/ vinnu (útselt) - verkb")) {
 									double tot = 0.0;
 									for (String no : costMap.keySet()) {
 										Cost c = costMap.get(no);
 										if( c.type.contains("0") ) tot += c.p;
 									}
 									cell = row.getCell(k);
+									if( cell == null ) cell = row.createCell(k);
 									cell.setCellValue(tot);
 								} else if (dstr.equals("Afkoma (v/útselds taxta)")) {
 									double tot = 0.0;
@@ -341,6 +420,7 @@ public class Report extends JApplet {
 										}
 									}
 									cell = row.getCell(k);
+									if( cell == null ) cell = row.createCell(k);
 									cell.setCellValue(ctot-tot);
 								}
 							}
@@ -352,7 +432,6 @@ public class Report extends JApplet {
 						+ o.toString()
 						+ "' and be.No_ = bl.No_ and bl.\"Job No_\" = be.\"Job No_\" and be.Date <= '"+endDate+"' group by be.No_, be.Type, bl.Description";
 	
-				System.err.println( "about to exec "+sql);
 				ps = con.prepareStatement(sql);
 				rs = ps.executeQuery();
 	
@@ -360,7 +439,8 @@ public class Report extends JApplet {
 				costList.clear();
 				int count = 0;
 				while (rs.next()) {
-					System.err.print( (count++) + " " );
+					count++;
+					//System.err.print( (count) + " " );
 					String nostr = rs.getString(1);
 					long no = 0;
 					try {
@@ -370,7 +450,7 @@ public class Report extends JApplet {
 					}
 					
 					if( no != 0 ) {
-						Cost cost = new Cost(Long.parseLong(nostr), rs.getString(2), rs.getString(3), rs.getDouble(4), rs.getDouble(5));
+						Cost cost = new Cost(Long.parseLong(nostr), rs.getString(2), rs.getString(3), rs.getDouble(4), rs.getDouble(5), null);
 						costMap.put(nostr, cost);
 						costList.add(cost);
 					}
@@ -392,6 +472,7 @@ public class Report extends JApplet {
 								if (costMap.containsKey(dstr)) {
 									Cost cost = costMap.get(dstr);
 									cell = row.getCell(k);
+									if( cell == null ) cell = row.createCell(k);
 									if (d >= 1000 && d < 2000)
 										cell.setCellValue(cost.p);
 									else
@@ -416,6 +497,7 @@ public class Report extends JApplet {
 										}
 									}
 									cell = row.getCell(k);
+									if( cell == null ) cell = row.createCell(k);
 									cell.setCellValue(tot);
 								}
 	
@@ -436,15 +518,17 @@ public class Report extends JApplet {
 										else tot += c.c;
 									}
 									cell = row.getCell(k);
+									if( cell == null ) cell = row.createCell(k);
 									cell.setCellValue(tot);
 								} else if (dstr
-										.equals("Raun launakostnaður -fjárhagsbókh")) {
+										.equals("Kostnaður v/ vinnu (útselt) - verkb")) {
 									double tot = 0.0;
 									for (String no : costMap.keySet()) {
 										Cost c = costMap.get(no);
 										if( c.type.contains("0") ) tot += c.p;									
 									}
 									cell = row.getCell(k);
+									if( cell == null ) cell = row.createCell(k);
 									cell.setCellValue(tot);
 								} else if (dstr.equals("Afkoma (v/útselds taxta)")) {
 									double tot = 0.0;
@@ -459,6 +543,7 @@ public class Report extends JApplet {
 										}
 									}
 									cell = row.getCell(k);
+									if( cell == null ) cell = row.createCell(k);
 									cell.setCellValue(ctot-tot);
 								}
 							}
@@ -487,7 +572,7 @@ public class Report extends JApplet {
 				while (rs.next()) {
 					String nostr = rs.getString(1);
 					Cost cost = new Cost(Long.parseLong(nostr), rs.getString(2),
-							"", rs.getDouble(3), rs.getDouble(4));
+							"", rs.getDouble(3), rs.getDouble(4), null);
 					costMap.put(nostr, cost);
 					costList.add(cost);
 				}
@@ -503,14 +588,36 @@ public class Report extends JApplet {
 						if (cell != null) {
 							int d = (int) cell.getNumericCellValue();
 							String dstr = Integer.toString(d);
+							
 							if (d > 0) {
 								if (costMap.containsKey(dstr)) {
 									Cost cost = costMap.get(dstr);
 									cell = row.getCell(k);
+									if( cell == null ) cell = row.createCell(k);
 									if (d >= 1000 && d < 2000)
 										cell.setCellValue(cost.p);
 									else
 										cell.setCellValue(cost.c);
+								} else if( ledgerMap.containsValue(dstr) ) {
+									Set<Entry<Long,String>>	entr = ledgerMap.entrySet();
+									double tot = 0.0;
+									for (Cost c : costList) {
+										boolean check = false;
+										if( c.type.equals("1") ) {
+											for( Entry<Long,String> e : entr ) {
+												if( e.getValue().equals(dstr) && c.no == d ) {
+													check = true;
+													break;
+												}
+											}
+											if( check ) {
+												tot += c.p;
+											}
+										}
+									}
+									cell = row.getCell(k);
+									if( cell == null ) cell = row.createCell(k);
+									cell.setCellValue(tot);
 								} else {
 									double tot = 0.0;
 	
@@ -526,11 +633,13 @@ public class Report extends JApplet {
 										}
 									} else if (dstr.equals("1993")) {
 										for (Cost c : costList) {
-											if (c.no >= d - 993 && c.no < d + 7)
+											if( c.type.contains("1") ) {
 												tot += c.p;
+											}
 										}
 									}
 									cell = row.getCell(k);
+									if( cell == null ) cell = row.createCell(k);
 									cell.setCellValue(tot);
 								}
 	
@@ -552,14 +661,16 @@ public class Report extends JApplet {
 										else tot += c.c;
 									}
 									cell = row.getCell(k);
+									if( cell == null ) cell = row.createCell(k);
 									cell.setCellValue(tot);
-								} else if (dstr.equals("Raun launakostnaður -fjárhagsbókh")) {
+								} else if (dstr.equals("Kostnaður v/ vinnu (útselt) - verkb")) {
 									double tot = 0.0;
 									for (String no : costMap.keySet()) {
 										Cost c = costMap.get(no);
 										if( c.type.contains("0") ) tot += c.p;
 									}
 									cell = row.getCell(k);
+									if( cell == null ) cell = row.createCell(k);
 									cell.setCellValue(tot);
 								} else if (dstr.equals("Afkoma (v/útselds taxta)")) {
 									double tot = 0.0;
@@ -574,7 +685,8 @@ public class Report extends JApplet {
 										}
 									}
 									cell = row.getCell(k);
-									cell.setCellValue(ctot-tot);
+									if( cell == null ) cell = row.createCell(k);
+									cell.setCellValue(-ctot-tot);
 								}
 							}
 						}
@@ -592,7 +704,7 @@ public class Report extends JApplet {
 				while (rs.next()) {
 					String nostr = rs.getString(1);
 					Cost cost = new Cost(Long.parseLong(nostr), rs.getString(2),
-							"", rs.getDouble(3), rs.getDouble(4));
+							"", rs.getDouble(3), rs.getDouble(4), null);
 					costMap.put(nostr, cost);
 					costList.add(cost);
 				}
@@ -612,10 +724,31 @@ public class Report extends JApplet {
 								if (costMap.containsKey(dstr)) {
 									Cost cost = costMap.get(dstr);
 									cell = row.getCell(k);
+									if( cell == null ) cell = row.createCell(k);
 									if (d >= 1000 && d < 2000)
 										cell.setCellValue(cost.p);
 									else
 										cell.setCellValue(cost.c);
+								} else if( ledgerMap.containsValue(dstr) ) {
+									Set<Entry<Long,String>>	entr = ledgerMap.entrySet();
+									double tot = 0.0;
+									for (Cost c : costList) {
+										boolean check = false;
+										if( c.type.equals("1") ) {
+											for( Entry<Long,String> e : entr ) {
+												if( e.getValue().equals(dstr) && e.getKey().equals(c.no) ) {
+													check = true;
+													break;
+												}
+											}
+											if( check ) {
+												tot += c.p;
+											}
+										}
+									}
+									cell = row.getCell(k);
+									if( cell == null ) cell = row.createCell(k);
+									cell.setCellValue(tot);
 								} else {
 									double tot = 0.0;
 	
@@ -631,11 +764,13 @@ public class Report extends JApplet {
 										}
 									} else if (dstr.equals("1993")) {
 										for (Cost c : costList) {
-											if (c.no >= d - 993 && c.no < d + 7)
+											if( c.type.contains("1") ) {
 												tot += c.p;
+											}
 										}
 									}
 									cell = row.getCell(k);
+									if( cell == null ) cell = row.createCell(k);
 									cell.setCellValue(tot);
 								}
 	
@@ -657,14 +792,16 @@ public class Report extends JApplet {
 										else tot += c.c;
 									}
 									cell = row.getCell(k);
+									if( cell == null ) cell = row.createCell(k);
 									cell.setCellValue(tot);
-								} else if (dstr.equals("Raun launakostnaður -fjárhagsbókh")) {
+								} else if (dstr.equals("Kostnaður v/ vinnu (útselt) - verkb")) {
 									double tot = 0.0;
 									for (String no : costMap.keySet()) {
 										Cost c = costMap.get(no);
 										if( c.type.contains("0") ) tot += c.p;
 									}
 									cell = row.getCell(k);
+									if( cell == null ) cell = row.createCell(k);
 									cell.setCellValue(tot);
 								} else if (dstr.equals("Afkoma (v/útselds taxta)")) {
 									double tot = 0.0;
@@ -674,12 +811,13 @@ public class Report extends JApplet {
 										if( c.type.contains("0") ) tot += c.p;
 										else tot += c.c;
 										
-										if (c.no >= 1000 && c.no < 2000 ) {
+										if( c.type.equals("1") ) { //(c.no >= 1000 && c.no < 2000 ) {
 											ctot += c.p;
 										}
 									}
 									cell = row.getCell(k);
-									cell.setCellValue(ctot-tot);
+									if( cell == null ) cell = row.createCell(k);
+									cell.setCellValue(-ctot-tot);
 								}
 							}
 						}
