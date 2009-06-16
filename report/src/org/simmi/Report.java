@@ -37,6 +37,7 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFComment;
@@ -100,19 +101,27 @@ public class Report extends JApplet {
 
 	class Cost {
 		long	no;
+		String	nostr;
 		String 	subno;
 		String 	type;
 		String 	name;
 		double 	c;
 		double 	p;
 
-		public Cost(long no, String type, String name, double c, double p, String subno) {
-			this.no = no;
+		public Cost(String nostr, String type, String name, double c, double p, String subno) {
+			this.nostr = nostr;
 			this.type = type;
 			this.name = name;
 			this.c = c;
 			this.p = p;
 			this.subno = subno;
+			
+			no = -1;
+			try {
+				no = Long.parseLong(nostr);
+			} catch( Exception e ) {
+				System.err.println( "nostr " + nostr );
+			}
 		}
 	};
 
@@ -132,8 +141,7 @@ public class Report extends JApplet {
 		cell.setCellType(Cell.CELL_TYPE_STRING);
 		cell.setCellValue("siiiiimmmmmmmmmmmmmmmmmmmmmmmmmmmmmi");
 
-		workbook
-				.write(new FileOutputStream("/home/sigmar/Desktop/simmi2.xlsx"));
+		workbook.write(new FileOutputStream("/home/sigmar/Desktop/simmi2.xlsx"));
 	}
 
 	public void load(String filename) {
@@ -175,16 +183,12 @@ public class Report extends JApplet {
 									XSSFCell 	cc2 = lastGoodCell2[k];
 									XSSFCell 	oc = rr.createCell(i);
 									XSSFCell 	oc2 = rr.createCell(i+1);
+									
+									XSSFComment comment;
+									XSSFCellStyle style;
+									String rawValue;
+									int type;
 									if( cc != null ) {
-										XSSFComment comment = cc.getCellComment();
-										if( comment != null ) oc.setCellComment( comment );
-										XSSFCellStyle style = cc.getCellStyle();
-										if( style != null ) oc.setCellStyle( style );
-										int type = cc.getCellType();
-										oc.setCellType( type );
-										String rawValue = cc.getRawValue();
-										if( rawValue != null ) oc.setRawValue( rawValue );
-										
 										comment = cc2.getCellComment();
 										if( comment != null ) oc2.setCellComment( comment );
 										style = cc2.getCellStyle();
@@ -193,6 +197,19 @@ public class Report extends JApplet {
 										oc2.setCellType( type );
 										rawValue = cc2.getRawValue();
 										if( rawValue != null ) oc2.setRawValue( rawValue );
+										
+										comment = cc.getCellComment();
+										if( comment != null ) oc.setCellComment( comment );
+										style = cc.getCellStyle();
+										if( style != null ) oc.setCellStyle( style );
+										type = cc.getCellType();
+										oc.setCellType( type );
+										rawValue = cc.getRawValue();
+										if( rawValue != null ) oc.setRawValue( rawValue );
+									}
+									
+									if( k >= 2 && k <= 6 ) {
+										sheet.addMergedRegion( new CellRangeAddress(k, k, i, i+1) );
 									}
 								}
 							}
@@ -321,6 +338,8 @@ public class Report extends JApplet {
 						+ o.toString()
 						+ "' and be.No_ = bl.No_ and bl.\"Job No_\" = be.\"Job No_\" and be.Date >= '"+startDate+"' and be.Date <= '"+endDate+"' group by be.No_, be.Type, bl.Description";
 	
+				System.err.println( "executing job " + o.toString() );
+				
 				ps = con.prepareStatement(sql);
 				rs = ps.executeQuery();
 	
@@ -328,8 +347,7 @@ public class Report extends JApplet {
 				costList.clear();
 				while (rs.next()) {
 					String nostr = rs.getString(1);
-					Cost cost = new Cost(Long.parseLong(nostr), rs.getString(2), rs
-							.getString(3), rs.getDouble(4), rs.getDouble(5), null);
+					Cost cost = new Cost(nostr, rs.getString(2), rs.getString(3), rs.getDouble(4), rs.getDouble(5), null);
 					costMap.put(nostr, cost);
 					costList.add(cost);
 				}
@@ -413,6 +431,7 @@ public class Report extends JApplet {
 									for (String no : costMap.keySet()) {
 										Cost c = costMap.get(no);
 										if( c.type.contains("0") ) tot += c.p;
+										//else if( c.type.contains("1") ) ctot += c.p;
 										else tot += c.c;
 										
 										if (c.no >= 1000 && c.no < 2000 ) {
@@ -442,20 +461,10 @@ public class Report extends JApplet {
 					count++;
 					//System.err.print( (count) + " " );
 					String nostr = rs.getString(1);
-					long no = 0;
-					try {
-						no = Long.parseLong(nostr);
-					} catch( Exception e ) {
-						no = 0;
-					}
-					
-					if( no != 0 ) {
-						Cost cost = new Cost(Long.parseLong(nostr), rs.getString(2), rs.getString(3), rs.getDouble(4), rs.getDouble(5), null);
-						costMap.put(nostr, cost);
-						costList.add(cost);
-					}
+					Cost cost = new Cost(nostr, rs.getString(2), rs.getString(3), rs.getDouble(4), rs.getDouble(5), null);
+					costMap.put(nostr, cost);
+					costList.add(cost);
 				}
-				System.err.println("done");
 				rs.close();
 				ps.close();
 	
@@ -536,6 +545,7 @@ public class Report extends JApplet {
 									for (String no : costMap.keySet()) {
 										Cost c = costMap.get(no);
 										if( c.type.contains("0") ) tot += c.p;
+										//else if( c.type.contains("1") ) ctot += c.p;
 										else tot += c.c;
 										
 										if (c.no >= 1000 && c.no < 2000 ) {
@@ -554,16 +564,20 @@ public class Report extends JApplet {
 				k += 2;
 			}
 	
+			System.err.println( "fetching real data" );
 			/************ real ******************/
 	
 			k = 2;
 			for (Object o : jobstr) {
 				// sql =
 				// "select be.No_, be.Type, bl.Description, sum(be.\"Total Cost\"), sum(\"Total Price\") as Cost from dbo.\"Matís ohf_$Job Ledger Entry\" be, dbo.\"Matís ohf_$Job Budget Line\" bl where be.\"Job No_\" = '"+o.toString()+"' and be.No_ = bl.No_ and bl.\"Job No_\" = be.\"Job No_\" and be.\"Posting Date\" >= '2009-01-01' and be.\"Posting Date\" < '2009-04-01' group by be.No_, be.Type, bl.Description";
-				sql = "select le.No_, le.Type, sum(le.\"Total Cost\") as Cost, sum(le.\"Total Price\") as Price from dbo.\"Matís ohf_$Job Ledger Entry\" le where le.\"Job No_\" = '"
-						+ o.toString()
-						+ "' and le.\"Posting Date\" >= '"+startDate+"' and le.\"Posting Date\" <= '"+endDate+"' group by le.No_, le.Type";
+				sql = "select ge.\"Sales Account\", le.Type, sum(le.\"Total Cost\") as Cost, sum(le.\"Total Price\") as Price from dbo.\"Matís ohf_$Job Ledger Entry\" le, dbo.\"Matís ohf_$General Posting Setup\" ge "
+						+ "where le.\"Job No_\" = '" + o.toString()
+						+ "' and le.\"Posting Date\" >= '"+startDate+"' and le.\"Posting Date\" <= '"+endDate+"' "
+						+ "and ge.\"Gen_ Bus_ Posting Group\" = le.\"Gen_ Bus_ Posting Group\" and ge.\"Gen_ Prod_ Posting Group\" = le.\"Gen_ Prod_ Posting Group\" group by ge.\"Sales Account\", le.Type";
 	
+				System.err.println( "executing real " + o.toString() );
+				
 				ps = con.prepareStatement(sql);
 				rs = ps.executeQuery();
 	
@@ -571,8 +585,7 @@ public class Report extends JApplet {
 				costList.clear();
 				while (rs.next()) {
 					String nostr = rs.getString(1);
-					Cost cost = new Cost(Long.parseLong(nostr), rs.getString(2),
-							"", rs.getDouble(3), rs.getDouble(4), null);
+					Cost cost = new Cost(nostr, rs.getString(2), "", rs.getDouble(3), rs.getDouble(4), null);
 					costMap.put(nostr, cost);
 					costList.add(cost);
 				}
@@ -598,7 +611,7 @@ public class Report extends JApplet {
 										cell.setCellValue(cost.p);
 									else
 										cell.setCellValue(cost.c);
-								} else if( ledgerMap.containsValue(dstr) ) {
+								} /*else if( ledgerMap.containsValue(dstr) ) {
 									Set<Entry<Long,String>>	entr = ledgerMap.entrySet();
 									double tot = 0.0;
 									for (Cost c : costList) {
@@ -618,7 +631,7 @@ public class Report extends JApplet {
 									cell = row.getCell(k);
 									if( cell == null ) cell = row.createCell(k);
 									cell.setCellValue(tot);
-								} else {
+								}*/ else {
 									double tot = 0.0;
 	
 									if (dstr.endsWith("99")) {
@@ -678,6 +691,7 @@ public class Report extends JApplet {
 									for (String no : costMap.keySet()) {
 										Cost c = costMap.get(no);
 										if( c.type.contains("0") ) tot += c.p;
+										//else if( c.type.contains("1") ) ctot += c.p;
 										else tot += c.c;
 										
 										if (c.no >= 1000 && c.no < 2000 ) {
@@ -693,8 +707,9 @@ public class Report extends JApplet {
 					}
 				}
 	
-				sql = "select le.No_, le.Type, sum(le.\"Total Cost\") as Cost, sum(le.\"Total Price\") as Price from dbo.\"Matís ohf_$Job Ledger Entry\" le where le.\"Job No_\" = '"
-						+ o.toString() + "' and le.\"Posting Date\" <= '"+endDate+"' group by le.No_, le.Type";
+				sql = "select ge.\"Sales Account\", le.Type, sum(le.\"Total Cost\") as Cost, sum(le.\"Total Price\") as Price from dbo.\"Matís ohf_$Job Ledger Entry\" le, dbo.\"Matís ohf_$General Posting Setup\" ge where le.\"Job No_\" = '"
+						+ o.toString() + "' and le.\"Posting Date\" <= '"+endDate+"' "
+						+ "and ge.\"Gen_ Bus_ Posting Group\" = le.\"Gen_ Bus_ Posting Group\" and ge.\"Gen_ Prod_ Posting Group\" = le.\"Gen_ Prod_ Posting Group\" group by ge.\"Sales Account\", le.Type";
 	
 				ps = con.prepareStatement(sql);
 				rs = ps.executeQuery();
@@ -703,8 +718,7 @@ public class Report extends JApplet {
 				costList.clear();
 				while (rs.next()) {
 					String nostr = rs.getString(1);
-					Cost cost = new Cost(Long.parseLong(nostr), rs.getString(2),
-							"", rs.getDouble(3), rs.getDouble(4), null);
+					Cost cost = new Cost(nostr, rs.getString(2), "", rs.getDouble(3), rs.getDouble(4), null);
 					costMap.put(nostr, cost);
 					costList.add(cost);
 				}
@@ -729,7 +743,7 @@ public class Report extends JApplet {
 										cell.setCellValue(cost.p);
 									else
 										cell.setCellValue(cost.c);
-								} else if( ledgerMap.containsValue(dstr) ) {
+								} /*else if( ledgerMap.containsValue(dstr) ) {
 									Set<Entry<Long,String>>	entr = ledgerMap.entrySet();
 									double tot = 0.0;
 									for (Cost c : costList) {
@@ -749,7 +763,7 @@ public class Report extends JApplet {
 									cell = row.getCell(k);
 									if( cell == null ) cell = row.createCell(k);
 									cell.setCellValue(tot);
-								} else {
+								}*/ else {
 									double tot = 0.0;
 	
 									if (dstr.endsWith("99")) {
@@ -809,9 +823,10 @@ public class Report extends JApplet {
 									for (String no : costMap.keySet()) {
 										Cost c = costMap.get(no);
 										if( c.type.contains("0") ) tot += c.p;
+										//else if( c.type.contains("1") ) ctot += c.p;
 										else tot += c.c;
 										
-										if( c.type.equals("1") ) { //(c.no >= 1000 && c.no < 2000 ) {
+										if( c.no >= 1000 && c.no < 2000 ) {
 											ctot += c.p;
 										}
 									}
@@ -824,6 +839,9 @@ public class Report extends JApplet {
 					}
 				}
 	
+				//sheet.autoSizeColumn(k);
+				//sheet.autoSizeColumn(k+1);
+				
 				k += 2;
 			}
 		} catch (ClassNotFoundException e1) {

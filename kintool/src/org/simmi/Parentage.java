@@ -362,14 +362,18 @@ public class Parentage extends JApplet {
 								}
 							}								
 			
-							if( mb ) mcount++;
+							if( mb ) {
+								mcount++;
+							}
 						} else {
 							boolean db = 	   (fa1.equals( ba1 ) && (ma1.equals( ba2 ) || ma2.equals( ba2 ))) 
-											|| (fa1.equals( ba2 ) && ma1.equals( ba1 ) || ma1.equals( ba1 ))
+											|| (fa1.equals( ba2 ) && ma1.equals( ba1 ) || ma2.equals( ba1 ))
 											|| (fa2.equals( ba1 ) && (ma1.equals( ba2 ) || ma2.equals( ba2 ))) 
-											|| (fa2.equals( ba2 ) && ma1.equals( ba1 ) || ma1.equals( ba1 ));
+											|| (fa2.equals( ba2 ) && ma1.equals( ba1 ) || ma2.equals( ba1 ));
 							
-							if( db ) dcount++;
+							if( db ) {
+								dcount++;
+							}
 						}
 						
 						c += 2;

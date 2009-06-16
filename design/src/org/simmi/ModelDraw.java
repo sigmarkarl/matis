@@ -1,12 +1,10 @@
 package org.simmi;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -18,24 +16,31 @@ import java.util.Set;
 import javax.media.opengl.GL;
 
 public class ModelDraw {
-	public static native int loadFromFile( String fname );
-	public static native void getVertices( ByteBuffer buffer, int optCount, String fname );
+	public static native int countFaces( String fname );
+	public static native int countVertices( String fname );
+	public static native void getVertices( ByteBuffer vertexBuffer, String fname );
 	
 	static {
-    	System.loadLibrary("relatron");
+    	System.loadLibrary("3ds");
     }
 	
 	int			matSize;
-	FloatBuffer	vertexBuffer = null;
+	
+	int faces = 0;
+	//int vertices = 0;
+	ByteBuffer	vertexBuffer = null;
+	//ByteBuffer	indexBuffer = null;
+	
 	FloatBuffer	dataBuffer = null;
 	ByteBuffer	colorBuffer = null;
 	FloatBuffer modelBuffer;
 	FloatBuffer lightBuffer;
+	
 	int 		size = 6;
     int 		x, y;
     int			total;
     
-    ByteBuffer	fileBuffer;
+    //ByteBuffer	fileBuffer;
 	
 	public ModelDraw( URL url ) {
 		ByteBuffer directBuffer = ByteBuffer.allocateDirect( 25000000 );
@@ -85,24 +90,38 @@ public class ModelDraw {
 			}
 		}
 		
-		int faces;
 		try {
-			faces = ModelDraw.loadFromFile( f.getCanonicalPath() );
-			fileBuffer = ByteBuffer.allocateDirect( 4*faces*6*3 );
-			fileBuffer.order( ByteOrder.nativeOrder() );
-			ModelDraw.getVertices( fileBuffer, 0, f.getCanonicalPath() );
+			faces = ModelDraw.countFaces( f.getCanonicalPath() );
+			//vertices = ModelDraw.countVertices( f.getCanonicalPath() );
+			
+			//System.err.println( faces + "   " + vertices );
+			
+			vertexBuffer = ByteBuffer.allocateDirect( faces*4*6*3 );
+			//indexBuffer = ByteBuffer.allocateDirect( faces*4*3 );
+			vertexBuffer.order( ByteOrder.nativeOrder() );
+			//indexBuffer.order( ByteOrder.nativeOrder() );
+			
+			//fileBuffer = ByteBuffer.allocateDirect( 4*faces*6*3 );
+			//fileBuffer.order( ByteOrder.nativeOrder() );
+			ModelDraw.getVertices( vertexBuffer, f.getCanonicalPath() );
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
-		FloatBuffer ff = fileBuffer.asFloatBuffer();
+		FloatBuffer ff = vertexBuffer.asFloatBuffer();
 		float val = 1000.0f;
-		for( int k = 0; k < total/4; k+=6 ) {
+		for( int k = 0; k < 6*3*faces; k+=6 ) {
 			ff.put(k+3, ff.get(k+3)/val);
 			ff.put(k+4, ff.get(k+4)/val);
 			ff.put(k+5, ff.get(k+5)/val);
 		}
+		
+		/*for( int k = 0; k < 3*3*faces; k+=3 ) {
+			ff.put(k+0, ff.get(k+0)/val);
+			ff.put(k+1, ff.get(k+1)/val);
+			ff.put(k+2, ff.get(k+2)/val);
+		}*/
 		
 		initBuffers();
 		initLight();
@@ -127,7 +146,7 @@ public class ModelDraw {
 	public void initBuffers() {
 		int matSqure = matSize*matSize;
 		
-		vertexBuffer = FloatBuffer.allocate( size*(matSqure)*10 );
+		//vertexBuffer = FloatBuffer.allocate( size*(matSqure)*10 );
 		colorBuffer = ByteBuffer.allocate( matSqure );
 		Arrays.fill( colorBuffer.array(), (byte)0 );
 		
@@ -209,7 +228,7 @@ public class ModelDraw {
 		int xx2 = Math.min( matSize-1, x2 );
 		int yy1 = Math.max( 0, y1 );
 		int yy2 = Math.min( matSize-1, y2 );
-		makeSurface( vertexBuffer, selecting, xx1, yy1, xx2, yy2, 0, selectFilter);		
+		//makeSurface( vertexBuffer, selecting, xx1, yy1, xx2, yy2, 0, selectFilter);		
 	}
 	 
 	public void makeSurface( FloatBuffer floatBuffer, boolean selecting, int x1, int y1, int x2, int y2, int offset, Set<Integer> selectFilter ) {
@@ -406,25 +425,16 @@ public class ModelDraw {
 		gl.glEnable( GL.GL_DEPTH_TEST );
 		gl.glEnable( GL.GL_LIGHTING );
 		
-		if( fileBuffer != null ) {
+		if( vertexBuffer != null ) {
 			gl.glEnable( GL.GL_CULL_FACE );
 			gl.glTranslatef(50.0f, -100.0f, 0.0f);
 			gl.glCullFace( GL.GL_BACK );
-			gl.glInterleavedArrays( GL.GL_N3F_V3F, 0, fileBuffer );
-			gl.glDrawArrays( GL.GL_TRIANGLES, 0, total/(4*6) );
+			gl.glInterleavedArrays( GL.GL_N3F_V3F, 0, vertexBuffer );
+			gl.glDrawArrays( GL.GL_TRIANGLES, 0, 3*faces );
 			gl.glCullFace( GL.GL_FRONT );
-			gl.glInterleavedArrays( GL.GL_N3F_V3F, 0, fileBuffer );
-			gl.glDrawArrays( GL.GL_TRIANGLES, 0, total/(4*6) );
+			gl.glInterleavedArrays( GL.GL_N3F_V3F, 0, vertexBuffer );
+			gl.glDrawArrays( GL.GL_TRIANGLES, 0, 3*faces );
 			gl.glTranslatef(-50.0f, 100.0f, 0.0f);
-		} else {
-			int count = vertexBuffer.limit();
-			gl.glEnable( GL.GL_CULL_FACE );
-			gl.glCullFace( GL.GL_BACK );
-			gl.glInterleavedArrays( GL.GL_C4F_N3F_V3F, 0, vertexBuffer );
-			gl.glDrawArrays( GL.GL_TRIANGLES, 0, count/(10) );
-			gl.glCullFace( GL.GL_FRONT );
-			gl.glInterleavedArrays( GL.GL_C4F_N3F_V3F, 0, vertexBuffer );
-			gl.glDrawArrays( GL.GL_TRIANGLES, 0, count/(10) );
 		}
 		
 		gl.glDisable( GL.GL_COLOR_MATERIAL );
