@@ -1,15 +1,18 @@
 package org.simmi;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.Graphics;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.sql.Connection;
@@ -22,19 +25,30 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Map.Entry;
 
 import javax.imageio.ImageIO;
+import javax.swing.AbstractAction;
 import javax.swing.JApplet;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.JTabbedPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.TransferHandler;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.event.RowSorterEvent;
+import javax.swing.event.TableModelListener;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.util.CellRangeAddress;
@@ -52,6 +66,17 @@ public class Report extends JApplet {
 	BufferedImage 	xlsImg;
 	XSSFWorkbook 	workbook;
 	Map<Long,String>	ledgerMap;
+	
+	JTable			table;
+	TableModel		rowHeader;
+	JScrollPane		summaryscrollpane;
+	JTable			summarytable;
+	TableModel		summarymodel;
+	TableModel		model;
+	
+	MySorter		currentsorter;
+	MySorter		summarysorter;
+	MySorter		sorter;
 
 	public Report() {
 		super();
@@ -142,6 +167,285 @@ public class Report extends JApplet {
 		cell.setCellValue("siiiiimmmmmmmmmmmmmmmmmmmmmmmmmmmmmi");
 
 		workbook.write(new FileOutputStream("/home/sigmar/Desktop/simmi2.xlsx"));
+	}
+	
+	public class Result {
+		Map<String,List<Cost>>	realCost = new HashMap<String,List<Cost>>();
+		Map<String,List<Cost>>	estCost = new HashMap<String,List<Cost>>();
+		
+		public Result() {
+			
+		}
+		
+		public void addRealCost( String jobno, Cost cost ) {
+			List<Cost>	costList;
+			if( !realCost.containsKey( jobno ) ) {
+				costList = new ArrayList<Cost>();
+				realCost.put( jobno, costList );
+			} else costList = realCost.get( jobno );
+			
+			costList.add( cost );
+		}
+		
+		public void addEstCost( String jobno, Cost cost ) {
+			List<Cost>	costList;
+			if( !estCost.containsKey( jobno ) ) {
+				costList = new ArrayList<Cost>();
+				estCost.put( jobno, costList );
+			} else costList = estCost.get( jobno );
+			
+			costList.add( cost );
+		}
+	}
+	
+	public Result	loadAll() throws ClassNotFoundException, SQLException {
+		Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=MATIS;user=simmi;password=drsmorc.311;";
+		con = DriverManager.getConnection(connectionUrl);
+			
+		final Result	res = new Result();
+		
+		String str = "('"+(String)model.getValueAt(0, 1);
+		for( int r = 1; r < model.getRowCount(); r++ ) {
+			String val = (String)model.getValueAt(r, 1);
+			str += "', '"+val;
+		}
+		str += "')";
+		
+		String sql = "select be.\"Job No_\", be.No_, be.Type, bl.Description, sum(be.\"Total Cost\") as Cost, sum(be.\"Total Price\") as Price from dbo.\"Matís ohf_$Job Budget Entry\" be, dbo.\"Matís ohf_$Job Budget Line\" bl where be.\"Job No_\" in "
+				+ str
+				+ " and be.No_ = bl.No_ and bl.\"Job No_\" = be.\"Job No_\" group by be.\"Job No_\", be.No_, be.Type, bl.Description";
+
+		System.err.println( "executing job " + str );
+		
+		PreparedStatement 	ps = con.prepareStatement(sql);
+		ResultSet 			rs = ps.executeQuery();
+
+		int i = 0;
+		while (rs.next()) {
+			String jobno = rs.getString(1);
+			String nostr = rs.getString(2);
+			Cost cost = new Cost(nostr, rs.getString(3), rs.getString(4), rs.getDouble(5), rs.getDouble(6), null);
+			res.addEstCost( jobno, cost );
+			
+			i++;
+			if( i % 10 == 0 ) System.err.println( i );
+		}
+		rs.close();
+		ps.close();
+		
+		sql = "select le.\"Job No_\", le.No_, ge.\"Sales Account\", le.Type, sum(le.\"Total Cost\") as Cost, sum(le.\"Total Price\") as Price from dbo.\"Matís ohf_$Job Ledger Entry\" le, dbo.\"Matís ohf_$General Posting Setup\" ge "
+				+ "where le.\"Job No_\" in " + str
+				+ "and ge.\"Gen_ Bus_ Posting Group\" = le.\"Gen_ Bus_ Posting Group\" and ge.\"Gen_ Prod_ Posting Group\" = le.\"Gen_ Prod_ Posting Group\" group by le.\"Job No_\", le.No_, ge.\"Sales Account\", le.Type";
+
+		System.err.println( "executing real " + str );
+		
+		ps = con.prepareStatement(sql);
+		rs = ps.executeQuery();
+
+		i = 0;
+		while (rs.next()) {
+			String jobno = rs.getString(1);
+			String nostr = rs.getString(3);
+			if( nostr.equals("") ) nostr = rs.getString(2);
+			Cost cost = new Cost(nostr, rs.getString(4), "", rs.getDouble(5), rs.getDouble(6), null);
+			res.addRealCost( jobno, cost );
+			
+			i++;
+			if( i % 10 == 0 ) System.err.println( i );
+		}
+		rs.close();
+		ps.close();
+		
+		con.close();
+		
+		return res;
+	}
+	
+	Connection con = null;
+	public Result	loadSingle( String str ) throws ClassNotFoundException, SQLException {
+		if( con == null || con.isClosed() ) {
+			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=MATIS;user=simmi;password=drsmorc.311;";
+			con = DriverManager.getConnection(connectionUrl);
+		}
+			
+		final Result	res = new Result();
+		//List<Cost>			realList = res.realCost;
+		//Lst<Cost>			estList = res.estCost;
+		
+		String sql = "select be.No_, be.Type, bl.Description, sum(be.\"Total Cost\") as Cost, sum(be.\"Total Price\") as Price from dbo.\"Matís ohf_$Job Budget Entry\" be, dbo.\"Matís ohf_$Job Budget Line\" bl where be.\"Job No_\" = "
+				+ str
+				+ " and be.No_ = bl.No_ and bl.\"Job No_\" = be.\"Job No_\" group by be.No_, be.Type, bl.Description";
+
+		System.err.println( "executing job " + str );
+		
+		PreparedStatement 	ps = con.prepareStatement(sql);
+		ResultSet 			rs = ps.executeQuery();
+
+		while (rs.next()) {
+			String jobno = rs.getString(1);
+			String nostr = rs.getString(2);
+			Cost cost = new Cost(nostr, rs.getString(3), rs.getString(4), rs.getDouble(5), rs.getDouble(6), null);
+			res.addEstCost( jobno, cost );
+		}
+		rs.close();
+		ps.close();
+		
+		sql = "select le.No_, ge.\"Sales Account\", le.Type, sum(le.\"Total Cost\") as Cost, sum(le.\"Total Price\") as Price from dbo.\"Matís ohf_$Job Ledger Entry\" le, dbo.\"Matís ohf_$General Posting Setup\" ge "
+				+ "where le.\"Job No_\" = " + str
+				+ "and ge.\"Gen_ Bus_ Posting Group\" = le.\"Gen_ Bus_ Posting Group\" and ge.\"Gen_ Prod_ Posting Group\" = le.\"Gen_ Prod_ Posting Group\" group by le.No_, ge.\"Sales Account\", le.Type";
+
+		System.err.println( "executing real " + str );
+		
+		ps = con.prepareStatement(sql);
+		rs = ps.executeQuery();
+
+		while (rs.next()) {
+			String jobno = rs.getString(1);
+			String nostr = rs.getString(3);
+			if( nostr.equals("") ) nostr = rs.getString(2);
+			Cost cost = new Cost(nostr, rs.getString(4), "", rs.getDouble(5), rs.getDouble(6), null);
+			res.addRealCost( jobno, cost );
+		}
+		rs.close();
+		ps.close();
+		
+		return res;
+	}
+	
+	Map<String,Result>	resMap = new HashMap<String,Result>();
+	public TableModel calcModel() throws ClassNotFoundException, SQLException {
+		Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=MATIS;user=simmi;password=drsmorc.311;";
+		Connection con = DriverManager.getConnection(connectionUrl);
+		
+		final List<Result>	reslist = new ArrayList<Result>();
+		Set<String>		rest = new HashSet<String>();
+		
+		int[] rr = table.getSelectedRows();
+		for( int r : rr ) {
+			Object val = table.getValueAt(r, 1);
+			if( resMap.containsKey( val ) ) {
+				reslist.add( resMap.get( val ) );
+			} else rest.add( val.toString() );
+		}
+		
+		for( String str : rest ) {
+			Result res = new Result();
+			resMap.put( str, res );
+		}
+		
+		int k = 3;
+		for( String str : rest ) {
+			Result res = resMap.get(str);
+			//List<Cost>	costList = res.realCost;
+			
+			String sql = "select be.No_, be.Type, bl.Description, sum(be.\"Total Cost\") as Cost, sum(be.\"Total Price\") as Price from dbo.\"Matís ohf_$Job Budget Entry\" be, dbo.\"Matís ohf_$Job Budget Line\" bl where be.\"Job No_\" = "
+					+ str
+					+ " and be.No_ = bl.No_ and bl.\"Job No_\" = be.\"Job No_\" group by be.No_, be.Type, bl.Description";
+
+			System.err.println( "executing job " + str );
+			
+			PreparedStatement 	ps = con.prepareStatement(sql);
+			ResultSet 			rs = ps.executeQuery();
+
+			costMap.clear();
+			costList.clear();
+			while (rs.next()) {
+				String nostr = rs.getString(1);
+				Cost cost = new Cost(nostr, rs.getString(2), rs.getString(3), rs.getDouble(4), rs.getDouble(5), null);
+				costMap.put(nostr, cost);
+				costList.add(cost);
+			}
+			rs.close();
+			ps.close();
+		}
+
+		k = 2;
+		for (String str : rest) {
+			Result res = resMap.get(str);
+			//List<Cost>	costList = res.realCost;
+			
+			String sql = "select le.No_, ge.\"Sales Account\", le.Type, sum(le.\"Total Cost\") as Cost, sum(le.\"Total Price\") as Price from dbo.\"Matís ohf_$Job Ledger Entry\" le, dbo.\"Matís ohf_$General Posting Setup\" ge "
+					+ "where le.\"Job No_\" = " + str
+					+ "and ge.\"Gen_ Bus_ Posting Group\" = le.\"Gen_ Bus_ Posting Group\" and ge.\"Gen_ Prod_ Posting Group\" = le.\"Gen_ Prod_ Posting Group\" group by le.No_, ge.\"Sales Account\", le.Type";
+
+			System.err.println( "executing real " + str );
+			
+			PreparedStatement 	ps = con.prepareStatement(sql);
+			ResultSet			rs = ps.executeQuery();
+
+			costMap.clear();
+			costList.clear();
+			while (rs.next()) {
+				String nostr = rs.getString(2);
+				if( nostr.equals("") ) nostr = rs.getString(1);
+				Cost cost = new Cost(nostr, rs.getString(3), "", rs.getDouble(4), rs.getDouble(5), null);
+				costMap.put(nostr, cost);
+				costList.add(cost);
+			}
+			rs.close();
+			ps.close();
+			
+			k += 2;
+		}
+		con.close();
+		
+		model = new TableModel() {
+
+			@Override
+			public void addTableModelListener(TableModelListener l) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public Class<?> getColumnClass(int columnIndex) {
+				return String.class;
+			}
+
+			@Override
+			public int getColumnCount() {
+				return reslist.size();
+			}
+
+			@Override
+			public String getColumnName(int columnIndex) {
+				if( columnIndex % 2 == 0 ) return "Raun";
+				else return "Áætlun";
+			}
+
+			@Override
+			public int getRowCount() {
+				return rowHeader.getRowCount();
+			}
+
+			@Override
+			public Object getValueAt(int rowIndex, int columnIndex) {
+				String ret = "";
+				
+					
+				
+				return ret;
+			}
+
+			@Override
+			public boolean isCellEditable(int rowIndex, int columnIndex) {
+				return false;
+			}
+
+			@Override
+			public void removeTableModelListener(TableModelListener l) {
+				
+			}
+
+			@Override
+			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+				
+			}
+		};
+		return model;
 	}
 
 	public void load(String filename) {
@@ -334,9 +638,9 @@ public class Report extends JApplet {
 			/********** plan ***************/
 			int k = 3;
 			for (Object o : jobstr) {
-				sql = "select be.No_, be.Type, bl.Description, sum(be.\"Total Cost\") as Cost, sum(be.\"Total Price\") as Price from dbo.\"Matís ohf_$Job Budget Entry\" be, dbo.\"Matís ohf_$Job Budget Line\" bl where be.\"Job No_\" = '"
+				sql = "select be.No_, be.Type, bl.Description, sum(be.\"Total Cost\") as Cost, sum(be.\"Total Price\") as Price from dbo.\"Matís ohf_$Job Budget Entry\" be, dbo.\"Matís ohf_$Job Budget Line\" bl where be.\"Job No_\" = "
 						+ o.toString()
-						+ "' and be.No_ = bl.No_ and bl.\"Job No_\" = be.\"Job No_\" and be.Date >= '"+startDate+"' and be.Date <= '"+endDate+"' group by be.No_, be.Type, bl.Description";
+						+ " and be.No_ = bl.No_ and bl.\"Job No_\" = be.\"Job No_\" and be.Date >= '"+startDate+"' and be.Date <= '"+endDate+"' group by be.No_, be.Type, bl.Description";
 	
 				System.err.println( "executing job " + o.toString() );
 				
@@ -447,9 +751,9 @@ public class Report extends JApplet {
 					}
 				}
 	
-				sql = "select be.No_, be.Type, bl.Description, sum(be.\"Total Cost\") as Cost, sum(\"Total Price\") as Price from dbo.\"Matís ohf_$Job Budget Entry\" be, dbo.\"Matís ohf_$Job Budget Line\" bl where be.\"Job No_\" = '"
+				sql = "select be.No_, be.Type, bl.Description, sum(be.\"Total Cost\") as Cost, sum(\"Total Price\") as Price from dbo.\"Matís ohf_$Job Budget Entry\" be, dbo.\"Matís ohf_$Job Budget Line\" bl where be.\"Job No_\" = "
 						+ o.toString()
-						+ "' and be.No_ = bl.No_ and bl.\"Job No_\" = be.\"Job No_\" and be.Date <= '"+endDate+"' group by be.No_, be.Type, bl.Description";
+						+ " and be.No_ = bl.No_ and bl.\"Job No_\" = be.\"Job No_\" and be.Date <= '"+endDate+"' group by be.No_, be.Type, bl.Description";
 	
 				ps = con.prepareStatement(sql);
 				rs = ps.executeQuery();
@@ -571,10 +875,10 @@ public class Report extends JApplet {
 			for (Object o : jobstr) {
 				// sql =
 				// "select be.No_, be.Type, bl.Description, sum(be.\"Total Cost\"), sum(\"Total Price\") as Cost from dbo.\"Matís ohf_$Job Ledger Entry\" be, dbo.\"Matís ohf_$Job Budget Line\" bl where be.\"Job No_\" = '"+o.toString()+"' and be.No_ = bl.No_ and bl.\"Job No_\" = be.\"Job No_\" and be.\"Posting Date\" >= '2009-01-01' and be.\"Posting Date\" < '2009-04-01' group by be.No_, be.Type, bl.Description";
-				sql = "select ge.\"Sales Account\", le.Type, sum(le.\"Total Cost\") as Cost, sum(le.\"Total Price\") as Price from dbo.\"Matís ohf_$Job Ledger Entry\" le, dbo.\"Matís ohf_$General Posting Setup\" ge "
-						+ "where le.\"Job No_\" = '" + o.toString()
-						+ "' and le.\"Posting Date\" >= '"+startDate+"' and le.\"Posting Date\" <= '"+endDate+"' "
-						+ "and ge.\"Gen_ Bus_ Posting Group\" = le.\"Gen_ Bus_ Posting Group\" and ge.\"Gen_ Prod_ Posting Group\" = le.\"Gen_ Prod_ Posting Group\" group by ge.\"Sales Account\", le.Type";
+				sql = "select le.No_, ge.\"Sales Account\", le.Type, sum(le.\"Total Cost\") as Cost, sum(le.\"Total Price\") as Price from dbo.\"Matís ohf_$Job Ledger Entry\" le, dbo.\"Matís ohf_$General Posting Setup\" ge "
+						+ "where le.\"Job No_\" = " + o.toString()
+						+ " and le.\"Posting Date\" >= '"+startDate+"' and le.\"Posting Date\" <= '"+endDate+"' "
+						+ "and ge.\"Gen_ Bus_ Posting Group\" = le.\"Gen_ Bus_ Posting Group\" and ge.\"Gen_ Prod_ Posting Group\" = le.\"Gen_ Prod_ Posting Group\" group by le.No_, ge.\"Sales Account\", le.Type";
 	
 				System.err.println( "executing real " + o.toString() );
 				
@@ -584,8 +888,9 @@ public class Report extends JApplet {
 				costMap.clear();
 				costList.clear();
 				while (rs.next()) {
-					String nostr = rs.getString(1);
-					Cost cost = new Cost(nostr, rs.getString(2), "", rs.getDouble(3), rs.getDouble(4), null);
+					String nostr = rs.getString(2);
+					if( nostr.equals("") ) nostr = rs.getString(1);
+					Cost cost = new Cost(nostr, rs.getString(3), "", rs.getDouble(4), rs.getDouble(5), null);
 					costMap.put(nostr, cost);
 					costList.add(cost);
 				}
@@ -707,9 +1012,9 @@ public class Report extends JApplet {
 					}
 				}
 	
-				sql = "select ge.\"Sales Account\", le.Type, sum(le.\"Total Cost\") as Cost, sum(le.\"Total Price\") as Price from dbo.\"Matís ohf_$Job Ledger Entry\" le, dbo.\"Matís ohf_$General Posting Setup\" ge where le.\"Job No_\" = '"
-						+ o.toString() + "' and le.\"Posting Date\" <= '"+endDate+"' "
-						+ "and ge.\"Gen_ Bus_ Posting Group\" = le.\"Gen_ Bus_ Posting Group\" and ge.\"Gen_ Prod_ Posting Group\" = le.\"Gen_ Prod_ Posting Group\" group by ge.\"Sales Account\", le.Type";
+				sql = "select le.No_, ge.\"Sales Account\", le.Type, sum(le.\"Total Cost\") as Cost, sum(le.\"Total Price\") as Price from dbo.\"Matís ohf_$Job Ledger Entry\" le, dbo.\"Matís ohf_$General Posting Setup\" ge where le.\"Job No_\" = "
+						+ o.toString() + " and le.\"Posting Date\" <= '"+endDate+"' "
+						+ "and ge.\"Gen_ Bus_ Posting Group\" = le.\"Gen_ Bus_ Posting Group\" and ge.\"Gen_ Prod_ Posting Group\" = le.\"Gen_ Prod_ Posting Group\" group by le.No_, ge.\"Sales Account\", le.Type";
 	
 				ps = con.prepareStatement(sql);
 				rs = ps.executeQuery();
@@ -717,8 +1022,9 @@ public class Report extends JApplet {
 				costMap.clear();
 				costList.clear();
 				while (rs.next()) {
-					String nostr = rs.getString(1);
-					Cost cost = new Cost(nostr, rs.getString(2), "", rs.getDouble(3), rs.getDouble(4), null);
+					String nostr = rs.getString(2);
+					if( nostr.equals("") ) nostr = rs.getString(1);
+					Cost cost = new Cost(nostr, rs.getString(3), "", rs.getDouble(4), rs.getDouble(5), null);
 					costMap.put(nostr, cost);
 					costList.add(cost);
 				}
@@ -857,7 +1163,118 @@ public class Report extends JApplet {
 
 		// workbook.write( new FileOutputStream("/mnt/tmp/simmi.xlsx") );
 	}
+	
+	public class Svid {
+		String 	svid;
+		String	no;
+		String	name;
+		String	person;
+		Date	start;
+		Date	stop;
+		
+		public Svid( String svid, String no, String name, String person, Date start, Date stop ) {
+			this.svid = svid;
+			this.no = no;
+			this.name = name;
+			this.person = person;
+			this.start = start;
+			this.stop = stop;
+		}
+	};
+	
+	public TableModel createModel( final List<?> datalist ) {
+		final Class cls = datalist.get(0).getClass();
+		return new TableModel() {
+			@Override
+			public void addTableModelListener(TableModelListener l) {
+				// TODO Auto-generated method stub
+				
+			}
 
+			@Override
+			public Class<?> getColumnClass(int columnIndex) {
+				return cls.getDeclaredFields()[columnIndex].getClass();
+			}
+
+			@Override
+			public int getColumnCount() {
+				int cc = cls.getDeclaredFields().length-1;
+				return cc;
+			}
+
+			@Override
+			public String getColumnName(int columnIndex) {
+				return cls.getDeclaredFields()[columnIndex].getName();
+			}
+
+			@Override
+			public int getRowCount() {
+				return datalist.size();
+			}
+
+			@Override
+			public Object getValueAt(int rowIndex, int columnIndex) {
+				String ret = "";
+				try {
+					Field f = cls.getDeclaredFields()[columnIndex];
+					if( ret != null ) {
+						Object obj = f.get( datalist.get(rowIndex) );
+						if( obj != null ) ret = obj.toString();
+						/*else {
+							System.err.println("null obj "+rowIndex + "  " + columnIndex);
+						}*/
+					} else {
+						System.err.println("null field"+rowIndex + "  " + columnIndex);
+					}
+				} catch (IllegalArgumentException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (SecurityException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IllegalAccessException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				return ret;
+			}
+
+			@Override
+			public boolean isCellEditable(int rowIndex, int columnIndex) {
+				return false;
+			}
+
+			@Override
+			public void removeTableModelListener(TableModelListener l) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+				// TODO Auto-generated method stub
+				
+			}
+		};
+	}
+	
+	public class MySorter extends TableRowSorter<TableModel> {
+		public MySorter( TableModel model ) {
+			super( model );
+		}
+		
+		public int convertRowIndexToModelSuper(int index) {
+			return super.convertRowIndexToModel( index );
+		}
+
+		public int convertRowIndexToViewSuper(int index) {
+			return super.convertRowIndexToView( index );
+		}
+	};
+
+	Result res;
+	
 	@Override
 	public void init() {
 		try {
@@ -1029,6 +1446,383 @@ public class Report extends JApplet {
 				g.drawImage(pdfImg, 0, 0, this);
 			}
 		};
+		
+		JComponent parcomp = new JComponent() {
+			public void setBounds(int x, int y, int w, int h) {
+				super.setBounds(x, y, w, h);
+				xlsComp.setBounds(this.getWidth() / 2 - xlsImg.getWidth() - 10,
+						(this.getHeight() - xlsImg.getHeight()) / 2, xlsImg
+								.getWidth(), xlsImg.getHeight());
+				pdfComp.setBounds(this.getWidth() / 2 + 10,
+						(this.getHeight() - pdfImg.getHeight()) / 2, pdfImg
+								.getWidth(), pdfImg.getHeight());
+			}
+		};
+		parcomp.setLayout( null );
+		parcomp.add( xlsComp );
+		parcomp.add( pdfComp );
+		
+		List<Svid>	svidlist = new ArrayList<Svid>();
+		try {
+			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=MATIS;user=simmi;password=drsmorc.311;";
+			Connection con = DriverManager.getConnection(connectionUrl);
+			
+			String sql = "SELECT \"Global Dimension 1 Code\", No_, Description, \"Person Responsible\", \"Starting Date\", \"Ending Date\" FROM \"Matís ohf_$Job\" where \"Job Posting Group\" != 'INNSELD' and \"Completion Date\" < '1900-01-01'";
+			PreparedStatement ps = con.prepareStatement(sql);
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				String svid = rs.getString(1);
+				String no = rs.getString(2);
+				String name = rs.getString(3);
+				String person = rs.getString(4);
+				Date	startdate = rs.getDate(5);
+				Date	stopdate = rs.getDate(6);
+				
+				svidlist.add( new Svid( svid, no, name, person, startdate, stopdate ) );
+			}
+			rs.close();
+			ps.close();
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		model = createModel( svidlist );
+		
+		table = new JTable( model ) {
+			public void sorterChanged( RowSorterEvent e ) {
+				currentsorter = (MySorter)e.getSource();
+				summarytable.repaint();
+				super.sorterChanged( e );
+			}
+		};
+		//table.setAutoCreateRowSorter( true );
+		JScrollPane	scrollpane = new JScrollPane();
+		scrollpane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_NEVER );
+		
+		final JTable		detailTable = new JTable();
+		JScrollPane			detailscrollpane = new JScrollPane( detailTable );
+		
+		rowHeader = new TableModel() {
+
+			@Override
+			public void addTableModelListener(TableModelListener l) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public Class<?> getColumnClass(int columnIndex) {
+				return String.class;
+			}
+
+			@Override
+			public int getColumnCount() {
+				return 1;
+			}
+
+			@Override
+			public String getColumnName(int columnIndex) {
+				return "";
+			}
+
+			@Override
+			public int getRowCount() {
+				return 25;
+			}
+
+			@Override
+			public Object getValueAt(int rowIndex, int columnIndex) {
+				String ret = "";
+				
+				switch( rowIndex ) {
+				case 0:
+					ret = "Kostnaður v/vinnu";
+					break;
+				case 2:
+					ret = "2310 Rannsóknarstofuefni";
+					break;
+				case 3:
+					ret = "2311 Aðföng rekstarvörur";
+					break;
+				case 4:
+					ret = "2396	Mælingar á milli deilda";
+					break;
+				case 5:
+					ret = "2498	Sérfræðiþjónusta samtals";
+					break;
+				case 6:
+					ret = "2598	Ferða- og uppihaldsk samtals";
+					break;
+				case 7:
+					ret = "2710	Styrkir til nemenda";
+					break;
+				case 9:
+					ret = "2999	Almennur rekstrarkostnaður samtals";
+					break;
+				case 10:
+					ret = "Kostnaður samtals";
+					break;
+				case 12:
+					ret = "1010	Fyrirtæki innlend m/vsk";
+					break;
+				case 13:
+					ret = "1012	Fyrirtæki innlend án/vsk";
+					break;
+				case 14:
+					ret = "1013	Opinberir aðilar m/vsk";
+					break;
+				case 15:
+					ret = "1015	opinberir aðilar án/vsk";
+					break;
+				case 16:
+					ret = "1030	Erlendir sjóðir";
+					break;
+				case 17:
+					ret = "1031	Erlend fyrirtæki";
+					break;
+				case 18:
+					ret = "1040	Sjóðir innlent";
+					break;
+				case 19:
+					ret = "1050	Sjávarútvegs- og landb";
+					break;
+				case 20:
+					ret = "1060	Sala án/vsk";
+					break;
+				case 21:
+					ret = "1096	Sala milli deilda";
+					break;
+				case 23:
+					ret = "1993	Rekstrartekjur samtals";
+					break;
+				case 24:
+					ret = "Afkoma (v/útselds taxta)";
+					break;
+				default:
+					ret = "";
+				}
+				
+				return ret;
+			}
+
+			@Override
+			public boolean isCellEditable(int rowIndex, int columnIndex) {
+				return false;
+			}
+
+			@Override
+			public void removeTableModelListener(TableModelListener l) {}
+
+			@Override
+			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {}
+		};
+		JTable	rowHeaderTable = new JTable();
+		rowHeaderTable.setModel( rowHeader );
+		detailscrollpane.setRowHeaderView( rowHeaderTable );
+		
+		JPopupMenu	popup = new JPopupMenu();
+		popup.add( new AbstractAction("Calculate") {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					TableModel model = calcModel();
+					detailTable.setModel( model );
+				} catch (ClassNotFoundException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} catch (SQLException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+		});
+		popup.add( new AbstractAction("Export To Excel") {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+								
+			}
+		});
+		scrollpane.setComponentPopupMenu(popup);
+		
+		JComponent graph = new JComponent() {
+			public void paintComponent( Graphics g ) {
+				super.paintComponent(g);
+			}
+		};
+		
+		final Object[]	matrix = new Object[ model.getRowCount() * rowHeader.getRowCount() ];
+		
+		try {
+			res = loadAll();
+		} catch (ClassNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (SQLException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
+		summaryscrollpane = new JScrollPane();
+		summaryscrollpane.setRowHeaderView( table );
+		scrollpane.setViewport( summaryscrollpane.getRowHeader() );
+		summarytable = new JTable() {
+			public void sorterChanged( RowSorterEvent e ) {
+				currentsorter = (MySorter)e.getSource();
+				table.repaint();
+				super.sorterChanged( e );
+			}
+		};
+		//summarytable.setAutoCreateRowSorter( true );
+		summarymodel = new TableModel() {
+			@Override
+			public void addTableModelListener(TableModelListener l) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public Class<?> getColumnClass(int columnIndex) {
+				return Double.class;
+			}
+
+			@Override
+			public int getColumnCount() {
+				return rowHeader.getRowCount();
+			}
+
+			@Override
+			public String getColumnName(int columnIndex) {
+				return rowHeader.getValueAt(columnIndex, 0).toString();
+			}
+
+			@Override
+			public int getRowCount() {
+				return model.getRowCount();
+			}
+
+			@Override
+			public Object getValueAt(int rowIndex, int columnIndex) {
+				int i = rowIndex*rowHeader.getRowCount();
+				if( matrix[ i ] == null ) {
+					String str = (String)table.getValueAt(rowIndex, 1);
+					List<Cost> costlist = res.realCost.get( str );
+					
+					if( costlist != null ) {
+						double 	flaun = 0.0f;
+						double 	fcost = 0.0f;
+						double 	ftekj = 0.0f;
+						
+						double	f1015 = 0.0f;
+						double	f1040 = 0.0f;
+						double	f1050 = 0.0f;
+						
+						for( Cost c : costlist ) {
+							if( c.type.equals("0") ) flaun += c.p;
+							else if( c.type.equals("1") ) {
+								if( c.nostr.equals("1015") ) f1015 += c.p;
+								else if( c.nostr.equals("1040") ) f1040 += c.p;
+								else if( c.nostr.equals("1050") ) f1050 += c.p;
+								ftekj += c.p;
+							}
+							else if( c.type.equals("2") ) fcost += c.c;
+						}
+						
+						matrix[ i ] = Math.floor(flaun);
+						matrix[ i+23 ] = -Math.floor(ftekj);
+						matrix[ i+24 ] = Math.floor(-ftekj-(flaun+fcost));
+						matrix[ i+9 ] = Math.floor(fcost);
+						matrix[ i+10 ] = Math.floor(fcost+flaun);
+						
+						matrix[ i+15 ] = Math.floor(f1015);
+						matrix[ i+18 ] = Math.floor(f1040);
+						matrix[ i+19 ] = Math.floor(f1050);
+					} else matrix[ i ] = null;
+				}
+				return matrix[ i + columnIndex ];
+			}
+
+			@Override
+			public boolean isCellEditable(int rowIndex, int columnIndex) {
+				return false;
+			}
+
+			@Override
+			public void removeTableModelListener(TableModelListener l) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+				// TODO Auto-generated method stub
+				
+			}
+		};
+		summarytable.setModel( summarymodel );
+		summarytable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
+		summaryscrollpane.setViewportView( summarytable );
+		
+		sorter = new MySorter( model ) {
+			@Override
+			public int convertRowIndexToModel(int index) {
+				return currentsorter.convertRowIndexToModelSuper( index );
+			}
+
+			@Override
+			public int convertRowIndexToView(int index) {
+				return currentsorter.convertRowIndexToViewSuper( index );
+				//super.
+				//currentSorter.
+			}
+		};
+		summarysorter = new MySorter( summarymodel ) {
+			@Override
+			public int convertRowIndexToModel(int index) {
+				return currentsorter.convertRowIndexToModelSuper( index );
+			}
+
+			@Override
+			public int convertRowIndexToView(int index) {
+				return currentsorter.convertRowIndexToViewSuper( index );
+				//leftTableSorter.
+			}
+			
+			@Override
+			public int getViewRowCount() {
+				return sorter.getViewRowCount();
+			}
+		};
+		currentsorter = (MySorter)summarysorter;
+		summarytable.setRowSorter( summarysorter );
+		table.setRowSorter( sorter );
+		
+		JTabbedPane	tabbedpane = new JTabbedPane( JTabbedPane.BOTTOM );
+		tabbedpane.addTab("Summary", summaryscrollpane);
+		tabbedpane.addTab("Detail", detailscrollpane);
+		tabbedpane.addTab("Graph", graph);
+		
+		JSplitPane	splitpane = new JSplitPane();
+		
+		scrollpane.setHorizontalScrollBarPolicy( JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS );
+		JComponent comp = new JComponent() {
+			
+		};
+		comp.setLayout( new BorderLayout() );
+		comp.add( scrollpane );
+		comp.add( new JTextField(), BorderLayout.SOUTH );
+		
+		splitpane.setLeftComponent( comp );
+		splitpane.setRightComponent( tabbedpane );
+		
+		this.add( splitpane );
+		this.add( parcomp, BorderLayout.EAST );
 
 		/*
 		 * try { Desktop.getDesktop().browse( new URI("http://test.matis.is") );
