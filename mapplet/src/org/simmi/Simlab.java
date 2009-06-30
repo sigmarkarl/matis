@@ -16,6 +16,10 @@ import javax.script.ScriptException;
 public class Simlab implements ScriptEngineFactory {
 	Simple	engine = new Simple();
 	
+	static {
+		System.loadLibrary( "simlab" );
+	}
+	
 	public class Simple implements ScriptEngine {
 		char[]	cbuf = new char[256];
 		

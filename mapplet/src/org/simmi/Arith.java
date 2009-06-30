@@ -1,9 +1,13 @@
 package org.simmi;
 
-public abstract class Arith {
-	/*public static void add( T[]	tt, T t ) {
-		for( int i = 0; i < tt.length; i++ ) {
-			tt[i] += t;
-		}
+import java.lang.reflect.Array;
+import java.nio.IntBuffer;
+
+public class Arith<T> {
+	T	array;
+	
+	/*public void stuff() {
+		((IntBuffer) array).put(0);
+		Array.newInstance( T.class, 10 );
 	}*/
 }
