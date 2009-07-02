@@ -26,7 +26,7 @@ import javax.swing.JComponent;
 import javax.swing.JEditorPane;
 import javax.swing.Timer;
 
-public class VApplet extends JApplet {
+public class Intro extends JApplet {
 	JComponent 			c;
 	JComponent			subc;
 	JEditorPane			e;
@@ -34,8 +34,8 @@ public class VApplet extends JApplet {
 	Image				mimg;
 	Image				fimg;
 	Image				kimg;
-	final Color			darkGray = new Color( 16,16,16 );
-	final Color			lightGray = new Color( 32,32,32 );
+	final Color			darkGray = new Color( 230,230,230 );
+	final Color			lightGray = new Color( 250,250,250 );
 	List<FancyButton> 	buttons;
 	Timer				timer;
 	float 				fval = 4.0f;
@@ -44,10 +44,12 @@ public class VApplet extends JApplet {
 	final Dimension 	buttonDim = new Dimension(100, 128);
 	MouseListener		ml;
 	
-	String[] bNames = {"Meðhöndlun eftir veiði", "Vinnsla", "Pökkun Geymsla", "Flutningur", "Dreifing"};
+	final Color			bgColor = new Color( 255, 255, 200 );
+	
+	String[] bNames = {"Matargrunnur", "Myndrænt", "Upskriftir", "Plan", "Innkaup"};
 	Color[] bColors = { new Color(250,250,200), new Color(250,200,250), new Color(200,250,250), new Color(200,250,200), new Color(200,200,250) };
 	
-	public VApplet() {
+	public Intro() {
 		super();
 		try {
 			URL url = this.getClass().getResource("/smooth.png");
@@ -205,8 +207,10 @@ public class VApplet extends JApplet {
 	
 	public void setBounds( int x, int y, int w, int h ) {
 		if( c != null ) {
-			c.setLocation( Math.max(0, (w-c.getWidth())/2 ), Math.max(0, (h-c.getHeight())/2 ) );
-			e.setLocation( (w-c.getWidth())/2, (h+c.getHeight())/2 );
+			int cw = 4*w/5;
+			int ch = 4*h/5;
+			c.setBounds( Math.max(0, (w-cw)/2 ), Math.max(0, (h-ch)/2 ), cw, ch );
+			e.setBounds( (w-cw)/2, (h+ch)/2, cw, 30 );
 		}
 		super.setBounds(x, y, w, h);
 	}
@@ -216,16 +220,15 @@ public class VApplet extends JApplet {
 	}
 	
 	public void init() {
-		this.setBackground( Color.black );
+		this.setBackground( bgColor );
 		this.setLayout( null );
 		this.getContentPane().setLayout(null);
-		this.getContentPane().setBackground( Color.black );
+		this.getContentPane().setBackground( bgColor );
 		
 		Dimension d	= new Dimension(900,30);
 		e = new JEditorPane();
 		e.setEditable( false );
-		e.setForeground( Color.white );
-		e.setBackground( Color.red );
+		e.setBackground( new Color(0,0,0,0) );
 		e.setPreferredSize( d );
 		e.setSize( d );
 		e.setContentType("text/html");
@@ -260,16 +263,16 @@ public class VApplet extends JApplet {
 				g2.drawRoundRect(0, 0, w-1, h-1, 24, 24);
 				g2.setStroke( stroke );
 				
-				String str = "VIRÐISKEÐJA FRÁ VEIÐUM TIL MARKAÐAR";
+				String str = "ÍSGEM - Facebook";
 				g2.drawImage( mimg, 15, 15, 30, 30, this );
 				g2.setFont( g2.getFont().deriveFont( Font.BOLD, 16.0f ) );
 				g2.setColor( Color.lightGray );
 				g2.drawString( str, 50, 36 );
 			}
 		};
-		d = new Dimension(884,100);
+		/*d = new Dimension(884,100);
 		subc.setPreferredSize( d );
-		subc.setSize( d );
+		subc.setSize( d );*/
 		
 		c = new JComponent() {
 			public void paintComponent( Graphics g ) {
@@ -279,12 +282,15 @@ public class VApplet extends JApplet {
 				int w = this.getWidth();
 				
 				Graphics2D g2 = (Graphics2D)g;
+				g2.setRenderingHint( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON );
 				g2.drawImage( img, 0, 0, w, h, this );
 			}
 			
 			public void setBounds( int x, int y, int w, int h) {				
 				if( subc != null ) {
-					subc.setLocation( Math.max(0, (w-subc.getWidth())/2 ), 8 );
+					//int cw = (9*w)/10;
+					//int ch = (9*h)/10;
+					subc.setBounds( 8, 8, w-16, 100 );
 					
 					int i = 0;
 					int b = 0;
