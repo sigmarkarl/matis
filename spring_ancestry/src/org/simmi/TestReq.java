@@ -21,7 +21,18 @@ public class TestReq {
 	
 	public static void main( String[] args ) {
 		String xml = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n";
-		
+		xml += "<facebook-relation>\n";
+		xml += "<facebook-user id=\"1\" name=\"Þórður Kristjánsson\" dob=\"03041965\" />";
+		xml += "<facebook-friend id=\"558456339\" name=\"Páll Arnar Erlendsson\" dob=\"31011979\" />";
+		xml += "<facebook-friend id=\"558723036\" name=\"Stella María Sigurðardóttir\" dob=\"20031970\" />";
+		xml += "<facebook-friend id=\"558930370\" name=\"Reynir Scheving\" dob=\"15051979\" />";
+		xml += "<facebook-friend id=\"559635012\" name=\"Hreinn Pálsson\" dob=\"25061976\" />";
+		xml += "<facebook-friend id=\"566440343\" name=\"Garpur Dagsson\" dob=\"16061967\" />";
+		xml += "<facebook-friend id=\"571388066\" name=\"Olafur Arthursson\" dob=\"26021974\" />";
+		xml += "<facebook-friend id=\"573644548\" name=\"Kristín Helgadóttir\" dob=\"01071982\" />";
+		xml += "<facebook-friend id=\"579276334\" name=\"Elís Ingi Benediktsson\" dob=\"02011981\" />";
+		xml += "<facebook-friend id=\"580479997\" name=\"Gísli Magnússon\" dob=\"11101969\" />";
+		xml += "</facebook-relation>\n";
 		
 		URL url = null;
 		try {
