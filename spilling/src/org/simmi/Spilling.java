@@ -231,8 +231,10 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 		if( dir.exists() ) {
 			File[] ff = dir.listFiles();
 			for( File f : ff ) {
-				Corp corp = new Corp( Integer.parseInt(f.getName()) );
-				c.add( corp );
+				if( !f.isDirectory() ) {
+					Corp corp = new Corp( Integer.parseInt(f.getName()) );
+					c.add( corp );
+				}
 				//addFile( f );
 			}
 			
