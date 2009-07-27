@@ -357,13 +357,6 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 				}
 			}
 			selRect = null;
-		} else {
-			if( Corp.drag != null ) {
-				Corp corp = new Corp();
-				c.add( corp );
-				Corp.drag.addLink( corp );
-				Corp.drag = null;
-			}
 		}
 		c.repaint();
 	}
