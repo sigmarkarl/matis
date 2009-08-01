@@ -34,6 +34,7 @@ public class Intro extends JApplet {
 	Image				mimg;
 	Image				fimg;
 	Image				kimg;
+	Image[]				imgs = new Image[5];
 	final Color			darkGray = new Color( 230,230,230 );
 	final Color			lightGray = new Color( 250,250,250 );
 	List<FancyButton> 	buttons;
@@ -60,6 +61,17 @@ public class Intro extends JApplet {
 			fimg = ImageIO.read( url );
 			url = this.getClass().getResource("/bkl.png");
 			kimg = ImageIO.read( url );
+			
+			url = this.getClass().getResource("/isgem.png");
+			imgs[0] = ImageIO.read( url );
+			url = this.getClass().getResource("/isgem_img.png");
+			imgs[1] = ImageIO.read( url );
+			url = this.getClass().getResource("/isgem_mynd2.png");
+			imgs[2] = ImageIO.read( url );
+			url = this.getClass().getResource("/isgem_mynd2.png");
+			imgs[3] = ImageIO.read( url );
+			url = this.getClass().getResource("/isgem_base.png");
+			imgs[4] = ImageIO.read( url );
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -164,9 +176,14 @@ public class Intro extends JApplet {
 				g2.setColor( Color.white );
 				g2.drawString( text, 15, 26 );
 				
-				if( this == buttons.get(0) ) {
-					g2.drawImage( kimg, (w-kimg.getWidth(this))/2, (h-kimg.getHeight(this))/2, this);
-				}
+				Image timg = null;
+				if( this == buttons.get(0) ) timg = imgs[0];
+				else if( this == buttons.get(1) ) timg = imgs[1];
+				else if( this == buttons.get(2) ) timg = imgs[2];
+				else if( this == buttons.get(3) ) timg = imgs[3];
+				else if( this == buttons.get(4) ) timg = imgs[4];
+				
+				if( timg != null ) g2.drawImage( timg, (w-150)/2, (h-120)/2, 150, 120, this);
 			} else {
 				Paint p = g2.getPaint();
 				GradientPaint gp = new GradientPaint(0.0f, 0.0f, lightGray, 0.0f, h, darkGray );

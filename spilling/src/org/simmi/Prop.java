@@ -9,16 +9,17 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
 import javax.swing.JComponent;
+import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
-import javax.swing.event.AncestorEvent;
-import javax.swing.event.AncestorListener;
 
 public class Prop extends JComponent {
 	JLabel			nLabel;
 	JLabel			ktLabel;
+	JLabel			textLabel;
 	JTextField		name;
 	JTextField		kt;
+	JEditorPane		text;
 	
 	public Corp		currentCorp = null;
 	Color lightGray = new Color(240,240,240);
@@ -26,16 +27,21 @@ public class Prop extends JComponent {
 	public Prop() {
 		nLabel = new JLabel("Nafn:");
 		ktLabel = new JLabel("Kennitala:");
+		textLabel = new JLabel("Texti:");
 		name = new JTextField();
 		kt = new JTextField();
+		text = new JEditorPane();
+		text.setEditable( true );
 		
 		this.add(nLabel);
 		this.add(ktLabel);
+		this.add(textLabel);
 		this.add(name);
 		this.add(kt);
+		this.add(text);
 		
 		this.setLayout( null );
-		this.setSize(400, 65);
+		this.setSize(400, 300);
 		
 		KeyListener kl = new KeyListener() {
 			@Override
@@ -61,6 +67,7 @@ public class Prop extends JComponent {
 		};
 		name.addKeyListener( kl );
 		kt.addKeyListener( kl );
+		text.addKeyListener( kl );
 	}
 	
 	public void paintComponent( Graphics g ) {
@@ -75,8 +82,10 @@ public class Prop extends JComponent {
 	public void setBounds( int x, int y, int w, int h ) {
 		nLabel.setBounds( 5, 5, 90, 25 );
 		ktLabel.setBounds( 5, 35, 90, 25 );
+		textLabel.setBounds( 5, 65, 90, 25 );
 		name.setBounds( 100, 5, 295, 25 );
 		kt.setBounds( 100, 35, 295, 25 );
+		text.setBounds( 100, 65, 295, 225 );
 		
 		super.setBounds( x,y,w,h );
 	}

@@ -2,6 +2,7 @@ package org.simmi;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
@@ -18,17 +19,26 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 import javax.swing.AbstractAction;
 import javax.swing.JApplet;
 import javax.swing.JComponent;
+import javax.swing.JFileChooser;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class Spilling extends JApplet implements MouseListener, MouseMotionListener, KeyListener {
 	JComponent			c = null;
@@ -138,6 +148,8 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 					if( p.currentCorp != null ) {
 						p.currentCorp.name = p.name.getText();
 						p.currentCorp.kt = p.kt.getText();
+						p.currentCorp.text = p.text.getText();
+						if( p.currentCorp.text.length() > 0 ) p.currentCorp.setToolTipText( p.currentCorp.text );
 						
 						try {
 							p.currentCorp.save();
@@ -158,7 +170,6 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 		
 		final JPopupMenu	popup = new JPopupMenu();
 		popup.add( new AbstractAction("Add Person") {
-
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				Corp 		corp = new Corp("unknown","person",m.x,m.y);
@@ -173,7 +184,6 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 			}
 		});
 		popup.add( new AbstractAction("Add Corp") {
-
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				Corp 		corp = new Corp("unknown","corp",m.x,m.y);
@@ -185,6 +195,176 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 				}
 				c.add( corp );
 				c.repaint();
+			}
+		});
+		popup.addSeparator();
+		popup.add( new AbstractAction("Import from Excel") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JFileChooser fc = new JFileChooser();
+				if( fc.showOpenDialog( Spilling.this ) == JFileChooser.APPROVE_OPTION ) {
+					File f = fc.getSelectedFile();
+					XSSFWorkbook workbook;
+					try {
+						workbook = new XSSFWorkbook( f.getCanonicalPath() );
+						XSSFSheet corpSheet = workbook.getSheet("Corps");
+						XSSFSheet linkSheet = workbook.getSheet("Links");
+						
+						Corp.corpMap.clear();
+						c.removeAll();
+						Corp.idx = 0;
+						
+						int i = 0;
+						int l = 0;
+						XSSFRow 	corpRow = corpSheet.getRow( ++i );
+						while( corpRow != null ) {
+							XSSFCell cell = corpRow.getCell(0);
+							int 	id = (int)cell.getNumericCellValue();
+							cell = corpRow.getCell(1);
+							String 	name = cell.getStringCellValue();
+							cell = corpRow.getCell(2);
+							String 	type = cell.getStringCellValue();
+							cell = corpRow.getCell(3);
+							String 	kt = cell.getStringCellValue();
+							cell = corpRow.getCell(4);
+							String 	text = cell.getStringCellValue();
+							cell = corpRow.getCell(5);
+							double x = cell.getNumericCellValue();
+							cell = corpRow.getCell(6);
+							double y = cell.getNumericCellValue();
+							cell = corpRow.getCell(7);
+							double z = cell.getNumericCellValue();
+							
+							Corp corp = new Corp( id );
+							corp.name = name;
+							corp.type = type;
+							corp.kt = kt;
+							corp.text = text;
+							corp.x = x;
+							corp.y = y;
+							corp.z = z;
+							c.add( corp );
+							corp.setBounds( (int)(corp.x-corp.size/2), (int)(corp.y-corp.size/2), corp.size, corp.size );
+							
+							corpRow = corpSheet.getRow( ++i );
+						}
+						System.err.println( c.getComponentCount() );
+						
+						XSSFRow 	linkRow = linkSheet.getRow( ++l );
+						while( linkRow != null ) {
+							XSSFCell cell = linkRow.getCell(0);
+							int 	id1 = (int)cell.getNumericCellValue();
+							cell = linkRow.getCell(1);
+							int		id2 = (int)cell.getNumericCellValue();
+							cell = linkRow.getCell(2);
+							String 	str = cell.getStringCellValue();
+							
+							Corp p1 = Corp.corpMap.get(id1);
+							Corp p2 = Corp.corpMap.get(id2);
+							
+							String[] ss = str.split("\n");
+							Set<String> 	value = new HashSet<String>( Arrays.asList(ss) );
+							p1.connections.put( p2, value );
+							
+							linkRow = linkSheet.getRow( ++l );
+						}
+						Spilling.this.repaint();
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+				}
+			}
+		});
+		popup.add( new AbstractAction("Open in Excel") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				//JFileChooser fc = new JFileChooser();
+				//if( fc.showSaveDialog( Spilling.this ) == JFileChooser.APPROVE_OPTION ) {
+				//File f = fc.getSelectedFile();
+				try {
+					File nf = File.createTempFile("tmp", ".xlsx");
+					XSSFWorkbook 	workbook = new XSSFWorkbook();
+					
+					XSSFSheet corpSheet = workbook.createSheet("Corps");
+					XSSFSheet linkSheet = workbook.createSheet("Links");
+					
+					int i = 0;
+					int l = 0;
+					XSSFRow 	corpRow = corpSheet.createRow( i );
+					XSSFCell cell = corpRow.createCell( 0 );
+					cell.setCellValue( "id" );
+					cell = corpRow.createCell( 1 );
+					cell.setCellValue( "name" );
+					cell = corpRow.createCell( 2 );
+					cell.setCellValue( "type" );
+					cell = corpRow.createCell( 3 );
+					cell.setCellValue( "kt" );
+					cell = corpRow.createCell( 4 );
+					cell.setCellValue( "desc" );
+					cell = corpRow.createCell( 5 );
+					cell.setCellValue( "x" );
+					cell = corpRow.createCell( 6 );
+					cell.setCellValue( "y" );
+					cell = corpRow.createCell( 7 );
+					cell.setCellValue( "z" );
+					cell = corpRow.createCell( 8 );
+					cell.setCellValue( "image" );
+					
+					XSSFRow 		linkRow = linkSheet.createRow( l );
+					cell = linkRow.createCell( 0 );
+					cell.setCellValue( "id1" );
+					cell = linkRow.createCell( 1 );
+					cell.setCellValue( "id1" );
+					cell = linkRow.createCell( 2 );
+					cell.setCellValue( "desc" );
+					
+					for( int k : Corp.corpMap.keySet() ) {
+						Corp 		corp = Corp.corpMap.get( k );
+						corpRow = corpSheet.createRow( ++i );
+						
+						cell = corpRow.createCell( 0 );
+						cell.setCellValue( corp.id );
+						cell = corpRow.createCell( 1 );
+						cell.setCellValue( corp.name );
+						cell = corpRow.createCell( 2 );
+						cell.setCellValue( corp.type );
+						cell = corpRow.createCell( 3 );
+						cell.setCellValue( corp.kt );
+						cell = corpRow.createCell( 4 );
+						cell.setCellValue( corp.text );
+						cell = corpRow.createCell( 5 );
+						cell.setCellValue( corp.x );
+						cell = corpRow.createCell( 6 );
+						cell.setCellValue( corp.y );
+						cell = corpRow.createCell( 7 );
+						cell.setCellValue( corp.z );
+						cell = corpRow.createCell( 8 );
+						if( corp.imageNames.size() > 0 && corp.imageNames.get(0) != null ) {
+							cell.setCellValue( corp.imageNames.get(0) );
+						}
+						
+						for( Corp cp : corp.connections.keySet() ) {
+							Set<String>		link = corp.connections.get(cp);
+							linkRow = linkSheet.createRow( ++l );
+							cell = linkRow.createCell( 0 );
+							cell.setCellValue( corp.id );
+							cell = linkRow.createCell( 1 );
+							cell.setCellValue( cp.id );
+							cell = linkRow.createCell( 2 );
+							String val = "";
+							for( String str : link ) {
+								val += str+"\n";
+							}
+							cell.setCellValue( val );
+						}
+					}
+					workbook.write( new FileOutputStream( nf ) );
+					Desktop.getDesktop().open( nf );
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 			}
 		});
 		c.setComponentPopupMenu(popup);

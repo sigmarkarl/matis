@@ -72,7 +72,7 @@ public class DetailPanel extends JSplitPane {
 		groupMap.put("2", "Fituleysanleg vítamín");
 		groupMap.put("3", "Vatnsleysanleg vítamín");
 		groupMap.put("4", "Steinefni");
-		groupMap.put("5", "Eitur");
+		groupMap.put("5", "Málmar");
 		groupMap.put("6", "Fitusýrur");
 		groupMap.put("7", "Nítröt");
 		
