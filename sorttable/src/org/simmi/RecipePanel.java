@@ -175,7 +175,8 @@ public class RecipePanel extends JSplitPane {
 	
 	public void fillSkmt() throws IOException {
 		InputStream is = this.getClass().getResourceAsStream("/skmt.txt");
-		BufferedReader br = new BufferedReader( new InputStreamReader(is) );
+		
+		BufferedReader br = new BufferedReader( new InputStreamReader(is, "UTF-8") );
 		String line = br.readLine();
 		while( line != null ) {
 			String[] split = line.split("\\t");
@@ -411,7 +412,7 @@ public class RecipePanel extends JSplitPane {
 					e.printStackTrace();
 				}
 			}
-		}.start();
+		}.run();
 		
 		this.fp = fp;
 		foodInd = foodNameInd;

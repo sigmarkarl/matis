@@ -8,11 +8,10 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.Point;
+import java.awt.Window;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -23,14 +22,13 @@ import java.net.URLConnection;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 import javax.imageio.ImageIO;
 import javax.swing.DefaultRowSorter;
@@ -249,6 +247,9 @@ public class SortTable extends JApplet {
 		ngroupList = new ArrayList<String>();
 		ngroupGroups = new ArrayList<String>();
 		
+		Integer[]	ii = {1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 16, 17, 20, 21, 23, 24, 29, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 44, 137, 138};
+		final Set<Integer>	is = new HashSet<Integer>( Arrays.asList(ii) );
+		
 		if( loc.equals("IS") ) {
 			inputStream = this.getClass().getResourceAsStream( "/Component.txt" );
 			br = new BufferedReader( new InputStreamReader( inputStream, "UTF-8" ) );
@@ -256,7 +257,7 @@ public class SortTable extends JApplet {
 			int i = 0;
 			while( line != null ) {
 				String[] split = line.split("[\t]");
-				if( split.length > 3 ) {
+				if( split.length > 3 && is.contains( Integer.parseInt(split[2]) )) {
 					String sName = null;
 					if( split[4] != null && split[4].length() > 0 ) {
 						sName = split[4];
@@ -384,7 +385,7 @@ public class SortTable extends JApplet {
 							while( line != null ) {
 								String[] split = line.split("\\t");
 								
-								if( split.length > 4 ) {
+								if( split.length > 4 && is.contains( Integer.parseInt(split[2]) ) ) {
 									if( foodInd.containsKey( split[1] ) ) {
 										start = foodInd.get(split[1]);
 									} else {
@@ -500,6 +501,12 @@ public class SortTable extends JApplet {
 		} catch (UnsupportedLookAndFeelException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+		
+		Window window = SwingUtilities.windowForComponent(this);
+		if (window instanceof JFrame) {
+			JFrame frame = (JFrame)window;
+			if (!frame.isResizable()) frame.setResizable(true);
 		}
 		
 		this.getContentPane().setBackground( Color.white );
@@ -1138,7 +1145,7 @@ public class SortTable extends JApplet {
 							}
 						}
 					} else {
-						int r = leftTable.getSelectedRow();
+						/*int r = leftTable.getSelectedRow();
 						int rr = leftTable.convertRowIndexToModel(r);
 						
 						String str = (String)leftModel.getValueAt(rr, 0);
@@ -1151,7 +1158,7 @@ public class SortTable extends JApplet {
 						leftTableSorter.sort();
 						//tableSorter.modelStructureChanged();
 						//leftTableSorter.modelStructureChanged();
-						//leftTable.tableChanged( new TableModelEvent( leftModel ) );						
+						//leftTable.tableChanged( new TableModelEvent( leftModel ) );	*/					
 					}
 					/*int r = leftTable.getSelectedRow();
 					if( r >= 0 && r < leftTable.getRowCount() ) {
