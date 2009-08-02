@@ -19,9 +19,11 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -54,7 +56,7 @@ public class SocialDistance {
 			fbMap.put( spl[0], spl[1] );
 		}
 		
-		String ustr = (String)fbMap.get("fb_sig_user");		
+		String ustr = (String)fbMap.get("fb_sig_user");
 		String fstr = ustr + "," + ((String)fbMap.get("fb_sig_friends")).replace("%2C", ",");
 			
 		String[] friends = fstr.split( "," );
@@ -66,7 +68,7 @@ public class SocialDistance {
 			FileReader					fr = new FileReader( f );
 			BufferedReader				br = new BufferedReader( fr );
 			String 						line = br.readLine();
-			while( line != null ) {
+			while( line != null && !line.contains("<xml") ) {
 				String[] cols = line.split("\t");
 				if( cols.length > 2 ) {
 					umap.put( cols[0], new User( cols[1], cols[2] ) );
@@ -80,31 +82,35 @@ public class SocialDistance {
 		}
 		
 		String users = getUserInfo( fstr, "name,birthday" );
-		String[] usernames = users.split("<name>");
+		String[] usernames = users.split("<user>");
 		
-		int i = 0;
 		for( String val : usernames ) {
-			int eind = val.indexOf("</name>");
-			if( eind > 0 ) {
-				String user = val.substring( 0, eind );
-				String id = friends[i++];
+			int nind = val.indexOf("<name>");
+			if( nind >= 0 ) {
+				int neind = val.indexOf("</name>", nind);
+				String user = val.substring( nind+6, neind );
+				//String id = friends[i++];
 				
-				int bind1 = val.indexOf("<birthday>", 0);
-				if( bind1 > 0 ) {
-					int bind2 = val.indexOf("</birthday>", bind1);
-					String bd = val.substring(bind1+10, bind2);
-					umap.put( id, new User( user, bd ) );
+				int uind = val.indexOf("<uid>");
+				int ueind = val.indexOf("</uid>", uind);
+				String uid = val.substring( uind+5, ueind );
+					
+				int bind = val.indexOf("<birthday>");
+				if( bind >= 0 ) {
+					int beind = val.indexOf("</birthday>", bind);
+					String bd = val.substring(bind+10, beind);
+					umap.put( uid, new User( user, bd ) );
 				} else {
-					umap.put( id, new User( user, null ) );
+					umap.put( uid, new User( user, null ) );
 				}
 			}
 		}
 		
-		FileWriter	fw = new FileWriter( f );
-		//fw.write( users );
+		FileWriter fw = new FileWriter( f );
 		for( String id : umap.keySet() ) {
 			User user = umap.get(id);
-			fw.write( id + "\t" + user.name + "\t" + user.birthd +"\n" );
+			if( user.birthd == null ) fw.write( id + "\t" + user.name + "\n" );
+			else fw.write( id + "\t" + user.name + "\t" + user.birthd + "\n" );
 		}
 		fw.close();
 		
@@ -115,7 +121,7 @@ public class SocialDistance {
 				FileReader fr = new FileReader( f );
 				BufferedReader br = new BufferedReader( fr );
 				String line = br.readLine();
-				while( line != null ) {
+				while( line != null && !line.contains("xml") ) {
 					fset.add( line );
 					line = br.readLine();
 				}
@@ -137,15 +143,18 @@ public class SocialDistance {
 				String[] asplt = res.split("<uid2>");
 				for( String af : asplt ) {
 					int i1 = af.indexOf("</uid2>");
-					int a1 = af.indexOf("<are_friends>");
-					String frnd = af.substring(0,i1);
-					if( af.charAt(a1) == '0' ) fset.remove( frnd );
-					else fset.add( frnd );
+					if( i1 >= 0 ) {
+						int a1 = af.indexOf("<are_friends>");
+						String frnd = af.substring(0,i1);
+						if( af.charAt(a1+13) == '0' ) fset.remove( frnd );
+						else fset.add( frnd );
+					}
 				}
 			}
 			
 			fw = new FileWriter( f );
 			//fw.write( res );
+			//fw.write("auli");
 			for( String friend : fset ) {
 				fw.write( friend + "\n" );
 			}
@@ -220,7 +229,79 @@ public class SocialDistance {
 			if( uidmap.containsKey( user ) ) {
 				Set<Uid> suid = uidmap.get(user);
 				for( Uid uid : suid ) {
-					System.out.println( search( me, uid.id ) );
+					Set<String>	su1 = new HashSet<String>();
+					Set<String>	su2 = new HashSet<String>();
+					
+					su1.add( me );
+					su2.add( uid.id );
+					
+					if( su1.contains( uid.id ) ) System.out.println( "Distance: 0" );
+					else {
+						List<String>	tu1 = new ArrayList<String>();
+						List<String>	tu2 = new ArrayList<String>();
+						
+						int s1;
+						int s2;
+						
+						boolean nofriends = true;
+						try {
+							int d = 0;
+							do {
+								s1 = su1.size();
+								s2 = su2.size();	
+								
+								tu1.clear();
+								tu2.clear();
+								
+								for( String s : su1 ) {
+									File fl = new File( "/tmp/"+s );
+									if( fl.exists() ) {
+										FileReader fr = new FileReader( fl );
+										BufferedReader br = new BufferedReader( fr );
+										String line = br.readLine();
+										//if( line.split("\t").length > 1 ) System.err.println("ufffi "+s);
+										while( line != null ) {
+											tu1.add( line );								
+											line = br.readLine();
+										}
+										br.close();
+										fr.close();
+									}
+								}
+								
+								for( String s : su2 ) {
+									File fl = new File( "/tmp/"+s );
+									if( fl.exists() ) {
+										FileReader fr = new FileReader( fl );
+										BufferedReader br = new BufferedReader( fr );
+										String line = br.readLine();
+										while( line != null ) {
+											tu2.add( line );	
+											line = br.readLine();
+										}
+										br.close();
+										fr.close();
+									}
+								}
+								
+								su1.addAll( tu1 );
+								su2.addAll( tu2 );
+								
+								d++;
+								if( su1.contains( uid.id ) || su2.contains( me ) ) {
+									nofriends = false;
+									System.out.println( "Distance: " + (d) );
+									break;
+								}
+							} while( su1.size() > s1 || su2.size() > s2 );
+														
+							if( nofriends ) System.out.println( "Distance: Unknown");
+						} catch ( Exception e ) {
+							e.printStackTrace();
+						}
+						
+						//System.out.println( search( me, uid.id ) );
+					}
 					
 					break;
 				}
