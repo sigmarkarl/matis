@@ -16,14 +16,13 @@ import java.math.BigInteger;
 import java.net.Authenticator;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -40,7 +39,7 @@ public class SocialDistance {
         System.setProperty("http.agent", System.getProperty("user.name") + " (from NetBeans IDE)");
     }
 	
-	public class User {
+	public static class User {
 		String	name;
 		String	birthd;
 		
@@ -191,11 +190,18 @@ public class SocialDistance {
 	 */
 	public static void main(String[] args) {
 		String user = System.getProperty("search");
+		try {
+			user = URLDecoder.decode( user, "UTF-8" );
+		} catch (UnsupportedEncodingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		
 		if( user != null ) {
 			String me = System.getProperty("user");
 			
-			Map<String,Set<Uid>>	uidmap = new HashMap<String,Set<Uid>>();
+			Set<Uid>					uids = new HashSet<Uid>();
+			//Map<String,User>			umap = new HashMap<String,User>();
 			File f = new File("/tmp/users");
 			if( f.exists() ) {
 				try {
@@ -206,14 +212,10 @@ public class SocialDistance {
 					while( line != null ) {
 						String[] split = line.split( "\t" );
 						if( split.length > 2 ) {
-							Set<Uid>	suid = null;
-							if( uidmap.containsKey( split[1] ) ) {
-								suid = uidmap.get(split[1]);
-							} else {
-								suid = new HashSet<Uid>();
-								uidmap.put( split[1], suid );
+							if( split[1].equals(user) ) {
+								uids.add( new Uid(split[0],split[2]) );
 							}
-							suid.add( new Uid(split[0],split[2]) );
+							//umap.put( split[0], new User(split[1], split[2]) );
 						}
 						line = br.readLine();
 					}
@@ -226,24 +228,25 @@ public class SocialDistance {
 					e.printStackTrace();
 				}
 			}
-			if( uidmap.containsKey( user ) ) {
-				Set<Uid> suid = uidmap.get(user);
-				for( Uid uid : suid ) {
+			if( uids.size() > 0 ) {
+				for( Uid uid : uids ) {
 					Set<String>	su1 = new HashSet<String>();
 					Set<String>	su2 = new HashSet<String>();
 					
 					su1.add( me );
 					su2.add( uid.id );
 					
-					if( su1.contains( uid.id ) ) System.out.println( "Distance: 0" );
-					else {
-						List<String>	tu1 = new ArrayList<String>();
-						List<String>	tu2 = new ArrayList<String>();
+					if( su1.contains( uid.id ) ) {
+						System.out.println( "<fb:profile-pic uid=\""+uid.id+"\" /><fb:name uid=\""+uid.id+"\" /><br>" );
+						System.out.println( "has distance 0" );
+					} else {
+						Set<String>	tu1 = new HashSet<String>();
+						Set<String>	tu2 = new HashSet<String>();
 						
 						int s1;
 						int s2;
 						
-						boolean nofriends = true;
+						Set<String>	friends = new HashSet<String>();
 						try {
 							int d = 0;
 							do {
@@ -253,7 +256,7 @@ public class SocialDistance {
 								tu1.clear();
 								tu2.clear();
 								
-								for( String s : su1 ) {
+								/*for( String s : su1 ) {
 									File fl = new File( "/tmp/"+s );
 									if( fl.exists() ) {
 										FileReader fr = new FileReader( fl );
@@ -261,13 +264,25 @@ public class SocialDistance {
 										String line = br.readLine();
 										//if( line.split("\t").length > 1 ) System.err.println("ufffi "+s);
 										while( line != null ) {
+											/*if( tu1.contains( line ) ) {
+												Object obj = tu1.get( line );
+												if( obj instanceof String ) {
+													Set<String>	ss = new HashSet<String>();
+													ss.add( (String)obj );
+													ss.add( s );
+													tu1.put( line, ss );
+												} else if( obj instanceof HashSet ) {
+													Set<String>	ss = (Set<String>)obj;
+													ss.add( s );
+												}
+											} else *
 											tu1.add( line );								
 											line = br.readLine();
 										}
 										br.close();
 										fr.close();
 									}
-								}
+								}*/
 								
 								for( String s : su2 ) {
 									File fl = new File( "/tmp/"+s );
@@ -276,7 +291,21 @@ public class SocialDistance {
 										BufferedReader br = new BufferedReader( fr );
 										String line = br.readLine();
 										while( line != null ) {
-											tu2.add( line );	
+											if( line.equals( me ) ) friends.add( s );
+											
+											/*if( tu2.containsKey( line ) ) {
+												Object obj = tu2.get( line );
+												if( obj instanceof String ) {
+													Set<String>	ss = new HashSet<String>();
+													ss.add( (String)obj );
+													ss.add( s );
+													tu2.put( line, ss );
+												} else if( obj instanceof HashSet ) {
+													Set<String>	ss = (Set<String>)obj;
+													ss.add( s );
+												}
+											} else */
+											tu2.add( line );			
 											line = br.readLine();
 										}
 										br.close();
@@ -284,18 +313,37 @@ public class SocialDistance {
 									}
 								}
 								
-								su1.addAll( tu1 );
+								//su1.putAll(m)
+								//su1.addAll( tu1 );
 								su2.addAll( tu2 );
 								
+								//su1.
+								
 								d++;
-								if( su1.contains( uid.id ) || su2.contains( me ) ) {
+								/*if( su1.contains( uid.id ) ) {
 									nofriends = false;
+									/*Object obj = su1.get( uid.id );
+									if( obj instanceof String ) {
+										
+									}*
 									System.out.println( "Distance: " + (d) );
 									break;
+								} else*/ 
+								if( friends.size() > 0 ) {
+									System.out.println( "<fb:profile-pic uid=\""+uid.id+"\" /><fb:name uid=\""+uid.id+"\" /><br>" );
+									System.out.println( "has distance " + (d) );
+									if( d > 1 ) {
+										System.out.println( "<br>through your friend(s)<br>" );
+										for( String friend : friends ) {
+											//User u = umap.get( friend );
+											System.out.println( "<fb:profile-pic uid=\""+friend+"\" /><fb:name uid=\""+friend+"\" /><br>" );
+										}
+									}
+									break;
 								}
-							} while( su1.size() > s1 || su2.size() > s2 );
+							} while( /*su1.size() > s1 ||*/ su2.size() > s2 );
 														
-							if( nofriends ) System.out.println( "Distance: Unknown");
+							if( friends.size() == 0 ) System.out.println( "Distance unknown");
 						} catch ( Exception e ) {
 							e.printStackTrace();
 						}
@@ -306,7 +354,32 @@ public class SocialDistance {
 					break;
 				}
 			} else {
-				System.out.println( user + "not found" );
+				String ret = user + " not found";
+				System.out.println( ret );
+				
+				/*try {
+					String user1 = new String( user.getBytes("ISO-8859-1") );
+					String user2 = new String( user.getBytes("UTF-8") );
+					
+					System.out.println( user1 );
+					System.out.println( user2 );
+				} catch (UnsupportedEncodingException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				
+				/*System.out.println( "<br>Ögmundur Þórðar<br>" );
+				
+				try {
+					System.out.write( ret.getBytes("ISO-8859-1") );
+					System.out.write( ret.getBytes("UTF-8") );
+				} catch (UnsupportedEncodingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}*/
 			}
 			
 			/*File f = new File("/tmp/bb");
