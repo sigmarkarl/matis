@@ -62,7 +62,7 @@ public class SocialDistance {
 		//List<String>	flist = Arrays.asList( friends );
 		
 		Map<String,User>			umap = new HashMap<String,User>();
-		File 						f = new File("/tmp/users");
+		File 						f = new File("/home/simmi/sd/users");
 		if( f.exists() ) {
 			FileReader					fr = new FileReader( f );
 			BufferedReader				br = new BufferedReader( fr );
@@ -115,7 +115,7 @@ public class SocialDistance {
 		
 		Set<String>	fset = new HashSet<String>();
 		for( String user : friends ) {
-			f = new File("/tmp/"+user );
+			f = new File("/home/simmi/sd/"+user );
 			if( f.exists() ) {
 				FileReader fr = new FileReader( f );
 				BufferedReader br = new BufferedReader( fr );
@@ -202,7 +202,7 @@ public class SocialDistance {
 			
 			Set<Uid>					uids = new HashSet<Uid>();
 			//Map<String,User>			umap = new HashMap<String,User>();
-			File f = new File("/tmp/users");
+			File f = new File("/home/simmi/sd/users");
 			if( f.exists() ) {
 				try {
 					FileReader 		fr = new FileReader( f );
@@ -285,7 +285,7 @@ public class SocialDistance {
 								}*/
 								
 								for( String s : su2 ) {
-									File fl = new File( "/tmp/"+s );
+									File fl = new File( "/home/simmi/sd/"+s );
 									if( fl.exists() ) {
 										FileReader fr = new FileReader( fl );
 										BufferedReader br = new BufferedReader( fr );

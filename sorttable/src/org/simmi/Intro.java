@@ -11,6 +11,7 @@ import java.awt.Image;
 import java.awt.Paint;
 import java.awt.RenderingHints;
 import java.awt.Stroke;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
@@ -24,7 +25,11 @@ import javax.imageio.ImageIO;
 import javax.swing.JApplet;
 import javax.swing.JComponent;
 import javax.swing.JEditorPane;
+import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 public class Intro extends JApplet {
 	JComponent 			c;
@@ -94,7 +99,7 @@ public class Intro extends JApplet {
 			public void mouseEntered(MouseEvent e) {
 				FancyButton	fb = (FancyButton)e.getSource();
 				fb.setPreferredSize( largeButtonDim );
-				timer.start();
+				if( timer != null ) timer.start();
 			}
 		
 			@Override
@@ -224,10 +229,11 @@ public class Intro extends JApplet {
 	
 	public void setBounds( int x, int y, int w, int h ) {
 		if( c != null ) {
-			int cw = 4*w/5;
-			int ch = 4*h/5;
+			int cw = 22*w/24;
+			int ch = 16*h/18;
 			c.setBounds( Math.max(0, (w-cw)/2 ), Math.max(0, (h-ch)/2 ), cw, ch );
 			e.setBounds( (w-cw)/2, (h+ch)/2, cw, 30 );
+			if( st.ed != null ) st.ed.setBounds( (w-cw)/2, (h+ch)/2, cw, 60 );
 		}
 		super.setBounds(x, y, w, h);
 	}
@@ -236,11 +242,27 @@ public class Intro extends JApplet {
 		super.paint(g);
 	}
 	
+	SortTable	st;
 	public void init() {
 		this.setBackground( bgColor );
 		this.setLayout( null );
 		this.getContentPane().setLayout(null);
 		this.getContentPane().setBackground( bgColor );
+		
+		Window window = SwingUtilities.windowForComponent(this);
+		if (window instanceof JFrame) {
+			JFrame frame = (JFrame)window;
+			if (!frame.isResizable()) frame.setResizable(true);
+		}
+		
+		st = new SortTable();
+		st.firstInit();
+		try {
+			st.sessionKey = Intro.this.getParameter("fb_sig_session_key");
+	        st.currentUser = Intro.this.getParameter("fb_sig_user");
+		} catch( Exception e ) {
+			e.printStackTrace();
+		}
 		
 		Dimension d	= new Dimension(900,30);
 		e = new JEditorPane();
@@ -285,8 +307,38 @@ public class Intro extends JApplet {
 				g2.setFont( g2.getFont().deriveFont( Font.BOLD, 16.0f ) );
 				g2.setColor( Color.lightGray );
 				g2.drawString( str, 50, 36 );
+				
+				if( st != null ) {
+					int i = st.tabbedPane.getSelectedIndex();
+					if( i >= 0 ) {
+						str = st.tabbedPane.getTitleAt( i );
+						//g2.drawImage( mimg, 15, 15, 30, 30, this );
+						int strw = g2.getFontMetrics().stringWidth( str );
+						g2.setFont( g2.getFont().deriveFont( Font.BOLD, 24.0f ) );
+						g2.setColor( Color.lightGray );
+						g2.drawString( str, (this.getWidth()-strw)/2, 64 );
+						
+						g2.setFont( g2.getFont().deriveFont( Font.BOLD, 12.0f ) );
+						if( str.equals("Fæða") ) {
+							str = "Veljið dálka til að raða fæðutegundum";
+							strw = g2.getFontMetrics().stringWidth( str );
+							g2.drawString( str, this.getWidth()-strw-20, 70 );
+							str = "eftir magni næringarefna";
+							strw = g2.getFontMetrics().stringWidth( str );
+							g2.drawString( str, this.getWidth()-strw-20, 85 );
+						} else if( str.equals("Samsetning") ) {
+							str = "Samantekt á næringarefnum í fæðutegundum";
+							strw = g2.getFontMetrics().stringWidth( str );
+							g2.drawString( str, this.getWidth()-strw-20, 70 );
+							str = "Veljið fæðutegundina í töflunni vinstra megin";
+							strw = g2.getFontMetrics().stringWidth( str );
+							g2.drawString( str, this.getWidth()-strw-20, 85 );
+						}
+					}
+				}
 			}
 		};
+		
 		/*d = new Dimension(884,100);
 		subc.setPreferredSize( d );
 		subc.setSize( d );*/
@@ -309,34 +361,54 @@ public class Intro extends JApplet {
 					//int ch = (9*h)/10;
 					subc.setBounds( 8, 8, w-16, 100 );
 					
-					int i = 0;
+					/*int i = 0;
 					int b = 0;
 					for( FancyButton fb : buttons ) {
 						b += fb.getWidth()+5;
 					}
-					b -= 5;
+					b -= 5;*/
 					
-					for( FancyButton fb : buttons ) {
+					if( st.splitPane != null ) st.splitPane.setBounds(10, 115, w-20, h-125 );
+					/*for( FancyButton fb : buttons ) {
 						fb.setLocation( w/2-b/2+i, (h-buttonDim.height)/2 );
 						i+=fb.getWidth()+5;
-					}
+					}*/
 				}
 				super.setBounds(x, y, w, h );
 			}
 		};
 		c.setLayout( null );
-		c.add( subc );
 		
-		d	= new Dimension(900,600);
-		c.setPreferredSize( d );
-		c.setSize( d );
-		this.add( c );
-		this.add( e );
-		for( FancyButton fb : buttons ) {
+		SwingUtilities.invokeLater( new Runnable(){
+			@Override
+			public void run() {		
+				Dimension d	= new Dimension(900,600);
+				c.setPreferredSize( d );
+				c.setSize( d );
+				
+				st.initGui( st.sessionKey, st.currentUser );
+				c.add( subc );
+				c.add(st.splitPane);
+				
+				st.tabbedPane.addChangeListener( new ChangeListener() {
+					@Override
+					public void stateChanged(ChangeEvent e) {
+						subc.repaint();
+					}
+				});
+				
+				Intro.this.add( c );
+				
+				st.ed.setBackground( new Color(0,0,0,0) );
+				Intro.this.add( st.ed );
+			}
+		});
+		
+		/*for( FancyButton fb : buttons ) {
 			c.add( fb );
-		}
+		}*/
 		
-		final int val = 2;
+		/*final int val = 2;
 		timer = new Timer( 50, new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -368,6 +440,6 @@ public class Intro extends JApplet {
 			}
 		});
 		timer.setInitialDelay( 0 );
-		timer.setCoalesce( true );
+		timer.setCoalesce( true );*/
 	}
 }

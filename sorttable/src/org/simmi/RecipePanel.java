@@ -906,12 +906,14 @@ public class RecipePanel extends JSplitPane {
 					}
 					
 					int mi = leftTable.convertRowIndexToView( leftTable.getModel().getRowCount() - recipes.size() + cr );
-					leftTable.setRowSelectionInterval( mi, mi );
+					if( mi >= 0 && mi < leftTable.getRowCount() ) {
+						leftTable.setRowSelectionInterval( mi, mi );
 					
-					Rectangle cellRect = leftTable.getCellRect(mi, 0, false);
-					Rectangle visRect = table.getVisibleRect();
-					visRect.y = cellRect.y;
-					table.scrollRectToVisible( visRect );
+						Rectangle cellRect = leftTable.getCellRect(mi, 0, false);
+						Rectangle visRect = table.getVisibleRect();
+						visRect.y = cellRect.y;
+						table.scrollRectToVisible( visRect );
+					}
 				}
 				
 				recipeDetailTable.revalidate();
@@ -1010,7 +1012,7 @@ public class RecipePanel extends JSplitPane {
 								String[] lines = obj.toString().split("\\n");
 								for( String line : lines ) {
 									String[] vals = line.split("\\t");
-									rep.ingredients.add( new RecipeIngredient( vals[1], 100, "g" ) );
+									rep.ingredients.add( new RecipeIngredient( vals[0], 100, "g" ) );
 								}
 								recipeDetailTable.revalidate();
 								recipeDetailTable.repaint();
