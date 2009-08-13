@@ -214,11 +214,11 @@ public class DetailPanel extends JSplitPane {
 			@Override
 			public String getColumnName(int columnIndex) {
 				if( lang.equals("IS") ) {
-					if( columnIndex == 0 ) return "Nafn";
-					else if( columnIndex == 1 ) return "Hópur";
+					if( columnIndex == 0 ) return "Næringarefni";
+					else if( columnIndex == 1 ) return "Næringarefnaflokkur";
 					else if( columnIndex == 2 ) return "Eining";
 					else if( columnIndex == 3 ) return "Mæligildi";
-					else if( columnIndex == 4 ) return "Rds";
+					else if( columnIndex == 4 ) return "RDS";
 					return "Sýna dálk";
 				} else {
 					if( columnIndex == 0 ) return "Name";

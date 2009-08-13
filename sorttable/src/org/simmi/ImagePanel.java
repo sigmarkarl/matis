@@ -15,6 +15,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -22,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.zip.GZIPInputStream;
 
 import javax.imageio.ImageIO;
 import javax.swing.JComponent;
@@ -42,8 +44,12 @@ public class ImagePanel extends JComponent {
 				int r = leftTable.getSelectedRow();
 				//int rr = leftTable.convertRowIndexToModel(r);
 				if( r >= 0 && r < leftTable.getRowCount() ) {
-					Object obj = leftTable.getValueAt(r, 1);
-					if( obj != null ) runThread( obj.toString() );
+					Object obj = leftTable.getValueAt(r, 0);
+					if( obj != null ) {
+						String s = obj.toString();
+						System.err.println("hey " + s );
+						runThread( s );
+					}
 				}
 			}
 		});
@@ -191,10 +197,13 @@ public class ImagePanel extends JComponent {
 				public void run() {
 					URL url;
 					try {
-						//url = new URL("http://localhost/labbi.html");
+						//url = new URL("http://localhost:5001/images?hl=en&q="+URLEncoder.encode(str, "UTF-8") );
 						//url = new URL("http://search.live.com/images/results.aspx?q="+str);
-						url = new URL("http://images.google.com/images?hl=en&q="+str ); //+"&btnG=Search+Images&gbv=2" ); //&btnG=Search+Images" );//hl=en&q=Orange");//+str);
-						System.err.println( "searching for " + str );
+						String vstr = str.replace(",", "");
+						vstr = vstr.replace(' ', '+');
+						vstr = URLEncoder.encode(vstr, "UTF-8");
+						url = new URL("http://images.google.com/images?hl=en&q="+vstr ); //+"&btnG=Search+Images&gbv=2" ); //&btnG=Search+Images" );//hl=en&q=Orange");//+str);
+						System.err.println( "searching for " + url.toString() );
 						URLConnection connection = null;
 						connection = url.openConnection();
 						//Proxy proxy = new Proxy( Type.HTTP, new InetSocketAddress("proxy.decode.is",8080) );
@@ -202,15 +211,17 @@ public class ImagePanel extends JComponent {
 						//connection.setDoOutput( true );
 						if( connection instanceof HttpURLConnection ) {
 							HttpURLConnection httpConnection = (HttpURLConnection)connection;
+							httpConnection.setRequestProperty("Host", "images.google.com" );
 							httpConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.6) Gecko/2009020518 Ubuntu/9.04 (jaunty) Firefox/3.0.6" );
 							httpConnection.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,**;q=0.8" );
 							httpConnection.setRequestProperty("Accept-Language", "en-us,en;q=0.5" );
-							//httpConnection.setRequestProperty("Accept-Encoding", "gzip,deflate" );
+							httpConnection.setRequestProperty("Accept-Encoding", "gzip,deflate" );
 							httpConnection.setRequestProperty("Accept-Charset", "ISO-8859-1,utf-8;q=0.7,*;q=0.7" );
 							httpConnection.setRequestProperty("Keep-Alive", "300" );
+							httpConnection.setRequestProperty("Connection", "keep-alive" );
 						}
 						InputStream stream = connection.getInputStream();
-						//stream = new GZIPInputStream( stream );
+						stream = new GZIPInputStream( stream );
 						
 						int total = 0;
 						int read = stream.read(ba.array(), total, ba.limit()-total );

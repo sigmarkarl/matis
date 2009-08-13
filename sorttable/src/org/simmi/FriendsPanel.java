@@ -193,7 +193,14 @@ public class FriendsPanel extends JScrollPane {
 			
 			if( !res.contains("error_response" ) ) {
 				String uds = res.substring( res.indexOf("<uid>")+5 ).replace("</uid>\n  <uid>", ",");
-				String uids = currentUser+","+uds.substring(0, uds.lastIndexOf(','));
+				int ind = uds.lastIndexOf(',');
+				
+				String uids = currentUser;
+				if( ind > 0 ) {
+					uids += ","+uds.substring(0, ind);
+				} else {
+					System.err.println( uds );
+				}
 			
 				return getUserInfo( sessionKey, uids, "name,birthday,pic,sex,is_app_user");
 			}
@@ -204,102 +211,108 @@ public class FriendsPanel extends JScrollPane {
 	public void parseFriendsXml( String uinfo ) {
 		String startTag = "<user>";
 		String stopTag = "</user>";
-		final String[] uval = uinfo.substring( uinfo.indexOf(startTag)+startTag.length(), uinfo.lastIndexOf(stopTag) ).split(stopTag+"\n  "+startTag);
-		for( int i = 0; i < uval.length; i++ ) {
-			final Object[]	fres = new Object[7];
-			friendList.add( fres );
-			
-			fres[1] = Boolean.FALSE;
-			String xmling = uval[i];
-			final String userid = xmling.substring( xmling.indexOf("<uid>")+5, xmling.lastIndexOf("</uid>") );
-			fres[0] = userid;
-			String uname = xmling.substring( xmling.indexOf("<name>")+6, xmling.lastIndexOf("</name>") );
-			if( i == 0 ) {
-				currentUser = uname;
-				currentUserId = userid;
-			}
-			fres[2] = uname;
-			
-			int start = xmling.indexOf("<sex>")+5;
-			int stop = xmling.lastIndexOf("</sex>");
-			if( stop > start  && start > 0 ) {
-				String sex = xmling.substring( start, stop );
-				fres[4] = sex.equalsIgnoreCase("male") ? "Karl" : "Kona";
-			}
-			
-			start = xmling.indexOf("<is_app_user>")+13;
-			stop = xmling.lastIndexOf("</is_app_user>");
-			if( stop > start  && start > 0 ) {
-				String appUser = xmling.substring( start, stop );
-				fres[6] = appUser.equals("1") ? onIcon : offIcon;
-			}
-			
-			start = xmling.indexOf("<pic>") + 5;
-			stop = xmling.indexOf("</pic>");
-			if( stop != -1 ) {
-				final String urlstr = xmling.substring( start, stop );
+		int ustart = uinfo.indexOf(startTag);
+		
+		if( ustart != -1 ) {
+			final String[] uval = uinfo.substring( ustart+startTag.length(), uinfo.lastIndexOf(stopTag) ).split(stopTag+"\n  "+startTag);
+			for( int i = 0; i < uval.length; i++ ) {
+				final Object[]	fres = new Object[7];
+				friendList.add( fres );
 				
-				Thread t = new Thread() {
-					public void run() {
-						try {
-							File f = new File( System.getProperty("user.home"), ".isgem" );
-							f = new File( f, "friends" );
-							BufferedImage img = null;
-							if( !f.exists() ) {
-								f.mkdirs();
-								f = new File( f, userid+".png" );
-								URL url = new URL( urlstr );
-								InputStream in = url.openStream();
-								img = ImageIO.read( in );								
-								in.close();
-								
-								ImageIO.write( img, "png", f );
-							} else {
-								f = new File( f, userid+".png" );
-								if( f.exists() ) {
-									img = ImageIO.read( f );
-								} else {
+				fres[1] = Boolean.FALSE;
+				String xmling = uval[i];
+				final String userid = xmling.substring( xmling.indexOf("<uid>")+5, xmling.lastIndexOf("</uid>") );
+				fres[0] = userid;
+				String uname = xmling.substring( xmling.indexOf("<name>")+6, xmling.lastIndexOf("</name>") );
+				if( i == 0 ) {
+					currentUser = uname;
+					currentUserId = userid;
+				}
+				fres[2] = uname;
+				
+				int start = xmling.indexOf("<sex>")+5;
+				int stop = xmling.lastIndexOf("</sex>");
+				if( stop > start  && start > 0 ) {
+					String sex = xmling.substring( start, stop );
+					fres[4] = sex.equalsIgnoreCase("male") ? "Karl" : "Kona";
+				}
+				
+				start = xmling.indexOf("<is_app_user>")+13;
+				stop = xmling.lastIndexOf("</is_app_user>");
+				if( stop > start  && start > 0 ) {
+					String appUser = xmling.substring( start, stop );
+					fres[6] = appUser.equals("1") ? onIcon : offIcon;
+				}
+				
+				start = xmling.indexOf("<pic>") + 5;
+				stop = xmling.indexOf("</pic>");
+				if( stop != -1 ) {
+					final String urlstr = xmling.substring( start, stop );
+					
+					Thread t = new Thread() {
+						public void run() {
+							try {
+								File f = new File( System.getProperty("user.home"), ".isgem" );
+								f = new File( f, "friends" );
+								BufferedImage img = null;
+								if( !f.exists() ) {
+									f.mkdirs();
+									f = new File( f, userid+".png" );
 									URL url = new URL( urlstr );
 									InputStream in = url.openStream();
-									img = ImageIO.read( in );
+									img = ImageIO.read( in );								
 									in.close();
 									
 									ImageIO.write( img, "png", f );
+								} else {
+									f = new File( f, userid+".png" );
+									if( f.exists() ) {
+										img = ImageIO.read( f );
+									} else {
+										URL url = new URL( urlstr );
+										InputStream in = url.openStream();
+										img = ImageIO.read( in );
+										in.close();
+										
+										ImageIO.write( img, "png", f );
+									}
 								}
+								
+								fres[5] = new ImageIcon( img );
+								
+								table.revalidate();
+								table.repaint();
+							} catch (MalformedURLException e) {
+								fres[5] = new ImageIcon();
+								e.printStackTrace();
+							} catch (IOException e) {
+								fres[5] = new ImageIcon();
+								e.printStackTrace();
 							}
-							
-							fres[5] = new ImageIcon( img );
-							
-							table.revalidate();
-							table.repaint();
-						} catch (MalformedURLException e) {
-							fres[5] = new ImageIcon();
-							e.printStackTrace();
-						} catch (IOException e) {
-							fres[5] = new ImageIcon();
-							e.printStackTrace();
 						}
-					}
-				};
-				t.start();
-			} else {
-				fres[5] = new ImageIcon();
-			}
-			
-			start = xmling.indexOf("<birthday>") + 10;
-			stop = xmling.indexOf("</birthday>");
-			if( stop > start  && start > 0 ) {
-				try {
-					fres[3] = DateFormat.getDateInstance( DateFormat.LONG, Locale.US ).parse( xmling.substring( start, stop ) );
-				} catch (ParseException e) {
-					fres[3] = new Date(0);
-					e.printStackTrace();
+					};
+					t.start();
+				} else {
+					fres[5] = new ImageIcon();
 				}
-				//fres[1] = DateFormat.
-				//parse( xmling.substring( start, stop ) );
-			} else {
-				fres[3] = new Date(0);
+				
+				start = xmling.indexOf("<birthday>") + 10;
+				stop = xmling.indexOf("</birthday>");
+				if( stop > start  && start > 0 ) {
+					try {
+						fres[3] = DateFormat.getDateInstance( DateFormat.LONG, Locale.US ).parse( xmling.substring( start, stop ) );
+					} catch (ParseException e) {
+						fres[3] = new Date(0);
+						e.printStackTrace();
+					}
+					//fres[1] = DateFormat.
+					//parse( xmling.substring( start, stop ) );
+				} else {
+					fres[3] = new Date(0);
+				}
 			}
+		} else {
+			System.err.println( uinfo );
 		}
 	}
 	

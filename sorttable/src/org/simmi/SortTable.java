@@ -23,6 +23,8 @@ import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -250,10 +252,12 @@ public class SortTable extends JApplet {
 		Integer[]	ii = {1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 16, 17, 20, 21, 23, 24, 29, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 44, 137, 138};
 		final Set<Integer>	is = new HashSet<Integer>( Arrays.asList(ii) );
 		
+		List<String[]>	idList = new ArrayList<String[]>();
 		if( loc.equals("IS") ) {
 			inputStream = this.getClass().getResourceAsStream( "/Component.txt" );
 			br = new BufferedReader( new InputStreamReader( inputStream, "UTF-8" ) );
 			line = br.readLine();
+			
 			int i = 0;
 			while( line != null ) {
 				String[] split = line.split("[\t]");
@@ -263,15 +267,34 @@ public class SortTable extends JApplet {
 						sName = split[4];
 					}
 					String nName = split[3];
-					ngroupMap.put( split[2], i++ );
-					ngroupList.add( nName );// + " ("+split[1].substring(1, split[1].length()-1)+")" );
+					
+					String[] strs = new String[] { split[2], nName, split[8], sName, split[6] };
+					idList.add( strs );
+					//ngroupMap.put( split[2], i++ );
+					
+					/*ngroupList.add( nName ); // + " ("+split[1].substring(1, split[1].length()-1)+")" );
 					ngroupGroups.add( split[8] );
 					//List<Object>	lobj = nutList.get(i).get(i)
 					nutList[0].add( sName );
 					String mName = split[6];
-					nutList[1].add( mName );
+					nutList[1].add( mName );*/
 				}
 				line = br.readLine();
+			}
+			
+			Collections.sort( idList, new Comparator<String[]>() {
+				@Override
+				public int compare(String[] s1, String[] s2) {
+					return s1[0].compareTo( s2[0] );
+				}
+			});
+			
+			for( String[] vals : idList ) {
+				ngroupMap.put( vals[0], i++ );
+				ngroupList.add( vals[1] );
+				ngroupGroups.add( vals[2] );
+				nutList[0].add( vals[3] );
+				nutList[1].add( vals[4] );
 			}
 		} else {
 			inputStream = ClassLoader.getSystemResourceAsStream( "NUTR_DEF.txt" );
@@ -318,8 +341,8 @@ public class SortTable extends JApplet {
 				String val = split[6];
 				split[6] = fgroupMap.get( val );
 				Object[] array = new Object[ 2+ngroupList.size() ];
-				array[0] = split[6];
-				array[1] = split[2];
+				array[0] = split[2];
+				array[1] = split[6];
 				for( i = 2; i < array.length; i++ ) {
 					array[i] = null;
 				}
@@ -482,11 +505,8 @@ public class SortTable extends JApplet {
 			return this;
 		}
 	};
-	 
-	String sessionKey = null;
-	String currentUser = null;
-	public String lastResult;
-	public void init() {
+	
+	public void firstInit() {
 		try {
 			UIManager.setLookAndFeel(lof);
 		} catch (ClassNotFoundException e) {
@@ -509,8 +529,8 @@ public class SortTable extends JApplet {
 			if (!frame.isResizable()) frame.setResizable(true);
 		}
 		
-		this.getContentPane().setBackground( Color.white );
-		this.setBackground( Color.white );
+		this.getContentPane().setBackground( bgcolor );
+		this.setBackground( bgcolor );
 		System.setProperty("file.encoding", "UTF8");
 		
 		lang = "IS";
@@ -526,6 +546,13 @@ public class SortTable extends JApplet {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	 
+	String sessionKey = null;
+	String currentUser = null;
+	public String lastResult;
+	public void init() {
+		firstInit();
 		
 		try {
 			sessionKey = SortTable.this.getParameter("fb_sig_session_key");
@@ -542,8 +569,10 @@ public class SortTable extends JApplet {
 		});
 	}
 	
+	Color bgcolor = new Color( 240,240,255 );
+	
 	public void initGui( String sessionKey, String currentUser ) {
-		SortTable.this.getRootPane().setBackground( Color.white );
+		SortTable.this.getRootPane().setBackground( bgcolor );
 		SortTable.this.requestFocus();
 		
 		scrollPane = new JScrollPane();
@@ -636,20 +665,22 @@ public class SortTable extends JApplet {
 			public void valueChanged(ListSelectionEvent e) {
 				int row = leftTable.getSelectedRow();
 				if( row >= 0 && row < leftTable.getRowCount() ) {
-					final String oStr = leftTable.getValueAt(row, 1).toString();
-					final String str = oStr.replaceAll("[ ,]+", "+");
-					//int row = e.getFirstIndex();
-					if( tabbedPane.getSelectedComponent() == graph ) {
-						graph.repaint();
-					} else if( tabbedPane.getSelectedComponent() == detail ) {
-						if( !str.equals(lastResult) ) {
-							lastResult = str;
-							imgPanel.img = null;
-							imgPanel.repaint();
-							//imgPanel.runThread( str );
-							imgPanel.tryName( oStr );
+					final String oStr = (String)leftTable.getValueAt(row, 1);
+					if( oStr != null ) {
+						final String str = oStr.replaceAll("[ ,]+", "+");
+						//int row = e.getFirstIndex();
+						if( tabbedPane.getSelectedComponent() == graph ) {
+							graph.repaint();
+						} else if( tabbedPane.getSelectedComponent() == detail ) {
+							if( !str.equals(lastResult) ) {
+								lastResult = str;
+								imgPanel.img = null;
+								imgPanel.repaint();
+								//imgPanel.runThread( str );
+								imgPanel.tryName( oStr );
+							}
+							detail.detailTable.tableChanged( new TableModelEvent( detail.detailModel ) );
 						}
-						detail.detailTable.tableChanged( new TableModelEvent( detail.detailModel ) );
 					}
 				}
 			}
@@ -1065,12 +1096,12 @@ public class SortTable extends JApplet {
 			@Override
 			public String getColumnName(int columnIndex) {
 				if( lang.equals("IS") ) {
-					if( columnIndex == 0 ) return "Matar hópur";
-					else if( columnIndex == 1 ) return "Matur";
+					if( columnIndex == 0 ) return "Fæðutegund";
+					else if( columnIndex == 1 ) return "Fæðuflokkur";
 					return "Óþekkt";
 				} else {
-					if( columnIndex == 0 ) return "Food Group";
-					else if( columnIndex == 1 ) return "Food Name";
+					if( columnIndex == 0 ) return "Food Name";
+					else if( columnIndex == 1 ) return "Food Group";
 					return "Unknown";
 				}
 			}
@@ -1091,7 +1122,7 @@ public class SortTable extends JApplet {
 					int r = rowIndex - (stuff.size()-2);
 					if( r < recipe.recipes.size() ) {
 						Recipe rep = recipe.recipes.get(r);
-						if( columnIndex == 0 ) {
+						if( columnIndex == 1 ) {
 							return "Uppskrift - "+rep.group;
 						} else {
 							return rep.name + " - " + rep.author;
@@ -1122,7 +1153,7 @@ public class SortTable extends JApplet {
 				Point	p = e.getPoint();
 				leftTable.requestFocus();
 				if( e.getClickCount() == 2 ) {
-					if( tabbedPane.getSelectedComponent() == recipe && leftTable.columnAtPoint(p) == 1 ) {
+					if( tabbedPane.getSelectedComponent() == recipe /*&& leftTable.columnAtPoint(p) == 0*/ ) {
 						if( recipe.currentRecipe != null ) {
 							//recipe.currentRecipe.ingredients.add( new RecipePanel.RecipeIngredient() );
 							
@@ -1130,7 +1161,7 @@ public class SortTable extends JApplet {
 							
 							int r = leftTable.getSelectedRow();
 							int rr = leftTable.convertRowIndexToModel( r );
-							Object val = leftTable.getValueAt(r, 1);
+							Object val = leftTable.getValueAt(r, 0);
 							if( val != null ) {
 								recipe.currentRecipe.addIngredient( val.toString(), 100, "g" );
 							}
@@ -1345,11 +1376,11 @@ public class SortTable extends JApplet {
 		graph = new GraphPanel( rdsPanel, lang, new JTable[] {table, leftTable, topTable}, model, topModel );
 		
 		if( lang.equals("IS") ) {
-			tabbedPane.addTab( "Listi", rightSplitPane );
+			tabbedPane.addTab( "Fæða", rightSplitPane );
 			//tabbedPane.addTab( "Myndir", imgPanel );
-			tabbedPane.addTab( "Gröf", graph );
-			tabbedPane.addTab( "Nánar", detail );
-			tabbedPane.addTab( "Rds", rdsPanel );
+			tabbedPane.addTab( "Samsetning", graph );
+			tabbedPane.addTab( "Næringarefni", detail );
+			tabbedPane.addTab( "RDS", rdsPanel );
 			tabbedPane.addTab( "Uppskriftir", recipe );
 			if( fp != null ) tabbedPane.addTab( "Vinir", fp );
 			tabbedPane.addTab( "Mataræði og Hreyfing", eat );
@@ -1387,7 +1418,7 @@ public class SortTable extends JApplet {
 		ed.setContentType("text/html");
 		ed.setEditable( false );
 		ed.setText("<html><body><center><table cellpadding=0><tr><td><img src=\"http://test.matis.is/isgem/Matis_logo.jpg\" hspace=\"5\" width=\"32\" height=\"32\">"
-			+"</td><td align=\"center\"><a href=\"http://www.matis.is\">Matís ehf.</a> - Borgartún 21 | 105 Reykjavík - Sími 422 50 00 | Fax 422 50 01 - <a href=\"mailto:matis@matis.is\">matis@matis.is</a><br><a href=\"http://www.matis.is/ISGEM/is/skyringar/\">Hjálp</a> - "
+			+"</td><td align=\"center\"><a href=\"http://www.matis.is\">Matís ohf.</a> - Borgartún 21 | 105 Reykjavík - Sími 422 50 00 | Fax 422 50 01 - <a href=\"mailto:matis@matis.is\">matis@matis.is</a><br><a href=\"http://www.matis.is/ISGEM/is/skyringar/\">Hjálp</a> - "
 			+((sessionKey != null && sessionKey.length() > 1)?"<a href=\"http://test.matis.is/isgem\">Allur glugginn</a>":"<a href=\"http://apps.facebook.com/matisgem\">Facebook</a>")
 			//+" - <a href=\"dark\">Dark</a> - <a href=\"light\">Light</a>"
 			+"</td></tr></table></center></body></html>");
@@ -1436,8 +1467,8 @@ public class SortTable extends JApplet {
 		
 		//SwingUtilities.updateComponentTreeUI( this );
 		
-		SortTable.this.getContentPane().setBackground( Color.white );
-		SortTable.this.setBackground( Color.white );
+		SortTable.this.getContentPane().setBackground( bgcolor );
+		SortTable.this.setBackground( bgcolor );
 	}
 	
 	public JScrollPane getScrollPane() {
