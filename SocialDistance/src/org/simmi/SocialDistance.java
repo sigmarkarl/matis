@@ -5,6 +5,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -35,6 +36,8 @@ public class SocialDistance {
 	
 	Map<String,Object>	fbMap = new HashMap<String,Object>();
 	
+	static String prefix = "/sd/";
+	
 	static {
         System.setProperty("http.agent", System.getProperty("user.name") + " (from NetBeans IDE)");
     }
@@ -62,7 +65,7 @@ public class SocialDistance {
 		//List<String>	flist = Arrays.asList( friends );
 		
 		Map<String,User>			umap = new HashMap<String,User>();
-		File 						f = new File("/home/simmi/sd/users");
+		File 						f = new File(prefix+"users");
 		if( f.exists() ) {
 			FileReader					fr = new FileReader( f );
 			BufferedReader				br = new BufferedReader( fr );
@@ -115,7 +118,7 @@ public class SocialDistance {
 		
 		Set<String>	fset = new HashSet<String>();
 		for( String user : friends ) {
-			f = new File("/home/simmi/sd/"+user );
+			f = new File(prefix+user );
 			if( f.exists() ) {
 				FileReader fr = new FileReader( f );
 				BufferedReader br = new BufferedReader( fr );
@@ -190,19 +193,35 @@ public class SocialDistance {
 	 */
 	public static void main(String[] args) {
 		String user = System.getProperty("search");
+		
+		if( user != null ) {
+			try {
+				user = URLDecoder.decode( user, "UTF-8" );
+			} catch (UnsupportedEncodingException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		}
+		
+		/*File ff = new File("/tmp/hey.txt");
 		try {
-			user = URLDecoder.decode( user, "UTF-8" );
-		} catch (UnsupportedEncodingException e1) {
+			FileOutputStream fos = new FileOutputStream(ff);
+			fos.write("simmi".getBytes());
+			fos.close();
+		} catch (FileNotFoundException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
-		}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}*/
 		
 		if( user != null ) {
 			String me = System.getProperty("user");
 			
 			Set<Uid>					uids = new HashSet<Uid>();
 			//Map<String,User>			umap = new HashMap<String,User>();
-			File f = new File("/home/simmi/sd/users");
+			File f = new File(prefix+"users");
 			if( f.exists() ) {
 				try {
 					FileReader 		fr = new FileReader( f );
@@ -257,7 +276,7 @@ public class SocialDistance {
 								tu2.clear();
 								
 								/*for( String s : su1 ) {
-									File fl = new File( "/tmp/"+s );
+									File fl = new File( prefix+""+s );
 									if( fl.exists() ) {
 										FileReader fr = new FileReader( fl );
 										BufferedReader br = new BufferedReader( fr );
@@ -285,7 +304,7 @@ public class SocialDistance {
 								}*/
 								
 								for( String s : su2 ) {
-									File fl = new File( "/home/simmi/sd/"+s );
+									File fl = new File( prefix+s );
 									if( fl.exists() ) {
 										FileReader fr = new FileReader( fl );
 										BufferedReader br = new BufferedReader( fr );
@@ -382,7 +401,7 @@ public class SocialDistance {
 				}*/
 			}
 			
-			/*File f = new File("/tmp/bb");
+			/*File f = new File(prefix+"bb");
 			try {				
 				byte[]	bb = new byte[16768];
 				FileInputStream fis = new FileInputStream( f );
@@ -392,7 +411,7 @@ public class SocialDistance {
 				String ret = new String( bb, 0, r );
 				
 				System.out.println( ret );
-				FileWriter	fw = new FileWriter( new File("/tmp/ber") );
+				FileWriter	fw = new FileWriter( new File(prefix+"ber") );
 				fw.write( ret );
 				/*for( String id : umap.keySet() ) {
 					String uname = umap.get(id);
