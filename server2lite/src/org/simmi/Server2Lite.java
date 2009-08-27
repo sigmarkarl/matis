@@ -75,6 +75,7 @@ public class Server2Lite {
 			while( rs.next() ) {
 				String[] split = val.split(",");
 				
+				// SelectedValue numeric em -> -1
 				if( !tname.equals("ComponentValue") || sset.contains( rs.getString(3) ) ) {
 					int i = 0;
 					String vstr = "";
