@@ -16,8 +16,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.imageio.ImageIO;
 import javax.swing.JApplet;
@@ -26,7 +28,6 @@ import javax.swing.JFileChooser;
 import javax.swing.TransferHandler;
 
 import org.apache.poi.ss.usermodel.IndexedColors;
-import org.apache.poi.xssf.model.StylesTable;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -135,7 +136,7 @@ public class Ljoslota extends JApplet {
 					if (obj != null && obj instanceof List) {
 						List<File>	l = (List<File>)obj;
 						File f = l.get(0);
-						load( f.getCanonicalPath() );
+						load( f.getCanonicalPath(), null );
 						
 						int i = 0;
 						File nf = File.createTempFile("tmp", ".xlsx");
@@ -160,7 +161,8 @@ public class Ljoslota extends JApplet {
 									URL url = new URL(stuff);
 									File f = new File( URLDecoder.decode( url.getFile(), "UTF-8" ) );
 									//URLDecoder.decode( f, "UTF-8" )
-									load( f.getCanonicalPath() );
+									XSSFWorkbook	wb = new XSSFWorkbook();
+									load( f.getCanonicalPath(), wb );
 									int i = 0;
 									File nf = File.createTempFile("tmp", ".xlsx");
 									//File nf = new File( System.getProperty("user.home"), "tmp"+i+".xlsx" );
@@ -182,7 +184,7 @@ public class Ljoslota extends JApplet {
 									URL url = new URL(stuff);
 									File f = new File( URLDecoder.decode( url.getFile(), "UTF-8" ) );
 									//URLDecoder.decode( f, "UTF-8" )
-									load( f.getCanonicalPath() );
+									load( f.getCanonicalPath(), null );
 									JFileChooser fc = new JFileChooser( f.getParentFile() );
 									if( fc.showSaveDialog( Ljoslota.this.xlsComp ) == JFileChooser.APPROVE_OPTION ) {
 										workbook.write( new FileOutputStream( fc.getSelectedFile() ) );
@@ -205,7 +207,7 @@ public class Ljoslota extends JApplet {
 		xlsComp.setTransferHandler(th);
 	}
 	
-	public void load( String filename ) throws Exception {
+	public void load( String filename, XSSFWorkbook wb ) throws Exception {
 		workbook = new XSSFWorkbook( filename );
 		XSSFSheet		sheet = workbook.getSheet("Basic");
 		
@@ -217,7 +219,7 @@ public class Ljoslota extends JApplet {
 			XSSFCell 	cell = null;
 			while( row != null ) {
 				cell = row.getCell( 1 );
-				System.err.println( cell.getStringCellValue() );
+				//System.err.println( cell.getStringCellValue() );
 				if( cell != null && cell.getCellType() == XSSFCell.CELL_TYPE_STRING && cell.getStringCellValue().length() > 0 ) {
 					//System.err.println( cell.getStringCellValue() );
 					//System.err.println( cell.getCellStyle().getFillForegroundXSSFColor().toString() );
@@ -235,257 +237,326 @@ public class Ljoslota extends JApplet {
 				row = sheet.getRow( ++startrow );
 			}
 			
-			System.err.println( "startrow " + startrow );
-			
-			Map<Short,Integer>	hist = new HashMap<Short,Integer>();
-			Map<Short,Integer>	mm = new HashMap<Short,Integer>();
-			for( int i = 8; i < 28; i+=2 ) {
-				hist.clear();
-				int r = startrow;
-				row = sheet.getRow( r );
-				while( row != null && row.getCell(1) != null && row.getCell(1).getCellType() == XSSFCell.CELL_TYPE_STRING && row.getCell(1).getStringCellValue().length() > 0 ) {
-					XSSFCell cell1 = row.getCell( i );
-					XSSFCell cell2 = row.getCell( i+1 );
-					
-					if( cell1 != null && cell1.getCellType() == XSSFCell.CELL_TYPE_NUMERIC && cell2 != null && cell2.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) {
-						short 	s1 = (short)cell1.getNumericCellValue();
-						short 	s2 = (short)cell2.getNumericCellValue();
+			if( true ) {//row.getCell(1) != null ) {
+				System.err.println( "startrow " + startrow );
+				
+				Map<Short,Integer>	hist = new HashMap<Short,Integer>();
+				Map<Short,Integer>	mm = new HashMap<Short,Integer>();
+				for( int i = 8; i < 28; i+=2 ) {
+					hist.clear();
+					int r = startrow;
+					row = sheet.getRow( r );
+					while( row != null && row.getCell(1) != null && row.getCell(1).getCellType() == XSSFCell.CELL_TYPE_STRING && row.getCell(1).getStringCellValue().length() > 0 ) {
+						XSSFCell cell1 = row.getCell( i );
+						XSSFCell cell2 = row.getCell( i+1 );
 						
-						/*if( s1 == s2 && s1 != 0 ) {
-							if( hist.containsKey(s1) ) {
-								int val = hist.get( s1 );
-								hist.put( s1, val+1 );
-							} else {
-								hist.put( s1, 1 );
-							}
-							hist.put( (short)-s1, Integer.MAX_VALUE );
-						} else {*/
-							if( s1 != (short)0 ) {
+						if( cell1 != null && cell1.getCellType() == XSSFCell.CELL_TYPE_NUMERIC && cell2 != null && cell2.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) {
+							short 	s1 = (short)cell1.getNumericCellValue();
+							short 	s2 = (short)cell2.getNumericCellValue();
+							
+							/*if( s1 == s2 && s1 != 0 ) {
 								if( hist.containsKey(s1) ) {
 									int val = hist.get( s1 );
 									hist.put( s1, val+1 );
 								} else {
 									hist.put( s1, 1 );
 								}
-							}
-							
-							if( s2 != (short)0 ) {
-								if( hist.containsKey(s2) ) {
-									int val = hist.get( s2 );
-									hist.put( s2, val+1 );
-								} else {
-									hist.put( s2, 1 );
+								hist.put( (short)-s1, Integer.MAX_VALUE );
+							} else {*/
+								if( s1 != (short)0 ) {
+									if( hist.containsKey(s1) ) {
+										int val = hist.get( s1 );
+										hist.put( s1, val+1 );
+									} else {
+										hist.put( s1, 1 );
+									}
 								}
-							}
-						//}
-					} else {
-						System.err.println( "outofbounds" );
-					}
-					
-					row = sheet.getRow( ++r );
-				}
-				
-				while( hist.size() > 4 ) {
-					int min = Collections.min( hist.values() );
-					
-					short sval = -1;
-					for( short s : hist.keySet() ) {
-						if( hist.get(s) == min  ) {
-							sval = s;
-							break;
-						}
-					}
-					
-					if( sval >= 0 ) {
-						hist.remove( sval );
-					}
-				}
-				
-				int max = Collections.max( hist.values() );	
-				short sval = -1;
-				for( short s : hist.keySet() ) {
-					if( hist.get(s) == max  ) {
-						sval = s;
-						break;
-					}
-				}
-				
-				row = sheet.getRow( startrow-2 );
-				XSSFCell p1cell1 = row.getCell( i );
-				if( p1cell1 == null ) p1cell1 = row.createCell( i );
-				XSSFCell p1cell2 = row.getCell( i+1 );
-				if( p1cell2 == null ) p1cell2 = row.createCell( i+1 );
-				
-				row = sheet.getRow( startrow-1 );
-				XSSFCell p2cell1 = row.getCell( i );
-				if( p2cell1 == null ) p2cell1 = row.createCell( i );
-				XSSFCell p2cell2 = row.getCell( i+1 );
-				if( p2cell2 == null ) p2cell2 = row.createCell( i+1 );
-				
-				r = startrow;
-				row = sheet.getRow( r );
-				XSSFCellStyle ss = (XSSFCellStyle)row.getCell( 0 ).getCellStyle().clone();
-				ss.setFillPattern( XSSFCellStyle.FINE_DOTS );
-				ss.setFillForegroundColor( IndexedColors.YELLOW.getIndex() );
-				
-				p1cell1.setCellStyle( ss );
-				p1cell2.setCellStyle( ss );
-				
-				p2cell1.setCellStyle( ss );
-				p2cell2.setCellStyle( ss );
-				
-				p1cell1.setCellValue( (double)sval );
-				
-				ss = (XSSFCellStyle)row.getCell( 0 ).getCellStyle().clone();
-				ss.setFillPattern( XSSFCellStyle.FINE_DOTS );
-				ss.setFillForegroundColor( IndexedColors.CORAL.getIndex() );
-				
-				mm.clear();
-				while( row != null && row.getCell(1) != null && row.getCell(1).getCellType() == XSSFCell.CELL_TYPE_STRING && row.getCell(1).getStringCellValue().length() > 0 ) {
-					XSSFCell cell1 = row.getCell( i );
-					XSSFCell cell2 = row.getCell( i+1 );
-					
-					if( cell1 != null && cell1.getCellType() == XSSFCell.CELL_TYPE_NUMERIC && cell2 != null && cell2.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) {
-						short 	s1 = (short)cell1.getNumericCellValue();
-						short 	s2 = (short)cell2.getNumericCellValue();
-						
-						if( s1 == sval ) {
-							if( mm.containsKey(s2) ) {
-								int val = mm.get( s2 );
-								mm.put( s2, val+1 );
-							} else {
-								mm.put( s2, 1 );
-							}
-						} else if( s2 == sval ) {
-							if( mm.containsKey(s1) ) {
-								int val = mm.get( s1 );
-								mm.put( s1, val+1 );
-							} else {
-								mm.put( s1, 1 );
-							}
-						}
-					}
-					
-					row = sheet.getRow( ++r );
-				}
-				
-				while( mm.size() > 2 ) {
-					int min = Collections.min( mm.values() );
-					
-					sval = -1;
-					for( short s : mm.keySet() ) {
-						if( mm.get(s) == min  ) {
-							sval = s;
-							break;
-						}
-					}
-					
-					if( sval >= 0 ) {
-						mm.remove( sval );
-					}
-				}
-				
-				XSSFCell[] 	cells = { p2cell1, p2cell2 };
-				short[]	svals = new short[4];
-				int 		k = 0;
-				for( short s : mm.keySet() ) {
-					svals[k] = s;
-					cells[k].setCellValue( (double)s );
-					k++;
-				}
-				svals[2] = sval;
-				
-				r = startrow;
-				row = sheet.getRow( r );
-				
-				mm.clear();
-				while( row != null && row.getCell(1) != null && row.getCell(1).getCellType() == XSSFCell.CELL_TYPE_STRING && row.getCell(1).getStringCellValue().length() > 0 ) {
-					XSSFCell cell1 = row.getCell( i );
-					XSSFCell cell2 = row.getCell( i+1 );
-					
-					if( cell1 != null && cell1.getCellType() == XSSFCell.CELL_TYPE_NUMERIC && cell2 != null && cell2.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) {
-						short 	s1 = (short)cell1.getNumericCellValue();
-						short 	s2 = (short)cell2.getNumericCellValue();
-						
-						if( s1 == svals[0] || s1 == svals[1] ) {
-							if( s2 != sval && s2 != svals[0] && s2 != svals[1] ) {
-								if( mm.containsKey(s2) ) {
-									int val = mm.get( s2 );
-									mm.put( s2, val+1 );
-								} else {
-									mm.put( s2, 1 );
+								
+								if( s2 != (short)0 ) {
+									if( hist.containsKey(s2) ) {
+										int val = hist.get( s2 );
+										hist.put( s2, val+1 );
+									} else {
+										hist.put( s2, 1 );
+									}
 								}
-							}
-						} else if( s2 == svals[0] || s2 == svals[1] ) {
-							if( s1 != sval && s1 != svals[0] && s1 != svals[1]  ) { 
-								if( mm.containsKey(s1) ) {
-									int val = mm.get( s1 );
-									mm.put( s1, val+1 );
-								} else {
-									mm.put( s1, 1 );
-								}	
-							}
+							//}
+						} else {
+							System.err.println( "outofbounds" );
 						}
-	 				}
-					
-					row = sheet.getRow( ++r );
-				}
-				
-				if( mm.size() == 0 ) {
-					p1cell2.setCellValue( (double)sval );
-					svals[3] = sval;
-				} else {
-					while( mm.size() > 1 ) {
-						int min = Collections.min( mm.values() );
 						
-						sval = -1;
-						for( short s : mm.keySet() ) {
-							if( mm.get(s) == min  ) {
+						row = sheet.getRow( ++r );
+					}
+					
+					while( hist.size() > 4 ) {
+						int min = Collections.min( hist.values() );
+						
+						short sval = -1;
+						for( short s : hist.keySet() ) {
+							if( hist.get(s) == min  ) {
 								sval = s;
 								break;
 							}
 						}
 						
 						if( sval >= 0 ) {
-							mm.remove( sval );
+							hist.remove( sval );
 						}
 					}
 					
-					for( short s : mm.keySet() ) {
-						p1cell2.setCellValue( (double)s );
-						svals[3] = s;
-						break;
+					if( hist.size() > 0 ) {
+					
+						int max = Collections.max( hist.values() );	
+						short sval = -1;
+						for( short s : hist.keySet() ) {
+							if( hist.get(s) == max  ) {
+								sval = s;
+								break;
+							}
+						}
+						
+						row = sheet.getRow( startrow-2 );
+						XSSFCell p1cell1 = row.getCell( i );
+						if( p1cell1 == null ) p1cell1 = row.createCell( i );
+						XSSFCell p1cell2 = row.getCell( i+1 );
+						if( p1cell2 == null ) p1cell2 = row.createCell( i+1 );
+						
+						row = sheet.getRow( startrow-1 );
+						XSSFCell p2cell1 = row.getCell( i );
+						if( p2cell1 == null ) p2cell1 = row.createCell( i );
+						XSSFCell p2cell2 = row.getCell( i+1 );
+						if( p2cell2 == null ) p2cell2 = row.createCell( i+1 );
+						
+						r = startrow;
+						row = sheet.getRow( r );
+						XSSFCellStyle ss = (XSSFCellStyle)row.getCell( 0 ).getCellStyle().clone();
+						ss.setFillPattern( XSSFCellStyle.FINE_DOTS );
+						ss.setFillForegroundColor( IndexedColors.YELLOW.getIndex() );
+						
+						p1cell1.setCellStyle( ss );
+						p1cell2.setCellStyle( ss );
+						
+						p2cell1.setCellStyle( ss );
+						p2cell2.setCellStyle( ss );
+						
+						p1cell1.setCellValue( (double)sval );
+						
+						ss = (XSSFCellStyle)row.getCell( 0 ).getCellStyle().clone();
+						ss.setFillPattern( XSSFCellStyle.FINE_DOTS );
+						ss.setFillForegroundColor( IndexedColors.CORAL.getIndex() );
+						
+						short[]	svals = new short[4];
+						svals[2] = sval;
+						
+						mm.clear();
+						while( row != null && row.getCell(1) != null && row.getCell(1).getCellType() == XSSFCell.CELL_TYPE_STRING && row.getCell(1).getStringCellValue().length() > 0 ) {
+							XSSFCell cell1 = row.getCell( i );
+							XSSFCell cell2 = row.getCell( i+1 );
+							
+							if( cell1 != null && cell1.getCellType() == XSSFCell.CELL_TYPE_NUMERIC && cell2 != null && cell2.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) {
+								short 	s1 = (short)cell1.getNumericCellValue();
+								short 	s2 = (short)cell2.getNumericCellValue();
+								
+								if( s1 == sval ) {
+									if( mm.containsKey(s2) ) {
+										int val = mm.get( s2 );
+										mm.put( s2, val+1 );
+									} else {
+										mm.put( s2, 1 );
+									}
+								} else if( s2 == sval ) {
+									if( mm.containsKey(s1) ) {
+										int val = mm.get( s1 );
+										mm.put( s1, val+1 );
+									} else {
+										mm.put( s1, 1 );
+									}
+								}
+							}
+							
+							row = sheet.getRow( ++r );
+						}
+						
+						while( mm.size() > 2 ) {
+							int min = Collections.min( mm.values() );
+							
+							sval = -1;
+							for( short s : mm.keySet() ) {
+								if( mm.get(s) == min  ) {
+									sval = s;
+									break;
+								}
+							}
+							
+							if( sval >= 0 ) {
+								mm.remove( sval );
+							}
+						}
+						
+						XSSFCell[] 	cells = { p2cell1, p2cell2, p1cell1, p1cell2 };
+						
+						if( mm.size() == 1 ) {							
+							sval = -1;
+							int mmax = 0;
+							for( short s : hist.keySet() ) {
+								int hval = hist.get(s);
+								if( hval == max && s != svals[2]  ) {
+									sval = s;
+									break;
+								} else if( hval < max && hval > mmax ) {
+									sval = s;
+									mmax = hval;
+								}
+							}
+							
+							for( short s : mm.keySet() ) {
+								svals[0] = s;
+								cells[0].setCellValue( (double)s );
+							}
+							
+							svals[1] = sval;
+							cells[1].setCellValue( (double)sval );
+						} else {
+							int 		k = 0;
+							for( short s : mm.keySet() ) {
+								svals[k] = s;
+								cells[k].setCellValue( (double)s );
+								k++;
+							}
+						}
+						
+						r = startrow;
+						row = sheet.getRow( r );
+						
+						mm.clear();
+						while( row != null && row.getCell(1) != null && row.getCell(1).getCellType() == XSSFCell.CELL_TYPE_STRING && row.getCell(1).getStringCellValue().length() > 0 ) {
+							XSSFCell cell1 = row.getCell( i );
+							XSSFCell cell2 = row.getCell( i+1 );
+							
+							if( cell1 != null && cell1.getCellType() == XSSFCell.CELL_TYPE_NUMERIC && cell2 != null && cell2.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) {
+								short 	s1 = (short)cell1.getNumericCellValue();
+								short 	s2 = (short)cell2.getNumericCellValue();
+								
+								if( s1 == svals[0] || s1 == svals[1] ) {
+									//if( s2 != sval && s2 != svals[0] && s2 != svals[1] ) {
+										if( mm.containsKey(s2) ) {
+											int val = mm.get( s2 );
+											mm.put( s2, val+1 );
+										} else {
+											mm.put( s2, 1 );
+										}
+									//}
+								} 
+								
+								if( s2 == svals[0] || s2 == svals[1] ) {
+									//if( s1 != sval && s1 != svals[0] && s1 != svals[1]  ) { 
+										if( mm.containsKey(s1) ) {
+											int val = mm.get( s1 );
+											mm.put( s1, val+1 );
+										} else {
+											mm.put( s1, 1 );
+										}	
+									//}
+								}
+			 				}
+							
+							row = sheet.getRow( ++r );
+						}
+						
+						/*if( svals[0] == 174 && svals[1] == 162 ) {
+							System.err.println("simmi");
+						}*/
+						
+						if( mm.size() == 0 ) {
+							p1cell2.setCellValue( (double)sval );
+							svals[3] = sval;
+						} else {
+							if( mm.size() > 2 ) {
+								if( svals[0] == svals[2] ) mm.remove(svals[1]);
+								else if( svals[1] == svals[2] ) mm.remove(svals[0]);
+							}
+							while( mm.size() > 2 ) {
+								int min = Collections.min( mm.values() );
+								
+								sval = -1;
+								for( short s : mm.keySet() ) {
+									if( mm.get(s) == min  ) {
+										sval = s;
+										break;
+									}
+								}
+								
+								if( sval >= 0 ) {
+									mm.remove( sval );
+								}
+							}
+							
+							if( mm.size() == 1 ) {
+								for( short s : mm.keySet() ) {
+									p1cell2.setCellValue( (double)s );
+									svals[3] = s;
+									break;
+								}
+							} else {
+								int k = 2;
+								for( short s : mm.keySet() ) {
+									//p1cell2.setCellValue( (double)s );
+									cells[k].setCellValue( (double)s );
+									svals[k] = s;
+									k++;
+								}
+							}
+						}
+						
+						
+						r = startrow;
+						row = sheet.getRow( r );
+						ss = (XSSFCellStyle)row.getCell( 0 ).getCellStyle().clone();
+						ss.setFillPattern( XSSFCellStyle.FINE_DOTS );
+						ss.setFillForegroundColor( IndexedColors.CORAL.getIndex() );			
+						while( row != null && row.getCell(1) != null && row.getCell(1).getCellType() == XSSFCell.CELL_TYPE_STRING && row.getCell(1).getStringCellValue().length() > 0 ) {
+							XSSFCell cell1 = row.getCell( i );
+							XSSFCell cell2 = row.getCell( i+1 );
+							
+							if( cell1 != null && cell1.getCellType() == XSSFCell.CELL_TYPE_NUMERIC && cell2 != null && cell2.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) {
+								short 	s1 = (short)cell1.getNumericCellValue();
+								short 	s2 = (short)cell2.getNumericCellValue();
+								
+								if(  s1 == (short)0 || !hist.containsKey( s1 ) ) {
+									cell1.setCellStyle( ss );
+								}
+								
+								if(  s2 == (short)0 || !hist.containsKey( s2 ) ) {					
+									cell2.setCellStyle( ss );
+								}
+								
+								if( (s1 == svals[0] || s1 == svals[1]) && !(s1 == svals[2] || s1 == svals[3]) && !(s2 == svals[2] || s2 == svals[3]) ) {
+									cell2.setCellStyle( ss );
+									
+									if( r < 5 ) {
+										System.err.println( svals[0] + "  "  + svals[1] + "  "  + svals[2] + "  "  + svals[3] );
+									}
+								}
+								if( (s2 == svals[0] || s2 == svals[1]) && !(s2 == svals[2] || s2 == svals[3]) && !(s1 == svals[2] || s1 == svals[3]) ) {
+									cell1.setCellStyle( ss );
+									
+									if( r < 5 ) {
+										System.err.println( s1 + "  "  + s2 );
+										System.err.println( svals[0] + "  "  + svals[1] + "  "  + svals[2] + "  "  + svals[3] );
+									}
+								}
+							}
+							
+							row = sheet.getRow( ++r );
+						}
+					} else {
+						System.err.println( "hey " + r + "  " + (i-8) );
 					}
 				}
 				
-				
-				r = startrow;
-				row = sheet.getRow( r );
-				ss = (XSSFCellStyle)row.getCell( 0 ).getCellStyle().clone();
-				ss.setFillPattern( XSSFCellStyle.FINE_DOTS );
-				ss.setFillForegroundColor( IndexedColors.CORAL.getIndex() );			
-				while( row != null ) {
-					XSSFCell cell1 = row.getCell( i );
-					XSSFCell cell2 = row.getCell( i+1 );
-					
-					if( cell1 != null && cell1.getCellType() == XSSFCell.CELL_TYPE_NUMERIC && cell2 != null && cell2.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) {
-						short 	s1 = (short)cell1.getNumericCellValue();
-						short 	s2 = (short)cell2.getNumericCellValue();
-						
-						if(  s1 == (short)0 || !hist.containsKey( s1 ) ) {
-							cell1.setCellStyle( ss );
-						}
-						
-						if(  s2 == (short)0 || !hist.containsKey( s2 ) ) {					
-							cell2.setCellStyle( ss );
-						}
-					}
-					
-					row = sheet.getRow( ++r );
-				}
+				if( row != null ) 
+					startrow = row.getRowNum();
 			}
-			
-			if( row != null ) startrow = row.getRowNum();
 		}
 		
 		/*while( cell != null && cell.getStringCellValue() != null && cell.getStringCellValue().length() > 0 ) {
