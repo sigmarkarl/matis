@@ -11,8 +11,10 @@
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
+        <javaElement handleIdentifier="=starlimsreports/src&lt;org.simmi{StarlimsReport.java"/>
         <javaElement handleIdentifier="=poi/src\/ooxml\/java"/>
-        <javaElement handleIdentifier="=starlimsreports/src"/>
+        <file path="/starlimsreports/src/xlsx.png"/>
         <javaElement handleIdentifier="=poi/src\/java"/>
+        <file path="/starlimsreports/src/erm.xlsx"/>
     </selectedElements>
 </jardesc>

@@ -665,7 +665,7 @@ public class SortTable extends JApplet {
 			public void valueChanged(ListSelectionEvent e) {
 				int row = leftTable.getSelectedRow();
 				if( row >= 0 && row < leftTable.getRowCount() ) {
-					final String oStr = (String)leftTable.getValueAt(row, 1);
+					final String oStr = (String)leftTable.getValueAt(row, 0);
 					if( oStr != null ) {
 						final String str = oStr.replaceAll("[ ,]+", "+");
 						//int row = e.getFirstIndex();

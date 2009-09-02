@@ -36,6 +36,7 @@ public class ImagePanel extends JComponent {
 	Set<String>	imageNames;
 	Map<String,Image>	imageCache;
 	Map<String,String>	imageNameCache;
+	JTable				leftTable;
 	
 	public ImagePanel( final JTable leftTable ) {
 		super();
@@ -53,6 +54,7 @@ public class ImagePanel extends JComponent {
 				}
 			}
 		});
+		this.leftTable = leftTable;
 		
 		imageNames = new HashSet<String>();
 		imageCache = new HashMap<String,Image>();
@@ -106,7 +108,7 @@ public class ImagePanel extends JComponent {
 	
 	Set<String>	vals = new HashSet<String>();
 	Thread t = null;
-	public void threadRun( final String val, final String oname ) {
+	public void threadRun( final String val, final String oname, final int index ) {
 		if( !vals.contains( val ) ) {
 			vals.add( val );
 			t = new Thread() {
@@ -119,6 +121,8 @@ public class ImagePanel extends JComponent {
 						imageCache.put(val, img);
 						imageNameCache.put(oname, val);
 						vals.remove( val );
+						
+						if( index == leftTable.getSelectedRow() ) ImagePanel.this.repaint();
 					} catch (UnsupportedEncodingException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -181,7 +185,7 @@ public class ImagePanel extends JComponent {
 					img = imageCache.get(val);
 					imageNameCache.put(oName, val);
 				} else {
-					threadRun(val,oName);
+					threadRun(val,oName,leftTable.getSelectedRow());
 				}
 			}
 		}
