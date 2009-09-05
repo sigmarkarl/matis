@@ -571,6 +571,10 @@ public class SortTable extends JApplet {
 	
 	Color bgcolor = new Color( 240,240,255 );
 	
+	boolean midact = true;
+	boolean elsact = false;
+	
+	boolean sel = false;
 	public void initGui( String sessionKey, String currentUser ) {
 		SortTable.this.getRootPane().setBackground( bgcolor );
 		SortTable.this.requestFocus();
@@ -590,8 +594,65 @@ public class SortTable extends JApplet {
 				super.moveColumn(column, targetColumn);
 				topTable.moveColumn(column, targetColumn);
 			}*/
+			
+			public void setRowSelectionInterval( int r1, int r2 ) {
+				sel = false;
+				super.setRowSelectionInterval(r1, r2);
+			}
+			
+			public void setColumnSelectionInterval( int c1, int c2 ) {
+				sel = false;
+				super.setColumnSelectionInterval(c1, c2);
+			}
+			
+			public void addRowSelectionInterval( int r1, int r2 ) {
+				sel = false;
+				super.addRowSelectionInterval(r1, r2);
+			}
+			
+			public void addColumnSelectionInterval( int c1, int c2 ) {
+				sel = false;
+				super.addColumnSelectionInterval(c1, c2);
+			}
 		};
-		table.setColumnSelectionAllowed( true );		
+		table.setColumnSelectionAllowed( true );
+		
+		table.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				boolean ss = sel;
+				sel = true;
+				if( ss ) {
+					int[] rr = table.getSelectedRows();
+					if( rr != null && rr.length > 0 ) {
+						for( int r : rr ) {
+							if( r == rr[0] ) leftTable.setRowSelectionInterval( r, r );
+							else leftTable.addRowSelectionInterval(r, r);
+							sel = true;
+						}
+					}
+				}
+			}
+		});
+		
+		table.getColumnModel().getSelectionModel().addListSelectionListener( new ListSelectionListener() {	
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				boolean ss = sel;
+				sel = true;
+				if( ss ) {
+					int[] cc = table.getSelectedColumns();
+					if( cc != null && cc.length > 0 ) {
+						for( int c : cc ) {
+							if( c == cc[0] ) topTable.setColumnSelectionInterval( c, c );
+							else topTable.addColumnSelectionInterval(c, c);
+							sel = true;
+						}
+					}
+				}
+			}
+		});
+		
 		/*table.setTransferHandler( new TransferHandler() {
 			
 		});*/
@@ -647,6 +708,42 @@ public class SortTable extends JApplet {
 				}
 				return "";
 			}
+			
+			public void setRowSelectionInterval( int r1, int r2 ) {
+				sel = true;
+				super.setRowSelectionInterval(r1, r2);
+			}
+			
+			public void setColumnSelectionInterval( int c1, int c2 ) {
+				sel = true;
+				super.setColumnSelectionInterval(c1, c2);
+			}
+			
+			public void addRowSelectionInterval( int r1, int r2 ) {
+				sel = true;
+				super.addRowSelectionInterval(r1, r2);
+			}
+			
+			public void addColumnSelectionInterval( int c1, int c2 ) {
+				sel = true;
+				super.addColumnSelectionInterval(c1, c2);
+			}
+			
+			/*public void addRowSelectionInterval( int r1, int r2 ) {
+				super.addRowSelectionInterval(r1, r2);
+				if( table != null ) {
+					table.addColumnSelectionInterval(0, table.getColumnCount()-1);
+					table.setRowSelectionInterval(r1, r2);
+				}
+			}
+			
+			public void setRowSelectionInterval( int r1, int r2 ) {
+				super.setRowSelectionInterval(r1, r2);
+				if( table != null ) {
+					table.setColumnSelectionInterval(0, table.getColumnCount()-1);
+					table.setRowSelectionInterval(r1, r2);
+				}
+			}*/
 				
 			public Point getToolTipLocation( MouseEvent e ) {
 				return e.getPoint(); //super.getToolTipLocation(e);
@@ -655,9 +752,48 @@ public class SortTable extends JApplet {
 		leftTable.setDragEnabled( true );
 		leftTable.setToolTipText(" ");
 		//leftTable.en
-		topTable = new JTable();
+		topTable = new JTable() {
+			public void setRowSelectionInterval( int r1, int r2 ) {
+				sel = true;
+				super.setRowSelectionInterval(r1, r2);
+			}
+			
+			public void setColumnSelectionInterval( int c1, int c2 ) {
+				sel = true;
+				super.setColumnSelectionInterval(c1, c2);
+			}
+			
+			public void addRowSelectionInterval( int r1, int r2 ) {
+				sel = true;
+				super.addRowSelectionInterval(r1, r2);
+			}
+			
+			public void addColumnSelectionInterval( int c1, int c2 ) {
+				sel = true;
+				super.addColumnSelectionInterval(c1, c2);
+			}
+		};
 		topTable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
-		
+		topTable.setRowSelectionAllowed(false);
+		topTable.setColumnSelectionAllowed(true);
+		topTable.getColumnModel().getSelectionModel().addListSelectionListener( new ListSelectionListener() {
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				boolean ss = sel;
+				sel = false;
+				if( !ss ) {
+					int[] cc = topTable.getSelectedColumns();
+					if( cc != null && cc.length > 0 ) {
+						for( int c : cc ) {
+							if( c == cc[0] ) table.setColumnSelectionInterval( c, c );
+							else table.addColumnSelectionInterval(c, c);
+							sel = false;
+						}
+					}
+				}
+			}
+		});
+
 		final CharBuffer	cb = CharBuffer.allocate(1000000);
 		//ba.order( ByteOrder.LITTLE_ENDIAN );
 		leftTable.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
@@ -673,13 +809,59 @@ public class SortTable extends JApplet {
 							graph.repaint();
 						} else if( tabbedPane.getSelectedComponent() == detail ) {
 							if( !str.equals(lastResult) ) {
+								int rrow = leftTable.convertRowIndexToModel(row);
+								int r = rrow - (stuff.size()-2);
+								
 								lastResult = str;
 								imgPanel.img = null;
 								imgPanel.repaint();
-								//imgPanel.runThread( str );
-								imgPanel.tryName( oStr );
+								
+								if( r >= 0 && r < recipe.recipes.size() ) {
+									if( imgPanel.imageNameCache.containsKey(oStr) ) {
+										String imgName = imgPanel.imageNameCache.get(oStr);
+										imgPanel.img = imgPanel.imageCache.get(imgName);
+										imgPanel.repaint();
+									} else {
+										Recipe rep = recipe.recipes.get(r);
+										if( rep.desc != null ) {
+											int i = rep.desc.indexOf("http://");
+											if( i >= 0 ) {
+												int n = rep.desc.indexOf('"', i);
+												if( n > i ) {
+													String s = rep.desc.substring(i, n);
+													imgPanel.threadRun(s, oStr, row);
+													//System.err.println( s );
+													
+													/*lastResult = str;
+													imgPanel.img = null;
+													imgPanel.repaint();
+													//imgPanel.runThread( str );
+													imgPanel.tryName( s );*/
+												}
+											}
+										}
+									}
+								} else {
+									imgPanel.tryName( oStr );
+								}
+								
 							}
 							detail.detailTable.tableChanged( new TableModelEvent( detail.detailModel ) );
+						} else if( tabbedPane.getSelectedComponent() == rightSplitPane ) {
+							boolean ss = sel;
+							sel = false;
+							if( !ss ) {
+								int[] rr = leftTable.getSelectedRows();
+								if( rr != null && rr.length > 0 ) {
+									for( int r : rr ) {
+										if( r == rr[0] ) table.setRowSelectionInterval( r, r );
+										else table.addRowSelectionInterval(r, r);
+										sel = false;
+									}
+								}
+							}
+							//table.setrow
+							//table.repaint();
 						}
 					}
 				}
@@ -1148,10 +1330,23 @@ public class SortTable extends JApplet {
 		};
 		leftTable.setModel( leftModel );
 		
+		table.addMouseListener( new MouseAdapter() {
+			public void mousePressed( MouseEvent e ) {
+				sel = true;
+			}
+		});
+		topTable.addMouseListener( new MouseAdapter() {
+			public void mousePressed( MouseEvent e ) {
+				sel = false;
+			}
+		});
 		leftTable.addMouseListener( new MouseAdapter() {
 			public void mousePressed( MouseEvent e ) {
 				Point	p = e.getPoint();
 				leftTable.requestFocus();
+				
+				sel = false;
+				
 				if( e.getClickCount() == 2 ) {
 					if( tabbedPane.getSelectedComponent() == recipe /*&& leftTable.columnAtPoint(p) == 0*/ ) {
 						if( recipe.currentRecipe != null ) {
@@ -1386,7 +1581,7 @@ public class SortTable extends JApplet {
 			tabbedPane.addTab( "Mataræði og Hreyfing", eat );
 			tabbedPane.addTab( "Innkaup og kostnaður", buy );
 			
-			tabbedPane.setEnabledAt( tabbedPane.getTabCount()-2, false );
+			//tabbedPane.setEnabledAt( tabbedPane.getTabCount()-2, false );
 			tabbedPane.setEnabledAt( tabbedPane.getTabCount()-1, false );
 		} else {
 			tabbedPane.addTab( "List", rightSplitPane );
