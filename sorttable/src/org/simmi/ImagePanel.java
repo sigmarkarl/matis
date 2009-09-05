@@ -29,6 +29,8 @@ import javax.imageio.ImageIO;
 import javax.swing.JComponent;
 import javax.swing.JTable;
 
+import com.sun.org.apache.xml.internal.utils.URI;
+
 public class ImagePanel extends JComponent {
 	Image	img;
 	final ByteBuffer	ba = ByteBuffer.allocate(1000000);
@@ -109,14 +111,14 @@ public class ImagePanel extends JComponent {
 	Set<String>	vals = new HashSet<String>();
 	Thread t = null;
 	public void threadRun( final String val, final String oname, final int index ) {
+		System.err.println( val + " " + oname );
 		if( !vals.contains( val ) ) {
 			vals.add( val );
 			t = new Thread() {
-				public void run() {
-					String path;
+				public void run() {					
 					try {
-						path = "http://test.matis.is/isgem/myndir/"+val;//URLEncoder.encode(iName,"UTF-8");
-						URL url = new URL( path );
+						//path = "http://test.matis.is/isgem/myndir/"+val;//URLEncoder.encode(iName,"UTF-8");
+						URL url = new URL( val );
 						img = ImageIO.read(url);
 						imageCache.put(val, img);
 						imageNameCache.put(oname, val);
@@ -143,51 +145,65 @@ public class ImagePanel extends JComponent {
 		if( imageNameCache.containsKey(oName) ) {
 			String imgName = imageNameCache.get(oName);
 			img = imageCache.get(imgName);
-		} else {
-			String lName = oName.toLowerCase();
-			String name = lName.replace('á', 'a');
-			name = name.replace('ó', 'o');
-			name = name.replace('ú', 'u');
-			name = name.replace('ý', 'y');
-			name = name.replace('í', 'i');
-			name = name.replace('é', 'e');
-			name = name.replace('ð', 'd');
-			name = name.replace('þ', 't');
-			name = name.replace("æ", "ae");
-			
-			List<String> oSpl = Arrays.asList( lName.split("[, ]+") );
-			List<String> nSpl = Arrays.asList( name.split("[, ]+") );
-			
-			Set<String>	ign = new HashSet<String>();
-			ign.add("hrar");
-			ign.add("sodin");
-			ign.add("jpg");
-			ign.add("sosa");
-			
-			int max = 0;
-			String val = null;
-			for( String iName : imageNames ) {
-				String[] spl = iName.toLowerCase().split("[\\._ 0123456789]+");
-				
-				int count = 0;
-				for( String iStr : spl ) {
-					if( !ign.contains(iStr) && (oSpl.contains(iStr) || nSpl.contains(iStr)) ) count++;
-				}
-				
-				if( count > max ) {
-					max = count;
-					val = iName;
-				}
+		} else {			
+			/*boolean b = true;
+			try {
+				URL url = new URL( oName );
+			} catch( Exception e ) {
+				b = false;
 			}
 			
-			if( val != null ) {
-				if( imageCache.containsKey(val) ) {
-					img = imageCache.get(val);
-					imageNameCache.put(oName, val);
-				} else {
-					threadRun(val,oName,leftTable.getSelectedRow());
+			if( b ) {
+				threadRun(oName,oName,leftTable.getSelectedRow());
+			} else {*/
+				//path = "http://test.matis.is/isgem/myndir/"+oName;
+				
+				String lName = oName.toLowerCase();
+				String name = lName.replace('á', 'a');
+				name = name.replace('ó', 'o');
+				name = name.replace('ú', 'u');
+				name = name.replace('ý', 'y');
+				name = name.replace('í', 'i');
+				name = name.replace('é', 'e');
+				name = name.replace('ð', 'd');
+				name = name.replace('þ', 't');
+				name = name.replace("æ", "ae");
+				
+				List<String> oSpl = Arrays.asList( lName.split("[, ]+") );
+				List<String> nSpl = Arrays.asList( name.split("[, ]+") );
+				
+				Set<String>	ign = new HashSet<String>();
+				ign.add("hrar");
+				ign.add("sodin");
+				ign.add("jpg");
+				ign.add("sosa");
+				
+				int max = 0;
+				String val = null;
+				for( String iName : imageNames ) {
+					String[] spl = iName.toLowerCase().split("[\\._ 0123456789]+");
+					
+					int count = 0;
+					for( String iStr : spl ) {
+						if( !ign.contains(iStr) && (oSpl.contains(iStr) || nSpl.contains(iStr)) ) count++;
+					}
+					
+					if( count > max ) {
+						max = count;
+						val = iName;
+					}
 				}
-			}
+				
+				if( val != null ) {
+					if( imageCache.containsKey(val) ) {
+						img = imageCache.get(val);
+						imageNameCache.put(oName, val);
+					} else {
+						String path = "http://test.matis.is/isgem/myndir/"+val;
+						threadRun(path,oName,leftTable.getSelectedRow());
+					}
+				}
+			//}
 		}
 	}
 	

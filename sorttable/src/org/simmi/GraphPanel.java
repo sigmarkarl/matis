@@ -98,7 +98,7 @@ public class GraphPanel extends JTabbedPane {
 				}
 				
 				if( rrow != -1 ) {
-					Object oval = leftTable.getValueAt(row, 1);
+					Object oval = leftTable.getValueAt(row, 0);
 					
 					g2.setColor(Color.darkGray);
 					
@@ -286,7 +286,7 @@ public class GraphPanel extends JTabbedPane {
 				int rrow = row;
 				if( row != -1 ) rrow = leftTable.convertRowIndexToModel(row);
 				if( rrow != -1 ) {
-					Object oval = leftTable.getValueAt(row, 1);
+					Object oval = leftTable.getValueAt(row, 0);
 					
 					g2.setColor(Color.darkGray);
 					

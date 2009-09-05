@@ -27,6 +27,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
+import javax.swing.JToolBar;
 import javax.swing.JViewport;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.event.ChangeEvent;
@@ -39,13 +40,31 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
-public class HabitsPanel extends JSplitPane {
+import org.jdesktop.swingx.JXDatePicker;
+import org.jdesktop.swingx.calendar.DateSelectionModel;
+
+public class HabitsPanel extends JComponent {
 	int 						min = 0;
 	final Color 				paleGreen = new Color( 20,230,60,96 ); 
 	List<List<String>>			eatList = new ArrayList<List<String>>();
+	JSplitPane					splitpane;
+	JToolBar					toolbar;
+	JXDatePicker				datepicker;
 	
 	public HabitsPanel( String lang ) {
-		super( JSplitPane.VERTICAL_SPLIT );
+		super();
+		
+		datepicker = new JXDatePicker();
+		/*DateSelectionModel mod = new DateSelectionModel() {
+			
+		};*/
+		//datepicker.setMonthView(new JXM)
+		this.setLayout( new BorderLayout() );
+		toolbar = new JToolBar();
+		toolbar.add( datepicker );
+		this.add( toolbar, BorderLayout.NORTH );
+		splitpane = new JSplitPane( JSplitPane.VERTICAL_SPLIT );
+		this.add( splitpane );
 		
 		JTabbedPane timelineTabPane = new JTabbedPane( JTabbedPane.RIGHT );
 		final JTable		timelineTable = new JTable() {
@@ -367,7 +386,7 @@ public class HabitsPanel extends JSplitPane {
 		};
 		JScrollPane timelineDrawScroll = new JScrollPane( drawer );
 		
-		this.setTopComponent( timelineTabPane );
-		this.setBottomComponent( timelineDrawScroll );
+		splitpane.setTopComponent( timelineTabPane );
+		splitpane.setBottomComponent( timelineDrawScroll );
 	}
 }

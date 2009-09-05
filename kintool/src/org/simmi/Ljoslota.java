@@ -138,15 +138,15 @@ public class Ljoslota extends JApplet {
 						File f = l.get(0);
 						load( f.getCanonicalPath(), null );
 						
-						int i = 0;
+						/*int i = 0;
 						File nf = File.createTempFile("tmp", ".xlsx");
 						/*File nf = new File( System.getProperty("user.home"), "tmp"+i+".xlsx" );
 						while( !nf.canWrite() && i < 10 ) {
 							i++;
 							nf = new File( System.getProperty("user.home"), "tmp"+i+".xlsx" );
-						}*/
+						}*
 						workbook.write( new FileOutputStream( nf ) );
-						Desktop.getDesktop().open( nf );
+						Desktop.getDesktop().open( nf );*/
 						
 						//JFileChooser fc = new JFileChooser( System.getProperty("user.home") );
 						/*if( fc.showSaveDialog( Report.this.xlsComp ) == JFileChooser.APPROVE_OPTION ) {
@@ -161,16 +161,16 @@ public class Ljoslota extends JApplet {
 									URL url = new URL(stuff);
 									File f = new File( URLDecoder.decode( url.getFile(), "UTF-8" ) );
 									//URLDecoder.decode( f, "UTF-8" )
-									XSSFWorkbook	wb = new XSSFWorkbook();
-									load( f.getCanonicalPath(), wb );
-									int i = 0;
+									//XSSFWorkbook	wb = new XSSFWorkbook();
+									load( f.getCanonicalPath(), null );
+									/*int i = 0;
 									File nf = File.createTempFile("tmp", ".xlsx");
 									//File nf = new File( System.getProperty("user.home"), "tmp"+i+".xlsx" );
 									/*while( nf.exists() && !nf.canWrite() && i < 10 ) {
 										i++;
 										nf = new File( System.getProperty("user.home"), "tmp"+i+".xlsx" );
-									}*/
-									workbook.write( new FileOutputStream( nf ) );
+									}*
+									workbook.write( new FileOutputStream( nf ) );*/
 								}
 							}
 						} else {
@@ -185,10 +185,10 @@ public class Ljoslota extends JApplet {
 									File f = new File( URLDecoder.decode( url.getFile(), "UTF-8" ) );
 									//URLDecoder.decode( f, "UTF-8" )
 									load( f.getCanonicalPath(), null );
-									JFileChooser fc = new JFileChooser( f.getParentFile() );
+									/*JFileChooser fc = new JFileChooser( f.getParentFile() );
 									if( fc.showSaveDialog( Ljoslota.this.xlsComp ) == JFileChooser.APPROVE_OPTION ) {
 										workbook.write( new FileOutputStream( fc.getSelectedFile() ) );
-									}
+									}*/
 								}
 							}
 						}
@@ -210,6 +210,16 @@ public class Ljoslota extends JApplet {
 	public void load( String filename, XSSFWorkbook wb ) throws Exception {
 		workbook = new XSSFWorkbook( filename );
 		XSSFSheet		sheet = workbook.getSheet("Basic");
+		
+		
+		/*XSSFCellStyle yellowStyle = workbook.createCellStyle();
+		yellowStyle.setFillPattern( XSSFCellStyle.FINE_DOTS );
+		yellowStyle.setFillForegroundColor( IndexedColors.YELLOW.getIndex() );
+		
+		XSSFCellStyle coralStyle = workbook.createCellStyle();
+		coralStyle.setFillPattern( XSSFCellStyle.FINE_DOTS );
+		coralStyle.setFillForegroundColor( IndexedColors.CORAL.getIndex() );
+		
 		
 		int			cellcount = 0;
 		int 		startrow = 0;
@@ -262,7 +272,7 @@ public class Ljoslota extends JApplet {
 									hist.put( s1, 1 );
 								}
 								hist.put( (short)-s1, Integer.MAX_VALUE );
-							} else {*/
+							} else {*
 								if( s1 != (short)0 ) {
 									if( hist.containsKey(s1) ) {
 										int val = hist.get( s1 );
@@ -329,21 +339,14 @@ public class Ljoslota extends JApplet {
 						
 						r = startrow;
 						row = sheet.getRow( r );
-						XSSFCellStyle ss = (XSSFCellStyle)row.getCell( 0 ).getCellStyle().clone();
-						ss.setFillPattern( XSSFCellStyle.FINE_DOTS );
-						ss.setFillForegroundColor( IndexedColors.YELLOW.getIndex() );
 						
-						p1cell1.setCellStyle( ss );
-						p1cell2.setCellStyle( ss );
+						p1cell1.setCellStyle( yellowStyle );
+						p1cell2.setCellStyle( yellowStyle );
 						
-						p2cell1.setCellStyle( ss );
-						p2cell2.setCellStyle( ss );
+						p2cell1.setCellStyle( yellowStyle );
+						p2cell2.setCellStyle( yellowStyle );
 						
 						p1cell1.setCellValue( (double)sval );
-						
-						ss = (XSSFCellStyle)row.getCell( 0 ).getCellStyle().clone();
-						ss.setFillPattern( XSSFCellStyle.FINE_DOTS );
-						ss.setFillForegroundColor( IndexedColors.CORAL.getIndex() );
 						
 						short[]	svals = new short[4];
 						svals[2] = sval;
@@ -465,7 +468,7 @@ public class Ljoslota extends JApplet {
 						
 						/*if( svals[0] == 174 && svals[1] == 162 ) {
 							System.err.println("simmi");
-						}*/
+						}*
 						
 						if( mm.size() == 0 ) {
 							p1cell2.setCellValue( (double)sval );
@@ -511,9 +514,7 @@ public class Ljoslota extends JApplet {
 						
 						r = startrow;
 						row = sheet.getRow( r );
-						ss = (XSSFCellStyle)row.getCell( 0 ).getCellStyle().clone();
-						ss.setFillPattern( XSSFCellStyle.FINE_DOTS );
-						ss.setFillForegroundColor( IndexedColors.CORAL.getIndex() );			
+							
 						while( row != null && row.getCell(1) != null && row.getCell(1).getCellType() == XSSFCell.CELL_TYPE_STRING && row.getCell(1).getStringCellValue().length() > 0 ) {
 							XSSFCell cell1 = row.getCell( i );
 							XSSFCell cell2 = row.getCell( i+1 );
@@ -523,22 +524,22 @@ public class Ljoslota extends JApplet {
 								short 	s2 = (short)cell2.getNumericCellValue();
 								
 								if(  s1 == (short)0 || !hist.containsKey( s1 ) ) {
-									cell1.setCellStyle( ss );
+									cell1.setCellStyle( coralStyle );
 								}
 								
 								if(  s2 == (short)0 || !hist.containsKey( s2 ) ) {					
-									cell2.setCellStyle( ss );
+									cell2.setCellStyle( coralStyle );
 								}
 								
 								if( (s1 == svals[0] || s1 == svals[1]) && !(s1 == svals[2] || s1 == svals[3]) && !(s2 == svals[2] || s2 == svals[3]) ) {
-									cell2.setCellStyle( ss );
+									cell2.setCellStyle( coralStyle );
 									
 									if( r < 5 ) {
 										System.err.println( svals[0] + "  "  + svals[1] + "  "  + svals[2] + "  "  + svals[3] );
 									}
 								}
 								if( (s2 == svals[0] || s2 == svals[1]) && !(s2 == svals[2] || s2 == svals[3]) && !(s1 == svals[2] || s1 == svals[3]) ) {
-									cell1.setCellStyle( ss );
+									cell1.setCellStyle( coralStyle );
 									
 									if( r < 5 ) {
 										System.err.println( s1 + "  "  + s2 );
@@ -790,6 +791,7 @@ public class Ljoslota extends JApplet {
 		File f = File.createTempFile("tmp", ".xlsx");
 		FileOutputStream fos = new FileOutputStream(f);
 		workbook.write( fos );
+		//workbook.write
 		fos.close();
 		
 		Desktop.getDesktop().open( f );
