@@ -1,0 +1,3 @@
+Food			fd
+Component		co
+ComponentValue	cv

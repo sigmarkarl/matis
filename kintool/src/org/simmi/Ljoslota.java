@@ -16,10 +16,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.imageio.ImageIO;
 import javax.swing.JApplet;
@@ -212,7 +210,7 @@ public class Ljoslota extends JApplet {
 		XSSFSheet		sheet = workbook.getSheet("Basic");
 		
 		
-		/*XSSFCellStyle yellowStyle = workbook.createCellStyle();
+		XSSFCellStyle yellowStyle = workbook.createCellStyle();
 		yellowStyle.setFillPattern( XSSFCellStyle.FINE_DOTS );
 		yellowStyle.setFillForegroundColor( IndexedColors.YELLOW.getIndex() );
 		
@@ -272,7 +270,7 @@ public class Ljoslota extends JApplet {
 									hist.put( s1, 1 );
 								}
 								hist.put( (short)-s1, Integer.MAX_VALUE );
-							} else {*
+							} else {*/
 								if( s1 != (short)0 ) {
 									if( hist.containsKey(s1) ) {
 										int val = hist.get( s1 );
@@ -468,7 +466,7 @@ public class Ljoslota extends JApplet {
 						
 						/*if( svals[0] == 174 && svals[1] == 162 ) {
 							System.err.println("simmi");
-						}*
+						}*/
 						
 						if( mm.size() == 0 ) {
 							p1cell2.setCellValue( (double)sval );
@@ -788,13 +786,19 @@ public class Ljoslota extends JApplet {
 			b_row = b_sheet.getRow(br++);
 		}*/
 		
-		File f = File.createTempFile("tmp", ".xlsx");
-		FileOutputStream fos = new FileOutputStream(f);
-		workbook.write( fos );
-		//workbook.write
-		fos.close();
+		//File f = File.createTempFile("tmp", ".xlsx");
+		//FileOutputStream fos = new FileOutputStream(f);
+		//workbook.write( fos );
+		//Desktop.getDesktop().open( f );
 		
-		Desktop.getDesktop().open( f );
+		JFileChooser fc = new JFileChooser( System.getProperty("user.home") );
+		if( fc.showSaveDialog( Ljoslota.this.xlsComp ) == JFileChooser.APPROVE_OPTION ) {
+			File f = fc.getSelectedFile();
+			FileOutputStream fos = new FileOutputStream( f );
+			workbook.write( fos );
+			fos.close();
+			Desktop.getDesktop().open( f );
+		}
 	}	
 	
 	public static void main( String[] args ) {
