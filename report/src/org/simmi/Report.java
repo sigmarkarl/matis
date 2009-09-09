@@ -1406,6 +1406,7 @@ public class Report extends JApplet {
 										nf = new File( System.getProperty("user.home"), "tmp"+i+".xlsx" );
 									}*/
 									workbook.write( new FileOutputStream( nf ) );
+									Desktop.getDesktop().open( nf );
 								}
 							}
 						} else {

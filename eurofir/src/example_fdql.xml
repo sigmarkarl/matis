@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FDQL_Sentence>
+ <MetaData>
+    <SchemaVersion>1.0</SchemaVersion>
+    <Schema> EuroFIR_Web_Service_FDQL_Sentence_version_1_0</Schema>
+ </MetaData>
+ <SelectClause>
+    <FieldName>OriginalFoodCode</FieldName>
+    <FieldName>OriginalFoodName</FieldName>
+ </SelectClause>
+ <WhereClause>
+    <Condition xsi:type="T_CommonCondition" logicalOperator="AND">
+          <CommonConditionField>
+             <FieldName>OriginalFoodCode</FieldName>
+          </CommonConditionField>
+          <ConditionOperator>=</ConditionOperator>
+          <ConditionValue>1234</ConditionValue>
+    </Condition>
+    <Condition xsi:type="T_CommonCondition" logicalOperator="AND">
+          <NameConditionField xml:lang="en">
+             <FieldName>OriginalFoodName</FieldName>
+          </NameConditionField>
+          <ConditionOperator>LIKE</ConditionOperator>
+          <ConditionValue>Somethi%</ConditionValue>
+    </Condition>
+    <Condition xsi:type="T_InCondition" logicalOperator="OR">
+          <ClassificationConditionField searchScope="BT">
+             <FieldName>FoodIndentifierLangual</FieldName>
+          </ClassificationConditionField>
+          <ConditionOperator>IN</ConditionOperator>
+          <ConditionValue>A1234</ConditionValue>
+          <ConditionValue>A3456</ConditionValue>
+          <ConditionValue>G1234</ConditionValue>
+    </Condition>
+    <Condition xsi:type="T_CommonCondition" logicalOperator="AND">
+          <NameConditionField xml:lang="en">
+             <FieldName>OriginalFoodName</FieldName>
+          </NameConditionField>
+          <ConditionOperator>LIKE</ConditionOperator>
+          <ConditionValue>Porridge</ConditionValue>
+    </Condition>
+    <Condition xsi:type="T_BetweenCondition" logicalOperator="AND">
+          <ValueConditionField ecompid="VITA" matrixUnit="D" unit="ug">
+             <FieldName>SelectedValue</FieldName>
+          </ValueConditionField>
+          <ConditionOperator>BETWEEN</ConditionOperator>
+          <ConditionValue>1</ConditionValue>
+          <ConditionValue>100</ConditionValue>
+    </Condition>
+ </WhereClause>
+ <OrderByClause>
+    <OrderByField orderingDirection="ASC">
+          <FieldName>OriginalFoodCode</FieldName>
+    </OrderByField>
+    <OrderByField orderingDirection="DESC">
+          <FieldName>OriginalComponentName</FieldName>
+    </OrderByField>
+ </OrderByClause>
+</FDQL_Sentence>
