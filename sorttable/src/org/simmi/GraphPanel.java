@@ -143,7 +143,7 @@ public class GraphPanel extends JTabbedPane {
 						double prto = prt*17.0;
 						double cbho = cbh*17.0;
 						double fato = fat*37.0;
-						double f = (17.0*prt + 17.0*cbh + 37.0*fat + 29.0*alc)*10.0;
+						double f = (17.0*prt + 17.0*cbh + 37.0*fat + 29.0*alc)*100.0;
 						
 						if( lang.equals("IS") ) {
 							if( f > 0 ) {
@@ -331,7 +331,7 @@ public class GraphPanel extends JTabbedPane {
 						double prto = prt*17.0;
 						double cbho = cbh*17.0;
 						double fato = fat*37.0;
-						double f = (17.0*prt + 17.0*cbh + 37.0*fat + 29.0*alc)*10.0;
+						double f = (17.0*prt + 17.0*cbh + 37.0*fat + 29.0*alc)*100.0;
 						
 						if( lang.equals("IS") ) {
 							if( f > 0 ) {

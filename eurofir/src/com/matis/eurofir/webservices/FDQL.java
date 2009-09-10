@@ -79,7 +79,7 @@ public class FDQL extends DefaultHandler2 {
 		} else if( qName.equals("WhereClause") ) {
 			inWhere = true;
 			
-			sql += " where ";
+			//sql += " where ";
 		} else if( qName.equals("OrderByClause") ) {
 			inOrderBy = true;
 			
@@ -140,20 +140,50 @@ public class FDQL extends DefaultHandler2 {
 		 Set<String>	allTables = new HashSet<String>();
 		 for( String field : fields ) {
 			 String table = columnTableMap.get(field);
-			 if( table != null ) allTables.add( field );
+			 if( table != null ) allTables.add( table );
 		 }
 		 
+		 joinStr = " where ";
+		 fromStr += " from ";
 		 if( allTables.size() == 0 ) {
-			 if( fields.contains("OriginalFoodCode") ) {
-				 fromStr = "Food fd";
-			 } else if( fields.contains("OriginalComponentCode") ) {
-				 fromStr = "Component co";
+			 boolean ofc = fields.contains("OriginalFoodCode");
+			 boolean occ = fields.contains("OriginalComponentCode");
+			 if( ofc && occ ) {
+				 fromStr += "ComponentValue cv";
+			 } else if( ofc ) {
+				 fromStr += "Food fd";
+			 } else if( occ ) {
+				 fromStr += "Component co";
 			 }
 		 } else {
-			 
+			 boolean fd = allTables.contains("Food");
+			 boolean co = allTables.contains("Component");
+			 boolean cv = allTables.contains("ComponentValue");
+			 if( fd && co ) {
+				 fromStr += "Food fd, ComponentValue cv, Component co";
+				 joinStr += "fd.OriginalFoodCode = cv.OriginalFoodCode AND co.OriginalComponentCode = cv.OriginalComponentCode ";
+			 } else if( fd ) {
+				 if( cv ) {
+					 fromStr += "Food fd, ComponentValue cv";
+					 joinStr += "fd.OriginalFoodCode = cv.OriginalFoodCode ";
+				 } else fromStr += "Food fd";
+			 } else if( co ) {
+				 if( cv ) {
+					 fromStr += "ComponentValue cv, Component co";
+					 joinStr += "co.OriginalComponentCode = cv.OriginalComponentCode ";
+				 } else fromStr += "Component co";
+			 }
 		 }
 		 
 		 sql = selStr + fromStr + joinStr + sql;
+		 
+		 if( allTables.contains("ComponentValue") ) {
+			 sql = sql.replace("null.OriginalFoodCode", "cv.OriginalFoodCode");
+			 sql = sql.replace("null.OriginalComponentCode", "cv.OriginalComponentCode");
+		 } else {
+			 sql = sql.replace("null.OriginalFoodCode", "fd.OriginalFoodCode");
+			 sql = sql.replace("null.OriginalComponentCode", "co.OriginalComponentCode");
+		 }
 	 }
 	 
 	 public void characters( char[] ch, int start, int length ) {
@@ -250,9 +280,10 @@ public class FDQL extends DefaultHandler2 {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		InputStream is = FDQL.class.getResourceAsStream("/example_fdql.xml");
+		//InputStream is = FDQL.class.getResourceAsStream("/example_fdql.xml");
+		InputStream is = System.in;
 		try {
-			System.err.println( FDQL.fdqlToSql( is ) );
+			System.out.println( FDQL.fdqlToSql( is ) );
 		} catch (ParserConfigurationException e) {
 			e.printStackTrace();
 		} catch (SAXException e) {
