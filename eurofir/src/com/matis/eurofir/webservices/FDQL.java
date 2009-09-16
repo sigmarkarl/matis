@@ -36,6 +36,8 @@ public class FDQL extends DefaultHandler2 {
 	String	joinStr = "";
 	String	fromStr = "";
 	
+	String	firstLog = "";
+	
 	String	joinFood = "fd.OriginalFoodCode = cv.OriginalFoodCode";
 	String	joinComponent = "cv.OriginalComponentCode = co.OriginalComponentCode";
 	String	joinAll = joinFood + " AND " + joinComponent;
@@ -83,7 +85,7 @@ public class FDQL extends DefaultHandler2 {
 		} else if( qName.equals("OrderByClause") ) {
 			inOrderBy = true;
 			
-			sql += " orderby ";
+			sql += " order by ";
 		} else if( qName.equals("FieldName") ) {
 			inFieldName = -inFieldName+1;
 		} else if( qName.equals("Condition") ) {
@@ -175,7 +177,11 @@ public class FDQL extends DefaultHandler2 {
 			 }
 		 }
 		 
-		 sql = selStr + fromStr + joinStr + sql;
+		 if( allTables.size() > 1 ) {
+			 sql = selStr + fromStr + joinStr + firstLog + sql;
+		 } else {
+			 sql = selStr + fromStr + joinStr + sql;
+		 }
 		 
 		 if( allTables.contains("ComponentValue") ) {
 			 sql = sql.replace("null.OriginalFoodCode", "cv.OriginalFoodCode");
@@ -208,7 +214,8 @@ public class FDQL extends DefaultHandler2 {
 				 
 				 field = tname+"."+field;
 				 
-				 if( inCondition > 1 ) condStr += ") "+logOp+" ";
+				 if( inCondition == 1 ) firstLog = logOp+" ";
+				 else if( inCondition > 1 ) condStr += ") "+logOp+" ";
 				 condStr = "("+condStr+field;
 			 } else if( conditionOperator != null ) {
 				 if( conditionOperator.length() == 0 ) {
@@ -281,6 +288,7 @@ public class FDQL extends DefaultHandler2 {
 	 */
 	public static void main(String[] args) {
 		//InputStream is = FDQL.class.getResourceAsStream("/example_fdql.xml");
+		//InputStream is = FDQL.class.getResourceAsStream("/simple_fdql.xml");
 		InputStream is = System.in;
 		try {
 			System.out.println( FDQL.fdqlToSql( is ) );

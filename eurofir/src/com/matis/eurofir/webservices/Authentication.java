@@ -1,5 +1,7 @@
 package com.matis.eurofir.webservices;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -31,12 +33,18 @@ public class Authentication {
 		return big.toString(16);
 	}
 	
-	public static void run( String[] args, String sign ) throws NoSuchAlgorithmException {
+	public static void run( String[] args, String sign ) throws NoSuchAlgorithmException, IOException {
 		String result = getSignature( args, sign );
 		if( sign.equals( result ) ) {
-			System.err.println( "success" );
+			System.out.println( "success" );
 		} else {
-			//InputStream is = Authentication.class.getResourceAsStream(name);
+			byte[]	bb = new byte[1024];
+			InputStream is = Authentication.class.getResourceAsStream( "/auth_error.xml" );
+			int r = is.read( bb );
+			while( r > 0 ) {
+				System.out.write(bb, 0, r);
+				r = is.read( bb );
+			}
 		}	
 	}
 	
@@ -49,6 +57,9 @@ public class Authentication {
 			//test( sign );
 			run( args, sign );
 		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
