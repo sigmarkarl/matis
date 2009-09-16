@@ -184,7 +184,7 @@ public class StarlimsReport extends JApplet {
 			Double	price = (Double)resultTable.getValueAt(r, 2);
 			Boolean include = (Boolean)resultTable.getValueAt(r, 4);
 			
-			if( include ) {
+			if( include ) {				
 				Folder folder = folderList.get(fi);
 				
 				Map<String,Result> subres = null;
@@ -198,11 +198,13 @@ public class StarlimsReport extends JApplet {
 				if( !subres.containsKey( ordno ) ) {
 					res = new Result( spec, fi, price );
 					subres.put( ordno, res );
-				} else res = subres.get( ordno );
-				
-				res.price += price;
+				} else {
+					res = subres.get( ordno );
+					res.price += price;
+				}
 			}
 		}
+		//System.err.println( "pirrilas " + res.price );
 		//Map<String,Result> subres = new HashMap<String,Result>();
 		int start = 0;
 		for( String sheetname : results.keySet() ) {
@@ -349,7 +351,7 @@ public class StarlimsReport extends JApplet {
 				
 				cell = row.getCell(3);
 				if( cell == null ) cell = row.createCell(3);
-				cell.setCellValue( folderList.get( res.f_i ).invoiced.toString() );
+				if( folderList.get( res.f_i ).invoiced != null ) cell.setCellValue( folderList.get( res.f_i ).invoiced.toString() );
 				
 				cell = row.getCell(4);
 				if( cell == null ) cell = row.createCell(4);
@@ -360,7 +362,7 @@ public class StarlimsReport extends JApplet {
 				cell.setCellValue( res.price );
 				
 				total += res.price;
-				
+				//System.err.println( res.price );
 				r++;
 			}
 			
