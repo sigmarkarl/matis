@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<env:Envelope mlns:env="http://www.w3.org/2003/05/soap-envelope">
+ <env:Body>
+    <env:Fault>
+      <faultcode>SOAP FAULT CODE</faultcode>
+      <faultstring>Some Web service error message</faultstring>
+      <detail>
+       <EuroFIRServiceFault>
+         <errorcode>Some Web service error code</errorcode>
+         <reason>Some error description</reason>
+       </EuroFIRServiceFault>
+      </detail>
+    </env:Fault>
+ </env:Body>
+</env:Envelope>
