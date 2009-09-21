@@ -50,18 +50,20 @@ public class Order extends JApplet {
 	final Color bg = Color.white;//new Color( 0,0,0,0 );
 	
 	public class Pnt {
-		Integer		ordno;
-		String		name;
-		Integer		quant;
-		Date		orddate;
-		Date		purdate;
+		Integer		Númer;
+		String		Nafn;
+		String		PantaðAf;
+		Integer		Magn;
+		Date		Pantað;
+		Date		Afgreitt;
 		
-		public Pnt( int ordno, String name, int quant, Date orddate, Date purdate ) {
-			this.ordno = ordno;
-			this.name = name;
-			this.quant = quant;
-			this.orddate = orddate;
-			this.purdate = purdate;
+		public Pnt( int ordno, String name, String user, int quant, Date orddate, Date purdate ) {
+			this.Númer = ordno;
+			this.Nafn = name;
+			this.PantaðAf = user;
+			this.Magn = quant;
+			this.Pantað = orddate;
+			this.Afgreitt = purdate;
 		}
 	}
 	
@@ -69,13 +71,13 @@ public class Order extends JApplet {
 		String  Nafn;
 		String	Framleiðandi;
 		String	Byrgir;
-		Integer	cat;
+		Integer	Cat;
 		
 		public Ord( String name, String prdc, String selr, int cat ) {
 			this.Nafn = name;
 			this.Framleiðandi = prdc;
 			this.Byrgir = selr;
-			this.cat = cat;
+			this.Cat = cat;
 		}
 	};
 	
@@ -161,7 +163,7 @@ public class Order extends JApplet {
 
 			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
-				return cls.getDeclaredFields()[columnIndex].getName().startsWith( "e_" );
+				return cls.getDeclaredFields()[columnIndex].getName().equals("Magn") && this.getValueAt(rowIndex, columnIndex-1).equals(user);
 			}
 
 			@Override
@@ -190,13 +192,13 @@ public class Order extends JApplet {
 	public List<Pnt>	loadPnt() throws SQLException {
 		List<Pnt>	pntList = new ArrayList<Pnt>();
 		
-		String sql = "select [ordno], [name], [quant], [orddate], [purdate] from [order].[dbo].[order] where [user] = '"+user+"'";
+		String sql = "select [ordno], [name], [user], [quant], [orddate], [purdate] from [order].[dbo].[order]";// where [user] = '"+user+"'";
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
 		ResultSet 			rs = ps.executeQuery();
 
 		while (rs.next()) {
-			pntList.add( new Pnt( rs.getInt(1), rs.getString(2), rs.getInt(3), rs.getDate(4), rs.getDate(5) ) );
+			pntList.add( new Pnt( rs.getInt(1), rs.getString(2), rs.getString(3), rs.getInt(4), rs.getDate(5), rs.getDate(6) ) );
 		}
 		
 		rs.close();
@@ -265,7 +267,7 @@ public class Order extends JApplet {
 		boolean				b = ps.execute();
 		
 		if( !b ) {
-			pntlist.add( new Pnt( ordno, name, quant, new Date( System.currentTimeMillis() ), null ) );
+			pntlist.add( new Pnt( ordno, name, user, quant, new Date( System.currentTimeMillis() ), null ) );
 		}
 		
 		ps.close();
@@ -297,7 +299,7 @@ public class Order extends JApplet {
 		
 		try {
 			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=order;user=simmi;password=drsmorc.311;";
+			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=order;integratedSecurity=true;";
 			con = DriverManager.getConnection(connectionUrl);
 		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -360,19 +362,22 @@ public class Order extends JApplet {
 				for( int r : rr ) {
 					int			ordno = (Integer)ptable.getValueAt(r, 0);
 					//String		name = (String)ptable.getValueAt(r, 1);
-					//String 		user = (String)ptable.getValueAt(r, 2);
+					String 		username = (String)ptable.getValueAt(r, 2);
 					//int 		quant = (Integer)ptable.getValueAt(r, 3);
-					try {
-						if( !disorder( ordno ) ) {
-							for( Pnt p : pntlist ) {
-								if( p.ordno == ordno ) {
-									remset.add( p );
+					
+					if( username.equals(user) ) {
+						try {
+							if( !disorder( ordno ) ) {
+								for( Pnt p : pntlist ) {
+									if( p.Númer == ordno ) {
+										remset.add( p );
+									}
 								}
 							}
+						} catch (SQLException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
 						}
-					} catch (SQLException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
 					}
 				}	
 				pntlist.removeAll( remset );				
@@ -413,7 +418,7 @@ public class Order extends JApplet {
 				Font f = g.getFont();
 				g.setFont( f.deriveFont( f.getSize()+5.0f ) );
 				
-				String str = "Welcome "+user;
+				String str = "Velkomin(n) "+user;
 				if( domain != null ) str += " on "+domain;
 				int strw = g.getFontMetrics().stringWidth( str );
 				g.drawString( str, (this.getWidth()-strw)/2, 20 );
