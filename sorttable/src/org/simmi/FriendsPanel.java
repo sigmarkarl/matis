@@ -44,7 +44,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableModel;
 
 import org.netbeans.saas.RestConnection;
-import org.netbeans.saas.RestResponse;
+import org.netbeans.saas.CompatResponse;
 
 public class FriendsPanel extends JScrollPane {
 	private final String apiKey = "d8993947d6a37b4bf754d2a578025c31";
@@ -54,7 +54,7 @@ public class FriendsPanel extends JScrollPane {
 	String currentUserId = "0";
 	
 	List<Object[]>	friendList = new ArrayList<Object[]>();
-	JTable table = new JTable();
+	JCompatTable table = new JCompatTable();
 	
 	ImageIcon	offIcon;
 	ImageIcon	onIcon;
@@ -147,7 +147,7 @@ public class FriendsPanel extends JScrollPane {
         String method = "facebook.users.getInfo";
         String callId = String.valueOf(System.currentTimeMillis());
         String sig;
-        RestResponse rr = null;
+        CompatResponse rr = null;
 		try {
 			sig = sign( new String[][]{{"api_key", apiKey}, {"session_key", sessionKey}, {"call_id", callId}, {"v", v},  {"uids", uids}, {"fields", fields}, {"format", format}, {"method", method}});
 			String[][] pathParams = new String[][]{};
@@ -178,7 +178,7 @@ public class FriendsPanel extends JScrollPane {
         
         if( sessionKey != null && currentUser != null ) {
 	        String sig;
-	        RestResponse rr = null;
+	        CompatResponse rr = null;
 			try {
 				sig = sign( new String[][]{{"api_key", apiKey}, {"session_key", sessionKey}, {"call_id", callId}, {"v", version}, {"format", format}, {"flid", flid}, {"method", method}});
 				String[][] pathParams = new String[][]{};
@@ -397,10 +397,8 @@ public class FriendsPanel extends JScrollPane {
 		if( xml != null ) parseFriendsXml( xml );
 		
 		TableModel model = new TableModel() {
-			@Override
 			public void addTableModelListener(TableModelListener arg0) {}
 
-			@Override
 			public Class<?> getColumnClass(int arg0) {
 				if( arg0 == 0 ) return Boolean.class;
 				else if( arg0 == 1 ) return String.class;
@@ -411,12 +409,10 @@ public class FriendsPanel extends JScrollPane {
 				return null;
 			}
 
-			@Override
 			public int getColumnCount() {
 				return 6;
 			}
 
-			@Override
 			public String getColumnName(int arg0) {
 				if( arg0 == 0 ) return "Val";
 				else if( arg0 == 1 ) return "Nafn";
@@ -427,30 +423,22 @@ public class FriendsPanel extends JScrollPane {
 				return null;
 			}
 
-			@Override
 			public int getRowCount() {
 				return friendList.size();
 			}
 
-			@Override
 			public Object getValueAt(int arg0, int arg1) {
 				Object[] obj = friendList.get(arg0);
 				return obj[arg1+1];
 			}
 
-			@Override
 			public boolean isCellEditable(int arg0, int arg1) {
 				if( arg1 == 0 ) return true;
 				return false;
 			}
 
-			@Override
-			public void removeTableModelListener(TableModelListener arg0) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void removeTableModelListener(TableModelListener arg0) {}
 
-			@Override
 			public void setValueAt(Object arg0, int arg1, int arg2) {
 				Object[] obj = friendList.get(arg1);
 				obj[arg2+1] = arg0;
@@ -464,7 +452,6 @@ public class FriendsPanel extends JScrollPane {
 		
 		JPopupMenu popup = new JPopupMenu();
 		Action action = new AbstractAction("Sýna Alla") {
-			@Override
 			public void actionPerformed(ActionEvent e) {
 				for( int i : table.getSelectedRows() ) {
 					int k = table.convertRowIndexToModel(i);
@@ -478,7 +465,6 @@ public class FriendsPanel extends JScrollPane {
 		//if( lang.equals("EN") ) action.
 		popup.add( action );
 		action = new AbstractAction("Fela Alla") {
-			@Override
 			public void actionPerformed(ActionEvent e) {
 				for( int i : table.getSelectedRows() ) {
 					int k = table.convertRowIndexToModel(i);
@@ -491,7 +477,6 @@ public class FriendsPanel extends JScrollPane {
 		};
 		popup.add( action );
 		action = new AbstractAction("Viðsnúa Vali") {
-			@Override
 			public void actionPerformed(ActionEvent e) {
 				int[] rows = table.getSelectedRows();
 				table.selectAll();
@@ -503,7 +488,6 @@ public class FriendsPanel extends JScrollPane {
 		popup.add( action );
 		popup.addSeparator();
 		popup.add( new AbstractAction("Bjóða völdum vinum") {
-			@Override
 			public void actionPerformed(ActionEvent e) {
 				List<String>	id = new ArrayList<String>();
 				for( Object[] obj : friendList ) {

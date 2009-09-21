@@ -29,8 +29,6 @@ import javax.imageio.ImageIO;
 import javax.swing.JComponent;
 import javax.swing.JTable;
 
-import com.sun.org.apache.xml.internal.utils.URI;
-
 public class ImagePanel extends JComponent {
 	Image	img;
 	final ByteBuffer	ba = ByteBuffer.allocate(1000000);

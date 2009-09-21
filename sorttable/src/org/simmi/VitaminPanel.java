@@ -76,7 +76,7 @@ public class VitaminPanel extends JComponent {
 		g2.setColor(Color.darkGray);		
 		int row = leftTable.getSelectedRow();
 		if( row >= 0 ) {
-			Object oval = leftTable.getValueAt(row, 1);
+			Object oval = leftTable.getValueAt(row, 0);
 			
 			g2.setColor(Color.darkGray);
 			g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/40 ) );

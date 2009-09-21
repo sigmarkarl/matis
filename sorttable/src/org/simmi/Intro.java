@@ -83,26 +83,17 @@ public class Intro extends JApplet {
 		
 		buttons = new ArrayList<FancyButton>();
 		ml = new MouseListener() {
-			@Override
 			public void mouseReleased(MouseEvent e) {}
-		
-			@Override
 			public void mousePressed(MouseEvent e) {}
-		
-			@Override
 			public void mouseExited(MouseEvent e) {
 				FancyButton	fb = (FancyButton)e.getSource();
 				fb.setPreferredSize( buttonDim );
 			}
-		
-			@Override
 			public void mouseEntered(MouseEvent e) {
 				FancyButton	fb = (FancyButton)e.getSource();
 				fb.setPreferredSize( largeButtonDim );
 				if( timer != null ) timer.start();
 			}
-		
-			@Override
 			public void mouseClicked(MouseEvent e) {
 				FancyButton	fb = (FancyButton)e.getSource();
 				fb.setPreferredSize( enormButtonDim );
@@ -395,7 +386,6 @@ public class Intro extends JApplet {
 		c.setLayout( null );
 		
 		SwingUtilities.invokeLater( new Runnable(){
-			@Override
 			public void run() {		
 				Dimension d	= new Dimension(900,600);
 				c.setPreferredSize( d );
@@ -406,7 +396,6 @@ public class Intro extends JApplet {
 				c.add(st.splitPane);
 				
 				st.tabbedPane.addChangeListener( new ChangeListener() {
-					@Override
 					public void stateChanged(ChangeEvent e) {
 						subc.repaint();
 					}

@@ -12,12 +12,12 @@
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
         <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{RecipePanel.java"/>
-        <file path="/sorttable/src/isgem_orka.png"/>
         <file path="/sorttable/src/isgem_base.png"/>
+        <file path="/sorttable/src/isgem_orka.png"/>
         <file path="/sorttable/src/thsGroups.txt"/>
         <file path="/sorttable/src/isgem_mynd2.png"/>
-        <file path="/sorttable/src/smooth.png"/>
         <file path="/sorttable/src/matis.png"/>
+        <file path="/sorttable/src/smooth.png"/>
         <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{DetailPanel.java"/>
         <file path="/sorttable/src/skmt.txt"/>
         <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{VitaminPanel.java"/>
@@ -39,10 +39,11 @@
         <file path="/sorttable/src/isgem_img.png"/>
         <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{SortTable.java"/>
         <javaElement handleIdentifier="=sorttable/src&lt;org.netbeans.saas"/>
+        <javaElement handleIdentifier="=sorttable/loc"/>
         <file path="/sorttable/src/myndir.txt"/>
         <file path="/sorttable/src/isgem.png"/>
-        <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{FriendsPanel.java"/>
         <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{CompleteReader.java"/>
+        <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{FriendsPanel.java"/>
         <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{CostPanel.java"/>
         <file path="/sorttable/src/org/simmi/stuff2.txt"/>
         <file path="/sorttable/src/nu.png"/>

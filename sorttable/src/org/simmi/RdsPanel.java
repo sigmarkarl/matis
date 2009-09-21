@@ -33,7 +33,7 @@ public class RdsPanel extends JSplitPane {
 	Map<String,String>			detailMapping = new HashMap<String,String>();
 	final String 				vurl = "http://www.fa.is/deildir/Efnafraedi/Naeringarfr/naervefur/Templates/glaerur/vatnsvit.htm";
 	final String 				furl = "http://www.fa.is/deildir/Efnafraedi/Naeringarfr/naervefur/Templates/glaerur/fituvit.htm";
-	JTable						table;
+	JCompatTable				table;
 	
 	public String getRds( String colname ) {
 		String ret = null;
@@ -87,7 +87,7 @@ public class RdsPanel extends JSplitPane {
 			e.printStackTrace();
 		}
 		
-		table = new JTable() {
+		table = new JCompatTable() {
 			public Component prepareRenderer( TableCellRenderer renderer, int row, int column ) {
 				Component c = super.prepareRenderer(renderer, row, column);
 				int age = fp.getSelectedAge();
@@ -113,45 +113,27 @@ public class RdsPanel extends JSplitPane {
 		table.setAutoCreateRowSorter( true );
 		table.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
 		model = new TableModel() {
-			@Override
 			public void addTableModelListener(TableModelListener l) {}
-
-			@Override
 			public Class<?> getColumnClass(int columnIndex) {
 				return String.class;
 			}
-
-			@Override
 			public int getColumnCount() {
 				return rows.get(0).length;
 			}
-
-			@Override
 			public String getColumnName(int columnIndex) {
 				return rows.get(0)[columnIndex] + "/" + rows.get(1)[columnIndex];
 			}
-
-			@Override
 			public int getRowCount() {
 				return Math.max( 0, rows.size()-2 );
 			}
-
-			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
 				return rows.get( rowIndex + 2 )[columnIndex];
 			}
-
-			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
 				return false;
 			}
-
-			@Override
 			public void removeTableModelListener(TableModelListener l) {}
-
-			@Override
 			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {}
-			
 		};
 		
 		table.setColumnSelectionAllowed( true );
@@ -189,7 +171,6 @@ public class RdsPanel extends JSplitPane {
 		}.start();
 		
 		table.getSelectionModel().addListSelectionListener( new ListSelectionListener(){
-			@Override
 			public void valueChanged(ListSelectionEvent e) {
 				int c = table.getSelectedColumn();
 				String cName = table.getColumnName(c);

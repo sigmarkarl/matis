@@ -23,7 +23,7 @@ import org.simmi.RecipePanel.Recipe;
 import org.simmi.RecipePanel.RecipeIngredient;
 
 public class DetailPanel extends JSplitPane {
-	JTable 			detailTable;
+	JCompatTable	detailTable;
 	TableModel		detailModel;
 	List<Boolean>	showColumn;
 	TableModel		nullModel;
@@ -62,7 +62,7 @@ public class DetailPanel extends JSplitPane {
 		table.setModel( old );
 	}
 	
-	public DetailPanel( final RdsPanel rdsp, final String lang, final ImagePanel imgPanel, final JTable table, final JTable topTable, final JTable leftTable, final List<Object[]> stuff, final List<String> ngroupList, final List<String> ngroupGroups, final Map<String,Integer> foodInd, final List<Recipe> recipes ) {
+	public DetailPanel( final RdsPanel rdsp, final String lang, final ImagePanel imgPanel, final JCompatTable table, final JCompatTable topTable, final JCompatTable leftTable, final List<Object[]> stuff, final List<String> ngroupList, final List<String> ngroupGroups, final Map<String,Integer> foodInd, final List<Recipe> recipes ) {
 		super( JSplitPane.VERTICAL_SPLIT );
 		this.setOneTouchExpandable( true );
 		this.setDividerLocation( 300 );
@@ -85,61 +85,47 @@ public class DetailPanel extends JSplitPane {
 		}
 		
 		nullModel = new TableModel() {
-			@Override
 			public void addTableModelListener(TableModelListener l) {}
 
-			@Override
 			public Class<?> getColumnClass(int columnIndex) {
 				return null;
 			}
 
-			@Override
 			public int getColumnCount() {
 				return 0;
 			}
 
-			@Override
 			public String getColumnName(int columnIndex) {
 				return null;
 			}
 
-			@Override
 			public int getRowCount() {
 				return 0;
 			}
 
-			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
 				return null;
 			}
 
-			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
 				return false;
 			}
 
-			@Override
 			public void removeTableModelListener(TableModelListener l) {}
-
-			@Override
 			public void setValueAt(Object value, int rowIndex, int columnIndex) {}
 		};
 		
-		detailTable = new JTable() {
-			@Override
+		detailTable = new JCompatTable() {
 			public void sorterChanged( RowSorterEvent e ) {
 				super.sorterChanged(e);
 			}
 		};
 		detailTable.getDefaultEditor( Boolean.class ).addCellEditorListener( new CellEditorListener() {
-
-			@Override
 			public void editingCanceled(ChangeEvent e) {
 				// TODO Auto-generated method stub
 				
 			}
 
-			@Override
 			public void editingStopped(ChangeEvent e) {
 				updateModels( table, topTable );
 			}
@@ -148,7 +134,6 @@ public class DetailPanel extends JSplitPane {
 		
 		JPopupMenu popup = new JPopupMenu();
 		Action action = new AbstractAction("Sýna Alla") {
-			@Override
 			public void actionPerformed(ActionEvent e) {
 				for( int i : detailTable.getSelectedRows() ) {
 					int k = detailTable.convertRowIndexToModel(i);
@@ -163,7 +148,6 @@ public class DetailPanel extends JSplitPane {
 		//if( lang.equals("EN") ) action.
 		popup.add( action );
 		action = new AbstractAction("Fela Alla") {
-			@Override
 			public void actionPerformed(ActionEvent e) {
 				for( int i : detailTable.getSelectedRows() ) {
 					int k = detailTable.convertRowIndexToModel(i);
@@ -177,7 +161,6 @@ public class DetailPanel extends JSplitPane {
 		};
 		popup.add( action );
 		action = new AbstractAction("Viðsnúa Vali") {
-			@Override
 			public void actionPerformed(ActionEvent e) {
 				int[] rows = detailTable.getSelectedRows();
 				detailTable.selectAll();
@@ -188,17 +171,13 @@ public class DetailPanel extends JSplitPane {
 		};
 		popup.add( action );
 		detailTable.setComponentPopupMenu( popup );
-		
 		detailTable.setAutoCreateRowSorter( true );
 		detailModel = new TableModel() {
-	
-			@Override
 			public void addTableModelListener(TableModelListener l) {
 				// TODO Auto-generated method stub
 				
 			}
 	
-			@Override
 			public Class<?> getColumnClass(int columnIndex) {
 				if( columnIndex == 3 ) return Float.class;
 				if( columnIndex == 4 ) return Float.class;
@@ -206,12 +185,10 @@ public class DetailPanel extends JSplitPane {
 				return String.class;
 			}
 	
-			@Override
 			public int getColumnCount() {
 				return 6;
 			}
 	
-			@Override
 			public String getColumnName(int columnIndex) {
 				if( lang.equals("IS") ) {
 					if( columnIndex == 0 ) return "Næringarefni";
@@ -230,12 +207,10 @@ public class DetailPanel extends JSplitPane {
 				}
 			}
 	
-			@Override
 			public int getRowCount() {
 				return showColumn.size();
 			}
 	
-			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
 				if( columnIndex == 0 ) return ngroupList.get( rowIndex );
 				else if( columnIndex == 1 ) {
@@ -338,19 +313,16 @@ public class DetailPanel extends JSplitPane {
 				return null;
 			}
 	
-			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
 				if( columnIndex == 5 ) return true;
 				return false;
 			}
 	
-			@Override
 			public void removeTableModelListener(TableModelListener l) {
 				// TODO Auto-generated method stub
 				
 			}
 	
-			@Override
 			public void setValueAt(Object value, int rowIndex, int columnIndex) {
 				if( columnIndex == 5 ) showColumn.set( rowIndex, (Boolean)value );
 			}
@@ -358,7 +330,6 @@ public class DetailPanel extends JSplitPane {
 		};
 		detailTable.setModel( detailModel );
 		detailTable.getRowSorter().addRowSorterListener( new RowSorterListener() {
-			@Override
 			public void sorterChanged(RowSorterEvent e) {
 				updateModels( table, topTable );
 			}
