@@ -12,8 +12,6 @@ import java.awt.Paint;
 import java.awt.RenderingHints;
 import java.awt.Stroke;
 import java.awt.Toolkit;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -27,8 +25,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.table.TableModel;
 
-import sun.awt.windows.ThemeReader;
-
 public class GraphPanel extends JTabbedPane {
 	JComponent		energy;
 	JComponent		energyPart;
@@ -36,7 +32,7 @@ public class GraphPanel extends JTabbedPane {
 	VitaminPanel	vitaminf;
 	boolean			hringur = false;
 	
-	JTable		table, leftTable, topTable;
+	JCompatTable	table, leftTable, topTable;
 	TableModel	topModel;
 	TableModel	model;
 	
@@ -70,7 +66,7 @@ public class GraphPanel extends JTabbedPane {
 	}
 	
 	Font font;
-	public GraphPanel( final RdsPanel rdsPanel, final String lang, JTable[]	tables, TableModel model, TableModel topModel ) {
+	public GraphPanel( final RdsPanel rdsPanel, final String lang, JCompatTable[]	tables, TableModel model, TableModel topModel ) {
 		super( JTabbedPane.RIGHT, JTabbedPane.WRAP_TAB_LAYOUT );
 		
 		table = tables[0];
@@ -153,7 +149,7 @@ public class GraphPanel extends JTabbedPane {
 								
 								ps.flush();
 								baos.reset();
-								ps.printf( "%.1f %s", fvcal, " kCal" );
+								ps.printf( "%.1f %s", fvcal, " kcal" );
 								String calStr = baos.toString();
 								int strw = g.getFontMetrics().stringWidth(calStr);
 								g2.drawString(calStr, 10, this.getHeight()/9 );
@@ -172,7 +168,7 @@ public class GraphPanel extends JTabbedPane {
 							
 							ff = stuffYou( rrow, "ENERC_KCAL" );
 							if( ff > 0 ) {
-								g2.drawString(ff+" kCal", 10, this.getHeight()/7 );
+								g2.drawString(ff+" kcal", 10, this.getHeight()/7 );
 							}
 						}
 						
@@ -341,7 +337,7 @@ public class GraphPanel extends JTabbedPane {
 								
 								ps.flush();
 								baos.reset();
-								ps.printf( "%.1f %s", fvcal, " kCal" );
+								ps.printf( "%.1f %s", fvcal, " kcal" );
 								String calStr = baos.toString();
 								int strw = g.getFontMetrics().stringWidth(calStr);
 								g2.drawString(calStr, 10, this.getHeight()/9 );
@@ -360,7 +356,7 @@ public class GraphPanel extends JTabbedPane {
 							
 							ff = stuffYou( rrow, "ENERC_KCAL" );
 							if( ff > 0 ) {
-								g2.drawString(ff+" kCal", 10, this.getHeight()/7 );
+								g2.drawString(ff+" kcal", 10, this.getHeight()/7 );
 							}
 						}
 						
@@ -403,7 +399,7 @@ public class GraphPanel extends JTabbedPane {
 							g2.setStroke( bs );
 							
 							hh = (h+th)/2;
-							str = "kCal";
+							str = "kcal";
 							strw = g.getFontMetrics().stringWidth(str);
 							g.setColor( Color.darkGray );
 							g.drawString( str, (w+tw)/2+10, hh);

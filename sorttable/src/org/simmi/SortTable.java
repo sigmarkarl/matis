@@ -34,6 +34,7 @@ import java.util.Set;
 
 import javax.imageio.ImageIO;
 import javax.swing.DefaultRowSorter;
+import javax.swing.ImageIcon;
 import javax.swing.JApplet;
 import javax.swing.JComponent;
 import javax.swing.JEditorPane;
@@ -46,7 +47,6 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.JTree;
 import javax.swing.JViewport;
-import javax.swing.RowFilter;
 import javax.swing.RowSorter;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SortOrder;
@@ -73,60 +73,67 @@ import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
-import javax.swing.table.TableRowSorter;
 
 import org.simmi.RecipePanel.Recipe;
 import org.simmi.RecipePanel.RecipeIngredient;
 
 public class SortTable extends JApplet {
-	JScrollPane				scrollPane;
-	JScrollPane				leftScrollPane;
-	JScrollPane				topScrollPane;
-	JScrollPane				topLeftScrollPane;
-	LinkedSplitPane			leftSplitPane;
-	LinkedSplitPane			rightSplitPane;
-	JSplitPane				splitPane;
-	JTable					table;
-	JTable					leftTable;
-	JTable					topTable;
-	JTable					topLeftTable;
-	JTextField				field;
-	JTabbedPane				tabbedPane;
-	RecipePanel 			recipe;
-	JEditorPane				ed;
-	
-	ImagePanel				imgPanel;
-	JComponent				graph;
-	Image					img;
-	
-	TableModel 				model;
-	TableModel 				topModel;
-	
-	DetailPanel 			detail;
-	int						fInd = 1;
-	
-	Set<String>				cropped = new HashSet<String>();
-	
-	TableRowSorter<TableModel> 	tableSorter;
-	TableRowSorter<TableModel>  leftTableSorter;
-	MySorter			 	 	currentSorter;
-	
-	List<Object[]>			stuff;
-	//List<Object[]>			header;
-	Map<String,Integer>		ngroupMap;
-	List<String>			ngroupList;
-	List<String>			ngroupGroups;
-	
-	Map<String,Integer>	foodInd = new HashMap<String,Integer>();
-	Map<String,Integer>	foodNameInd = new HashMap<String,Integer>();
-	
-	String					lang;
-	boolean					hringur = false;
-	
-	RowFilter<TableModel,Integer>	filter;
-	
-	//static String lof = "org.jvnet.substance.skin.SubstanceRavenGraphiteLookAndFeel";
+	JScrollPane scrollPane;
+	JScrollPane leftScrollPane;
+	JScrollPane topScrollPane;
+	JScrollPane topLeftScrollPane;
+	LinkedSplitPane leftSplitPane;
+	LinkedSplitPane rightSplitPane;
+	JSplitPane splitPane;
+	JCompatTable table;
+	JCompatTable leftTable;
+	JCompatTable topTable;
+	JCompatTable topLeftTable;
+	JTextField field;
+	JTabbedPane tabbedPane;
+	RecipePanel recipe;
+	JEditorPane ed;
+
+	ImagePanel imgPanel;
+	JComponent graph;
+	Image img;
+
+	TableModel model;
+	TableModel topModel;
+
+	DetailPanel detail;
+	int fInd = 1;
+
+	Set<String> cropped = new HashSet<String>();
+
+	MySorter tableSorter;
+	MySorter leftTableSorter;
+	MySorter currentSorter;
+
+	List<Object[]> stuff;
+	// List<Object[]> header;
+	Map<String, Integer> ngroupMap;
+	List<String> ngroupList;
+	List<String> ngroupGroups;
+
+	Map<String, Integer> foodInd = new HashMap<String, Integer>();
+	Map<String, Integer> foodNameInd = new HashMap<String, Integer>();
+
+	String lang;
+	boolean hringur = false;
+
+	MyFilter filter;
+
+	/*
+	 * public static class ObjectArray extends Object[] {
+	 * 
+	 * };
+	 */
+
+	// static String lof =
+	// "org.jvnet.substance.skin.SubstanceRavenGraphiteLookAndFeel";
 	static String lof = "com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel";
+
 	static void updateLof() {
 		try {
 			UIManager.setLookAndFeel(lof);
@@ -144,374 +151,382 @@ public class SortTable extends JApplet {
 			e.printStackTrace();
 		}
 	}
+
 	static {
 		updateLof();
 		System.setProperty("file.encoding", "UTF8");
 	}
-	
-	public class MySorter extends TableRowSorter<TableModel> {
-		public MySorter( TableModel model ) {
-			super( model );
-		}
-		
-		public int convertRowIndexToModelSuper(int index) {
-			return super.convertRowIndexToModel( index );
+
+	public class LinkedSplitPane extends JSplitPane {
+		LinkedSplitPane pane;
+		boolean paint = true;
+
+		public LinkedSplitPane(int or, Component lt, Component rt) {
+			super(or, lt, rt);
 		}
 
-		public int convertRowIndexToViewSuper(int index) {
-			return super.convertRowIndexToView( index );
-		}
-	}
-	
-	public class LinkedSplitPane extends JSplitPane {
-		LinkedSplitPane	pane;
-		boolean			paint = true;
-		
-		public LinkedSplitPane( int or, Component lt, Component rt ) {
-			super( or, lt, rt );
-		}
-		
-		public void setDividerLocationSuper( int d ) {
-			/*if( this == leftSplitPane ) {
-				System.err.println( "lefty" );
-			} else if( this == rightSplitPane ) {
-				System.err.println( "righty" );
-			}*/
-			
+		public void setDividerLocationSuper(int d) {
+			/*
+			 * if( this == leftSplitPane ) { System.err.println( "lefty" ); }
+			 * else if( this == rightSplitPane ) { System.err.println( "righty"
+			 * ); }
+			 */
+
 			paint = false;
-			super.setDividerLocation( d );
-			//this.invalidate();
-			//this.repaint();
+			super.setDividerLocation(d);
+			// this.invalidate();
+			// this.repaint();
 		}
-		
-		public void setDividerLocation( int d ) {
-			if( paint ) pane.setDividerLocationSuper( d );
-			else paint = true;
-			super.setDividerLocation( d );
+
+		public void setDividerLocation(int d) {
+			if (paint)
+				pane.setDividerLocationSuper(d);
+			else
+				paint = true;
+			super.setDividerLocation(d);
 		}
-		
-		public void setDividerLocationSuper( double d ) {
+
+		public void setDividerLocationSuper(double d) {
 			paint = false;
-			super.setDividerLocation( d );
-			//paint = true;
-			//this.invalidate();
-			//this.repaint();
+			super.setDividerLocation(d);
+			// paint = true;
+			// this.invalidate();
+			// this.repaint();
 		}
-		
-		public void setDividerLocation( double d ) {
-			if( paint ) pane.setDividerLocationSuper( d );
-			else paint = true;
-			super.setDividerLocation( d );
+
+		public void setDividerLocation(double d) {
+			if (paint)
+				pane.setDividerLocationSuper(d);
+			else
+				paint = true;
+			super.setDividerLocation(d);
 		}
-		
-		public void setLinkedSplitPane( LinkedSplitPane pane ) {
+
+		public void setLinkedSplitPane(LinkedSplitPane pane) {
 			this.pane = pane;
 		}
-		
+
 		public boolean isVisible() {
 			return super.isVisible();
 		}
-		
+
 		public boolean isShowing() {
 			return super.isShowing();
 		}
 	}
-	
+
 	public SortTable() {
 		super();
 	}
-	
+
 	public class Nut {
-		public Nut( String name, String unit ) {
+		public Nut(String name, String unit) {
 			this.name = name;
 			this.unit = unit;
 		}
-		
+
 		String name;
-		String unit;		
+		String unit;
 	}
-	
-	public List<Object[]> parseData( String loc ) throws IOException {
-		Map<String,String>	fgroupMap = new HashMap<String,String>();
-		
+
+	public List<Object[]> parseData(String loc) throws IOException {
+		Map<String, String> fgroupMap = new HashMap<String, String>();
+
 		InputStream inputStream;
 		BufferedReader br;
 		String line;
-		if( loc.equals("IS") ) {
-			inputStream = this.getClass().getResourceAsStream( "/thsGroups.txt" );
-			br = new BufferedReader( new InputStreamReader( inputStream, "UTF-8" ) );
+		if (loc.equals("IS")) {
+			inputStream = this.getClass().getResourceAsStream("/thsGroups.txt");
+			br = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
 			line = br.readLine();
-			while( line != null ) {
+			while (line != null) {
 				String[] split = line.split("\\t");
-				if( split.length > 1 && split[0].contains(".") ) {
-					fgroupMap.put( split[0], split[1] );
+				if (split.length > 1 && split[0].contains(".")) {
+					fgroupMap.put(split[0], split[1]);
 				}
 				line = br.readLine();
 			}
 		} else {
-			inputStream = ClassLoader.getSystemResourceAsStream( "FD_GROUP.txt" );
-			br = new BufferedReader( new InputStreamReader( inputStream ) );
+			inputStream = ClassLoader.getSystemResourceAsStream("FD_GROUP.txt");
+			br = new BufferedReader(new InputStreamReader(inputStream));
 			line = br.readLine();
-			while( line != null ) {
+			while (line != null) {
 				String[] split = line.split("\\^");
-				if( split.length == 2 ) {
-					fgroupMap.put( split[0], split[1].substring(1, split[1].length()-1) );
+				if (split.length == 2) {
+					fgroupMap.put(split[0], split[1].substring(1, split[1]
+							.length() - 1));
 				}
 				line = br.readLine();
 			}
 		}
-		
+
 		List<Object>[] nutList = new List[2];
-		//List<Object>[]	nutList = nutList;
-		for( int i = 0; i < nutList.length; i++ ) {
+		// List<Object>[] nutList = nutList;
+		for (int i = 0; i < nutList.length; i++) {
 			List<Object> list = new ArrayList<Object>();
 			nutList[i] = list;
-			list.add( null );
-			list.add( null );
+			list.add(null);
+			list.add(null);
 		}
-		ngroupMap = new HashMap<String,Integer>();
+		ngroupMap = new HashMap<String, Integer>();
 		ngroupList = new ArrayList<String>();
 		ngroupGroups = new ArrayList<String>();
-		
-		Integer[]	ii = {1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 16, 17, 20, 21, 23, 24, 29, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 44, 137, 138};
-		final Set<Integer>	is = new HashSet<Integer>( Arrays.asList(ii) );
-		
-		List<String[]>	idList = new ArrayList<String[]>();
-		if( loc.equals("IS") ) {
-			inputStream = this.getClass().getResourceAsStream( "/Component.txt" );
-			br = new BufferedReader( new InputStreamReader( inputStream, "UTF-8" ) );
+
+		Integer[] ii = { 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 16, 17,
+				20, 21, 23, 24, 29, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
+				44, 137, 138 };
+		final Set<Integer> is = new HashSet<Integer>(Arrays.asList(ii));
+
+		List<String[]> idList = new ArrayList<String[]>();
+		if (loc.equals("IS")) {
+			inputStream = this.getClass().getResourceAsStream("/Component.txt");
+			br = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
 			line = br.readLine();
-			
+
 			int i = 0;
-			while( line != null ) {
+			while (line != null) {
 				String[] split = line.split("[\t]");
-				if( split.length > 3 && is.contains( Integer.parseInt(split[2]) )) {
+				if (split.length > 3 && is.contains(Integer.parseInt(split[2]))) {
 					String sName = null;
-					if( split[4] != null && split[4].length() > 0 ) {
+					if (split[4] != null && split[4].length() > 0) {
 						sName = split[4];
 					}
 					String nName = split[3];
-					
-					String[] strs = new String[] { split[2], nName, split[8], sName, split[6] };
-					idList.add( strs );
-					//ngroupMap.put( split[2], i++ );
-					
-					/*ngroupList.add( nName ); // + " ("+split[1].substring(1, split[1].length()-1)+")" );
-					ngroupGroups.add( split[8] );
-					//List<Object>	lobj = nutList.get(i).get(i)
-					nutList[0].add( sName );
-					String mName = split[6];
-					nutList[1].add( mName );*/
+
+					String[] strs = new String[] { split[2], nName, split[8],
+							sName, split[6] };
+					idList.add(strs);
+					// ngroupMap.put( split[2], i++ );
+
+					/*
+					 * ngroupList.add( nName ); // + " ("+split[1].substring(1,
+					 * split[1].length()-1)+")" ); ngroupGroups.add( split[8] );
+					 * //List<Object> lobj = nutList.get(i).get(i)
+					 * nutList[0].add( sName ); String mName = split[6];
+					 * nutList[1].add( mName );
+					 */
 				}
 				line = br.readLine();
 			}
-			
-			Collections.sort( idList, new Comparator<String[]>() {
-				@Override
+
+			Collections.sort(idList, new Comparator<String[]>() {
 				public int compare(String[] s1, String[] s2) {
-					return s1[0].compareTo( s2[0] );
+					return s1[0].compareTo(s2[0]);
 				}
 			});
-			
-			for( String[] vals : idList ) {
-				ngroupMap.put( vals[0], i++ );
-				ngroupList.add( vals[1] );
-				ngroupGroups.add( vals[2] );
-				nutList[0].add( vals[3] );
-				nutList[1].add( vals[4] );
+
+			for (String[] vals : idList) {
+				ngroupMap.put(vals[0], i++);
+				ngroupList.add(vals[1]);
+				ngroupGroups.add(vals[2]);
+				nutList[0].add(vals[3]);
+				nutList[1].add(vals[4]);
 			}
 		} else {
-			inputStream = ClassLoader.getSystemResourceAsStream( "NUTR_DEF.txt" );
-			br = new BufferedReader( new InputStreamReader( inputStream ) );
+			inputStream = ClassLoader.getSystemResourceAsStream("NUTR_DEF.txt");
+			br = new BufferedReader(new InputStreamReader(inputStream));
 			line = br.readLine();
 			int i = 0;
-			while( line != null ) {
+			while (line != null) {
 				String[] split = line.split("\\^");
-				if( split.length > 3 ) {
+				if (split.length > 3) {
 					String sName = null;
-					if( split[2] != null && split[2].length() > 0 ) {
-						sName = split[2].substring(1, split[2].length()-1);
+					if (split[2] != null && split[2].length() > 0) {
+						sName = split[2].substring(1, split[2].length() - 1);
 					}
-					String nName = split[3].substring(1, split[3].length()-1);
-					ngroupMap.put( split[0], i++ );
-					ngroupList.add( nName );// + " ("+split[1].substring(1, split[1].length()-1)+")" );
-					ngroupGroups.add( split[5] );
-					//List<Object>	lobj = nutList.get(i).get(i)
-					nutList[0].add( sName );
-					String mName = split[1].substring(1, split[1].length()-1);
-					nutList[1].add( mName );
+					String nName = split[3].substring(1, split[3].length() - 1);
+					ngroupMap.put(split[0], i++);
+					ngroupList.add(nName);// + " ("+split[1].substring(1,
+											// split[1].length()-1)+")" );
+					ngroupGroups.add(split[5]);
+					// List<Object> lobj = nutList.get(i).get(i)
+					nutList[0].add(sName);
+					String mName = split[1].substring(1, split[1].length() - 1);
+					nutList[1].add(mName);
 				}
 				line = br.readLine();
 			}
 		}
-		
-		final List<Object[]>	result = new ArrayList<Object[]>();
-		for( List l : nutList ) {
-			result.add( l.toArray( new Object[0] ) );
+
+		final List<Object[]> result = new ArrayList<Object[]>();
+		for (List l : nutList) {
+			result.add(l.toArray(new Object[0]));
 		}
-		
+
 		int i = 0;
 		int k = 0;
-		if( loc.equals("IS") ) {
-			inputStream = this.getClass().getResourceAsStream( "/Food.txt" );
-			br = new BufferedReader( new InputStreamReader( inputStream, "UTF-8" ) );
+		if (loc.equals("IS")) {
+			inputStream = this.getClass().getResourceAsStream("/Food.txt");
+			br = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
 			line = br.readLine();
-			while( line != null ) {
+			while (line != null) {
 				String[] split = line.split("\\t");
 				foodInd.put(split[1], k);
 				foodNameInd.put(split[2], k);
 				k++;
-				
+
 				String val = split[6];
-				split[6] = fgroupMap.get( val );
-				Object[] array = new Object[ 2+ngroupList.size() ];
+				split[6] = fgroupMap.get(val);
+				Object[] array = new Object[2 + ngroupList.size()];
 				array[0] = split[2];
 				array[1] = split[6];
-				for( i = 2; i < array.length; i++ ) {
+				for (i = 2; i < array.length; i++) {
 					array[i] = null;
 				}
-				result.add( array );
+				result.add(array);
 				line = br.readLine();
 			}
 		} else {
-			inputStream = ClassLoader.getSystemResourceAsStream( "FOOD_DES.txt" );
-			br = new BufferedReader( new InputStreamReader( inputStream ) );
+			inputStream = ClassLoader.getSystemResourceAsStream("FOOD_DES.txt");
+			br = new BufferedReader(new InputStreamReader(inputStream));
 			line = br.readLine();
-			while( line != null ) {
+			while (line != null) {
 				String[] split = line.split("\\^");
 				String val = split[1];
-				split[1] = fgroupMap.get( val );
-				Object[] array = new Object[ 2+ngroupList.size() ];
+				split[1] = fgroupMap.get(val);
+				Object[] array = new Object[2 + ngroupList.size()];
 				array[0] = split[1];
-				array[1] = split[2].substring(1, split[2].length()-1);
-				for( i = 2; i < array.length; i++ ) {
+				array[1] = split[2].substring(1, split[2].length() - 1);
+				for (i = 2; i < array.length; i++) {
 					array[i] = null;
 				}
-				result.add( array );
+				result.add(array);
 				line = br.readLine();
 			}
 		}
-		
-		String 	prev = "";
-		if( loc.equals("IS") ) {
+
+		String prev = "";
+		if (loc.equals("IS")) {
 			new Thread() {
 				public void run() {
 					try {
-						int 	start = -1;
-						
-						/*File file = new File( System.getProperty("user.home"), ".isgem" );
-						if( !file.exists() ) {
-							file.mkdirs();
-						}
-						file = new File( file, "result.zip" );
-						if( !file.exists() || file.length() != 3200582 ) {
-							if( !file.exists() ) System.err.println( "hey file" );
-							
-							InputStream inputStream = this.getClass().getResourceAsStream( "/result.txt" );
-							FileOutputStream fos = new FileOutputStream( file );
-							
-							byte[] bb = new byte[3200582];
-							int r = inputStream.read(bb);
-							while( r > 0 ) {
-								fos.write(bb, 0, r);
-								r = inputStream.read(bb);
-							}
-							fos.close();
-						}
-						
-						//if( f.exists() ) {
-						//inputStream = this.getClass().getResourceAsStream( "result.zip" );
-						ZipFile zipfile = new ZipFile( file );
-						ZipEntry zipentry = zipfile.getEntry("result.txt");*/
-						//InputStream inputStream = zipfile.getInputStream( zipentry );
-						
-						InputStream inputStream = this.getClass().getResourceAsStream( "/result.txt" );
-						if( inputStream != null ) {
-							BufferedReader br = new BufferedReader( new InputStreamReader( inputStream, "UTF-8" ) );
+						int start = -1;
+
+						/*
+						 * File file = new File(
+						 * System.getProperty("user.home"), ".isgem" ); if(
+						 * !file.exists() ) { file.mkdirs(); } file = new File(
+						 * file, "result.zip" ); if( !file.exists() ||
+						 * file.length() != 3200582 ) { if( !file.exists() )
+						 * System.err.println( "hey file" );
+						 * 
+						 * InputStream inputStream =
+						 * this.getClass().getResourceAsStream( "/result.txt" );
+						 * FileOutputStream fos = new FileOutputStream( file );
+						 * 
+						 * byte[] bb = new byte[3200582]; int r =
+						 * inputStream.read(bb); while( r > 0 ) { fos.write(bb,
+						 * 0, r); r = inputStream.read(bb); } fos.close(); }
+						 * 
+						 * //if( f.exists() ) { //inputStream =
+						 * this.getClass().getResourceAsStream( "result.zip" );
+						 * ZipFile zipfile = new ZipFile( file ); ZipEntry
+						 * zipentry = zipfile.getEntry("result.txt");
+						 */
+						// InputStream inputStream = zipfile.getInputStream(
+						// zipentry );
+
+						InputStream inputStream = this.getClass()
+								.getResourceAsStream("/result.txt");
+						if (inputStream != null) {
+							BufferedReader br = new BufferedReader(
+									new InputStreamReader(inputStream, "UTF-8"));
 							String line = br.readLine();
-							while( line != null ) {
+							while (line != null) {
 								String[] split = line.split("\\t");
-								
-								if( split.length > 4 && is.contains( Integer.parseInt(split[2]) ) ) {
-									if( foodInd.containsKey( split[1] ) ) {
+
+								if (split.length > 4
+										&& is.contains(Integer
+												.parseInt(split[2]))) {
+									if (foodInd.containsKey(split[1])) {
 										start = foodInd.get(split[1]);
 									} else {
-										
+
 									}
-									Object[]	objs = result.get(start+2);
-									if( split[5].length() > 0 ) {
-										String replc = split[5].replace(',', '.');
+									Object[] objs = result.get(start + 2);
+									if (split[5].length() > 0) {
+										String replc = split[5].replace(',',
+												'.');
 										replc = replc.replace("<", "");
 										float f = -1.0f;
 										try {
-											f = Float.parseFloat( replc );
-										} catch( Exception e ) {
+											f = Float.parseFloat(replc);
+										} catch (Exception e) {
 										}
-										int ngroupOffset = ngroupMap.get(split[2]);
-										if( f != -1.0f ) objs[ 2+ngroupOffset ] = f;
-										else objs[ 2+ngroupOffset ] = null;
+										int ngroupOffset = ngroupMap
+												.get(split[2]);
+										if (f != -1.0f)
+											objs[2 + ngroupOffset] = f;
+										else
+											objs[2 + ngroupOffset] = null;
 									}
 								}
 								line = br.readLine();
 							}
 						}
-						
+
 						System.err.println("issgem loaded");
-						/*while( tableSorter == null ) Thread.sleep(100);
-						table.setModel( model );
-						table.setRowSorter( tableSorter );*/
-						//table.tableChanged( new TableModelEvent( model ) );
-					} catch( Exception e ) {
+						/*
+						 * while( tableSorter == null ) Thread.sleep(100);
+						 * table.setModel( model ); table.setRowSorter(
+						 * tableSorter );
+						 */
+						// table.tableChanged( new TableModelEvent( model ) );
+					} catch (Exception e) {
 						e.printStackTrace();
 					}
 				}
 			}.run();
 		} else {
 			int start = -1;
-			inputStream = ClassLoader.getSystemResourceAsStream( "NUT_DATA.txt" );
-			br = new BufferedReader( new InputStreamReader( inputStream ) );
+			inputStream = ClassLoader.getSystemResourceAsStream("NUT_DATA.txt");
+			br = new BufferedReader(new InputStreamReader(inputStream));
 			line = br.readLine();
-			while( line != null ) {
+			while (line != null) {
 				String[] split = line.split("\\^");
-				if( !split[0].equals(prev) ) {
+				if (!split[0].equals(prev)) {
 					prev = split[0];
 					start++;
 				}
-				result.get(start+2)[ 2+ngroupMap.get(split[1]) ] = Float.parseFloat(split[2]);
-				//split[1] = fgroupMap.get( val );
-				//result.add( split );
+				result.get(start + 2)[2 + ngroupMap.get(split[1])] = Float
+						.parseFloat(split[2]);
+				// split[1] = fgroupMap.get( val );
+				// result.add( split );
 				line = br.readLine();
 			}
 		}
-		
+
 		return result;
 	}
 
 	String filterText;
+
 	public void updateFilter() {
-		//currentSorter = (MySorter)leftTableSorter;
-		if( field.getText().length() > 0 ) {
+		// currentSorter = (MySorter)leftTableSorter;
+		if (field.getText().length() > 0) {
 			fInd = 1;
-			filterText = "(?i).*"+field.getText()+".*";
-			
-			//leftTableSorter.modelStructureChanged();
-			leftTableSorter.setRowFilter( filter ); //RowFilter.regexFilter("(?i)"+field.getText(), 1) );
-			//tableSorter.modelStructureChanged();
-			tableSorter.setRowFilter( filter );
-			if( leftTable.getRowCount() == 0 ) {
+			filterText = "(?i).*" + field.getText() + ".*";
+
+			// leftTableSorter.modelStructureChanged();
+			leftTableSorter.setRowFilter(filter); // RowFilter.regexFilter("(?i)"+field.getText(),
+													// 1) );
+			// tableSorter.modelStructureChanged();
+			tableSorter.setRowFilter(filter);
+			if (leftTable.getRowCount() == 0) {
 				fInd = 0;
-				leftTableSorter.setRowFilter( filter );
-				tableSorter.setRowFilter( filter );
+				leftTableSorter.setRowFilter(filter);
+				tableSorter.setRowFilter(filter);
 			}
 		} else {
 			filterText = null;
-			leftTableSorter.setRowFilter( filter );
-			tableSorter.setRowFilter( filter );
+			leftTableSorter.setRowFilter(filter);
+			tableSorter.setRowFilter(filter);
 		}
-		//table.tableChanged( new TableModelEvent( table.getModel() ) );
+		// table.tableChanged( new TableModelEvent( table.getModel() ) );
 	}
 
-	public class TreeTableCellRenderer extends JTree implements TableCellRenderer {
+	public class TreeTableCellRenderer extends JTree implements
+			TableCellRenderer {
 		protected int visibleRow;
 
 		public void setBounds(int x, int y, int w, int h) {
@@ -523,13 +538,15 @@ public class SortTable extends JApplet {
 			super.paint(g);
 		}
 
-		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+		public Component getTableCellRendererComponent(JTable table,
+				Object value, boolean isSelected, boolean hasFocus, int row,
+				int column) {
 			visibleRow = row;
-			//( value.toString() );
+			// ( value.toString() );
 			return this;
 		}
 	};
-	
+
 	public void firstInit() {
 		try {
 			UIManager.setLookAndFeel(lof);
@@ -546,532 +563,589 @@ public class SortTable extends JApplet {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		Window window = SwingUtilities.windowForComponent(this);
 		if (window instanceof JFrame) {
-			JFrame frame = (JFrame)window;
-			if (!frame.isResizable()) frame.setResizable(true);
+			JFrame frame = (JFrame) window;
+			if (!frame.isResizable())
+				frame.setResizable(true);
 		}
-		
-		this.getContentPane().setBackground( bgcolor );
-		this.setBackground( bgcolor );
+
+		this.getContentPane().setBackground(bgcolor);
+		this.setBackground(bgcolor);
 		System.setProperty("file.encoding", "UTF8");
-		
+
 		lang = "IS";
-		/*String loc = this.getParameter("loc");
-		if( loc != null ) {
-			lang = loc;
-		}*/
-		
+		/*
+		 * String loc = this.getParameter("loc"); if( loc != null ) { lang =
+		 * loc; }
+		 */
+
 		ToolTipManager.sharedInstance().setInitialDelay(0);
 		try {
-			stuff = parseData( lang );
+			stuff = parseData(lang);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
-	 
-	String sessionKey = null;
-	String currentUser = null;
-	public String lastResult;
-	public void init() {
-		firstInit();
-		
-		try {
-			sessionKey = SortTable.this.getParameter("fb_sig_session_key");
-	        currentUser = SortTable.this.getParameter("fb_sig_user");
-		} catch( Exception e ) {
-			e.printStackTrace();
-		}
-		
-		SwingUtilities.invokeLater( new Runnable(){
-			@Override
-			public void run() {		
-				initGui( sessionKey, currentUser );
+
+		// List<Object[]> sublist = Collections.
+		Collections.sort(stuff, new Comparator<Object[]>() {
+			public int compare(Object[] o1, Object[] o2) {
+				if (o1[0] == null || o2[0] == null)
+					return Integer.MIN_VALUE;
+				return ((String) o1[0]).compareToIgnoreCase((String) o2[0]);
 			}
 		});
 	}
-	
-	Color bgcolor = new Color( 240,240,255 );
-	
+
+	String sessionKey = null;
+	String currentUser = null;
+	public String lastResult;
+
+	public void init() {
+		firstInit();
+
+		try {
+			sessionKey = SortTable.this.getParameter("fb_sig_session_key");
+			currentUser = SortTable.this.getParameter("fb_sig_user");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		SwingUtilities.invokeLater(new Runnable() {
+
+			public void run() {
+				initGui(sessionKey, currentUser);
+			}
+		});
+	}
+
+	Color bgcolor = new Color(240, 240, 255);
+
 	boolean midact = true;
 	boolean elsact = false;
-	
+
 	boolean sel = false;
-	public void initGui( String sessionKey, String currentUser ) {
-		SortTable.this.getRootPane().setBackground( bgcolor );
+
+	public void initGui(String sessionKey, String currentUser) {
+		SortTable.this.getRootPane().setBackground(bgcolor);
 		SortTable.this.requestFocus();
-		
+
 		scrollPane = new JScrollPane();
 		leftScrollPane = new JScrollPane();
 		topScrollPane = new JScrollPane();
 		topLeftScrollPane = new JScrollPane();
-		table = new JTable() {
-			public void sorterChanged( RowSorterEvent e ) {
-				currentSorter = (MySorter)e.getSource();
+		table = new JCompatTable() {
+			public void sorterChanged(RowSorterEvent e) {
+				currentSorter = (MySorter) e.getSource();
 				leftTable.repaint();
-				super.sorterChanged( e );
+				super.sorterChanged(e);
 			}
-			
-			/*public void moveColumn( int column, int targetColumn ) {
-				super.moveColumn(column, targetColumn);
-				topTable.moveColumn(column, targetColumn);
-			}*/
-			
-			public void setRowSelectionInterval( int r1, int r2 ) {
+
+			/*
+			 * public void moveColumn( int column, int targetColumn ) {
+			 * super.moveColumn(column, targetColumn);
+			 * topTable.moveColumn(column, targetColumn); }
+			 */
+
+			public void setRowSelectionInterval(int r1, int r2) {
 				sel = false;
 				super.setRowSelectionInterval(r1, r2);
 			}
-			
-			public void setColumnSelectionInterval( int c1, int c2 ) {
+
+			public void setColumnSelectionInterval(int c1, int c2) {
 				sel = false;
 				super.setColumnSelectionInterval(c1, c2);
 			}
-			
-			public void addRowSelectionInterval( int r1, int r2 ) {
+
+			public void addRowSelectionInterval(int r1, int r2) {
 				sel = false;
 				super.addRowSelectionInterval(r1, r2);
 			}
-			
-			public void addColumnSelectionInterval( int c1, int c2 ) {
+
+			public void addColumnSelectionInterval(int c1, int c2) {
 				sel = false;
 				super.addColumnSelectionInterval(c1, c2);
 			}
 		};
-		table.setColumnSelectionAllowed( true );
-		
-		table.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
-			@Override
-			public void valueChanged(ListSelectionEvent e) {
-				boolean ss = sel;
-				sel = true;
-				if( ss ) {
-					int[] rr = table.getSelectedRows();
-					if( rr != null && rr.length > 0 ) {
-						for( int r : rr ) {
-							if( r == rr[0] ) leftTable.setRowSelectionInterval( r, r );
-							else leftTable.addRowSelectionInterval(r, r);
-							sel = true;
+		table.setColumnSelectionAllowed(true);
+
+		table.getSelectionModel().addListSelectionListener(
+				new ListSelectionListener() {
+
+					public void valueChanged(ListSelectionEvent e) {
+						boolean ss = sel;
+						sel = true;
+						if (ss) {
+							int[] rr = table.getSelectedRows();
+							if (rr != null && rr.length > 0) {
+								for (int r : rr) {
+									if (r == rr[0])
+										leftTable.setRowSelectionInterval(r, r);
+									else
+										leftTable.addRowSelectionInterval(r, r);
+									sel = true;
+								}
+							}
 						}
 					}
-				}
-			}
-		});
-		
-		table.getColumnModel().getSelectionModel().addListSelectionListener( new ListSelectionListener() {	
-			@Override
-			public void valueChanged(ListSelectionEvent e) {
-				boolean ss = sel;
-				sel = true;
-				if( ss ) {
-					int[] cc = table.getSelectedColumns();
-					if( cc != null && cc.length > 0 ) {
-						for( int c : cc ) {
-							if( c == cc[0] ) topTable.setColumnSelectionInterval( c, c );
-							else topTable.addColumnSelectionInterval(c, c);
-							sel = true;
+				});
+
+		table.getColumnModel().getSelectionModel().addListSelectionListener(
+				new ListSelectionListener() {
+
+					public void valueChanged(ListSelectionEvent e) {
+						boolean ss = sel;
+						sel = true;
+						if (ss) {
+							int[] cc = table.getSelectedColumns();
+							if (cc != null && cc.length > 0) {
+								for (int c : cc) {
+									if (c == cc[0])
+										topTable.setColumnSelectionInterval(c,
+												c);
+									else
+										topTable.addColumnSelectionInterval(c,
+												c);
+									sel = true;
+								}
+							}
 						}
 					}
-				}
-			}
-		});
-		
-		/*table.setTransferHandler( new TransferHandler() {
-			
-		});*/
-		
-		table.getColumnModel().addColumnModelListener( new TableColumnModelListener() {
+				});
 
-			@Override
-			public void columnAdded(TableColumnModelEvent e) {}
+		/*
+		 * table.setTransferHandler( new TransferHandler() {
+		 * 
+		 * });
+		 */
 
-			@Override
-			public void columnMarginChanged(ChangeEvent e) {
-				Enumeration<TableColumn> 	tcs = table.getColumnModel().getColumns();
-				int i = 0;
-				while( tcs.hasMoreElements() ) {
-					TableColumn tc = tcs.nextElement();
-					topTable.getColumnModel().getColumn(i++).setPreferredWidth(tc.getPreferredWidth());
-				}
-			}
+		table.getColumnModel().addColumnModelListener(
+				new TableColumnModelListener() {
 
-			@Override
-			public void columnMoved(TableColumnModelEvent e) {
-				topTable.moveColumn( e.getFromIndex(), e.getToIndex() );		
-			}
+					public void columnAdded(TableColumnModelEvent e) {
+					}
 
-			@Override
-			public void columnRemoved(TableColumnModelEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
+					public void columnMarginChanged(ChangeEvent e) {
+						Enumeration<TableColumn> tcs = table.getColumnModel()
+								.getColumns();
+						int i = 0;
+						while (tcs.hasMoreElements()) {
+							TableColumn tc = tcs.nextElement();
+							topTable.getColumnModel().getColumn(i++)
+									.setPreferredWidth(tc.getPreferredWidth());
+						}
+					}
 
-			@Override
-			public void columnSelectionChanged(ListSelectionEvent e) {}
-		});
-		
-		leftTable = new JTable() {
-			public void sorterChanged( RowSorterEvent e ) {
-				currentSorter = (MySorter)e.getSource();
+					public void columnMoved(TableColumnModelEvent e) {
+						topTable.moveColumn(e.getFromIndex(), e.getToIndex());
+					}
+
+					public void columnRemoved(TableColumnModelEvent e) {
+						// TODO Auto-generated method stub
+
+					}
+
+					public void columnSelectionChanged(ListSelectionEvent e) {
+					}
+				});
+
+		leftTable = new JCompatTable() {
+			public void sorterChanged(RowSorterEvent e) {
+				currentSorter = (MySorter) e.getSource();
 				table.repaint();
-				super.sorterChanged( e );
+				super.sorterChanged(e);
 			}
-			
+
 			public String getToolTipText() {
 				return super.getToolTipText();
 			}
-			
-			public String getToolTipText( MouseEvent me ) {
+
+			public String getToolTipText(MouseEvent me) {
 				Point p = me.getPoint();
 				int r = rowAtPoint(p);
 				int c = columnAtPoint(p);
 				Object ret = super.getValueAt(r, c);
-				if( ret != null ) {
-					return ret.toString(); //super.getToolTipText( me );
+				if (ret != null) {
+					return ret.toString(); // super.getToolTipText( me );
 				}
 				return "";
 			}
-			
-			public void setRowSelectionInterval( int r1, int r2 ) {
+
+			public void setRowSelectionInterval(int r1, int r2) {
 				sel = true;
 				super.setRowSelectionInterval(r1, r2);
 			}
-			
-			public void setColumnSelectionInterval( int c1, int c2 ) {
+
+			public void setColumnSelectionInterval(int c1, int c2) {
 				sel = true;
 				super.setColumnSelectionInterval(c1, c2);
 			}
-			
-			public void addRowSelectionInterval( int r1, int r2 ) {
+
+			public void addRowSelectionInterval(int r1, int r2) {
 				sel = true;
 				super.addRowSelectionInterval(r1, r2);
 			}
-			
-			public void addColumnSelectionInterval( int c1, int c2 ) {
+
+			public void addColumnSelectionInterval(int c1, int c2) {
 				sel = true;
 				super.addColumnSelectionInterval(c1, c2);
 			}
-			
-			/*public void addRowSelectionInterval( int r1, int r2 ) {
-				super.addRowSelectionInterval(r1, r2);
-				if( table != null ) {
-					table.addColumnSelectionInterval(0, table.getColumnCount()-1);
-					table.setRowSelectionInterval(r1, r2);
-				}
-			}
-			
-			public void setRowSelectionInterval( int r1, int r2 ) {
-				super.setRowSelectionInterval(r1, r2);
-				if( table != null ) {
-					table.setColumnSelectionInterval(0, table.getColumnCount()-1);
-					table.setRowSelectionInterval(r1, r2);
-				}
-			}*/
-				
-			public Point getToolTipLocation( MouseEvent e ) {
-				return e.getPoint(); //super.getToolTipLocation(e);
+
+			/*
+			 * public void addRowSelectionInterval( int r1, int r2 ) {
+			 * super.addRowSelectionInterval(r1, r2); if( table != null ) {
+			 * table.addColumnSelectionInterval(0, table.getColumnCount()-1);
+			 * table.setRowSelectionInterval(r1, r2); } }
+			 * 
+			 * public void setRowSelectionInterval( int r1, int r2 ) {
+			 * super.setRowSelectionInterval(r1, r2); if( table != null ) {
+			 * table.setColumnSelectionInterval(0, table.getColumnCount()-1);
+			 * table.setRowSelectionInterval(r1, r2); } }
+			 */
+
+			public Point getToolTipLocation(MouseEvent e) {
+				return e.getPoint(); // super.getToolTipLocation(e);
 			}
 		};
-		leftTable.setDragEnabled( true );
+		leftTable.setDragEnabled(true);
 		leftTable.setToolTipText(" ");
-		//leftTable.en
-		topTable = new JTable() {
-			public void setRowSelectionInterval( int r1, int r2 ) {
+		// leftTable.en
+		topTable = new JCompatTable() {
+			public void setRowSelectionInterval(int r1, int r2) {
 				sel = true;
 				super.setRowSelectionInterval(r1, r2);
 			}
-			
-			public void setColumnSelectionInterval( int c1, int c2 ) {
+
+			public void setColumnSelectionInterval(int c1, int c2) {
 				sel = true;
 				super.setColumnSelectionInterval(c1, c2);
 			}
-			
-			public void addRowSelectionInterval( int r1, int r2 ) {
+
+			public void addRowSelectionInterval(int r1, int r2) {
 				sel = true;
 				super.addRowSelectionInterval(r1, r2);
 			}
-			
-			public void addColumnSelectionInterval( int c1, int c2 ) {
+
+			public void addColumnSelectionInterval(int c1, int c2) {
 				sel = true;
 				super.addColumnSelectionInterval(c1, c2);
 			}
 		};
-		topTable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
+		topTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		topTable.setRowSelectionAllowed(false);
 		topTable.setColumnSelectionAllowed(true);
-		topTable.getColumnModel().getSelectionModel().addListSelectionListener( new ListSelectionListener() {
-			@Override
-			public void valueChanged(ListSelectionEvent e) {
-				boolean ss = sel;
-				sel = false;
-				if( !ss ) {
-					int[] cc = topTable.getSelectedColumns();
-					if( cc != null && cc.length > 0 ) {
-						for( int c : cc ) {
-							if( c == cc[0] ) table.setColumnSelectionInterval( c, c );
-							else table.addColumnSelectionInterval(c, c);
-							sel = false;
+		topTable.getColumnModel().getSelectionModel().addListSelectionListener(
+				new ListSelectionListener() {
+
+					public void valueChanged(ListSelectionEvent e) {
+						boolean ss = sel;
+						sel = false;
+						if (!ss) {
+							int[] cc = topTable.getSelectedColumns();
+							if (cc != null && cc.length > 0) {
+								for (int c : cc) {
+									if (c == cc[0])
+										table.setColumnSelectionInterval(c, c);
+									else
+										table.addColumnSelectionInterval(c, c);
+									sel = false;
+								}
+							}
 						}
 					}
-				}
-			}
-		});
+				});
 
-		final CharBuffer	cb = CharBuffer.allocate(1000000);
-		//ba.order( ByteOrder.LITTLE_ENDIAN );
-		leftTable.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
-			@Override
-			public void valueChanged(ListSelectionEvent e) {
-				int row = leftTable.getSelectedRow();
-				if( row >= 0 && row < leftTable.getRowCount() ) {
-					final String oStr = (String)leftTable.getValueAt(row, 0);
-					if( oStr != null ) {
-						final String str = oStr.replaceAll("[ ,]+", "+");
-						//int row = e.getFirstIndex();
-						if( tabbedPane.getSelectedComponent() == graph ) {
-							graph.repaint();
-						} else if( tabbedPane.getSelectedComponent() == detail ) {
-							if( !str.equals(lastResult) ) {
-								int rrow = leftTable.convertRowIndexToModel(row);
-								int r = rrow - (stuff.size()-2);
-								
-								lastResult = str;
-								imgPanel.img = null;
-								imgPanel.repaint();
-								
-								if( r >= 0 && r < recipe.recipes.size() ) {
-									if( imgPanel.imageNameCache.containsKey(oStr) ) {
-										String imgName = imgPanel.imageNameCache.get(oStr);
-										imgPanel.img = imgPanel.imageCache.get(imgName);
+		final CharBuffer cb = CharBuffer.allocate(1000000);
+		// ba.order( ByteOrder.LITTLE_ENDIAN );
+		leftTable.getSelectionModel().addListSelectionListener(
+				new ListSelectionListener() {
+
+					public void valueChanged(ListSelectionEvent e) {
+						int row = leftTable.getSelectedRow();
+						if (row >= 0 && row < leftTable.getRowCount()) {
+							final String oStr = (String) leftTable.getValueAt(
+									row, 0);
+							if (oStr != null) {
+								final String str = oStr
+										.replaceAll("[ ,]+", "+");
+								// int row = e.getFirstIndex();
+								if (tabbedPane.getSelectedComponent() == graph) {
+									graph.repaint();
+								} else if (tabbedPane.getSelectedComponent() == detail) {
+									if (!str.equals(lastResult)) {
+										int rrow = leftTable
+												.convertRowIndexToModel(row);
+										int r = rrow - (stuff.size() - 2);
+
+										lastResult = str;
+										imgPanel.img = null;
 										imgPanel.repaint();
-									} else {
-										Recipe rep = recipe.recipes.get(r);
-										if( rep.desc != null ) {
-											int i = rep.desc.indexOf("http://");
-											if( i >= 0 ) {
-												int n = rep.desc.indexOf('"', i);
-												if( n > i ) {
-													String s = rep.desc.substring(i, n);
-													imgPanel.threadRun(s, oStr, row);
-													//System.err.println( s );
-													
-													/*lastResult = str;
-													imgPanel.img = null;
-													imgPanel.repaint();
-													//imgPanel.runThread( str );
-													imgPanel.tryName( s );*/
+
+										if (r >= 0 && r < recipe.recipes.size()) {
+											if (imgPanel.imageNameCache
+													.containsKey(oStr)) {
+												String imgName = imgPanel.imageNameCache
+														.get(oStr);
+												imgPanel.img = imgPanel.imageCache
+														.get(imgName);
+												imgPanel.repaint();
+											} else {
+												Recipe rep = recipe.recipes
+														.get(r);
+												if (rep.desc != null) {
+													int i = rep.desc
+															.indexOf("http://");
+													if (i >= 0) {
+														int n = rep.desc
+																.indexOf('"', i);
+														if (n > i) {
+															String s = rep.desc
+																	.substring(
+																			i,
+																			n);
+															imgPanel.threadRun(
+																	s, oStr,
+																	row);
+															// System.err.println(
+															// s );
+
+															/*
+															 * lastResult = str;
+															 * imgPanel.img =
+															 * null;
+															 * imgPanel.repaint
+															 * ();
+															 * //imgPanel.runThread
+															 * ( str );
+															 * imgPanel.tryName(
+															 * s );
+															 */
+														}
+													}
 												}
+											}
+										} else {
+											imgPanel.tryName(oStr);
+										}
+
+									}
+									detail.detailTable
+											.tableChanged(new TableModelEvent(
+													detail.detailModel));
+								} else if (tabbedPane.getSelectedComponent() == rightSplitPane) {
+									boolean ss = sel;
+									sel = false;
+									if (!ss) {
+										int[] rr = leftTable.getSelectedRows();
+										if (rr != null && rr.length > 0) {
+											for (int r : rr) {
+												if (r == rr[0])
+													table
+															.setRowSelectionInterval(
+																	r, r);
+												else
+													table
+															.addRowSelectionInterval(
+																	r, r);
+												sel = false;
 											}
 										}
 									}
-								} else {
-									imgPanel.tryName( oStr );
-								}
-								
-							}
-							detail.detailTable.tableChanged( new TableModelEvent( detail.detailModel ) );
-						} else if( tabbedPane.getSelectedComponent() == rightSplitPane ) {
-							boolean ss = sel;
-							sel = false;
-							if( !ss ) {
-								int[] rr = leftTable.getSelectedRows();
-								if( rr != null && rr.length > 0 ) {
-									for( int r : rr ) {
-										if( r == rr[0] ) table.setRowSelectionInterval( r, r );
-										else table.addRowSelectionInterval(r, r);
-										sel = false;
-									}
+									// table.setrow
+									// table.repaint();
 								}
 							}
-							//table.setrow
-							//table.repaint();
 						}
 					}
-				}
-			}
-		});
-		//System.err.println( leftTable.getColumnModel() );
-		topLeftTable = new JTable() {
-			public Component prepareRenderer( TableCellRenderer renderer, int row, int column ) {
-				Component c = super.prepareRenderer( renderer, row, column );
-				((JLabel)c).setHorizontalAlignment( SwingConstants.RIGHT );
+				});
+		// System.err.println( leftTable.getColumnModel() );
+		topLeftTable = new JCompatTable() {
+			public Component prepareRenderer(TableCellRenderer renderer,
+					int row, int column) {
+				Component c = super.prepareRenderer(renderer, row, column);
+				((JLabel) c).setHorizontalAlignment(SwingConstants.RIGHT);
 				return c;
 			}
 		};
-		topLeftTable.addMouseListener( new MouseAdapter() {
-			public void mousePressed( MouseEvent e ) {
-				/*TableModel old = table.getModel();
-				TableModel oldTop = topTable.getModel();
-				
-				table.setModel( nullModel );
-				topTable.setModel( nullModel );
-				
-				table.setModel( old );
-				topTable.setModel( oldTop );
-				
-				topTable.tableChanged( new TableModelEvent( topTable.getModel() ) );
-				table.tableChanged( new TableModelEvent( table.getModel() ) );
-				
-				topTable.revalidate();
-				topTable.repaint();
-				table.revalidate();
-				table.repaint();*/
-				
-				/*if( e.getClickCount() == 2 ) {
-					int r = topLeftTable.getSelectedRow();
-					if( r >= 0 && r < topLeftTable.getRowCount() ) {
-						for( int start = 0; start < topTable.getColumnCount()-1; start++ ) {
-							String min = "";
-							int ind = start;
-							for( int i = start; i < topTable.getColumnCount(); i++ ) {
-								Object val = topTable.getValueAt(r, i);
-								if( val != null ) {
-									String s = val.toString();
-									if( s.compareTo(min) > 0 ) {
-										min = s;
-										ind = i;
-									}
-								}
-							}
-							if( ind > start ) {
-								table.moveColumn(ind, start);
-							}
-						}
-					}
-				}*/
+		topLeftTable.addMouseListener(new MouseAdapter() {
+			public void mousePressed(MouseEvent e) {
+				/*
+				 * TableModel old = table.getModel(); TableModel oldTop =
+				 * topTable.getModel();
+				 * 
+				 * table.setModel( nullModel ); topTable.setModel( nullModel );
+				 * 
+				 * table.setModel( old ); topTable.setModel( oldTop );
+				 * 
+				 * topTable.tableChanged( new TableModelEvent(
+				 * topTable.getModel() ) ); table.tableChanged( new
+				 * TableModelEvent( table.getModel() ) );
+				 * 
+				 * topTable.revalidate(); topTable.repaint();
+				 * table.revalidate(); table.repaint();
+				 */
+
+				/*
+				 * if( e.getClickCount() == 2 ) { int r =
+				 * topLeftTable.getSelectedRow(); if( r >= 0 && r <
+				 * topLeftTable.getRowCount() ) { for( int start = 0; start <
+				 * topTable.getColumnCount()-1; start++ ) { String min = ""; int
+				 * ind = start; for( int i = start; i <
+				 * topTable.getColumnCount(); i++ ) { Object val =
+				 * topTable.getValueAt(r, i); if( val != null ) { String s =
+				 * val.toString(); if( s.compareTo(min) > 0 ) { min = s; ind =
+				 * i; } } } if( ind > start ) { table.moveColumn(ind, start); }
+				 * } } }
+				 */
 			}
 		});
-		
-		//table.setAutoCreateRowSorter( true );
-		//leftTable.setRowSorter( table.getRowSorter() );
-		//leftTable.setAutoCreateRowSorter( true );
-		
-		JComponent topComp = new JComponent() {};
-		topComp.setLayout( new BorderLayout() );
-		
-		JComponent topLeftComp = new JComponent() {};
-		topLeftComp.setLayout( new BorderLayout() );
-		
-		topTable.setShowGrid( true );
-		topTable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
-		table.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
-		scrollPane.setViewportView( table );
-		
-		//table.getTableHeader().setVisible( false );
-		//table.setTableHeader( null );
-		
-		scrollPane.setVerticalScrollBarPolicy( ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS );
-		scrollPane.setHorizontalScrollBarPolicy( ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS );
-		scrollPane.setRowHeaderView( leftTable );
-		leftScrollPane.setViewport( scrollPane.getRowHeader() );
-		leftScrollPane.setVerticalScrollBarPolicy( ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER );
-		leftScrollPane.setHorizontalScrollBarPolicy( ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS );
-		
-		topComp.add( topTable );
-		topComp.add( table.getTableHeader(), BorderLayout.SOUTH );
-		
+
+		// table.setAutoCreateRowSorter( true );
+		// leftTable.setRowSorter( table.getRowSorter() );
+		// leftTable.setAutoCreateRowSorter( true );
+
+		JComponent topComp = new JComponent() {
+		};
+		topComp.setLayout(new BorderLayout());
+
+		JComponent topLeftComp = new JComponent() {
+		};
+		topLeftComp.setLayout(new BorderLayout());
+
+		topTable.setShowGrid(true);
+		topTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+		scrollPane.setViewportView(table);
+
+		// table.getTableHeader().setVisible( false );
+		// table.setTableHeader( null );
+
+		scrollPane
+				.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+		scrollPane
+				.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
+		scrollPane.setRowHeaderView(leftTable);
+		leftScrollPane.setViewport(scrollPane.getRowHeader());
+		leftScrollPane
+				.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
+		leftScrollPane
+				.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
+
+		topComp.add(topTable);
+		topComp.add(table.getTableHeader(), BorderLayout.SOUTH);
+
 		final Image matisLogo;
 		URL codeBase = null;
 		try {
 			codeBase = SortTable.this.getCodeBase();
-		} catch( Exception e ) {
-			
+		} catch (Exception e) {
+
 		}
-		
-		if( codeBase == null ) {
+
+		if (codeBase == null) {
 			Image img = null;
-			
+
 			try {
 				URL url = new URL("http://test.matis.is/isgem/Matis_logo.jpg");
-				img = ImageIO.read( url.openStream() );
+				img = ImageIO.read(url.openStream());
 			} catch (MalformedURLException e2) {
 				e2.printStackTrace();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
+
 			matisLogo = img;
 		} else {
-			matisLogo = SortTable.this.getImage( codeBase, "matis.png" );
+			matisLogo = SortTable.this.getImage(codeBase, "matis.png");
 		}
-		
-		/*JComponent logoPaint = new JComponent() {
-			public void paintComponent( Graphics g ) {
-				Graphics2D g2 = (Graphics2D)g;
-				g2.setRenderingHint( RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY );
-				g2.setRenderingHint( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON );
-				g2.setRenderingHint( RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC );
-				g2.drawImage( matisLogo, 0, 0, this.getWidth(), this.getHeight(), this );
-			}
-		};*/
-		
-		//logoPaint.setPreferredSize( new Dimension( 32, 32 ) );
-		topLeftComp.add( topLeftTable );
-		//topLeftComp.add( logoPaint, BorderLayout.WEST );
-		topLeftComp.add( leftTable.getTableHeader(), BorderLayout.SOUTH );
-		//topScrollPane.setViewportView( topTable );
-		//scrollPane.setColumnHeader( topScrollPane.getViewport() );
-		//scrollPane.setColumnHeaderView( topTable );
-		
-		JViewport	spec = new JViewport() {
-			public void setView( Component view ) {
-				if( !(view instanceof JTableHeader) ) super.setView( view );
-			}
-		};
-		spec.setView( topComp );
-		
-		JViewport	leftSpec = new JViewport() {
-			public void setView( Component view ) {
-				if( !(view instanceof JTableHeader) ) super.setView( view );
-			}
-		};
-		leftSpec.setView( topLeftComp );
-		scrollPane.setColumnHeader( spec );
-		topTable.setTableHeader( null );
-		topScrollPane.setViewport( scrollPane.getColumnHeader() );
-		topScrollPane.setVerticalScrollBarPolicy( ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS );
-		topScrollPane.setHorizontalScrollBarPolicy( ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER );
-		
-		leftScrollPane.setColumnHeader( leftSpec );
-		topLeftScrollPane.setViewport( leftScrollPane.getColumnHeader() );
-		topLeftScrollPane.setVerticalScrollBarPolicy( ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER );
-		topLeftScrollPane.setHorizontalScrollBarPolicy( ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER );
-		
-		field = new JTextField();
-		field.setPreferredSize( new Dimension( 100, 29 ) );
-		JComponent leftComponent = new JComponent() {
-			
-		};
-		leftComponent.setLayout( new BorderLayout() );
-		leftComponent.add( leftScrollPane );
-		leftComponent.add( field, BorderLayout.SOUTH );
-		
-		imgPanel = new ImagePanel( leftTable );
-		tabbedPane = new JTabbedPane(JTabbedPane.BOTTOM, JTabbedPane.SCROLL_TAB_LAYOUT);
-		tabbedPane.addChangeListener( new ChangeListener() {
 
-			@Override
+		/*
+		 * JComponent logoPaint = new JComponent() { public void paintComponent(
+		 * Graphics g ) { Graphics2D g2 = (Graphics2D)g; g2.setRenderingHint(
+		 * RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY );
+		 * g2.setRenderingHint( RenderingHints.KEY_ANTIALIASING,
+		 * RenderingHints.VALUE_ANTIALIAS_ON ); g2.setRenderingHint(
+		 * RenderingHints.KEY_INTERPOLATION,
+		 * RenderingHints.VALUE_INTERPOLATION_BICUBIC ); g2.drawImage(
+		 * matisLogo, 0, 0, this.getWidth(), this.getHeight(), this ); } };
+		 */
+
+		// logoPaint.setPreferredSize( new Dimension( 32, 32 ) );
+		topLeftComp.add(topLeftTable);
+		// topLeftComp.add( logoPaint, BorderLayout.WEST );
+		topLeftComp.add(leftTable.getTableHeader(), BorderLayout.SOUTH);
+		// topScrollPane.setViewportView( topTable );
+		// scrollPane.setColumnHeader( topScrollPane.getViewport() );
+		// scrollPane.setColumnHeaderView( topTable );
+
+		JViewport spec = new JViewport() {
+			public void setView(Component view) {
+				if (!(view instanceof JTableHeader))
+					super.setView(view);
+			}
+		};
+		spec.setView(topComp);
+
+		JViewport leftSpec = new JViewport() {
+			public void setView(Component view) {
+				if (!(view instanceof JTableHeader))
+					super.setView(view);
+			}
+		};
+		leftSpec.setView(topLeftComp);
+		scrollPane.setColumnHeader(spec);
+		topTable.setTableHeader(null);
+		topScrollPane.setViewport(scrollPane.getColumnHeader());
+		topScrollPane
+				.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+		topScrollPane
+				.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+		leftScrollPane.setColumnHeader(leftSpec);
+		topLeftScrollPane.setViewport(leftScrollPane.getColumnHeader());
+		topLeftScrollPane
+				.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
+		topLeftScrollPane
+				.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+		field = new JTextField();
+		field.setPreferredSize(new Dimension(100, 29));
+		JComponent leftComponent = new JComponent() {
+
+		};
+		leftComponent.setLayout(new BorderLayout());
+		leftComponent.add(leftScrollPane);
+		leftComponent.add(field, BorderLayout.SOUTH);
+
+		imgPanel = new ImagePanel(leftTable);
+		tabbedPane = new JTabbedPane(JTabbedPane.BOTTOM,
+				JTabbedPane.SCROLL_TAB_LAYOUT);
+		tabbedPane.addChangeListener(new ChangeListener() {
+
 			public void stateChanged(ChangeEvent e) {
-				if( tabbedPane.getSelectedComponent() == rightSplitPane ) {
-					leftScrollPane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_NEVER );
+				if (tabbedPane.getSelectedComponent() == rightSplitPane) {
+					leftScrollPane
+							.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
 					leftSplitPane.setDividerLocation(60);
 				} else {
-					leftScrollPane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_ALWAYS );
+					leftScrollPane
+							.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 					leftSplitPane.setDividerLocation(0);
 				}
 			}
-			
+
 		});
-		
-		FriendsPanel fp = new FriendsPanel( sessionKey, currentUser );
-		
+
+		FriendsPanel fp = new FriendsPanel(sessionKey, currentUser);
+
 		try {
-			URL url = new URL( "http://test.matis.is" );
-			URLConnection	uc = url.openConnection();
-			uc.setDefaultUseCaches( true );
-			uc.setUseCaches( true );
+			URL url = new URL("http://test.matis.is");
+			URLConnection uc = url.openConnection();
+			uc.setDefaultUseCaches(true);
+			uc.setUseCaches(true);
 		} catch (MalformedURLException e2) {
 			// TODO Auto-generated catch block
 			e2.printStackTrace();
@@ -1079,314 +1153,299 @@ public class SortTable extends JApplet {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		
-		RdsPanel rdsPanel = new RdsPanel( fp, SortTable.this );
-		
-		rightSplitPane = new LinkedSplitPane( JSplitPane.VERTICAL_SPLIT, topScrollPane, scrollPane );
-		leftSplitPane = new LinkedSplitPane( JSplitPane.VERTICAL_SPLIT, topLeftScrollPane, leftComponent );
-		rightSplitPane.setLinkedSplitPane( leftSplitPane );
-		leftSplitPane.setLinkedSplitPane( rightSplitPane );
-		
-		leftSplitPane.setOneTouchExpandable( true );
-		
-		HabitsPanel eat = new HabitsPanel( lang );
+
+		RdsPanel rdsPanel = new RdsPanel(fp, SortTable.this);
+
+		rightSplitPane = new LinkedSplitPane(JSplitPane.VERTICAL_SPLIT,
+				topScrollPane, scrollPane);
+		leftSplitPane = new LinkedSplitPane(JSplitPane.VERTICAL_SPLIT,
+				topLeftScrollPane, leftComponent);
+		rightSplitPane.setLinkedSplitPane(leftSplitPane);
+		leftSplitPane.setLinkedSplitPane(rightSplitPane);
+
+		leftSplitPane.setOneTouchExpandable(true);
+
+		HabitsPanel eat = new HabitsPanel(lang);
 		try {
-			recipe = new RecipePanel( fp, lang, table, leftTable, foodNameInd );
+			recipe = new RecipePanel(fp, lang, table, leftTable, foodNameInd);
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
-		CostPanel	buy = new CostPanel();
-		
-		splitPane = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT, leftSplitPane, tabbedPane );
-		splitPane.setOneTouchExpandable( true );
-		
-		field.getDocument().addDocumentListener( new DocumentListener() {
+		CostPanel buy = new CostPanel();
 
-			@Override
+		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftSplitPane,
+				tabbedPane);
+		splitPane.setOneTouchExpandable(true);
+
+		field.getDocument().addDocumentListener(new DocumentListener() {
+
 			public void changedUpdate(DocumentEvent e) {
 				updateFilter();
 			}
 
-			@Override
 			public void insertUpdate(DocumentEvent e) {
 				updateFilter();
 			}
 
-			@Override
 			public void removeUpdate(DocumentEvent e) {
 				updateFilter();
 			}
 		});
-		//final JFrame f = new JFrame();
-		//f.setAlwaysOnTop(true);
-		//f.setUndecorated( true );
-		//f.add( field );
-		//Component c = KeyboardFocusManager.getCurrentKeyboardFocusManager().
-		//System.err.println(c);
-		/*leftTable.addKeyListener( new KeyListener() {
+		// final JFrame f = new JFrame();
+		// f.setAlwaysOnTop(true);
+		// f.setUndecorated( true );
+		// f.add( field );
+		// Component c = KeyboardFocusManager.getCurrentKeyboardFocusManager().
+		// System.err.println(c);
+		/*
+		 * leftTable.addKeyListener( new KeyListener() {
+		 * 
+		 * 
+		 * public void keyPressed(KeyEvent e) { if( !f.isVisible() ) {
+		 * f.setBounds(10, 10, 200, 25); f.setVisible( true ); } try { if(
+		 * e.getKeyCode() != KeyEvent.VK_BACK_SPACE )
+		 * field.getDocument().insertString(field.getCaretPosition(),
+		 * Character.toString(e.getKeyChar()), null); } catch
+		 * (BadLocationException e1) { // TODO Auto-generated catch block
+		 * e1.printStackTrace(); } //System.err.println( field.getText() );
+		 * //leftTableSorter.setRowFilter(
+		 * RowFilter.regexFilter(field.getText(), 1) );
+		 * //System.err.println(e.getKeyChar()); }
+		 * 
+		 * 
+		 * public void keyReleased(KeyEvent e) { // TODO Auto-generated method
+		 * stub
+		 * 
+		 * }
+		 * 
+		 * 
+		 * public void keyTyped(KeyEvent e) { // TODO Auto-generated method stub
+		 * 
+		 * }
+		 * 
+		 * });
+		 */
 
-			@Override
-			public void keyPressed(KeyEvent e) {
-				if( !f.isVisible() ) {
-					f.setBounds(10, 10, 200, 25);
-					f.setVisible( true );
-				}
-				try {
-					if( e.getKeyCode() != KeyEvent.VK_BACK_SPACE ) field.getDocument().insertString(field.getCaretPosition(), Character.toString(e.getKeyChar()), null);
-				} catch (BadLocationException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-				//System.err.println( field.getText() );
-				//leftTableSorter.setRowFilter( RowFilter.regexFilter(field.getText(), 1) );
-				//System.err.println(e.getKeyChar());				
-			}
+		// scrollPane.setCorner(JScrollPane.LOWER_LEFT_CORNER, field);
+		// leftScrollPane.set
 
-			@Override
-			public void keyReleased(KeyEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void keyTyped(KeyEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
-			
-		});*/
-		
-		//scrollPane.setCorner(JScrollPane.LOWER_LEFT_CORNER, field);
-		//leftScrollPane.set
-		
-		/*table.setDefaultRenderer( Float.class, new TableCellRenderer() {
-			public Component getTableCellRendererComponent(JTable table,
-					Object value, boolean isSelected, boolean hasFocus,
-					int row, int column) {
-				
-				return null;
-			}
-		});*/
+		/*
+		 * table.setDefaultRenderer( Float.class, new TableCellRenderer() {
+		 * public Component getTableCellRendererComponent(JTable table, Object
+		 * value, boolean isSelected, boolean hasFocus, int row, int column) {
+		 * 
+		 * return null; } });
+		 */
 
 		TableModel topLeftModel = new TableModel() {
 
-			@Override
 			public void addTableModelListener(TableModelListener l) {
 				// TODO Auto-generated method stub
-				
+
 			}
 
-			@Override
 			public Class<?> getColumnClass(int columnIndex) {
 				// TODO Auto-generated method stub
 				return String.class;
 			}
 
-			@Override
 			public int getColumnCount() {
 				// TODO Auto-generated method stub
 				return 1;
 			}
 
-			@Override
 			public String getColumnName(int columnIndex) {
 				// TODO Auto-generated method stub
 				return null;
 			}
 
-			@Override
 			public int getRowCount() {
 				// TODO Auto-generated method stub
 				return 2;
 			}
 
-			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
-				if( lang.equals("IS") ) {
-					if( rowIndex == 0 ) return "Nafn efnis";
+				if (lang.equals("IS")) {
+					if (rowIndex == 0)
+						return "Nafn efnis";
 					return "Eining";
 				} else {
-					if( rowIndex == 0 ) return "Name";
+					if (rowIndex == 0)
+						return "Name";
 					return "Unit";
 				}
 			}
 
-			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
 				// TODO Auto-generated method stub
 				return false;
 			}
 
-			@Override
 			public void removeTableModelListener(TableModelListener l) {
 				// TODO Auto-generated method stub
-				
+
 			}
 
-			@Override
 			public void setValueAt(Object value, int rowIndex, int columnIndex) {
 				// TODO Auto-generated method stub
-				
+
 			}
 		};
-		topLeftTable.setModel( topLeftModel );
-		
-		detail = new DetailPanel( rdsPanel, lang, imgPanel, table, topTable, leftTable, stuff, ngroupList, ngroupGroups, foodNameInd, recipe.recipes );
+		topLeftTable.setModel(topLeftModel);
+
+		detail = new DetailPanel(rdsPanel, lang, imgPanel, table, topTable,
+				leftTable, stuff, ngroupList, ngroupGroups, foodNameInd,
+				recipe.recipes);
 		topModel = new TableModel() {
-			@Override
+
 			public void addTableModelListener(TableModelListener l) {
 			}
 
-			@Override
 			public Class<?> getColumnClass(int columnIndex) {
 				return String.class;
 			}
 
-			@Override
 			public int getColumnCount() {
 				int cc = detail.countVisible();
 				return cc;
-				//return stuff.get(0).length-2;
+				// return stuff.get(0).length-2;
 			}
 
-			@Override
 			public String getColumnName(int columnIndex) {
 				return null;
 			}
 
-			@Override
 			public int getRowCount() {
 				return 2;
 			}
 
-			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
-				Object[]	obj = stuff.get(rowIndex);
-				int realColumnIndex = detail.convertIndex( columnIndex );
-				return obj[ realColumnIndex+2 ];
+				Object[] obj = stuff.get(rowIndex);
+				int realColumnIndex = detail.convertIndex(columnIndex);
+				return obj[realColumnIndex + 2];
 			}
 
-			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
 				return false;
 			}
 
-			@Override
 			public void removeTableModelListener(TableModelListener l) {
 			}
 
-			@Override
-			public void setValueAt(Object value, int rowIndex, int columnIndex) {				
+			public void setValueAt(Object value, int rowIndex, int columnIndex) {
 			}
-			
+
 		};
-		topTable.setModel( topModel );
-		
-		final TableModel leftModel = new TableModel() {			
-			@Override
+		topTable.setModel(topModel);
+
+		final TableModel leftModel = new TableModel() {
+
 			public void addTableModelListener(TableModelListener l) {
 			}
 
-			@Override
 			public Class<?> getColumnClass(int columnIndex) {
 				return String.class;
 			}
 
-			@Override
 			public int getColumnCount() {
 				return 2;
 			}
 
-			@Override
 			public String getColumnName(int columnIndex) {
-				if( lang.equals("IS") ) {
-					if( columnIndex == 0 ) return "Fæðutegund";
-					else if( columnIndex == 1 ) return "Fæðuflokkur";
+				if (lang.equals("IS")) {
+					if (columnIndex == 0)
+						return "Fæðutegund";
+					else if (columnIndex == 1)
+						return "Fæðuflokkur";
 					return "Óþekkt";
 				} else {
-					if( columnIndex == 0 ) return "Food Name";
-					else if( columnIndex == 1 ) return "Food Group";
+					if (columnIndex == 0)
+						return "Food Name";
+					else if (columnIndex == 1)
+						return "Food Group";
 					return "Unknown";
 				}
 			}
 
-			@Override
 			public int getRowCount() {
-				return stuff.size()-2 + recipe.recipes.size();
+				return stuff.size() - 2 + recipe.recipes.size();
 			}
 
-			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
-				Object[]	obj = null;
-				if( rowIndex < stuff.size()-2 ) {
-					obj = stuff.get(rowIndex+2);
-					if( columnIndex >= 0 ) return obj[ columnIndex ];
-				}
-				else {
-					int r = rowIndex - (stuff.size()-2);
-					if( r < recipe.recipes.size() ) {
+				Object[] obj = null;
+				if (rowIndex < stuff.size() - 2) {
+					obj = stuff.get(rowIndex + 2);
+					if (columnIndex >= 0)
+						return obj[columnIndex];
+				} else {
+					int r = rowIndex - (stuff.size() - 2);
+					if (r < recipe.recipes.size()) {
 						Recipe rep = recipe.recipes.get(r);
-						if( columnIndex == 1 ) {
-							return "Uppskrift - "+rep.group;
+						if (columnIndex == 1) {
+							return "Uppskrift - " + rep.group;
 						} else {
 							return rep.name + " - " + rep.author;
 						}
 					}
 				}
-				
+
 				return null;
 			}
 
-			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
 				return false;
 			}
 
-			@Override
 			public void removeTableModelListener(TableModelListener l) {
 			}
 
-			@Override
-			public void setValueAt(Object value, int rowIndex, int columnIndex) {				
+			public void setValueAt(Object value, int rowIndex, int columnIndex) {
 			}
 		};
-		leftTable.setModel( leftModel );
-		
-		table.addMouseListener( new MouseAdapter() {
-			public void mousePressed( MouseEvent e ) {
+		leftTable.setModel(leftModel);
+
+		table.addMouseListener(new MouseAdapter() {
+			public void mousePressed(MouseEvent e) {
 				sel = true;
 			}
 		});
-		topTable.addMouseListener( new MouseAdapter() {
-			public void mousePressed( MouseEvent e ) {
+		topTable.addMouseListener(new MouseAdapter() {
+			public void mousePressed(MouseEvent e) {
 				sel = false;
 			}
 		});
-		leftTable.addMouseListener( new MouseAdapter() {
-			public void mousePressed( MouseEvent e ) {
-				Point	p = e.getPoint();
+		leftTable.addMouseListener(new MouseAdapter() {
+			public void mousePressed(MouseEvent e) {
+				Point p = e.getPoint();
 				leftTable.requestFocus();
-				
+
 				sel = false;
-				
-				if( e.getClickCount() == 2 ) {
-					if( tabbedPane.getSelectedComponent() == recipe /*&& leftTable.columnAtPoint(p) == 0*/ ) {
-						if( recipe.currentRecipe != null ) {
-							//recipe.currentRecipe.ingredients.add( new RecipePanel.RecipeIngredient() );
-							
+
+				if (e.getClickCount() == 2) {
+					if (tabbedPane.getSelectedComponent() == recipe /*
+																	 * &&
+																	 * leftTable
+																	 * .
+																	 * columnAtPoint
+																	 * (p) == 0
+																	 */) {
+						if (recipe.currentRecipe != null) {
+							// recipe.currentRecipe.ingredients.add( new
+							// RecipePanel.RecipeIngredient() );
+
 							recipe.currentRecipe.destroy();
-							
+
 							int r = leftTable.getSelectedRow();
-							int rr = leftTable.convertRowIndexToModel( r );
+							int rr = leftTable.convertRowIndexToModel(r);
 							Object val = leftTable.getValueAt(r, 0);
-							if( val != null ) {
-								recipe.currentRecipe.addIngredient( val.toString(), 100, "g" );
+							if (val != null) {
+								recipe.currentRecipe.addIngredient(val
+										.toString(), 100, "g");
 							}
 							recipe.recipeDetailTable.revalidate();
 							recipe.recipeDetailTable.repaint();
-							
+
 							try {
 								recipe.currentRecipe.save();
 							} catch (IOException e1) {
@@ -1395,268 +1454,297 @@ public class SortTable extends JApplet {
 							}
 						}
 					} else {
-						/*int r = leftTable.getSelectedRow();
-						int rr = leftTable.convertRowIndexToModel(r);
-						
-						String str = (String)leftModel.getValueAt(rr, 0);
-						cropped.add(str);
-						
-						leftTableSorter.setRowFilter( filter );
-						tableSorter.setRowFilter( filter );
-						
-						//tableSorter.sort();
-						leftTableSorter.sort();
-						//tableSorter.modelStructureChanged();
-						//leftTableSorter.modelStructureChanged();
-						//leftTable.tableChanged( new TableModelEvent( leftModel ) );	*/					
+						/*
+						 * int r = leftTable.getSelectedRow(); int rr =
+						 * leftTable.convertRowIndexToModel(r);
+						 * 
+						 * String str = (String)leftModel.getValueAt(rr, 0);
+						 * cropped.add(str);
+						 * 
+						 * leftTableSorter.setRowFilter( filter );
+						 * tableSorter.setRowFilter( filter );
+						 * 
+						 * //tableSorter.sort(); leftTableSorter.sort();
+						 * //tableSorter.modelStructureChanged();
+						 * //leftTableSorter.modelStructureChanged();
+						 * //leftTable.tableChanged( new TableModelEvent(
+						 * leftModel ) );
+						 */
 					}
-					/*int r = leftTable.getSelectedRow();
-					if( r >= 0 && r < leftTable.getRowCount() ) {
-						for( int start = 0; start < table.getColumnCount()-1; start++ ) {
-							float min = Float.NEGATIVE_INFINITY;
-							int ind = start;
-							for( int i = start; i < table.getColumnCount(); i++ ) {
-								Object val = table.getValueAt(r, i);
-								if( val != null ) {
-									float f = (Float)val;
-									if( f > min ) {
-										min = f;
-										ind = i;
-									}
-								}
-							}
-							if( ind > start ) {
-								table.moveColumn(ind, start);
-							}
-						}
-					}*/
+					/*
+					 * int r = leftTable.getSelectedRow(); if( r >= 0 && r <
+					 * leftTable.getRowCount() ) { for( int start = 0; start <
+					 * table.getColumnCount()-1; start++ ) { float min =
+					 * Float.NEGATIVE_INFINITY; int ind = start; for( int i =
+					 * start; i < table.getColumnCount(); i++ ) { Object val =
+					 * table.getValueAt(r, i); if( val != null ) { float f =
+					 * (Float)val; if( f > min ) { min = f; ind = i; } } } if(
+					 * ind > start ) { table.moveColumn(ind, start); } } }
+					 */
 				}
 			}
 		});
-		
-		//TreeTableCellRenderer treeCellRenderer = new TreeTableCellRenderer();
-		//leftTable.getColumnModel().getColumn(0).setCellRenderer( treeCellRenderer );
-		
-		model = new TableModel() {
-			//Object[] retObj = {};
-			
-			@Override
-			public void addTableModelListener(TableModelListener l) {}
 
-			@Override
+		// TreeTableCellRenderer treeCellRenderer = new TreeTableCellRenderer();
+		// leftTable.getColumnModel().getColumn(0).setCellRenderer(
+		// treeCellRenderer );
+
+		model = new TableModel() {
+			// Object[] retObj = {};
+
+			public void addTableModelListener(TableModelListener l) {
+			}
+
 			public Class<?> getColumnClass(int columnIndex) {
 				return Float.class;
 			}
 
-			@Override
 			public int getColumnCount() {
 				int cc = topModel.getColumnCount();
 				return cc;
 			}
 
-			@Override
 			public String getColumnName(int columnIndex) {
-				int realColumnIndex = detail.convertIndex( columnIndex );
-				if( realColumnIndex != -1 ) return ngroupList.get(realColumnIndex);
+				int realColumnIndex = detail.convertIndex(columnIndex);
+				if (realColumnIndex != -1)
+					return ngroupList.get(realColumnIndex);
 				return null;
 			}
 
-			@Override
 			public int getRowCount() {
-				return stuff.size()-2 + recipe.recipes.size();
+				return stuff.size() - 2 + recipe.recipes.size();
 			}
 
-			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
-				Object[]	obj = null;
-				if( rowIndex < stuff.size()-2 ) {
-					obj = stuff.get(rowIndex+2);
-					int realColumnIndex = detail.convertIndex( columnIndex );
-					if( realColumnIndex != -1 ) return obj[ realColumnIndex+2 ];
+				Object[] obj = null;
+				if (rowIndex < stuff.size() - 2) {
+					obj = stuff.get(rowIndex + 2);
+					int realColumnIndex = detail.convertIndex(columnIndex);
+					if (realColumnIndex != -1)
+						return obj[realColumnIndex + 2];
 				} else {
 					float ret = 0.0f;
-					int i = rowIndex - (stuff.size()-2);
+					int i = rowIndex - (stuff.size() - 2);
 					Recipe rep = recipe.recipes.get(i);
 					float tot = 0.0f;
-					for( RecipeIngredient rip : rep.ingredients ) {
-						if( foodNameInd.containsKey(rip.stuff) ) {
-							int k = foodNameInd.get( rip.stuff );
-							obj = stuff.get(k+2);
-							int realColumnIndex = detail.convertIndex( columnIndex );
-							if( realColumnIndex != -1 ) {
-								Object		val = obj[ realColumnIndex+2 ];
-								if( val != null && val instanceof Float ) {
+					for (RecipeIngredient rip : rep.ingredients) {
+						if (foodNameInd.containsKey(rip.stuff)) {
+							int k = foodNameInd.get(rip.stuff);
+							obj = stuff.get(k + 2);
+							int realColumnIndex = detail
+									.convertIndex(columnIndex);
+							if (realColumnIndex != -1) {
+								Object val = obj[realColumnIndex + 2];
+								if (val != null && val instanceof Float) {
 									float d = rip.measure;
-									if( !rip.unit.equals("g") ) {
+									if (!rip.unit.equals("g")) {
 										String ru = rip.unit;
 										int f = ru.indexOf("(");
 										int n = ru.indexOf(")");
-										if( n > f && f != -1 ) {
-											String subbi = ru.substring(f+1, n);
-											if( subbi.endsWith("g") ) subbi = subbi.substring(0, subbi.length()-1);
-											
+										if (n > f && f != -1) {
+											String subbi = ru.substring(f + 1,
+													n);
+											if (subbi.endsWith("g"))
+												subbi = subbi.substring(0,
+														subbi.length() - 1);
+
 											float fl = 0.0f;
 											try {
-												fl = Float.parseFloat( subbi );
-											} catch( Exception e ) {
-												
+												fl = Float.parseFloat(subbi);
+											} catch (Exception e) {
+
 											}
 											d *= fl;
 										}
 									}
 									tot += d;
-									
-									float f = (((Float)val) * d) / 100.0f;
+
+									float f = (((Float) val) * d) / 100.0f;
 									ret += f;
 								}
 							}
 						}
 					}
-					
-					if( ret != 0.0f ) return (ret * 100.0f) / tot;
+
+					if (ret != 0.0f)
+						return (ret * 100.0f) / tot;
 				}
 				return null;
 			}
 
-			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
 				return false;
 			}
 
-			@Override
-			public void removeTableModelListener(TableModelListener l) {}
+			public void removeTableModelListener(TableModelListener l) {
+			}
 
-			@Override
-			public void setValueAt(Object value, int rowIndex, int columnIndex) {}
+			public void setValueAt(Object value, int rowIndex, int columnIndex) {
+			}
 		};
-		//table.setModel( model );
-		
-		tableSorter = new MySorter( model ) {
-			@Override
+		// table.setModel( model );
+
+		tableSorter = new MySorter(model) {
 			public int convertRowIndexToModel(int index) {
-				return currentSorter.convertRowIndexToModelSuper( index );
+				return currentSorter.convertRowIndexToModelSuper(index);
 			}
 
-			@Override
 			public int convertRowIndexToView(int index) {
-				return currentSorter.convertRowIndexToViewSuper( index );
-				//leftTableSorter.
+				return currentSorter.convertRowIndexToViewSuper(index);
+				// leftTableSorter.
 			}
-			
-			@Override
+
 			public int getViewRowCount() {
 				return leftTableSorter.getViewRowCount();
 			}
 		};
-		//table.setRowSorter( tableSorter );
-		/*tableSorter.addRowSorterListener( new RowSorterListener() {
-			@Override
-			public void sorterChanged(RowSorterEvent e) {
-				
-			}
-		});*/
-		
-		currentSorter = (MySorter)tableSorter;
-		
-		leftTableSorter = new MySorter( leftModel ) {
-			@Override
+		// table.setRowSorter( tableSorter );
+		/*
+		 * tableSorter.addRowSorterListener( new RowSorterListener() {
+		 * 
+		 * public void sorterChanged(RowSorterEvent e) {
+		 * 
+		 * } });
+		 */
+
+		currentSorter = (MySorter) tableSorter;
+
+		leftTableSorter = new MySorter(leftModel) {
 			public int convertRowIndexToModel(int index) {
-				return currentSorter.convertRowIndexToModelSuper( index );
+				return currentSorter.convertRowIndexToModelSuper(index);
 			}
 
-			@Override
 			public int convertRowIndexToView(int index) {
-				return currentSorter.convertRowIndexToViewSuper( index );
-				//super.
-				//currentSorter.
+				return currentSorter.convertRowIndexToViewSuper(index);
+				// super.
+				// currentSorter.
 			}
 		};
-		leftTable.setRowSorter( leftTableSorter );
-		
-		filter = new RowFilter<TableModel,Integer>() {
-			@Override
-			public boolean include(javax.swing.RowFilter.Entry<? extends TableModel, ? extends Integer> entry) {
-				//String filterText = field.getText();
-				String gval = (String)leftModel.getValueAt( entry.getIdentifier(), 0 );
-				String val = fInd == 0 ? gval : (String)leftModel.getValueAt( entry.getIdentifier(), 1 );
-				if( filterText != null ) {			
-					if( val != null ) return val.toString().matches( filterText );
+		leftTable.setRowSorter(leftTableSorter);
+
+		filter = new MyFilter() {
+
+			public boolean include(
+					javax.swing.RowFilter.Entry<? extends TableModel, ? extends Integer> entry) {
+				// String filterText = field.getText();
+				String gval = (String) leftModel.getValueAt(entry
+						.getIdentifier(), 0);
+				String val = fInd == 0 ? gval : (String) leftModel.getValueAt(
+						entry.getIdentifier(), 1);
+				if (filterText != null) {
+					if (val != null)
+						return val.toString().matches(filterText);
 					return false;
 				} else {
-					boolean b = cropped.contains( gval );
-					if( b ) return false;
+					boolean b = cropped.contains(gval);
+					if (b)
+						return false;
 				}
-				
+
 				return true;
 			}
 		};
-		tableSorter.setRowFilter( filter );
+		tableSorter.setRowFilter(filter);
+
+		graph = new GraphPanel(rdsPanel, lang, new JCompatTable[] { table,
+				leftTable, topTable }, model, topModel);
+
+		ImageIcon fodicon = null;
+		ImageIcon helicon = null;
+		ImageIcon samicon = null;
+		ImageIcon rdsicon = null;
+		ImageIcon uppicon = null;
+		ImageIcon vinicon = null;
+		ImageIcon maticon = null;
 		
-		graph = new GraphPanel( rdsPanel, lang, new JTable[] {table, leftTable, topTable}, model, topModel );
-		
-		if( lang.equals("IS") ) {
-			tabbedPane.addTab( "Fæða", rightSplitPane );
-			//tabbedPane.addTab( "Myndir", imgPanel );
-			tabbedPane.addTab( "Samsetning", graph );
-			tabbedPane.addTab( "Næringarefni", detail );
-			tabbedPane.addTab( "RDS", rdsPanel );
-			tabbedPane.addTab( "Uppskriftir", recipe );
-			if( fp != null ) tabbedPane.addTab( "Vinir", fp );
-			tabbedPane.addTab( "Mataræði og Hreyfing", eat );
-			tabbedPane.addTab( "Innkaup og kostnaður", buy );
-			
-			//tabbedPane.setEnabledAt( tabbedPane.getTabCount()-2, false );
-			tabbedPane.setEnabledAt( tabbedPane.getTabCount()-1, false );
-		} else {
-			tabbedPane.addTab( "List", rightSplitPane );
-			//tabbedPane.addTab( "Image", imgPanel );
-			tabbedPane.addTab( "Graph", graph );
-			tabbedPane.addTab( "Detail", detail );
-			tabbedPane.addTab( "Rds", rdsPanel );
-			tabbedPane.addTab( "Recipes", recipe );
-			if( fp != null ) tabbedPane.addTab( "Friends", fp );
-			tabbedPane.addTab( "Eating and training", eat );
-			tabbedPane.addTab( "Cost of buying", buy );
+		int size = 16;
+		try {
+			URL url = SortTable.this.getClass().getResource("/food.png");
+			if( url != null ) fodicon = new ImageIcon( ImageIO.read(url).getScaledInstance(16, 16, Image.SCALE_SMOOTH) );
+			url = SortTable.this.getClass().getResource("/sams.png");
+			if( url != null ) samicon = new ImageIcon( ImageIO.read(url).getScaledInstance(16, 16, Image.SCALE_SMOOTH) );
+			url = SortTable.this.getClass().getResource("/helix.png");
+			if( url != null ) helicon = new ImageIcon( ImageIO.read(url).getScaledInstance(16, 16, Image.SCALE_SMOOTH) );
+			url = SortTable.this.getClass().getResource("/rds.png");
+			if( url != null ) rdsicon = new ImageIcon( ImageIO.read(url).getScaledInstance(16, 16, Image.SCALE_SMOOTH) );
+			url = SortTable.this.getClass().getResource("/mat.png");
+			if( url != null ) maticon = new ImageIcon( ImageIO.read(url).getScaledInstance(16, 16, Image.SCALE_SMOOTH) );
+			url = SortTable.this.getClass().getResource("/uppsk.png");
+			if( url != null ) uppicon = new ImageIcon( ImageIO.read(url).getScaledInstance(16, 16, Image.SCALE_SMOOTH) );
+			url = SortTable.this.getClass().getResource("/vinir.png");
+			if( url != null ) vinicon = new ImageIcon( ImageIO.read(url).getScaledInstance(16, 16, Image.SCALE_SMOOTH) );	
+		} catch (IOException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
 		}
 		
-		table.setModel( model );
-		table.setRowSorter( tableSorter );
-		
-		//RowFilter<TableModel, Integer> rf = RowFilter.regexFilter("Milk",1);
-		//leftTableSorter.setRowFilter( rf );
-		//panel.setLayout( new BorderLayout() );
-		//Dimension d = new Dimension(300,300);
-		//panel.setPreferredSize( d );
-		//panel.setSize( d );
-		//panel.setMinimumSize( d );
-		//imagePanel.setPreferredSize( d );
-		//imagePanel.setSize( d );
-		//panel.add( imagePanel, BorderLayout.WEST );
-		
+		if (lang.equals("IS")) {
+			tabbedPane.addTab("Fæða", fodicon, rightSplitPane);
+			// tabbedPane.addTab( "Myndir", imgPanel );
+			tabbedPane.addTab("Samsetning", samicon, graph);
+			tabbedPane.addTab("Næringarefni", helicon, detail);
+			tabbedPane.addTab("RDS", rdsicon, rdsPanel);
+			tabbedPane.addTab("Uppskriftir", uppicon, recipe);
+			if (fp != null)
+				tabbedPane.addTab("Vinir", vinicon, fp);
+			tabbedPane.addTab("Mataræði og Hreyfing", maticon, eat);
+			tabbedPane.addTab("Innkaup og kostnaður", buy);
+
+			// tabbedPane.setEnabledAt( tabbedPane.getTabCount()-2, false );
+			tabbedPane.setEnabledAt(tabbedPane.getTabCount() - 1, false);
+		} else {
+			tabbedPane.addTab("List", rightSplitPane);
+			// tabbedPane.addTab( "Image", imgPanel );
+			tabbedPane.addTab("Graph", graph);
+			tabbedPane.addTab("Detail", detail);
+			tabbedPane.addTab("Rds", rdsPanel);
+			tabbedPane.addTab("Recipes", recipe);
+			if (fp != null)
+				tabbedPane.addTab("Friends", fp);
+			tabbedPane.addTab("Eating and training", eat);
+			tabbedPane.addTab("Cost of buying", buy);
+		}
+
+		table.setModel(model);
+		table.setRowSorter(tableSorter);
+
+		// RowFilter<TableModel, Integer> rf = RowFilter.regexFilter("Milk",1);
+		// leftTableSorter.setRowFilter( rf );
+		// panel.setLayout( new BorderLayout() );
+		// Dimension d = new Dimension(300,300);
+		// panel.setPreferredSize( d );
+		// panel.setSize( d );
+		// panel.setMinimumSize( d );
+		// imagePanel.setPreferredSize( d );
+		// imagePanel.setSize( d );
+		// panel.add( imagePanel, BorderLayout.WEST );
+
 		ed = new JEditorPane();
 		ed.setContentType("text/html");
-		ed.setEditable( false );
-		ed.setText("<html><body><center><table cellpadding=0><tr><td><img src=\"http://test.matis.is/isgem/Matis_logo.jpg\" hspace=\"5\" width=\"32\" height=\"32\">"
-			+"</td><td align=\"center\"><a href=\"http://www.matis.is\">Matís ohf.</a> - Borgartún 21 | 105 Reykjavík - Sími 422 50 00 | Fax 422 50 01 - <a href=\"mailto:matis@matis.is\">matis@matis.is</a><br><a href=\"http://www.matis.is/ISGEM/is/skyringar/\">Hjálp</a> - "
-			+((sessionKey != null && sessionKey.length() > 1)?"<a href=\"http://test.matis.is/isgem\">Allur glugginn</a>":"<a href=\"http://apps.facebook.com/matisgem\">Facebook</a>")
-			//+" - <a href=\"dark\">Dark</a> - <a href=\"light\">Light</a>"
-			+"</td></tr></table></center></body></html>");
-		Dimension d = new Dimension(1000,42);
-		ed.setPreferredSize( d );
-		ed.setSize( d );
-		ed.addHyperlinkListener( new HyperlinkListener() {
-			@Override
+		ed.setEditable(false);
+		ed
+				.setText("<html><body><center><table cellpadding=0><tr><td><img src=\"http://test.matis.is/isgem/Matis_logo.jpg\" hspace=\"5\" width=\"32\" height=\"32\">"
+						+ "</td><td align=\"center\"><a href=\"http://www.matis.is\">Matís ohf.</a> - Borgartún 21 | 105 Reykjavík - Sími 422 50 00 | Fax 422 50 01 - <a href=\"mailto:matis@matis.is\">matis@matis.is</a><br><a href=\"http://www.matis.is/ISGEM/is/skyringar/\">Hjálp</a> - "
+						+ ((sessionKey != null && sessionKey.length() > 1) ? "<a href=\"http://test.matis.is/isgem\">Allur glugginn</a>"
+								: "<a href=\"http://apps.facebook.com/matisgem\">Facebook</a>")
+						// +" - <a href=\"dark\">Dark</a> - <a href=\"light\">Light</a>"
+						+ "</td></tr></table></center></body></html>");
+		Dimension d = new Dimension(1000, 42);
+		ed.setPreferredSize(d);
+		ed.setSize(d);
+		ed.addHyperlinkListener(new HyperlinkListener() {
+
 			public void hyperlinkUpdate(HyperlinkEvent e) {
 				if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-					if( e.getDescription().equals("dark") ) {
+					if (e.getDescription().equals("dark")) {
 						lof = "org.jvnet.substance.skin.SubstanceRavenGraphiteLookAndFeel";
 						updateLof();
-					} else if( e.getDescription().equals("light") ) {
+					} else if (e.getDescription().equals("light")) {
 						lof = "com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel";
 						updateLof();
 					} else {
 						try {
-							Desktop.getDesktop().browse( e.getURL().toURI() );
+							Desktop.getDesktop().browse(e.getURL().toURI());
 						} catch (IOException e1) {
 							// TODO Auto-generated catch block
 							e1.printStackTrace();
@@ -1668,63 +1756,60 @@ public class SortTable extends JApplet {
 				}
 			}
 		});
-		
-		SortTable.this.setLayout( new BorderLayout() );
-		splitPane.setBorder( new EmptyBorder(0, 0, 0, 0) );
-		SortTable.this.add( splitPane );
-		SortTable.this.add( ed, BorderLayout.SOUTH );
-		splitPane.setDividerLocation( 1.0/3.0 );
+
+		SortTable.this.setLayout(new BorderLayout());
+		splitPane.setBorder(new EmptyBorder(0, 0, 0, 0));
+		SortTable.this.add(splitPane);
+		SortTable.this.add(ed, BorderLayout.SOUTH);
+		splitPane.setDividerLocation(1.0 / 3.0);
 		splitPane.setDividerLocation(300);
-		//this.add( panel, BorderLayout.SOUTH );
-		//this.add( field, BorderLayout.SOUTH );
-		
-		//splitPane.setBackground( Color.white );
-		//tabbedPane.setBackground( Color.white );
-		
-		//scrollPane.setColumnHeaderView( topTable );
-		//topScrollPane.setViewport( scrollPane.getColumnHeader() );
-		
-		//SwingUtilities.updateComponentTreeUI( this );
-		
-		SortTable.this.getContentPane().setBackground( bgcolor );
-		SortTable.this.setBackground( bgcolor );
+		// this.add( panel, BorderLayout.SOUTH );
+		// this.add( field, BorderLayout.SOUTH );
+
+		// splitPane.setBackground( Color.white );
+		// tabbedPane.setBackground( Color.white );
+
+		// scrollPane.setColumnHeaderView( topTable );
+		// topScrollPane.setViewport( scrollPane.getColumnHeader() );
+
+		// SwingUtilities.updateComponentTreeUI( this );
+
+		SortTable.this.getContentPane().setBackground(bgcolor);
+		SortTable.this.setBackground(bgcolor);
 	}
-	
+
 	public JScrollPane getScrollPane() {
 		return scrollPane;
 	}
-	
+
 	public JSplitPane getSplitPane() {
 		return splitPane;
 	}
-	
+
 	public JEditorPane getEditor() {
 		return ed;
 	}
-	
+
 	public ImagePanel getImagePanel() {
 		return imgPanel;
 	}
-	
+
 	/**
 	 * @param args
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	public static void main(String[] args) throws IOException {
-		/*URL url;
-		try {
-			url = new URL("http://www.google.com");
-			//InputStream stream = url.openStream();
-			Proxy proxy = new Proxy( Type.HTTP, new InetSocketAddress("proxy.decode.is",8080) );
-			URLConnection connection = url.openConnection( proxy );
-			InputStream stream = connection.getInputStream();
-		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
-		
+		/*
+		 * URL url; try { url = new URL("http://www.google.com"); //InputStream
+		 * stream = url.openStream(); Proxy proxy = new Proxy( Type.HTTP, new
+		 * InetSocketAddress("proxy.decode.is",8080) ); URLConnection connection
+		 * = url.openConnection( proxy ); InputStream stream =
+		 * connection.getInputStream(); } catch (MalformedURLException e) { //
+		 * TODO Auto-generated catch block e.printStackTrace(); }
+		 */
+
 		final SortTable sortTable = new SortTable();
-		
+
 		try {
 			UIManager.setLookAndFeel(lof);
 		} catch (ClassNotFoundException e) {
@@ -1740,41 +1825,40 @@ public class SortTable extends JApplet {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		System.setProperty("file.encoding", "UTF8");
 		sortTable.lang = "IS";
-		
+
 		ToolTipManager.sharedInstance().setInitialDelay(0);
 		try {
-			sortTable.stuff = sortTable.parseData( sortTable.lang );
+			sortTable.stuff = sortTable.parseData(sortTable.lang);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		sortTable.getContentPane().setBackground( Color.white );
-		sortTable.setBackground( Color.white );
-		
-		SwingUtilities.invokeLater( new Runnable(){
-			@Override
+		sortTable.getContentPane().setBackground(Color.white);
+		sortTable.setBackground(Color.white);
+
+		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
 				JFrame frame = new JFrame();
-				frame.setBackground( Color.white );
-				frame.getContentPane().setBackground( Color.white );
-				sortTable.initGui( null, null );
-				frame.setLayout( new BorderLayout() );
-				frame.add( sortTable.getSplitPane() );
-				frame.add( sortTable.getEditor(), BorderLayout.SOUTH );
-				frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+				frame.setBackground(Color.white);
+				frame.getContentPane().setBackground(Color.white);
+				sortTable.initGui(null, null);
+				frame.setLayout(new BorderLayout());
+				frame.add(sortTable.getSplitPane());
+				frame.add(sortTable.getEditor(), BorderLayout.SOUTH);
+				frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 				frame.setSize(800, 600);
-				frame.setVisible( true );
+				frame.setVisible(true);
 			}
 		});
 	}
-	
+
 	public JTextField getSearchField() {
 		return field;
 	}
-	
+
 	public static String detectEncoding(InputStream in) throws IOException {
 		String encoding = null;
 		in.mark(400);
@@ -1847,7 +1931,7 @@ public class SortTable extends JApplet {
 		if (readEncoding) {
 			read = in.read(buffer, 4, buffer.length - 4);
 			Charset cs = Charset.forName(encoding);
-			String s = new String(buffer, 4, read, cs);
+			String s = CompatUtilities.getCharsetString(buffer, 4, read, cs);
 			int pos = s.indexOf("encoding");
 			if (pos == -1) {
 				encoding = System.getProperty("file.encoding");
@@ -1856,29 +1940,33 @@ public class SortTable extends JApplet {
 				int start = s.indexOf(delim = '\'', pos);
 				if (start == -1)
 					start = s.indexOf(delim = '"', pos);
-				//if (start == -1)
-					//notifyEncodingError(buffer);
+				// if (start == -1)
+				// notifyEncodingError(buffer);
 				int end = s.indexOf(delim, start + 1);
-				//if (end == -1)
-					//notifyEncodingError(buffer);
+				// if (end == -1)
+				// notifyEncodingError(buffer);
 				encoding = s.substring(start + 1, end);
 			}
 		}
 
-		//in.reset();
-		//while (ignoreBytes-- > 0)
-		//	in.read();
+		// in.reset();
+		// while (ignoreBytes-- > 0)
+		// in.read();
 		return encoding;
 	}
 
 	public void sortByColumn(String str) {
-		DefaultRowSorter sorter = ((DefaultRowSorter)table.getRowSorter());
-		List <RowSorter.SortKey> sortKeys = new ArrayList<RowSorter.SortKey>();
+		DefaultRowSorter sorter = ((DefaultRowSorter) table.getRowSorter());
+		List<RowSorter.SortKey> sortKeys = new ArrayList<RowSorter.SortKey>();
 		int c = -1;
-		System.err.println( str );
-		while( c < model.getColumnCount() && !model.getColumnName(++c).contains(str) );
-		if( c < model.getColumnCount() ) {
-			sortKeys.add(new RowSorter.SortKey(c, SortOrder.DESCENDING));
+		System.err.println(str);
+		while (c < model.getColumnCount()
+				&& !model.getColumnName(++c).contains(str))
+			;
+		if (c < model.getColumnCount()) {
+			RowSorter.SortKey sortKey = new RowSorter.SortKey(c,
+					SortOrder.DESCENDING);
+			sortKeys.add(sortKey);
 			sorter.setSortKeys(sortKeys);
 		}
 	}

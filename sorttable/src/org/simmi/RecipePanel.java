@@ -56,8 +56,6 @@ import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
-import javax.swing.JTable;
-import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.HyperlinkEvent;
@@ -70,8 +68,8 @@ import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableModel;
 
 public class RecipePanel extends JSplitPane {
-	final JTable		recipeTable = new JTable();
-	final JTable		recipeDetailTable = new JTable();
+	final JCompatTable		recipeTable = new JCompatTable();
+	final JCompatTable		recipeDetailTable = new JCompatTable();
 	Map<String,Integer>	foodInd;
 	FriendsPanel		fp;
 	Map<String,Map<String,String>> skmt = new HashMap<String,Map<String,String>>();
@@ -201,7 +199,7 @@ public class RecipePanel extends JSplitPane {
 	List<Recipe>	recipes;
 	Recipe			currentRecipe;
 	JDialog			dialog;
-	JTable			mailTable;
+	JCompatTable	mailTable;
 	JScrollPane		scrollPane;
 	
 	public void checkMail() throws IOException {
@@ -302,8 +300,8 @@ public class RecipePanel extends JSplitPane {
 		}*/
 	}
 	
-	JTable	theTable;
-	JTable	theLeftTable;
+	JCompatTable	theTable;
+	JCompatTable	theLeftTable;
 	public void insertRecipe( Reader r ) throws IOException {
 		int read = r.read(cbuf);
 		if( read > 0 ) {
@@ -359,44 +357,38 @@ public class RecipePanel extends JSplitPane {
 		}
 	}
 	
-	public RecipePanel( final FriendsPanel fp, final String lang, final JTable table, final JTable leftTable, final Map<String,Integer> foodNameInd ) throws IOException {
+	public RecipePanel( final FriendsPanel fp, final String lang, final JCompatTable table, final JCompatTable leftTable, final Map<String,Integer> foodNameInd ) throws IOException {
 		super( JSplitPane.VERTICAL_SPLIT );
 		this.setDividerLocation( 300 );
 		
 		theTable = table;
 		theLeftTable = leftTable;
 		
-		mailTable = new JTable();
+		mailTable = new JCompatTable();
 		scrollPane = new JScrollPane( mailTable );
-		dialog = new JDialog( SwingUtilities.getWindowAncestor( this ) );
+		dialog = new JDialog( CompatUtilities.getWindowAncestor( this ) );
 		dialog.setSize(400, 300);
 		dialog.add( scrollPane );
 		
 		this.addComponentListener( new ComponentListener(){
-		
-			@Override
 			public void componentShown(ComponentEvent e) {
 				try {
 					checkMail();
 				} catch (IOException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 			}
-		
-			@Override
+
 			public void componentResized(ComponentEvent e) {
 				// TODO Auto-generated method stub
 				
 			}
-		
-			@Override
+
 			public void componentMoved(ComponentEvent e) {
 				// TODO Auto-generated method stub
 				
 			}
-		
-			@Override
+
 			public void componentHidden(ComponentEvent e) {
 				// TODO Auto-generated method stub
 				
@@ -434,8 +426,7 @@ public class RecipePanel extends JSplitPane {
 		
 		JScrollPane	recipeScroll = new JScrollPane();
 		
-		AbstractAction nu = new AbstractAction("Nýja uppskrift"){
-			@Override
+		AbstractAction nu = new AbstractAction("Nýja uppskrift") {
 			public void actionPerformed(ActionEvent e) {
 				recipes.add( new Recipe("Velja nafn", "Velja hóp", fp.currentUser) );
 				recipeTable.revalidate();
@@ -452,23 +443,19 @@ public class RecipePanel extends JSplitPane {
 		recipeTable.setComponentPopupMenu( popup );
 		
 		TableModel recipeTableModel = new TableModel() {
-			@Override
 			public void addTableModelListener(TableModelListener arg0) {
 				// TODO Auto-generated method stub
 				
 			}
 
-			@Override
 			public Class<?> getColumnClass(int arg0) {
 				return String.class;
 			}
 
-			@Override
 			public int getColumnCount() {
 				return 3;
 			}
 
-			@Override
 			public String getColumnName(int arg0) {
 				if( lang.equals("IS") ) {
 					if( arg0 == 0 ) return "Nafn";
@@ -482,12 +469,10 @@ public class RecipePanel extends JSplitPane {
 				return null;
 			}
 
-			@Override
 			public int getRowCount() {
 				return recipes.size();
 			}
 
-			@Override
 			public Object getValueAt(int arg0, int arg1) {
 				if( arg0 < recipes.size() ) {
 					Recipe rep = recipes.get(arg0);
@@ -498,16 +483,12 @@ public class RecipePanel extends JSplitPane {
 				return null;
 			}
 
-			@Override
 			public boolean isCellEditable(int arg0, int arg1) {
 				if( arg1 == 0 || arg1 == 1 ) return true;
 				return false;
 			}
 
-			@Override
 			public void removeTableModelListener(TableModelListener arg0) {}
-
-			@Override
 			public void setValueAt(Object arg0, int arg1, int arg2) {
 				Recipe rep = recipes.get(arg1);
 				rep.destroy();
@@ -526,14 +507,11 @@ public class RecipePanel extends JSplitPane {
 		recipeScroll.setViewportView( recipeTable );
 		
 		TableModel	recipeDetailModel = new TableModel() {
-
-			@Override
 			public void addTableModelListener(TableModelListener arg0) {
 				// TODO Auto-generated method stub
 				
 			}
 
-			@Override
 			public Class<?> getColumnClass(int arg0) {
 				if( arg0 == 0 ) return String.class;
 				else if( arg0 == 1 ) return Float.class;
@@ -541,12 +519,10 @@ public class RecipePanel extends JSplitPane {
 				return null;
 			}
 
-			@Override
 			public int getColumnCount() {
 				return 3;
 			}
 
-			@Override
 			public String getColumnName(int arg0) {
 				if( lang.equals("IS") ) {
 					if( arg0 == 0 ) return "Efni";
@@ -560,7 +536,6 @@ public class RecipePanel extends JSplitPane {
 				return null;
 			}
 
-			@Override
 			public int getRowCount() {
 				int r = recipeTable.getSelectedRow();
 				if( r >= 0 && r < recipes.size() ) {
@@ -570,7 +545,6 @@ public class RecipePanel extends JSplitPane {
 				return 0;
 			}
 
-			@Override
 			public Object getValueAt(int arg0, int arg1) {
 				int r = recipeTable.getSelectedRow();
 				if( r >= 0 && r < recipes.size() ) {
@@ -583,16 +557,12 @@ public class RecipePanel extends JSplitPane {
 				return null;
 			}
 
-			@Override
 			public boolean isCellEditable(int arg0, int arg1) {
 				if( arg1 == 1 || arg1 == 2 ) return true;
 				return false;
 			}
 
-			@Override
 			public void removeTableModelListener(TableModelListener arg0) {}
-
-			@Override
 			public void setValueAt(Object arg0, int arg1, int arg2) {
 				int r = recipeTable.getSelectedRow();
 				
@@ -629,7 +599,6 @@ public class RecipePanel extends JSplitPane {
 		};
 		
 		AbstractAction eu = new AbstractAction("Eyða uppskrift/um") {
-			@Override
 			public void actionPerformed(ActionEvent e) {
 				int[]	rr = recipeTable.getSelectedRows();
 				Set<Recipe>	remSet = new HashSet<Recipe>();
@@ -659,7 +628,6 @@ public class RecipePanel extends JSplitPane {
 		popup.addSeparator();
 		
 		AbstractAction du = new AbstractAction("Senda völdum vinum") {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				String[]	ids = fp.getSelectedFriendsIds();
 				if( ids.length > 0 ) {
@@ -740,17 +708,14 @@ public class RecipePanel extends JSplitPane {
 		popup.add( du );
 		
 		recipeDetailTable.addKeyListener( new KeyListener() {
-			@Override
 			public void keyTyped(KeyEvent e) {
 				
 			}
-		
-			@Override
+			
 			public void keyReleased(KeyEvent e) {
 				
 			}
 		
-			@Override
 			public void keyPressed(KeyEvent e) {
 				if( e.getKeyCode() == KeyEvent.VK_DELETE ) {
 					int r = recipeTable.getSelectedRow();
@@ -826,8 +791,6 @@ public class RecipePanel extends JSplitPane {
 		final JEditorPane	recipeInfo = new JEditorPane();
 		recipeInfo.setEditable( false );
 		recipeInfo.addFocusListener( new FocusListener(){
-		
-			@Override
 			public void focusLost(FocusEvent e) {
 				if( currentRecipe != null ) {
 					currentRecipe.destroy();
@@ -840,8 +803,7 @@ public class RecipePanel extends JSplitPane {
 					}
 				}
 			}
-		
-			@Override
+
 			public void focusGained(FocusEvent e) {
 				// TODO Auto-generated method stub
 				
@@ -849,7 +811,6 @@ public class RecipePanel extends JSplitPane {
 		});
 		
 		recipeInfo.addHyperlinkListener( new HyperlinkListener() {
-			@Override
 			public void hyperlinkUpdate(HyperlinkEvent e) {
 				if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
 					try {
@@ -871,7 +832,6 @@ public class RecipePanel extends JSplitPane {
 		recipeInfoPane.addTab("Skoða", recipeInfoScroll);
 		recipeInfoPane.addTab("Breyta", null);
 		recipeInfoPane.addChangeListener( new ChangeListener() {
-			@Override
 			public void stateChanged(ChangeEvent e) {
 				if( recipeInfoPane.getSelectedIndex() == 0 ) {
 					String str = recipeInfo.getText();
@@ -889,7 +849,6 @@ public class RecipePanel extends JSplitPane {
 		//final JTextArea	recipeInfo = new JTextArea();
 		//recipeInfo.set
 		recipeTable.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
-			@Override
 			public void valueChanged(ListSelectionEvent e) {
 				int r = recipeTable.getSelectedRow();
 				if( r >= 0 && r < recipeTable.getRowCount() ) {
@@ -922,7 +881,6 @@ public class RecipePanel extends JSplitPane {
 		});
 		
 		recipeDetailTable.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
-			@Override
 			public void valueChanged(ListSelectionEvent e) {
 				int r = recipeDetailTable.getSelectedRow();
 				
@@ -956,7 +914,7 @@ public class RecipePanel extends JSplitPane {
 		recipeDetailTable.setAutoCreateRowSorter( true );
 		JScrollPane recipeDetailScroll = new JScrollPane( recipeDetailTable );
 		recipeDetailTable.setModel( recipeDetailModel );
-		recipeDetailTable.setDropMode( DropMode.INSERT_ROWS );
+		recipeDetailTable.setDropMode2( DropMode.INSERT_ROWS );
 		DropTarget dropTarget = new DropTarget() {
 			public boolean isActive() {
 				return true;
@@ -982,22 +940,18 @@ public class RecipePanel extends JSplitPane {
 		recipeDetailScroll.setDropTarget( dropTarget );
 		try {
 			recipeDetailScroll.getDropTarget().addDropTargetListener( new DropTargetListener() {
-				@Override
 				public void dragEnter(DropTargetDragEvent dtde) {
 					
 				}
 
-				@Override
 				public void dragExit(DropTargetEvent dte) {
 					
 				}
 
-				@Override
 				public void dragOver(DropTargetDragEvent dtde) {
 					
 				}
 
-				@Override
 				public void drop(DropTargetDropEvent dtde) {
 					Object obj;
 					try {
@@ -1029,7 +983,6 @@ public class RecipePanel extends JSplitPane {
 					}
 				}
 
-				@Override
 				public void dropActionChanged(DropTargetDragEvent dtde) {
 					
 				}

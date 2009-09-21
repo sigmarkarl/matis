@@ -110,7 +110,7 @@ public class SkifuGraph extends JComponent {
 		g2.drawString(title, 10, this.getHeight()/20 );
 		int r = leftTable.getSelectedRow();
 		if( r >= 0 ) {
-			String s = (String)leftTable.getValueAt(r, 1);
+			String s = (String)leftTable.getValueAt(r, 0);
 			if( s != null ) g2.drawString( s, 10, this.getHeight()/11 );
 		}
 		

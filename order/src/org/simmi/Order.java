@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -39,24 +40,28 @@ public class Order extends JApplet {
 	JTable		ptable = new JTable();
 	TableModel	model;
 	TableModel	pmodel;
+	TableModel	nullmodel;
 	JComponent	c;
 	Connection	con;
 	String		user;
 	List<Pnt>	pntlist;
+	int			ordno = 0;
 	
 	final Color bg = Color.white;//new Color( 0,0,0,0 );
 	
 	public class Pnt {
-		int		ordno;
-		String	name;
-		String	user;
-		int		quant;
+		Integer		ordno;
+		String		name;
+		Integer		quant;
+		Date		orddate;
+		Date		purdate;
 		
-		public Pnt( int ordno, String name, String user, int quant ) {
+		public Pnt( int ordno, String name, int quant, Date orddate, Date purdate ) {
 			this.ordno = ordno;
 			this.name = name;
-			this.user = user;
 			this.quant = quant;
+			this.orddate = orddate;
+			this.purdate = purdate;
 		}
 	}
 	
@@ -66,7 +71,7 @@ public class Order extends JApplet {
 		String	Byrgir;
 		Integer	cat;
 		
-		public Ord( String name, String prdc, String selr, Integer cat ) {
+		public Ord( String name, String prdc, String selr, int cat ) {
 			this.Nafn = name;
 			this.Framleiðandi = prdc;
 			this.Byrgir = selr;
@@ -185,13 +190,25 @@ public class Order extends JApplet {
 	public List<Pnt>	loadPnt() throws SQLException {
 		List<Pnt>	pntList = new ArrayList<Pnt>();
 		
-		String sql = "select [ordno], [name], [user], [quant] from [order].[dbo].[order]";
+		String sql = "select [ordno], [name], [quant], [orddate], [purdate] from [order].[dbo].[order] where [user] = '"+user+"'";
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
 		ResultSet 			rs = ps.executeQuery();
 
 		while (rs.next()) {
-			pntList.add( new Pnt( rs.getInt(1), rs.getString(2), rs.getString(3), rs.getInt(4) ) );
+			pntList.add( new Pnt( rs.getInt(1), rs.getString(2), rs.getInt(3), rs.getDate(4), rs.getDate(5) ) );
+		}
+		
+		rs.close();
+		ps.close();
+		
+		sql = "select max([ordno]) from [order].[dbo].[order]";
+		
+		ps = con.prepareStatement(sql);
+		rs = ps.executeQuery();
+
+		while (rs.next()) {
+			ordno = rs.getInt( 1 );
 		}
 		
 		rs.close();
@@ -226,66 +243,55 @@ public class Order extends JApplet {
 		return user;
 	}
 	
-	public int getOrdno() {
-		int ordno = 0;
+	/*public int getOrdno() {
+		int l_ordno = ordno;
 		
 		if( pntlist != null ) {
 			for( Pnt p : pntlist ) {
-				if( p.ordno > ordno ) ordno = p.ordno;
+				if( p.ordno > l_ordno ) l_ordno = p.ordno;
 			}
-			ordno++;
+			l_ordno++;
 		}
 		
-		return ordno;
-	}
+		return l_ordno;
+	}*/
 	
-	public void order( int ordno, String name, String user, int quant ) throws SQLException {
-		String ord = ordno+",'"+name+"','"+user+"',"+quant+",0";
+	public void order( String name, int quant ) throws SQLException {
+		ordno++;
+		String ord = ordno+",'"+name+"','"+user+"',"+quant+",GetDate(),null";
 		String sql = "insert into [order].[dbo].[order] values ("+ord+")";
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
 		boolean				b = ps.execute();
 		
 		if( !b ) {
-			pntlist.add( new Pnt( ordno, name, user, quant ) );
+			pntlist.add( new Pnt( ordno, name, quant, new Date( System.currentTimeMillis() ), null ) );
 		}
 		
 		ps.close();
 	}
 	
-	public void disorder( int ordno ) throws SQLException {
+	public boolean disorder( int ordno ) throws SQLException {
 		String sql = "delete from [order].[dbo].[order] where ordno = "+ordno;
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
 		boolean				b = ps.execute();
 		
-		if( !b ) {
-			Set<Pnt>	remset = new HashSet<Pnt>();
-			for( Pnt p : pntlist ) {
-				if( p.ordno == ordno ) {
-					remset.add( p );
-				}
-			}
-			pntlist.removeAll( remset );
-		}
-		
 		ps.close();
+		
+		return b;
 	}
 	
 	public void init() {
 		try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (UnsupportedLookAndFeelException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -300,41 +306,88 @@ public class Order extends JApplet {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		nullmodel = new TableModel() {
+			@Override
+			public void addTableModelListener(TableModelListener l) {}
+
+			@Override
+			public Class<?> getColumnClass(int columnIndex) {return null;}
+
+			@Override
+			public int getColumnCount() {return 0;}
+
+			@Override
+			public String getColumnName(int columnIndex) {return null;}
+
+			@Override
+			public int getRowCount() {return 0;}
+
+			@Override
+			public Object getValueAt(int rowIndex, int columnIndex) {return null;}
+
+			@Override
+			public boolean isCellEditable(int rowIndex, int columnIndex) {return false;}
+
+			@Override
+			public void removeTableModelListener(TableModelListener l) {}
+
+			@Override
+			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {}
+		};
 			
 		final JButton	addbtn = new JButton( new AbstractAction("Panta >>") {
 			public void actionPerformed(ActionEvent e) {
 				int[] rr = table.getSelectedRows();
-				for( int r : rr ) {
-					int			ordno = getOrdno();
-					String		name = (String)table.getValueAt(r, 1);
-					String 		user = getUser();
+				for( int r : rr ) { 
+					String		name = (String)table.getValueAt(r, 0);
 					int 		quant = 1;
 					try {
-						order( ordno, name, user, quant );
+						order( name, quant );
 					} catch (SQLException e1) {
 						// TODO Auto-generated catch block
 						e1.printStackTrace();
 					}
 				}
+				ptable.setModel( nullmodel );
+				ptable.setModel( pmodel );
 			}
 		});
 		final JButton	rembtn = new JButton(new AbstractAction("<< Afpanta") {
 			public void actionPerformed(ActionEvent e) {
-				int[] rr = table.getSelectedRows();
+				int[] 			rr = ptable.getSelectedRows();
+				Set<Pnt>		remset = new HashSet<Pnt>();
 				for( int r : rr ) {
-					int			ordno = (Integer)table.getValueAt(r, 0);
-					String		name = (String)table.getValueAt(r, 1);
-					String 		user = (String)table.getValueAt(r, 2);
-					int 		quant = (Integer)table.getValueAt(r, 3);
+					int			ordno = (Integer)ptable.getValueAt(r, 0);
+					//String		name = (String)ptable.getValueAt(r, 1);
+					//String 		user = (String)ptable.getValueAt(r, 2);
+					//int 		quant = (Integer)ptable.getValueAt(r, 3);
 					try {
-						disorder( ordno );
+						if( !disorder( ordno ) ) {
+							for( Pnt p : pntlist ) {
+								if( p.ordno == ordno ) {
+									remset.add( p );
+								}
+							}
+						}
 					} catch (SQLException e1) {
 						// TODO Auto-generated catch block
 						e1.printStackTrace();
 					}
-				}
+				}	
+				pntlist.removeAll( remset );				
+				ptable.setModel( nullmodel );
+				ptable.setModel( pmodel );
 			}
 		});
+		
+		final String domain = System.getenv("USERDOMAIN");
+		/*Map<String,String>	env = System.getenv();
+		for( String e : env.keySet() ) {
+			System.err.println( e );
+		}*/
+		//System.err.println( domain );
+		user = System.getProperty("user.name");
 		
 		try {
 			List<Ord> ordlist = loadOrders();
@@ -350,13 +403,6 @@ public class Order extends JApplet {
 			e.printStackTrace();
 		}
 		
-		final String domain = System.getenv("USERDOMAIN");
-		/*Map<String,String>	env = System.getenv();
-		for( String e : env.keySet() ) {
-			System.err.println( e );
-		}*/
-		//System.err.println( domain );
-		user = System.getProperty("user.name");
 		c = new JComponent() {
 			public void paintComponent( Graphics g ) {
 				super.paintComponent(g);
@@ -376,10 +422,10 @@ public class Order extends JApplet {
 			public void setBounds( int x, int y, int w, int h ) {
 				super.setBounds(x, y, w, h);
 				
-				scrollpane.setBounds( (int)(0.05*w), (int)(0.05*h), (int)(0.3*w), (int)(0.9*h) );
-				pscrollpane.setBounds( (int)(0.65*w), (int)(0.05*h), (int)(0.3*w), (int)(0.9*h) );
-				addbtn.setBounds( (int)(0.37*w), (int)(0.35*h), 100, 25 );
-				rembtn.setBounds( (int)(0.37*w), (int)(0.35*h)+30, 100, 25 );
+				scrollpane.setBounds( (int)(0.05*w), (int)(0.05*h), (int)(0.35*w), (int)(0.9*h) );
+				pscrollpane.setBounds( (int)(0.60*w), (int)(0.05*h), (int)(0.35*w), (int)(0.9*h) );
+				addbtn.setBounds( (int)(0.5*w)-75, (int)(0.35*h), 150, 25 );
+				rembtn.setBounds( (int)(0.5*w)-75, (int)(0.35*h)+30, 150, 25 );
 			}
 		};
 

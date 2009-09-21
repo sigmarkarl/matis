@@ -41,7 +41,6 @@ import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
 import org.jdesktop.swingx.JXDatePicker;
-import org.jdesktop.swingx.calendar.DateSelectionModel;
 
 public class HabitsPanel extends JComponent {
 	int 						min = 0;
@@ -102,10 +101,8 @@ public class HabitsPanel extends JComponent {
 		final JScrollPane timelineDataScroll = new JScrollPane( timelineDataTable );
 		
 		timelineDataTable.getColumnModel().addColumnModelListener( new TableColumnModelListener() {
-			@Override
 			public void columnAdded(TableColumnModelEvent e) {}
 
-			@Override
 			public void columnMarginChanged(ChangeEvent e) {
 				Enumeration<TableColumn> 	tcs = timelineDataTable.getColumnModel().getColumns();
 				int i = 0;
@@ -115,15 +112,12 @@ public class HabitsPanel extends JComponent {
 				}
 			}
 
-			@Override
 			public void columnMoved(TableColumnModelEvent e) {
 				timelineTable.moveColumn( e.getFromIndex(), e.getToIndex() );		
 			}
 
-			@Override
 			public void columnRemoved(TableColumnModelEvent e) {}
 
-			@Override
 			public void columnSelectionChanged(ListSelectionEvent e) {}
 		});
 		
@@ -190,35 +184,28 @@ public class HabitsPanel extends JComponent {
 		
 		//Date d = new Date(Date.);
 		TableModel	timelineModel = new TableModel() {
-			@Override
 			public void addTableModelListener(TableModelListener arg0) {
 				
 			}
 
-			@Override
 			public Class<?> getColumnClass(int arg0) {
 				return String.class;
 			}
 
-			@Override
 			public int getColumnCount() {
 				// TODO Auto-generated method stub
 				return 365;
 			}
 
-			@Override
 			public String getColumnName(int arg0) {
 				cal.setTimeInMillis( time+arg0*Timer.ONE_DAY );
 				return cal.get( Calendar.WEEK_OF_YEAR ) + "";
 			}
 
-			@Override
 			public int getRowCount() {
-				// TODO Auto-generated method stub
 				return 2;
 			}
 
-			@Override
 			public Object getValueAt(int arg0, int arg1) {
 				cal.setTimeInMillis( time+arg1*Timer.ONE_DAY );
 				String str;
@@ -227,23 +214,14 @@ public class HabitsPanel extends JComponent {
 				return str;
 			}
 
-			@Override
 			public boolean isCellEditable(int arg0, int arg1) {
 				// TODO Auto-generated method stub
 				return false;
 			}
 
-			@Override
-			public void removeTableModelListener(TableModelListener arg0) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void removeTableModelListener(TableModelListener arg0) {}
 
-			@Override
-			public void setValueAt(Object arg0, int arg1, int arg2) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void setValueAt(Object arg0, int arg1, int arg2) {}
 		};
 		timelineTable.setModel( timelineModel );
 		timelineTable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
@@ -253,35 +231,26 @@ public class HabitsPanel extends JComponent {
 		}
 		
 		TableModel	timelineDataModel = new TableModel() {
-			@Override
-			public void addTableModelListener(TableModelListener l) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void addTableModelListener(TableModelListener l) {}
 
-			@Override
 			public Class<?> getColumnClass(int columnIndex) {
 				return String.class;
 			}
 
-			@Override
 			public int getColumnCount() {
 				return 365;
 			}
 
-			@Override
 			public String getColumnName(int arg0) {
 				cal.setTimeInMillis( time+arg0*Timer.ONE_DAY );
 				return cal.get( Calendar.WEEK_OF_YEAR ) + "";
 			}
 
-			@Override
 			public int getRowCount() {
 				// TODO Auto-generated method stub
 				return min;
 			}
 
-			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
 				List<String> dayList = eatList.get(columnIndex);
 				if( dayList != null && rowIndex < dayList.size() ) {
@@ -290,19 +259,16 @@ public class HabitsPanel extends JComponent {
 				return null;
 			}
 
-			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
 				// TODO Auto-generated method stub
 				return false;
 			}
 
-			@Override
 			public void removeTableModelListener(TableModelListener l) {
 				// TODO Auto-generated method stub
 				
 			}
 
-			@Override
 			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
 				// TODO Auto-generated method stub
 				
@@ -313,14 +279,11 @@ public class HabitsPanel extends JComponent {
 		
 		try {
 			dropTarget.addDropTargetListener( new DropTargetListener(){
-			
-				@Override
 				public void dropActionChanged(DropTargetDragEvent dtde) {
 					// TODO Auto-generated method stub
 					
 				}
 			
-				@Override
 				public void drop(DropTargetDropEvent dtde) {
 					Point loc = dtde.getLocation();
 					Point offset = timelineDataScroll.getViewport().getViewPosition();
@@ -356,19 +319,16 @@ public class HabitsPanel extends JComponent {
 					}
 				}
 			
-				@Override
 				public void dragOver(DropTargetDragEvent dtde) {
 					// TODO Auto-generated method stub
 					
 				}
 			
-				@Override
 				public void dragExit(DropTargetEvent dte) {
 					// TODO Auto-generated method stub
 					
 				}
 			
-				@Override
 				public void dragEnter(DropTargetDragEvent dtde) {
 					// TODO Auto-generated method stub
 					
