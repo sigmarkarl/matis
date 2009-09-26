@@ -4,6 +4,9 @@ import javax.swing.DropMode;
 import javax.swing.JTable;
 
 public class JCompatTable extends JTable {
+	MySorter	sorter;
+	MyFilter	filter;
+	
 	/**
 	 * 
 	 */
@@ -23,5 +26,17 @@ public class JCompatTable extends JTable {
 	
 	public void setDropMode2( DropMode mode ) {
 		super.setDropMode( mode );
+	}
+	
+	public void updateFilter() {
+		sorter.setRowFilter( filter );
+	}
+	
+	public void setFilter(MyFilter filter) {
+		this.filter = filter;
+	}
+	
+	public void setFilter( MyFilter filter, JCompatTable table ) {
+		this.filter = filter;
 	}
 }

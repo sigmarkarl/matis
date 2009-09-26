@@ -125,16 +125,16 @@ public class VitaminPanel extends JComponent {
 			
 			double[] dvals = null;
 			if( waterSol ) {
-				float cc = parent.stuffYou( "Vitamin C" );
-				float bt1 = parent.stuffYou( "Vitamin B1" );
-				float bt2 = parent.stuffYou( "Vitamin B2" );
-				float bt6 = parent.stuffYou( "Vitamin B6" );
-				float bt12 = parent.stuffYou( "Vitamin B12" );
-				String ccval = rdsPanel.getRds("C/mg");
-				String bb1val = rdsPanel.getRds("B1/mg");
-				String bb2val = rdsPanel.getRds("B2/mg");
-				String bb6val = rdsPanel.getRds("B6/mg");
-				String bb12val = rdsPanel.getRds("B12/ug");
+				float cc = (float)Math.max( parent.stuffYou( "Vitamin C" ), 0.0 );
+				float bt1 = (float)Math.max( parent.stuffYou( "Vitamin B1" ), 0.0 );
+				float bt2 = (float)Math.max( parent.stuffYou( "Vitamin B2" ), 0.0 );
+				float bt6 = (float)Math.max( parent.stuffYou( "Vitamin B6" ), 0.0 );
+				float bt12 = (float)Math.max( parent.stuffYou( "Vitamin B12" ), 0.0 );
+				String ccval = rdsPanel.getRds("C - mg");
+				String bb1val = rdsPanel.getRds("B1 - mg");
+				String bb2val = rdsPanel.getRds("B2 - mg");
+				String bb6val = rdsPanel.getRds("B6 - mg");
+				String bb12val = rdsPanel.getRds("B12 - ug");
 			
 				if( cc >= 0.0f && ccval != null ) {
 					float cval = Float.parseFloat( ccval );
@@ -153,14 +153,14 @@ public class VitaminPanel extends JComponent {
 					dvals = dvalstmp;
 				}			
 			} else {
-				float va = parent.stuffYou( "Vitamin A" );
-				float vd = parent.stuffYou( "Vitamin D" );
-				float ve = parent.stuffYou( "Vitamin E" );
-				float vk = parent.stuffYou( "Vitamin K" );
-				String vas = rdsPanel.getRds("A/RJ");
-				String vds = rdsPanel.getRds("D/mg");
-				String ves = rdsPanel.getRds("E/mg");
-				String vks = rdsPanel.getRds("K/mg");
+				float va = (float)Math.max( parent.stuffYou( "Vitamin A" ), 0.0 );
+				float vd = (float)Math.max( parent.stuffYou( "Vitamin D" ), 0.0 );
+				float ve = (float)Math.max( parent.stuffYou( "Vitamin E" ), 0.0 );
+				float vk = (float)Math.max( parent.stuffYou( "Vitamin K" ), 0.0 );
+				String vas = rdsPanel.getRds("A - RJ");
+				String vds = rdsPanel.getRds("D - ug");
+				String ves = rdsPanel.getRds("E - α-TJ");
+				String vks = rdsPanel.getRds("K - mg");
 			
 				if( va >= 0.0f && vas != null ) {
 					float vaval = Float.parseFloat( vas );
@@ -356,7 +356,7 @@ public class VitaminPanel extends JComponent {
 			}
 			
 			if( waterSol ) {
-				if( lang.equals("IS") ) str = "C - ascorbinsýra";
+				if( lang.equals("IS") ) str = "C - vítamín";
 				else str = "C";
 				int strw = g2.getFontMetrics().stringWidth(str);
 				g2.drawString(str, (19*w)/20-strw-hh/2, (1*this.getHeight())/25+hh/4 );

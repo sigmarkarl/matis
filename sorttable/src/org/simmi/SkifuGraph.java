@@ -88,8 +88,6 @@ public class SkifuGraph extends JComponent {
 			if( ff != null ) {
 				f = ff;
 			}
-		} else {
-			System.err.println( whr+" not found" );
 		}
 		
 		return f;
@@ -148,15 +146,23 @@ public class SkifuGraph extends JComponent {
 			int i = 0;
 			double total = 100.0;
 			double sum = 0.0;
+			double checksum = 0.0;
 			for( float f : val ) {
 				if( !using.get(i++) ) {
 					total -= f;
 				} else {
 					sum += f;
 				}
+				
+				checksum += f;
 			}
 			if( !using.get( val.length ) ) total = sum;
 			
+			if( checksum > 100.0 ) {
+				for( int k = 0; k < val.length; k++ ) {
+					val[k] = (float)((val[k]*100.0)/checksum);
+				}
+			}
 			/*for( float f : val ) {
 				if( using.get(i) ) total += f;
 				i++;
@@ -299,7 +305,7 @@ public class SkifuGraph extends JComponent {
 				g2.drawLine((19*w)/20, h-((1)*h)/25-hh/2, (19*w)/20+hh, h-((1)*h)/25-hh/2+hh);
 				g2.drawLine((19*w)/20, h-((1)*h)/25-hh/2+hh, (19*w)/20+hh, h-((1	)*h)/25-hh/2);
 			}				
-			String str = "Ekki mælt";
+			String str = "Afgangur";
 			int strw = g2.getFontMetrics().stringWidth(str);
 			g2.drawString(str, (19*w)/20-strw-hh/2, this.getHeight()-((i-5)*this.getHeight())/25+hh/4 );
 		}

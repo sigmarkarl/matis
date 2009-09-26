@@ -2,6 +2,7 @@ package org.simmi;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GradientPaint;
@@ -17,6 +18,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,11 +32,14 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
 
 public class Intro extends JApplet {
 	JComponent 			c;
 	JComponent			subc;
-	JEditorPane			e;
+	//JEditorPane			e;
+	JEditorPane			ed;
 	BufferedImage		img;
 	Image				mimg;
 	Image				fimg;
@@ -67,7 +72,7 @@ public class Intro extends JApplet {
 			url = this.getClass().getResource("/bkl.png");
 			kimg = ImageIO.read( url );
 			
-			url = this.getClass().getResource("/isgem.png");
+			/*url = this.getClass().getResource("/isgem.png");
 			imgs[0] = ImageIO.read( url );
 			url = this.getClass().getResource("/isgem_img.png");
 			imgs[1] = ImageIO.read( url );
@@ -76,7 +81,7 @@ public class Intro extends JApplet {
 			url = this.getClass().getResource("/isgem_mynd2.png");
 			imgs[3] = ImageIO.read( url );
 			url = this.getClass().getResource("/isgem_base.png");
-			imgs[4] = ImageIO.read( url );
+			imgs[4] = ImageIO.read( url );*/
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -106,6 +111,14 @@ public class Intro extends JApplet {
 			i++;
 		}
 		//buttons.add( new FancyButton() ) {
+	}
+	
+	public void selectTabIndex( int index ) {
+		if( st != null ) st.selectTabIndex(index);
+	}
+	
+	public void selectTabName( String name ) {
+		if( st != null ) st.selectTabName( name );
 	}
 	
 	public class FancyButton extends JComponent {
@@ -223,8 +236,8 @@ public class Intro extends JApplet {
 			int cw = 22*w/24;
 			int ch = 16*h/18;
 			c.setBounds( Math.max(0, (w-cw)/2 ), Math.max(0, (h-ch)/2 ), cw, ch );
-			e.setBounds( (w-cw)/2, (h+ch)/2, cw, 30 );
-			if( st.ed != null ) st.ed.setBounds( (w-cw)/2, (h+ch)/2, cw, 60 );
+			//e.setBounds( (w-cw)/2, (h+ch)/2, cw, 30 );
+			if( ed != null ) ed.setBounds( (w-cw)/2, (h+ch)/2, cw, 60 );
 		}
 		super.setBounds(x, y, w, h);
 	}
@@ -255,7 +268,7 @@ public class Intro extends JApplet {
 			e.printStackTrace();
 		}
 		
-		Dimension d	= new Dimension(900,30);
+		/*Dimension d	= new Dimension(900,30);
 		e = new JEditorPane();
 		e.setEditable( false );
 		e.setBackground( new Color(0,0,0,0) );
@@ -263,7 +276,43 @@ public class Intro extends JApplet {
 		e.setSize( d );
 		e.setContentType("text/html");
 		//e.setText("<html><body><center>Copyright 2009, Matis, ohf</center></body></html>");
-		e.setText("<html><body><center><span style=\"color:white\">Copyright 2009, Matis, ohf</span></center></body></html>");
+		e.setText("<html><body><center><span style=\"color:white\">Copyright 2009, Matis, ohf</span></center></body></html>");*/
+		
+		ed = new JEditorPane();
+		ed.setContentType("text/html");
+		ed.setEditable(false);
+		ed.setText("<html><body><center><table cellpadding=0><tr><td><img src=\"http://test.matis.is/isgem/Matis_logo.jpg\" hspace=\"5\" width=\"32\" height=\"32\">"
+						+ "</td><td align=\"center\"><a href=\"http://www.matis.is\">Matís ohf.</a> - Borgartún 21 | 105 Reykjavík - Sími 422 50 00 | Fax 422 50 01 - <a href=\"mailto:matis@matis.is\">matis@matis.is</a><br><a href=\"http://www.matis.is/ISGEM/is/skyringar/\">Hjálp</a> - "
+						+ ((st.sessionKey != null && st.sessionKey.length() > 1) ? "<a href=\"http://test.matis.is/isgem\">Allur glugginn</a>"
+								: "<a href=\"http://apps.facebook.com/matisgem\">Facebook</a>")
+						// +" - <a href=\"dark\">Dark</a> - <a href=\"light\">Light</a>"
+						+ "</td></tr></table></center></body></html>");
+		Dimension d = new Dimension(1000, 42);
+		ed.setPreferredSize(d);
+		ed.setSize(d);
+		ed.addHyperlinkListener(new HyperlinkListener() {
+			public void hyperlinkUpdate(HyperlinkEvent e) {
+				if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+					if (e.getDescription().equals("dark")) {
+						SortTable.lof = "org.jvnet.substance.skin.SubstanceRavenGraphiteLookAndFeel";
+						SortTable.updateLof();
+					} else if (e.getDescription().equals("light")) {
+						SortTable.lof = "com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel";
+						SortTable.updateLof();
+					} else {
+						try {
+							Desktop.getDesktop().browse(e.getURL().toURI());
+						} catch (IOException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						} catch (URISyntaxException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+					}
+				}
+			}
+		});
 		
 		subc = new JComponent() {
 			public void paintComponent( Graphics g ) {
@@ -403,8 +452,10 @@ public class Intro extends JApplet {
 				
 				Intro.this.add( c );
 				
-				st.ed.setBackground( new Color(0,0,0,0) );
-				Intro.this.add( st.ed );
+				if( ed != null ) {
+					ed.setBackground( new Color(0,0,0,0) );
+					Intro.this.add( ed );
+				}
 			}
 		});
 		

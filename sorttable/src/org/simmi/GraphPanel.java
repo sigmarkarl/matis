@@ -19,7 +19,6 @@ import java.io.PrintStream;
 import javax.swing.Icon;
 import javax.swing.JComponent;
 import javax.swing.JTabbedPane;
-import javax.swing.JTable;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -43,7 +42,10 @@ public class GraphPanel extends JTabbedPane {
 
 	public float stuffYou( String whr ) {
 		int r = leftTable.getSelectedRow();
-		if( r >= 0 && r < leftTable.getRowCount() ) return stuffYou( r, whr );
+		if( r >= 0 && r < leftTable.getRowCount() ) {
+			r = leftTable.convertRowIndexToModel(r);
+			return stuffYou( r, whr );
+		}
 		return -1.0f;
 	}
 	
