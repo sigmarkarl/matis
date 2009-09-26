@@ -38,22 +38,43 @@ public class RdsPanel extends JSplitPane {
 	public String getRds( String colname ) {
 		String ret = null;
 		
-		int age = fp.getSelectedAge();
-		String sex = fp.getSelectedSex();
+		int r = table.getSelectedRow();
+		
 		int base = 4;
-		if( sex != null && sex.equals("Karl") ) base += 8;
-		if( age < 14 ) base+=1;
-		else if( age < 18 ) base+=2;
-		else if( age < 31 ) base+=3;
-		else if( age < 61 ) base+=4;
-		else base+=5;
+		if( r >= 0 ) {
+			base = r+2;
+		} else {
+			int age = fp.getSelectedAge();
+			String sex = fp.getSelectedSex();
+			if( sex != null && sex.equals("Karl") ) base += 8;
+			if( age < 14 ) base+=1;
+			else if( age < 18 ) base+=2;
+			else if( age < 31 ) base+=3;
+			else if( age < 61 ) base+=4;
+			else base+=5;
+		}
 		
 		int i = 0;
 		String colName = model.getColumnName(i);
-		while( !colname.contains(colName) ) {
-			i++;
-			if( i == model.getColumnCount() ) break;
-			colName = model.getColumnName(i);
+		
+		boolean one = false;
+		if( colname.length() == 1 ) {
+			String[] spl = colName.split("[- ]+");
+			colName = spl[0];
+			while( !colName.equals(colname) ) {
+				i++;
+				if( i == model.getColumnCount() ) break;
+				
+				colName = model.getColumnName(i);
+				spl = colName.split("[- ]+");
+				colName = spl[0];
+			}
+		} else {
+			while( !colName.contains(colname) ) {
+				i++;
+				if( i == model.getColumnCount() ) break;
+				colName = model.getColumnName(i);
+			}
 		}
 		
 		if( i < model.getColumnCount() ) {
@@ -121,7 +142,7 @@ public class RdsPanel extends JSplitPane {
 				return rows.get(0).length;
 			}
 			public String getColumnName(int columnIndex) {
-				return rows.get(0)[columnIndex] + "/" + rows.get(1)[columnIndex];
+				return rows.get(0)[columnIndex] + " - " + rows.get(1)[columnIndex];
 			}
 			public int getRowCount() {
 				return Math.max( 0, rows.size()-2 );

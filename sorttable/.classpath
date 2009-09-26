@@ -5,5 +5,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="substance.jar"/>
 	<classpathentry kind="lib" path="/opt/swingx/swingx-1.0/dist/swingx-1.0.jar"/>
+	<classpathentry kind="lib" path="/usr/lib/jvm/java-6-sun-1.6.0.15/jre/lib/plugin.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -72,7 +72,7 @@ public class DetailPanel extends JSplitPane {
 		groupMap.put("2", "Fituleysanleg vítamín");
 		groupMap.put("3", "Vatnsleysanleg vítamín");
 		groupMap.put("4", "Steinefni");
-		groupMap.put("5", "Málmar");
+		groupMap.put("5", "Snefilsteinefni");
 		groupMap.put("6", "Fitusýrur");
 		groupMap.put("7", "Nítröt");
 		
@@ -223,7 +223,20 @@ public class DetailPanel extends JSplitPane {
 					}
 					
 					if( groupMap.containsKey(ind) ) {
-						return groupMap.get( ind );
+						String ret = groupMap.get( ind );
+						if( ret.equals("Annað") ) {
+							String efni = ngroupList.get( rowIndex );
+							if( efni.contains("fitus") || efni.contains("cis") || efni.contains("trans") ) {
+								return "Fitusýrur";
+							} else if( efni.contains("sykur") || efni.contains("Sykrur") || efni.contains("Trefjaefni") ) {
+								return "Orkuefni";
+							} else if( efni.contains("Vatn") ) {
+								return "Vatn";
+							} else if( efni.contains("Kólesteról") ) {
+								return "Fituefni";
+							}
+						}
+						return ret;
 					} else return "Óþekkt";
 				} else if( columnIndex == 2 ) {
 					Object[]	obj = stuff.get(1);
@@ -271,22 +284,37 @@ public class DetailPanel extends JSplitPane {
 				} else if( columnIndex == 4 ) {
 					String efni = ngroupList.get( rowIndex );
 					if( efni.equals("Fita, alls") ) {
-						String 	val = rdsp.getRds( "Orka-Venjul/kCal" );
-						int		kcal = Integer.parseInt( val );
+						String 	val = rdsp.getRds( "Orka - kcal" );
+						int		kcal = 0;
+						try {
+							kcal = Integer.parseInt( val );
+						} catch( Exception e ) {
+							
+						}
 						double	kj = 4.184*kcal;
 						double	d = kj*0.3;
 						double	g = d / 37.0;
 						return (float)(Math.floor(10.0*g)/10.0);
 					} else if( efni.equals("Prótein, alls") ) {
-						String 	val = rdsp.getRds( "Orka-Venjul/kCal" );
-						int		kcal = Integer.parseInt( val );
+						String 	val = rdsp.getRds( "Orka - kcal" );
+						int		kcal = 0;
+						try {
+							kcal = Integer.parseInt( val );
+						} catch( Exception e ) {
+							
+						}
 						double	kj = 4.184*kcal;
 						double	d = kj*0.15;
 						double	g = d / 17.0;
 						return (float)(Math.floor(10.0*g)/10.0);
 					} else if( efni.equals("Kolvetni, alls") ) {
-						String 	val = rdsp.getRds( "Orka-Venjul/kCal" );
-						int		kcal = Integer.parseInt( val );
+						String 	val = rdsp.getRds( "Orka - kcal" );
+						int		kcal = 0;
+						try {
+							kcal = Integer.parseInt( val );
+						} catch( Exception e ) {
+							
+						}
 						double	kj = 4.184*kcal;
 						double	d = kj*0.55;
 						double	g = d / 17.0;
@@ -301,10 +329,15 @@ public class DetailPanel extends JSplitPane {
 					String[] split = efni.split("[,-]+");
 					Object[]	obj = stuff.get(1);
 					Object ostr = obj[ rowIndex+2 ];
-					String rdsStr = split[0]+"/"+ostr;
+					String rdsStr = split[0];//+" - "+ostr;
 					String val = rdsp.getRds( rdsStr );
 					if( val != null ) {
-						return Float.parseFloat(val);
+						try {
+							float f = Float.parseFloat(val);
+							return f;
+						} catch( Exception e ) {
+							
+						}
 					}
 					return null;
 				} else {

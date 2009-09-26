@@ -15,7 +15,6 @@ import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -43,8 +42,8 @@ import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableModel;
 
-import org.netbeans.saas.RestConnection;
 import org.netbeans.saas.CompatResponse;
+import org.netbeans.saas.RestConnection;
 
 public class FriendsPanel extends JScrollPane {
 	private final String apiKey = "d8993947d6a37b4bf754d2a578025c31";

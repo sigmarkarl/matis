@@ -1,5 +1,6 @@
 package org.simmi;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.Graphics;
@@ -23,7 +24,14 @@ import javax.imageio.ImageIO;
 import javax.swing.JApplet;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.JSpinner;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.TransferHandler;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -34,6 +42,7 @@ public class Parentage extends JApplet {
 	BufferedImage	xlsImg;
 	JComponent		xlsComp;
 	XSSFWorkbook	workbook;
+	int				villur = 0;
 	
 	public Parentage() {
 		super();
@@ -46,7 +55,24 @@ public class Parentage extends JApplet {
 		}
 	}
 	
+	static String lof = "com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel";
 	public void init() {
+		try {
+			UIManager.setLookAndFeel(lof);
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InstantiationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnsupportedLookAndFeelException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		this.getContentPane().setBackground( Color.white );
 		xlsComp = new JComponent() {
 			@Override
@@ -63,7 +89,22 @@ public class Parentage extends JApplet {
 			}
 		};
 		c.add( xlsComp );
+		
+		JComponent v = new JComponent() {};
+		v.setLayout( new BorderLayout() );
+		final JSpinner 	spinner = new JSpinner( new SpinnerNumberModel(0, 0, 3, 1));
+		spinner.addChangeListener( new ChangeListener() {
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				villur = (Integer)spinner.getValue();
+			}
+		});
+		JLabel		label = new JLabel( "Villur: " );
+		v.add( spinner );
+		v.add( label, BorderLayout.WEST );
+		this.setLayout( new BorderLayout() );
 		this.add( c );
+		this.add( v, BorderLayout.SOUTH );
 		
 		TransferHandler th = new TransferHandler() {
 			@Override
@@ -211,6 +252,7 @@ public class Parentage extends JApplet {
 		XSSFRow 	b_row = b_sheet.getRow(0);
 		while( b_row.getCell(cellcount) != null ) cellcount++;
 		//markercount -= 2;
+		System.err.println( cellcount );
 		
 		Set<XSSFRow>	set = new HashSet<XSSFRow>();
 		List<XSSFRow>	mlist = new ArrayList<XSSFRow>();
@@ -222,221 +264,237 @@ public class Parentage extends JApplet {
 		int br = 1;
 		b_row = b_sheet.getRow(br++);		
 		while( b_row != null ) {
-			String bname = b_row.getCell(0).getStringCellValue();
-			System.err.println( bname );
-			XSSFCell rcell = rrow.createCell( 0 );
-			//rcell.setCellType( XSSFCell.CELL_TYPE_STRING );
-			rcell.setCellValue( bname );
-			rrow = p_sheet.createRow(rr++);
-			
-			mlist.clear();
-			int mr = 1;
-			XSSFRow 	m_row = m_sheet.getRow(mr++);
-			while( m_row != null ) {
-				int c = 2;
+			if( b_row.getCell(0) != null && b_row.getCell(0).getStringCellValue().length() > 0 ) {
+				String bname = b_row.getCell(0).getStringCellValue();
+				System.err.println( bname );
+				XSSFCell rcell = rrow.createCell( 0 );
+				//rcell.setCellType( XSSFCell.CELL_TYPE_STRING );
+				rcell.setCellValue( bname );
+				rrow = p_sheet.createRow(rr++);
 				
-				int dcount = 0;
-				int	mcount = 0;
-				while( c < cellcount ) {
-					XSSFCell	b_a1 = b_row.getCell(c);
-					XSSFCell	b_a2 = b_row.getCell(c+1);
-					XSSFCell	m_a1 = m_row.getCell(c-1);
-					XSSFCell	m_a2 = m_row.getCell(c);
-					
-					boolean nb = m_a1 == null || m_a2 == null || b_a1 == null || b_a2 == null;
-					
-					if( !nb ) {
-						String ba1 = b_a1.getStringCellValue();
-						String ba2 = b_a2.getStringCellValue();
-						String ma1 = m_a1.getStringCellValue();
-						String ma2 = m_a2.getStringCellValue();
-					
-						boolean mb = ma1.equals("") || ma2.equals("") || ba1.equals("") || ba2.equals("");
-						boolean db = ma1.equals( ba1 ) || ma1.equals( ba2 ) || ma2.equals( ba1 ) || ma2.equals( ba2 );
+				mlist.clear();
+				int mr = 1;
+				XSSFRow 	m_row = m_sheet.getRow(mr++);
+				while( m_row != null ) {
+					if( m_row.getCell(0) != null && m_row.getCell(0).getStringCellValue().length() > 0 ) {
+						int c = 2;
 						
-						if( mb ) {
-							mcount++;
-						} else if( db ) {
-							dcount++;
-						}
-					} else {
-						mcount++;
-					}
-					
-					c += 2;
-				}
-				if( mcount+dcount == (cellcount-2)/2 ) {
-					XSSFCell cell = m_row.getCell(0);
-					
-					if( cell != null ) {
-						mlist.add(m_row);
-					}
-				}
-				m_row = m_sheet.getRow(mr++);
-			}
-			
-			flist.clear();
-			int fr = 1;
-			XSSFRow 	f_row = f_sheet.getRow(fr++);
-			while( f_row != null ) {
-				int c = 2;
-				
-				int dcount = 0;
-				int	mcount = 0;
-				while( c < cellcount ) {
-					XSSFCell	b_a1 = b_row.getCell(c);
-					XSSFCell	b_a2 = b_row.getCell(c+1);
-					XSSFCell	f_a1 = f_row.getCell(c-1);
-					XSSFCell	f_a2 = f_row.getCell(c);
-					
-					boolean nb = f_a1 == null || f_a2 == null || b_a1 == null || b_a2 == null;
-					
-					if( !nb ) {
-						String ba1 = b_a1.getStringCellValue();
-						String ba2 = b_a2.getStringCellValue();
-						String fa1 = f_a1.getStringCellValue();
-						String fa2 = f_a2.getStringCellValue();
-					
-						boolean mb = fa1.equals("") || fa2.equals("") || ba1.equals("") || ba2.equals("");
-						boolean db = fa1.equals( ba1 ) || fa1.equals( ba2 ) || fa2.equals( ba1 ) || fa2.equals( ba2 );
-						
-						if( mb ) {
-							mcount++;
-						} else if( db ) {
-							dcount++;
-						}
-					} else {
-						mcount++;
-					}
-					
-					c += 2;
-				}
-				if( mcount+dcount == (cellcount-2)/2 ) {
-					XSSFCell cell = f_row.getCell(0);
-					
-					if( cell != null ) {
-						flist.add(f_row);
-					}
-				}
-				f_row = f_sheet.getRow(fr++);
-			}
-			
-			set.clear();
-			for( XSSFRow mrow : mlist ) {
-				for( XSSFRow frow : flist ) {
-					int c = 2;
-					int dcount = 0;
-					int	mcount = 0;
-					while( c < cellcount ) {
-						XSSFCell	b_a1 = b_row.getCell(c);
-						XSSFCell	b_a2 = b_row.getCell(c+1);
-						XSSFCell	m_a1 = mrow.getCell(c-1);
-						XSSFCell	m_a2 = mrow.getCell(c);
-						XSSFCell	f_a1 = frow.getCell(c-1);
-						XSSFCell	f_a2 = frow.getCell(c);
-						
-						String ba1 = b_a1 == null || b_a1.getStringCellValue().length() == 0 ? null : b_a1.getStringCellValue();
-						String ba2 = b_a2 == null || b_a2.getStringCellValue().length() == 0 ? null : b_a2.getStringCellValue();
-						String ma1 = m_a1 == null || m_a1.getStringCellValue().length() == 0 ? null : m_a1.getStringCellValue();
-						String ma2 = m_a2 == null || m_a2.getStringCellValue().length() == 0 ? null : m_a2.getStringCellValue();
-						String fa1 = f_a1 == null || f_a1.getStringCellValue().length() == 0 ? null : f_a1.getStringCellValue();
-						String fa2 = f_a2 == null || f_a2.getStringCellValue().length() == 0 ? null : f_a2.getStringCellValue();
-						
-						boolean nb = ma1 == null || ma2 == null || fa1 == null || fa2 == null || ba1 == null || ba2 == null;
-						if( nb ) {
-							boolean mb = false;
+						int dcount = 0;
+						int	mcount = 0;
+						while( c < cellcount ) {
+							XSSFCell	b_a1 = b_row.getCell(c);
+							XSSFCell	b_a2 = b_row.getCell(c+1);
+							XSSFCell	m_a1 = m_row.getCell(c-1);
+							XSSFCell	m_a2 = m_row.getCell(c);
 							
-							if( ba1 == null && ba2 == null ) {
-								mb = true;
-							} else if( ba1 == null ) {
-								mb = fa1 == null || fa2 == null || ma1 == null || ma2 == null || fa1.equals(ba2) || fa2.equals(ba2) || ma1.equals(ba2) || ma2.equals(ba2);
-							} else if( ba2 == null ) {
-								mb = fa1 == null || fa2 == null || ma1 == null || ma2 == null || fa1.equals(ba1) || fa2.equals(ba1) || ma1.equals(ba1) || ma2.equals(ba1);
-							} else {
-								if( fa1 == null && fa2 == null ) {
-									mb = ma1 == null || ma2 == null || ma1.equals(ba1) || ma2.equals(ba1) || ma1.equals(ba2) || ma2.equals(ba2);
-								} else if( fa1 == null ) {
-									mb = ma1 == null || ma2 == null || ma1.equals(ba1) || ma2.equals(ba1) || ma1.equals(ba2) || ma2.equals(ba2);
-								} else if( fa2 == null ) {
-									mb = ma1 == null || ma2 == null || ma1.equals(ba1) || ma2.equals(ba1) || ma1.equals(ba2) || ma2.equals(ba2);
+							boolean nb = m_a1 == null || m_a2 == null || b_a1 == null || b_a2 == null;
+							
+							if( !nb ) {
+								String ba1 = b_a1.getStringCellValue();
+								String ba2 = b_a2.getStringCellValue();
+								String ma1 = m_a1.getStringCellValue();
+								String ma2 = m_a2.getStringCellValue();
+							
+								boolean mb = ma1.equals("") || ma2.equals("") || ba1.equals("") || ba2.equals("");
+								boolean db = ma1.equals( ba1 ) || ma1.equals( ba2 ) || ma2.equals( ba1 ) || ma2.equals( ba2 );
+								
+								if( mb ) {
+									mcount++;
+								} else if( db ) {
+									dcount++;
 								}
-							}								
-			
-							if( mb ) {
+							} else {
 								mcount++;
 							}
-						} else {
-							boolean db = 	   (fa1.equals( ba1 ) && (ma1.equals( ba2 ) || ma2.equals( ba2 ))) 
-											|| (fa1.equals( ba2 ) && ma1.equals( ba1 ) || ma2.equals( ba1 ))
-											|| (fa2.equals( ba1 ) && (ma1.equals( ba2 ) || ma2.equals( ba2 ))) 
-											|| (fa2.equals( ba2 ) && ma1.equals( ba1 ) || ma2.equals( ba1 ));
 							
-							if( db ) {
-								dcount++;
+							c += 2;
+						}
+						if( mcount+dcount >= (cellcount-2)/2-villur ) {
+							XSSFCell cell = m_row.getCell(0);
+							
+							if( cell != null ) {
+								mlist.add(m_row);
 							}
 						}
-						
-						c += 2;
 					}
-					if( mcount+dcount == (cellcount-2)/2 ) {
-						XSSFCell mcell = mrow.getCell(0);
-						XSSFCell fcell = frow.getCell(0);
+					m_row = m_sheet.getRow(mr++);
+				}
+				
+				flist.clear();
+				int fr = 1;
+				XSSFRow 	f_row = f_sheet.getRow(fr++);
+				while( f_row != null ) {
+					if( f_row.getCell(0) != null && f_row.getCell(0).getStringCellValue().length() > 0 ) {
+						int c = 2;
 						
-						if( mcell != null && fcell != null ) {
-							String mname = mcell.getStringCellValue();
-							String fname = fcell.getStringCellValue();
-							System.err.println( "\t"+mname+"\t"+fname );
+						int dcount = 0;
+						int	mcount = 0;
+						while( c < cellcount ) {
+							XSSFCell	b_a1 = b_row.getCell(c);
+							XSSFCell	b_a2 = b_row.getCell(c+1);
+							XSSFCell	f_a1 = f_row.getCell(c-1);
+							XSSFCell	f_a2 = f_row.getCell(c);
 							
-							rcell = rrow.createCell( 1 );
-							rcell.setCellValue( mname );
-							rcell = rrow.createCell( 2 );
-							rcell.setCellValue( fname );
-							rrow = p_sheet.createRow(rr++);
+							boolean nb = f_a1 == null || f_a2 == null || b_a1 == null || b_a2 == null;
 							
-							set.add( mrow );
-							set.add( frow );
+							if( !nb ) {
+								String ba1 = b_a1.getStringCellValue();
+								String ba2 = b_a2.getStringCellValue();
+								String fa1 = f_a1.getStringCellValue();
+								String fa2 = f_a2.getStringCellValue();
+							
+								boolean mb = fa1.equals("") || fa2.equals("") || ba1.equals("") || ba2.equals("");
+								boolean db = fa1.equals( ba1 ) || fa1.equals( ba2 ) || fa2.equals( ba1 ) || fa2.equals( ba2 );
+								
+								if( mb ) {
+									mcount++;
+								} else if( db ) {
+									dcount++;
+								}
+							} else {
+								mcount++;
+							}
+							
+							c += 2;
+						}
+						if( mcount+dcount >= (cellcount-2)/2-villur ) {
+							XSSFCell cell = f_row.getCell(0);
+							
+							if( cell != null ) {
+								flist.add(f_row);
+							}
+						}
+						f_row = f_sheet.getRow(fr++);
+					}
+				}
+				
+				set.clear();
+				for( XSSFRow mrow : mlist ) {
+					for( XSSFRow frow : flist ) {
+						int c = 2;
+						int dcount = 0;
+						int	mcount = 0;
+						while( c < cellcount ) {
+							XSSFCell	b_a1 = b_row.getCell(c);
+							XSSFCell	b_a2 = b_row.getCell(c+1);
+							XSSFCell	m_a1 = mrow.getCell(c-1);
+							XSSFCell	m_a2 = mrow.getCell(c);
+							XSSFCell	f_a1 = frow.getCell(c-1);
+							XSSFCell	f_a2 = frow.getCell(c);
+							
+							String ba1 = b_a1 == null || b_a1.getStringCellValue().length() == 0 ? null : b_a1.getStringCellValue();
+							String ba2 = b_a2 == null || b_a2.getStringCellValue().length() == 0 ? null : b_a2.getStringCellValue();
+							String ma1 = m_a1 == null || m_a1.getStringCellValue().length() == 0 ? null : m_a1.getStringCellValue();
+							String ma2 = m_a2 == null || m_a2.getStringCellValue().length() == 0 ? null : m_a2.getStringCellValue();
+							String fa1 = f_a1 == null || f_a1.getStringCellValue().length() == 0 ? null : f_a1.getStringCellValue();
+							String fa2 = f_a2 == null || f_a2.getStringCellValue().length() == 0 ? null : f_a2.getStringCellValue();
+							
+							boolean nb = ma1 == null || ma2 == null || fa1 == null || fa2 == null || ba1 == null || ba2 == null;
+							if( nb ) {
+								boolean mb = false;
+								
+								if( ba1 == null && ba2 == null ) {
+									mb = true;
+								} else if( ba1 == null ) {
+									mb = fa1 == null || fa2 == null || ma1 == null || ma2 == null || fa1.equals(ba2) || fa2.equals(ba2) || ma1.equals(ba2) || ma2.equals(ba2);
+								} else if( ba2 == null ) {
+									mb = fa1 == null || fa2 == null || ma1 == null || ma2 == null || fa1.equals(ba1) || fa2.equals(ba1) || ma1.equals(ba1) || ma2.equals(ba1);
+								} else {
+									if( fa1 == null && fa2 == null ) {
+										mb = ma1 == null || ma2 == null || ma1.equals(ba1) || ma2.equals(ba1) || ma1.equals(ba2) || ma2.equals(ba2);
+									} else if( fa1 == null ) {
+										mb = ma1 == null || ma2 == null || ma1.equals(ba1) || ma2.equals(ba1) || ma1.equals(ba2) || ma2.equals(ba2);
+									} else if( fa2 == null ) {
+										mb = ma1 == null || ma2 == null || ma1.equals(ba1) || ma2.equals(ba1) || ma1.equals(ba2) || ma2.equals(ba2);
+									}
+								}								
+				
+								if( mb ) {
+									mcount++;
+								}
+							} else {
+								boolean db = 	   (fa1.equals( ba1 ) && (ma1.equals( ba2 ) || ma2.equals( ba2 ))) 
+												|| (fa1.equals( ba2 ) && ma1.equals( ba1 ) || ma2.equals( ba1 ))
+												|| (fa2.equals( ba1 ) && (ma1.equals( ba2 ) || ma2.equals( ba2 ))) 
+												|| (fa2.equals( ba2 ) && ma1.equals( ba1 ) || ma2.equals( ba1 ));
+								
+								if( db ) {
+									dcount++;
+								}
+							}
+							
+							c += 2;
+						}
+						if( mcount+dcount >= (cellcount-2)/2-villur ) {
+							XSSFCell mcell = mrow.getCell(0);
+							XSSFCell fcell = frow.getCell(0);
+							
+							if( mcell != null && fcell != null ) {
+								String mname = mcell.getStringCellValue();
+								String fname = fcell.getStringCellValue();
+								System.err.println( "\t"+mname+"\t"+fname );
+								
+								rcell = rrow.createCell( 1 );
+								rcell.setCellValue( mname );
+								rcell = rrow.createCell( 2 );
+								rcell.setCellValue( fname );
+								rrow = p_sheet.createRow(rr++);
+								
+								set.add( mrow );
+								set.add( frow );
+							}
 						}
 					}
 				}
-			}
-			
-			flist.removeAll( set );
-			mlist.removeAll( set );
-			for( XSSFRow r : mlist ) {
-				XSSFCell cell = r.getCell(0);
 				
-				if( cell != null ) {
-					String name = cell.getStringCellValue();
-					System.err.println( "\t"+name );
+				flist.removeAll( set );
+				mlist.removeAll( set );
+				for( XSSFRow r : mlist ) {
+					XSSFCell cell = r.getCell(0);
 					
-					rcell = rrow.createCell( 1 );
-					rcell.setCellValue( name );
-					rrow = p_sheet.createRow(rr++);
+					if( cell != null ) {
+						String name = cell.getStringCellValue();
+						System.err.println( "\t"+name );
+						
+						rcell = rrow.createCell( 1 );
+						rcell.setCellValue( name );
+						rrow = p_sheet.createRow(rr++);
+					}
 				}
-			}
-				
-			for( XSSFRow r : flist ) {
-				XSSFCell cell = r.getCell(0);
-				
-				if( cell != null ) {
-					String name = cell.getStringCellValue();
-					System.err.println( "\t\t"+name );
 					
-					rcell = rrow.createCell( 2 );
-					rcell.setCellValue( name );
-					rrow = p_sheet.createRow(rr++);
+				for( XSSFRow r : flist ) {
+					XSSFCell cell = r.getCell(0);
+					
+					if( cell != null ) {
+						String name = cell.getStringCellValue();
+						System.err.println( "\t\t"+name );
+						
+						rcell = rrow.createCell( 2 );
+						rcell.setCellValue( name );
+						rrow = p_sheet.createRow(rr++);
+					}
 				}
 			}
 			
 			b_row = b_sheet.getRow(br++);
 		}
 		
-		File f = File.createTempFile("tmp", ".xlsx");
-		FileOutputStream fos = new FileOutputStream(f);
-		workbook.write( fos );
-		fos.close();
+		JFileChooser jfc = new JFileChooser();
+		if( jfc.showSaveDialog( this ) == JFileChooser.APPROVE_OPTION ) {
+			File f = jfc.getSelectedFile();
+			FileOutputStream fos = new FileOutputStream(f);
+			workbook.write( fos );
+			fos.close();
+			
+			Desktop.getDesktop().open( f );
+		} else {
+			File f = File.createTempFile("tmp", ".xlsx");
+			FileOutputStream fos = new FileOutputStream(f);
+			workbook.write( fos );
+			fos.close();
 		
-		Desktop.getDesktop().open( f );
+			Desktop.getDesktop().open( f );
+		}
 	}
 	
 	/*int fr = 1;					

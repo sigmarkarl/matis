@@ -173,6 +173,7 @@ public class ImagePanel extends JComponent {
 				Set<String>	ign = new HashSet<String>();
 				ign.add("hrar");
 				ign.add("sodin");
+				ign.add("sodinn");
 				ign.add("jpg");
 				ign.add("sosa");
 				
@@ -193,11 +194,11 @@ public class ImagePanel extends JComponent {
 				}
 				
 				if( val != null ) {
-					if( imageCache.containsKey(val) ) {
-						img = imageCache.get(val);
-						imageNameCache.put(oName, val);
+					String path = "http://test.matis.is/isgem/myndir/"+val;
+					if( imageCache.containsKey(path) ) {
+						img = imageCache.get(path);
+						imageNameCache.put(oName, path);
 					} else {
-						String path = "http://test.matis.is/isgem/myndir/"+val;
 						threadRun(path,oName,leftTable.getSelectedRow());
 					}
 				}
@@ -207,8 +208,8 @@ public class ImagePanel extends JComponent {
 	
 	public void runThread( final String str ) {
 		if( imageNameCache.containsKey(str) ) {
-			String urlstr = imageNameCache.get(str);
-			img = imageCache.get( urlstr );
+			//String urlstr = imageNameCache.get(str);
+			img = imageCache.get( str );
 			ImagePanel.this.repaint();
 		} else {		
 			Thread t = new Thread() {
