@@ -58,6 +58,9 @@ public class FriendsPanel extends JScrollPane {
 	ImageIcon	offIcon;
 	ImageIcon	onIcon;
 	
+	TableModel	model;
+	TableModel	nullmodel;
+	
 	public String sign(String[][] params) throws IOException {
         return sign( secret, params);
     }
@@ -212,6 +215,8 @@ public class FriendsPanel extends JScrollPane {
 		String stopTag = "</user>";
 		int ustart = uinfo.indexOf(startTag);
 		
+		friendList.clear();
+		
 		if( ustart != -1 ) {
 			final String[] uval = uinfo.substring( ustart+startTag.length(), uinfo.lastIndexOf(stopTag) ).split(stopTag+"\n  "+startTag);
 			for( int i = 0; i < uval.length; i++ ) {
@@ -247,7 +252,7 @@ public class FriendsPanel extends JScrollPane {
 				stop = xmling.indexOf("</pic>");
 				if( stop != -1 ) {
 					final String urlstr = xmling.substring( start, stop );
-					
+					//System.err.println( stop );
 					Thread t = new Thread() {
 						public void run() {
 							try {
@@ -281,6 +286,17 @@ public class FriendsPanel extends JScrollPane {
 								
 								table.revalidate();
 								table.repaint();
+								/*if( table.getModel() != nullmodel ) {
+									table.setAutoCreateColumnsFromModel( false );
+									table.setModel( nullmodel );
+								}
+								if( model != null && model.getRowCount() > 0 ) {
+									table.setAutoCreateColumnsFromModel( true );
+									table.setModel( model );
+									System.err.println( model.getColumnCount() + "  " + model.getRowCount() );
+									table.getColumnModel().getColumn(4).setCellRenderer(new IconRenderer());
+									table.getColumnModel().getColumn(5).setCellRenderer(new IconRenderer());
+								}*/
 							} catch (MalformedURLException e) {
 								fres[5] = new ImageIcon();
 								e.printStackTrace();
@@ -325,31 +341,9 @@ public class FriendsPanel extends JScrollPane {
 		}
 	};
 	
-	char[]	cbuf = new char[50000];
-	public FriendsPanel( String sessionKey, String currentUser ) {
-		Color cl = new Color( 0,0,0,0 );
-		
-		BufferedImage	on = new BufferedImage(24, 24, BufferedImage.TYPE_INT_ARGB );
-		Graphics2D g = (Graphics2D)on.getGraphics();
-		g.setRenderingHint( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON );
-		g.setColor( cl );
-		g.fillRect(0, 0, 24, 24);
-		g.setColor( Color.green );
-		g.fillOval(0, 0, 24, 24);
-		g.dispose();
-		onIcon = new ImageIcon( on );
-		
-		BufferedImage	off = new BufferedImage(24, 24, BufferedImage.TYPE_INT_ARGB );
-		g = (Graphics2D)off.getGraphics();
-		g.setRenderingHint( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON );
-		g.setColor( cl );
-		g.fillRect(0, 0, 24, 24);
-		g.setColor( Color.red );
-		g.fillOval(0, 0, 24, 24);
-		g.dispose();
-		offIcon = new ImageIcon( off );
-		
+	public void createFriendsModel( String sessionKey, String currentUser ) {
 		String xml = null;
+		
 		if( sessionKey != null && sessionKey.length() > 0 ) {
 			xml = getFriendsXml( sessionKey, currentUser );
 		}
@@ -394,11 +388,94 @@ public class FriendsPanel extends JScrollPane {
 			}
 		}
 		if( xml != null ) parseFriendsXml( xml );
+	}
+	
+	char[]	cbuf = new char[50000];
+	public FriendsPanel( String sessionKey, String currentUser ) {
+		nullmodel = new TableModel() {
+			
+			@Override
+			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void removeTableModelListener(TableModelListener l) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public boolean isCellEditable(int rowIndex, int columnIndex) {
+				// TODO Auto-generated method stub
+				return false;
+			}
+			
+			@Override
+			public Object getValueAt(int rowIndex, int columnIndex) {
+				// TODO Auto-generated method stub
+				return null;
+			}
+			
+			@Override
+			public int getRowCount() {
+				// TODO Auto-generated method stub
+				return 0;
+			}
+			
+			@Override
+			public String getColumnName(int columnIndex) {
+				// TODO Auto-generated method stub
+				return null;
+			}
+			
+			@Override
+			public int getColumnCount() {
+				// TODO Auto-generated method stub
+				return 0;
+			}
+			
+			@Override
+			public Class<?> getColumnClass(int columnIndex) {
+				// TODO Auto-generated method stub
+				return null;
+			}
+			
+			@Override
+			public void addTableModelListener(TableModelListener l) {
+				// TODO Auto-generated method stub
+				
+			}
+		};
 		
-		TableModel model = new TableModel() {
+		Color cl = new Color( 0,0,0,0 );
+		
+		BufferedImage	on = new BufferedImage(24, 24, BufferedImage.TYPE_INT_ARGB );
+		Graphics2D g = (Graphics2D)on.getGraphics();
+		g.setRenderingHint( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON );
+		g.setColor( cl );
+		g.fillRect(0, 0, 24, 24);
+		g.setColor( Color.green );
+		g.fillOval(0, 0, 24, 24);
+		g.dispose();
+		onIcon = new ImageIcon( on );
+		
+		BufferedImage	off = new BufferedImage(24, 24, BufferedImage.TYPE_INT_ARGB );
+		g = (Graphics2D)off.getGraphics();
+		g.setRenderingHint( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON );
+		g.setColor( cl );
+		g.fillRect(0, 0, 24, 24);
+		g.setColor( Color.red );
+		g.fillOval(0, 0, 24, 24);
+		g.dispose();
+		offIcon = new ImageIcon( off );
+		
+		createFriendsModel( sessionKey, currentUser );
+		model = new TableModel() {
 			public void addTableModelListener(TableModelListener arg0) {}
 
-			public Class<?> getColumnClass(int arg0) {
+			public Class<?> getColumnClass(int arg0) {				
 				if( arg0 == 0 ) return Boolean.class;
 				else if( arg0 == 1 ) return String.class;
 				else if( arg0 == 2 ) return Date.class;
@@ -408,18 +485,18 @@ public class FriendsPanel extends JScrollPane {
 				return null;
 			}
 
-			public int getColumnCount() {
+			public int getColumnCount() {				
 				return 6;
 			}
 
-			public String getColumnName(int arg0) {
+			public String getColumnName(int arg0) {				
 				if( arg0 == 0 ) return "Val";
 				else if( arg0 == 1 ) return "Nafn";
 				else if( arg0 == 2 ) return "Fæðingardagur";
 				else if( arg0 == 3 ) return "Kyn";
 				else if( arg0 == 4 ) return "Mynd";
 				else if( arg0 == 5 ) return "Notandi";
-				return null;
+				return "";
 			}
 
 			public int getRowCount() {
@@ -428,11 +505,12 @@ public class FriendsPanel extends JScrollPane {
 
 			public Object getValueAt(int arg0, int arg1) {
 				Object[] obj = friendList.get(arg0);
-				return obj[arg1+1];
+				Object o = obj[arg1+1];
+				return o;
 			}
 
 			public boolean isCellEditable(int arg0, int arg1) {
-				if( arg1 == 0 ) return true;
+				if( arg1 == 0 && friendList.size() > 0 ) return true;
 				return false;
 			}
 
@@ -504,5 +582,22 @@ public class FriendsPanel extends JScrollPane {
 		table.setComponentPopupMenu( popup );
 		
 		this.setViewportView( table );
+	}
+	
+	public void nullModel() {
+		if( table.getModel() != nullmodel ) {
+			table.setModel( nullmodel );
+		}
+		table.repaint();
+	}
+
+	public void updateModel() {
+		if( table.getModel() != nullmodel ) {
+			table.setModel( nullmodel );
+		}
+		table.setModel( model );
+		table.getColumnModel().getColumn(4).setCellRenderer(new IconRenderer());
+		table.getColumnModel().getColumn(5).setCellRenderer(new IconRenderer());
+		table.repaint();
 	}
 }

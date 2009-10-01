@@ -121,6 +121,10 @@ public class Intro extends JApplet {
 		if( st != null ) st.selectTabName( name );
 	}
 	
+	public void updateFriends( String sessionKey, String currentUser ) {
+		if( st != null ) st.updateFriends(sessionKey, currentUser);
+	}
+	
 	public class FancyButton extends JComponent {
 		Image 	img;
 		String 	text;

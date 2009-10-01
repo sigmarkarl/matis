@@ -19,6 +19,8 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -87,6 +89,7 @@ public class SortTable extends JApplet {
 	JTextField field;
 	JTabbedPane tabbedPane;
 	RecipePanel recipe;
+	FriendsPanel friendsPanel;
 
 	ImagePanel imgPanel;
 	JComponent graph;
@@ -674,6 +677,20 @@ public class SortTable extends JApplet {
 				initGui(sessionKey, currentUser);
 			}
 		});
+		
+		new Thread() {
+			public void run() {
+				System.err.println("starting");
+				try {
+					Thread.sleep(20000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				System.err.println("now");
+				updateFriends(sessionKey, currentUser);
+			}
+		}.start();
 	}
 
 	Color bgcolor = new Color(255, 255, 255);
@@ -1197,6 +1214,7 @@ public class SortTable extends JApplet {
 		});
 
 		FriendsPanel fp = new FriendsPanel(sessionKey, currentUser);
+		friendsPanel = fp;
 
 		try {
 			URL url = new URL("http://test.matis.is");
@@ -1835,6 +1853,21 @@ public class SortTable extends JApplet {
 		} catch( Exception e ) {
 			e.printStackTrace();
 		}
+	}
+	
+	public String updateFriends( final String sessionKey, final String currentUser ) {
+		System.err.println("try friends update");
+		if( friendsPanel != null ) {
+			friendsPanel.nullModel();
+			AccessController.doPrivileged( new PrivilegedAction<Object>() {
+				public Object run() {
+					friendsPanel.createFriendsModel( sessionKey, currentUser );
+					return null;
+				}
+			});
+			friendsPanel.updateModel();
+		}
+		return "";
 	}
 
 	public JScrollPane getScrollPane() {
