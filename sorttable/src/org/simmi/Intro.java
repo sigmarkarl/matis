@@ -439,27 +439,31 @@ public class Intro extends JApplet {
 		c.setLayout( null );
 		
 		SwingUtilities.invokeLater( new Runnable(){
-			public void run() {		
-				Dimension d	= new Dimension(900,600);
-				c.setPreferredSize( d );
-				c.setSize( d );
-				
-				st.initGui( st.sessionKey, st.currentUser );
-				c.add( subc );
-				c.add(st.splitPane);
-				
-				st.tabbedPane.addChangeListener( new ChangeListener() {
-					public void stateChanged(ChangeEvent e) {
-						subc.repaint();
+			public void run() {				
+				try {
+					Dimension d	= new Dimension(900,600);
+					c.setPreferredSize( d );
+					c.setSize( d );
+					st.initGui( st.sessionKey, st.currentUser );
+					c.add( subc );
+					c.add(st.splitPane);
+					
+					st.tabbedPane.addChangeListener( new ChangeListener() {
+						public void stateChanged(ChangeEvent e) {
+							subc.repaint();
+						}
+					});
+					
+					Intro.this.add( c );
+					
+					if( ed != null ) {
+						ed.setBackground( new Color(0,0,0,0) );
+						Intro.this.add( ed );
 					}
-				});
-				
-				Intro.this.add( c );
-				
-				if( ed != null ) {
-					ed.setBackground( new Color(0,0,0,0) );
-					Intro.this.add( ed );
-				}
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}				
 			}
 		});
 		

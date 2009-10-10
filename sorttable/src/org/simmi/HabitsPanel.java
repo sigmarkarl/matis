@@ -48,19 +48,19 @@ public class HabitsPanel extends JComponent {
 	List<List<String>>			eatList = new ArrayList<List<String>>();
 	JSplitPane					splitpane;
 	JToolBar					toolbar;
-	JXDatePicker				datepicker;
+	//JXDatePicker				datepicker;
 	
 	public HabitsPanel( String lang ) {
 		super();
 		
-		datepicker = new JXDatePicker();
+		//datepicker = new JXDatePicker();
 		/*DateSelectionModel mod = new DateSelectionModel() {
 			
 		};*/
 		//datepicker.setMonthView(new JXM)
 		this.setLayout( new BorderLayout() );
 		toolbar = new JToolBar();
-		toolbar.add( datepicker );
+		//toolbar.add( datepicker );
 		this.add( toolbar, BorderLayout.NORTH );
 		splitpane = new JSplitPane( JSplitPane.VERTICAL_SPLIT );
 		this.add( splitpane );

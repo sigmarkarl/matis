@@ -31,6 +31,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -336,7 +337,16 @@ public class StarlimsReport extends JApplet {
 			
 			int r = start+10;
 			double total = 0.0;
-			for( String restr : subres.keySet() ) {
+			
+			List<String>	keyList = new ArrayList<String>( subres.keySet() );
+			Collections.sort( keyList, new Comparator<String>() {
+				@Override
+				public int compare(String o1, String o2) {
+					return o1.compareTo(o2);
+				}
+			});
+			
+			for( String restr : keyList ) {
 				Result res = subres.get( restr );
 				
 				row = sheet.createRow( r );

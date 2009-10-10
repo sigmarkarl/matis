@@ -124,7 +124,7 @@ public class FriendsPanel extends JScrollPane {
 			Object[] obj = friendList.get(rr);
 			Calendar now = Calendar.getInstance();
 			final Calendar cal = new GregorianCalendar();
-			cal.setTime( (Date)obj[3] );
+			if( obj[3] != null ) cal.setTime( (Date)obj[3] );
 			int factor = 0;
 			if( now.get(Calendar.DAY_OF_YEAR) < cal.get(Calendar.DAY_OF_YEAR) ) {
 		          factor = -1; //birthday not celebrated
@@ -393,56 +393,46 @@ public class FriendsPanel extends JScrollPane {
 	char[]	cbuf = new char[50000];
 	public FriendsPanel( String sessionKey, String currentUser ) {
 		nullmodel = new TableModel() {
-			
-			@Override
 			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
 				// TODO Auto-generated method stub
 				
 			}
 			
-			@Override
 			public void removeTableModelListener(TableModelListener l) {
 				// TODO Auto-generated method stub
 				
 			}
 			
-			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
 				// TODO Auto-generated method stub
 				return false;
 			}
 			
-			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
 				// TODO Auto-generated method stub
 				return null;
 			}
 			
-			@Override
 			public int getRowCount() {
 				// TODO Auto-generated method stub
 				return 0;
 			}
 			
-			@Override
 			public String getColumnName(int columnIndex) {
 				// TODO Auto-generated method stub
 				return null;
 			}
 			
-			@Override
 			public int getColumnCount() {
 				// TODO Auto-generated method stub
 				return 0;
 			}
 			
-			@Override
 			public Class<?> getColumnClass(int columnIndex) {
 				// TODO Auto-generated method stub
 				return null;
 			}
 			
-			@Override
 			public void addTableModelListener(TableModelListener l) {
 				// TODO Auto-generated method stub
 				

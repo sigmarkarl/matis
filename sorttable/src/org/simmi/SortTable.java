@@ -4,9 +4,12 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Point;
+import java.awt.RenderingHints;
 import java.awt.Window;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -674,7 +677,12 @@ public class SortTable extends JApplet {
 
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
-				initGui(sessionKey, currentUser);
+				try {
+					initGui(sessionKey, currentUser);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		});
 		
@@ -700,7 +708,7 @@ public class SortTable extends JApplet {
 
 	boolean sel = false;
 
-	public void initGui(String sessionKey, String currentUser) {
+	public void initGui(String sessionKey, String currentUser) throws IOException {
 		SortTable.this.getRootPane().setBackground(bgcolor);
 		SortTable.this.requestFocus();
 
@@ -955,19 +963,22 @@ public class SortTable extends JApplet {
 
 										lastResult = str;
 										imgPanel.img = null;
+										imgPanel.imgUrl = null;
+										imgPanel.progressbar.setVisible( false );
 										imgPanel.repaint();
 
 										if (r >= 0 && r < recipe.recipes.size()) {
-											if (imgPanel.imageNameCache
-													.containsKey(oStr)) {
-												String imgName = imgPanel.imageNameCache
-														.get(oStr);
-												imgPanel.img = imgPanel.imageCache
-														.get(imgName);
-												imgPanel.repaint();
-											} else {
-												Recipe rep = recipe.recipes
-														.get(r);
+											if (imgPanel.imageNameCache.containsKey(oStr)) {
+												String imgUrl = imgPanel.imageNameCache.get(oStr);
+												if( imgUrl != null ) {
+													imgPanel.img = imgPanel.imageCache.get(imgUrl);
+													imgPanel.repaint();
+												}
+											} /*else if( imgPanel.vals.contains(oStr) ) {
+												imgPanel.imgUrl = imgPanel.vals.get( oStr );
+												imgPanel.progressbar.setVisible( true );
+											}*/ else {
+												Recipe rep = recipe.recipes.get(r);
 												if (rep.desc != null) {
 													int i = rep.desc
 															.indexOf("http://");
@@ -975,13 +986,9 @@ public class SortTable extends JApplet {
 														int n = rep.desc
 																.indexOf('"', i);
 														if (n > i) {
-															String s = rep.desc
-																	.substring(
-																			i,
-																			n);
-															imgPanel.threadRun(
-																	s, oStr,
-																	row);
+															String s = rep.desc.substring(i, n);
+															imgPanel.imageNameCache.put(oStr, s);
+															imgPanel.threadRun(s,row);
 															// System.err.println(
 															// s );
 
@@ -1185,7 +1192,28 @@ public class SortTable extends JApplet {
 		topLeftScrollPane
 				.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 
-		field = new JTextField();
+		final String leit = "leit";
+		field = new JTextField() {
+			public void paintComponent( Graphics g ) {
+				super.paintComponent(g);
+				
+				Graphics2D g2 = (Graphics2D)g;
+				g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON );
+				//g2.setRenderingHint( , hintValue)
+				
+				if( this.getText() == null || this.getText().length() == 0 ) {
+					Font f = g.getFont();
+					if( !(f.isBold() && f.isItalic()) ) {
+						f = f.deriveFont( Font.BOLD | Font.ITALIC );
+						g.setFont( f );
+					}
+					g.setColor( Color.gray );
+					int strw = g.getFontMetrics().stringWidth( leit );
+					int x = (this.getWidth()-strw)/2;
+					g.drawString( leit, x, 20);
+				}
+			}
+		};
 		field.setPreferredSize(new Dimension(100, 30));
 		JComponent leftComponent = new JComponent() {
 
@@ -1933,16 +1961,21 @@ public class SortTable extends JApplet {
 
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
-				JFrame frame = new JFrame();
-				frame.setBackground(Color.white);
-				frame.getContentPane().setBackground(Color.white);
-				sortTable.initGui(null, null);
-				frame.setLayout(new BorderLayout());
-				frame.add(sortTable.getSplitPane());
-				//frame.add(sortTable.getEditor(), BorderLayout.SOUTH);
-				frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-				frame.setSize(800, 600);
-				frame.setVisible(true);
+				try {
+					JFrame frame = new JFrame();
+					frame.setBackground(Color.white);
+					frame.getContentPane().setBackground(Color.white);
+					sortTable.initGui(null, null);
+					frame.setLayout(new BorderLayout());
+					frame.add(sortTable.getSplitPane());
+					//frame.add(sortTable.getEditor(), BorderLayout.SOUTH);
+					frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+					frame.setSize(800, 600);
+					frame.setVisible(true);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		});
 	}
