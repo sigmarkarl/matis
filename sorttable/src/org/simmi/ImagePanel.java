@@ -1,5 +1,6 @@
 package org.simmi;
 
+import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -26,7 +27,9 @@ import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
 import javax.imageio.ImageIO;
+import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JProgressBar;
 import javax.swing.JTable;
 
 public class ImagePanel extends JComponent {
@@ -37,6 +40,9 @@ public class ImagePanel extends JComponent {
 	Map<String,Image>	imageCache;
 	Map<String,String>	imageNameCache;
 	JTable				leftTable;
+	int					orientation;
+	JProgressBar		progressbar;
+	String				imgUrl = null;
 	
 	public ImagePanel( final JTable leftTable ) {
 		super();
@@ -48,8 +54,9 @@ public class ImagePanel extends JComponent {
 					Object obj = leftTable.getValueAt(r, 0);
 					if( obj != null ) {
 						String s = obj.toString();
-						System.err.println("hey " + s );
-						runThread( s );
+						//System.err.println("hey " + s );
+						
+						if( !imageNameCache.containsKey(s) ) runThread( s );
 					}
 				}
 			}
@@ -73,6 +80,49 @@ public class ImagePanel extends JComponent {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
+		
+		progressbar = new JProgressBar();
+		progressbar.setVisible( false );
+		progressbar.setIndeterminate( true );
+		progressbar.setString("Sæki mynd");
+		progressbar.setValue( 0 );
+		progressbar.setStringPainted( true );
+		this.add( progressbar );
+	}
+	
+	public void setBounds( int x, int y, int w, int h ) {
+		super.setBounds(x, y, w, h);
+		
+		Component[] cc = this.getComponents();
+		Component c = null;
+		for( Component tc : cc ) {
+			if( tc instanceof JButton ) {
+				c = tc;
+				break;
+			}
+		}
+		
+		if( c != null ) {
+			if( orientation == 0 ) {
+				c.setLocation(9, 9);
+			} else if( orientation == 1 ) {
+				c.setLocation(this.getWidth()-41, 9);
+			} else if( orientation == 2 ) {
+				c.setLocation(this.getWidth()-41, this.getHeight()-41);
+			} else {
+				c.setLocation(9, this.getHeight()-41);
+			}
+		}
+		progressbar.setBounds(this.getWidth()/2-75, this.getHeight()/2-10, 150, 20);
+	}
+	
+	public void drawString( Graphics g, String str, int h ) {
+		String[] split = str.split("\n");
+		for( String s : split ) {
+			int strw = g.getFontMetrics().stringWidth( s );
+			g.drawString( s, (this.getWidth()-strw)/2, this.getHeight()/2+g.getFontMetrics().getHeight()*(h-split.length/2) );
+			h++;
+		}
 	}
 	
 	public void paintComponent( Graphics g ) {
@@ -94,55 +144,91 @@ public class ImagePanel extends JComponent {
 				int rh = (ih*w)/iw;
 				g.drawImage(img, 0, (h-rh)/2, this.getWidth(), rh, this );
 			}
-		} else {
-			String str = "Engin mynd\nSmelltu hér til að sækja mynd á google";
-			String[] split = str.split("\n");
-			int h = 0;
-			for( String s : split ) {
-				int strw = g.getFontMetrics().stringWidth( s );
-				g.drawString( s, (this.getWidth()-strw)/2, this.getHeight()/2+g.getFontMetrics().getHeight()*(h-split.length/2) );
-				h++;
+		} else if( !progressbar.isVisible() ) {
+			boolean b = false;
+			int r = leftTable.getSelectedRow();
+			if( r >= 0 && r < leftTable.getRowCount() ) {
+				Object obj = leftTable.getValueAt(r, 0);
+				if( obj != null ) {
+					String s = obj.toString();
+					b = imageNameCache.containsKey( s );
+				}
 			}
+			
+			if( b ) {
+				String str = "Engin mynd";
+				drawString( g, str, 0 );
+			} else {
+				String str = "Engin mynd\nSmelltu hér til að sækja mynd á google";
+				drawString( g, str, 0 );
+			}
+		} else if( imgUrl != null ) {
+			drawString( g, imgUrl, -1 );
+		}
+	}
+	
+	public void getImage( String val, int index ) throws IOException {
+		//path = "http://test.matis.is/isgem/myndir/"+val;//URLEncoder.encode(iName,"UTF-8");		
+		Image	image = null;
+		if( imageCache.containsKey(val) ) {
+			image = imageCache.get(val);
+		} else {
+			URL url = new URL( val );
+			image = ImageIO.read(url);
+			imageCache.put(val, image);
+		}		
+		//imageNameCache.put(oname, val);
+		
+		if( index == leftTable.getSelectedRow() ) {
+			progressbar.setVisible( false );
+			img = image;
+			ImagePanel.this.repaint();
 		}
 	}
 	
 	Set<String>	vals = new HashSet<String>();
 	Thread t = null;
-	public void threadRun( final String val, final String oname, final int index ) {
-		System.err.println( val + " " + oname );
+	public void threadRun( final String val, final int index ) {
 		if( !vals.contains( val ) ) {
 			vals.add( val );
+			
+			imgUrl = val;
+			ImagePanel.this.repaint();
+			
 			t = new Thread() {
 				public void run() {					
 					try {
-						//path = "http://test.matis.is/isgem/myndir/"+val;//URLEncoder.encode(iName,"UTF-8");
-						URL url = new URL( val );
-						img = ImageIO.read(url);
-						imageCache.put(val, img);
-						imageNameCache.put(oname, val);
-						vals.remove( val );
-						
-						if( index == leftTable.getSelectedRow() ) ImagePanel.this.repaint();
-					} catch (UnsupportedEncodingException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (MalformedURLException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						getImage( val, index );
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
+					vals.remove( val );
+					if( vals.size() == 0 ) progressbar.setVisible( false );
+					
+					if( !imageCache.containsKey(val) ) imageCache.put(val, null);
 				}
 			};
 			t.start();
+			progressbar.setVisible( true );
+		} else {
+			System.err.println( "already trying " + val );
 		}
 	}
 
 	public void tryName( String oName ) {
 		if( imageNameCache.containsKey(oName) ) {
-			String imgName = imageNameCache.get(oName);
-			img = imageCache.get(imgName);
+			String imgUrl = imageNameCache.get(oName);
+			if( imageCache.containsKey(imgUrl) ) {
+				Image image = imageCache.get(imgUrl);
+
+				progressbar.setVisible( false );
+				this.img = image;
+			} else {
+				this.imgUrl = imgUrl;
+				progressbar.setVisible( true );
+				img = null;
+			}
 		} else {			
 			/*boolean b = true;
 			try {
@@ -198,8 +284,10 @@ public class ImagePanel extends JComponent {
 					if( imageCache.containsKey(path) ) {
 						img = imageCache.get(path);
 						imageNameCache.put(oName, path);
+						progressbar.setVisible( false );
 					} else {
-						threadRun(path,oName,leftTable.getSelectedRow());
+						imageNameCache.put(oName, path);
+						threadRun(path,leftTable.getSelectedRow());
 					}
 				}
 			//}
@@ -211,10 +299,12 @@ public class ImagePanel extends JComponent {
 			//String urlstr = imageNameCache.get(str);
 			img = imageCache.get( str );
 			ImagePanel.this.repaint();
-		} else {		
+		} else {
+			final int imindex = leftTable.getSelectedRow();
 			Thread t = new Thread() {
 				public void run() {
 					URL url;
+					String urlstr = null;
 					try {
 						//url = new URL("http://localhost:5001/images?hl=en&q="+URLEncoder.encode(str, "UTF-8") );
 						//url = new URL("http://search.live.com/images/results.aspx?q="+str);
@@ -260,7 +350,7 @@ public class ImagePanel extends JComponent {
 							stop = result.indexOf( '&', val );
 						}
 						
-						String urlstr = result.substring(val, val+20);
+						urlstr = result.substring(val, val+20);
 						if( stop != -1 ) {
 							urlstr = result.substring( val, stop );
 						}
@@ -275,22 +365,47 @@ public class ImagePanel extends JComponent {
 						
 						if( stop > 0 ) {
 							urlstr = urlstr.replace("%20", " ").replace("%2520", " ");
-							url = new URL( urlstr );
+							
+							vals.add( urlstr );
+							imgUrl = urlstr;
+							ImagePanel.this.repaint();
+							
+							imageNameCache.put( str, urlstr );
+							getImage( urlstr, imindex );
+							/*url = new URL( urlstr );
 							connection = url.openConnection();
 							stream = connection.getInputStream();
-							img = ImageIO.read(stream);
-							imageCache.put(urlstr,img);
+							Image image = ImageIO.read(stream);
+							imageCache.put(urlstr,image);
 							imageNameCache.put( str, urlstr );
-							ImagePanel.this.repaint();
+							
+							if( imindex == leftTable.getSelectedRow() ) {
+								progressbar.setVisible( false );
+								img = image;
+								ImagePanel.this.repaint();
+							}*/
 						}
 					} catch (MalformedURLException e1) {
 						e1.printStackTrace();
 					} catch (IOException e2) {
 						e2.printStackTrace();
 					}
+					
+					if( urlstr != null ) vals.remove( urlstr );
+					if( vals.size() == 0 ) {
+						progressbar.setVisible( false );
+					}
+					
+					if( !imageNameCache.containsKey( str ) ) {
+						imageNameCache.put( str, null );
+					}
+					ImagePanel.this.repaint();
 				}
 			};
 			t.start();
+			imgUrl = null;
+			progressbar.setVisible( true );
+			this.repaint();
 		}
 	}
 }

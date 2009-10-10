@@ -85,7 +85,7 @@ public class VitaminPanel extends JComponent {
 			}
 			
 			if( lang.equals("IS") ) {
-				g2.drawString("Vítamín (hlutfall af RDS)", 10, this.getHeight()/25 );
+				g2.drawString("Vítamín (hlutfall af RDS í 100g)", 10, this.getHeight()/25 );
 			} else {
 				g2.drawString("Vitamin (RDS proportion)", 10, this.getHeight()/25 );
 				g2.drawString("Vitamin (RDS proportion)", 10, this.getHeight()/12 );

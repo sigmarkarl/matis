@@ -1,6 +1,12 @@
 package org.simmi;
 
+import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,12 +14,13 @@ import java.util.Map;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
-import javax.swing.event.CellEditorListener;
-import javax.swing.event.ChangeEvent;
 import javax.swing.event.RowSorterEvent;
 import javax.swing.event.RowSorterListener;
 import javax.swing.event.TableModelListener;
@@ -28,6 +35,7 @@ public class DetailPanel extends JSplitPane {
 	List<Boolean>	showColumn;
 	TableModel		nullModel;
 	Map<String,String>	groupMap;
+	BufferedImage	bi;
 	
 	public int countVisible() {
 		int count = 0;
@@ -62,10 +70,43 @@ public class DetailPanel extends JSplitPane {
 		table.setModel( old );
 	}
 	
-	public DetailPanel( final RdsPanel rdsp, final String lang, final ImagePanel imgPanel, final JCompatTable table, final JCompatTable topTable, final JCompatTable leftTable, final List<Object[]> stuff, final List<String> ngroupList, final List<String> ngroupGroups, final Map<String,Integer> foodInd, final List<Recipe> recipes ) {
+	public void swapComponents() {
+		Component top = this.getTopComponent();
+		Component bottom = this.getBottomComponent();
+		
+		this.setTopComponent( null );
+		this.setBottomComponent( null );
+		
+		this.setTopComponent( bottom );
+		this.setBottomComponent( top );
+	}
+	
+	public DetailPanel( final RdsPanel rdsp, final String lang, final ImagePanel imgPanel, final JCompatTable table, final JCompatTable topTable, final JCompatTable leftTable, final List<Object[]> stuff, final List<String> ngroupList, final List<String> ngroupGroups, final Map<String,Integer> foodInd, final List<Recipe> recipes ) throws IOException {
 		super( JSplitPane.VERTICAL_SPLIT );
 		this.setOneTouchExpandable( true );
 		this.setDividerLocation( 300 );
+		
+		final JScrollPane	detailScroll = new JScrollPane();
+		
+		URL url = this.getClass().getResource("/re.png");
+		//bi = ImageIO.read( url );
+		ImageIcon icon = new ImageIcon( url );
+		final JButton	button = new JButton( icon );
+		button.addActionListener( new ActionListener() {			
+			public void actionPerformed(ActionEvent e) {
+				imgPanel.orientation = (imgPanel.orientation+1)%4;
+				
+				if( imgPanel.orientation%2 == 1 ) {
+					swapComponents();
+				}
+				
+				int orientation = DetailPanel.this.getOrientation() == JSplitPane.HORIZONTAL_SPLIT ? JSplitPane.VERTICAL_SPLIT : JSplitPane.HORIZONTAL_SPLIT;
+				DetailPanel.this.setOrientation( orientation );
+				//DetailPanel.
+			}
+		});
+		button.setBounds( 9,9,32,32 );
+		imgPanel.add( button );
 		
 		groupMap = new HashMap<String,String>();
 		groupMap.put("1", "Annað");
@@ -75,8 +116,6 @@ public class DetailPanel extends JSplitPane {
 		groupMap.put("5", "Snefilsteinefni");
 		groupMap.put("6", "Fitusýrur");
 		groupMap.put("7", "Nítröt");
-		
-		JScrollPane	detailScroll = new JScrollPane();
 		
 		showColumn = new ArrayList<Boolean>();
 		for( int i = 0; i < stuff.get(0).length-2; i++ ) {
@@ -120,7 +159,7 @@ public class DetailPanel extends JSplitPane {
 				super.sorterChanged(e);
 			}
 		};
-		detailTable.getDefaultEditor( Boolean.class ).addCellEditorListener( new CellEditorListener() {
+		/*detailTable.getDefaultEditor( Boolean.class ).addCellEditorListener( new CellEditorListener() {
 			public void editingCanceled(ChangeEvent e) {
 				// TODO Auto-generated method stub
 				
@@ -129,8 +168,7 @@ public class DetailPanel extends JSplitPane {
 			public void editingStopped(ChangeEvent e) {
 				updateModels( table, topTable );
 			}
-			
-		});
+		});*/
 		
 		JPopupMenu popup = new JPopupMenu();
 		Action action = new AbstractAction("Sýna Alla") {
@@ -327,17 +365,31 @@ public class DetailPanel extends JSplitPane {
 						double	g = d / 37.0;
 					}*/
 					String[] split = efni.split("[,-]+");
+					//String[] fsplit = split[0].split("-");
 					Object[]	obj = stuff.get(1);
-					Object ostr = obj[ rowIndex+2 ];
+					String ostr = (String)obj[ rowIndex+2 ];
 					String rdsStr = split[0];//+" - "+ostr;
-					String val = rdsp.getRds( rdsStr );
-					if( val != null ) {
-						try {
+					float val = rdsp.getRdsf( rdsStr, ostr.trim() );
+					if( val != -1 ) {
+						return val;
+						/*try {
 							float f = Float.parseFloat(val);
+							
+							/*if( !split[1].equals( ostr ) ) {
+								if( split[1].equals("g") ) {
+									if( ostr.equals("mg") ) {
+										f*=1000.0f;
+									}
+								} else if( split[1].equals("mg") ) {
+									if( ostr.equals("g") ) {
+										f/=1000.0f;
+									}
+								}
+							}							
 							return f;
 						} catch( Exception e ) {
 							
-						}
+						}*/
 					}
 					return null;
 				} else {
@@ -371,10 +423,12 @@ public class DetailPanel extends JSplitPane {
 		
 		for( int rowIndex = 0; rowIndex < detailModel.getRowCount(); rowIndex++ ) {
 			String efni = ngroupList.get( rowIndex );
-			String[] split = efni.split("[,-]+");
+			String[] split = efni.split(",");
 			Object[]	obj = stuff.get(1);
 			Object ostr = obj[ rowIndex+2 ];
-			String rdsStr = split[0]+"/"+ostr;
+			
+			String[] fsplt = split[0].split("-");
+			String rdsStr = fsplt[0]+"/"+ostr;
 			rdsStr = rdsStr.replace(" ", "");
 			String val = rdsp.getRds( rdsStr );
 			if( val != null ) {
@@ -385,6 +439,21 @@ public class DetailPanel extends JSplitPane {
 				} 
 			}
 		}
+		
+		JComponent c = new JComponent() {
+			
+		};
+		c.setLayout( new BorderLayout() );
+		
+		JComponent buttonPanel = new JComponent() {
+			
+		};
+		buttonPanel.setLayout( new BorderLayout() );
+		//buttonPanel.add( rotate );
+		//buttonPanel.add( flip );
+		
+		c.add(buttonPanel);
+		c.add(imgPanel);
 		
 		this.setTopComponent( imgPanel );
 		this.setBottomComponent( detailScroll );

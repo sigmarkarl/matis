@@ -35,7 +35,85 @@ public class RdsPanel extends JSplitPane {
 	final String 				furl = "http://www.fa.is/deildir/Efnafraedi/Naeringarfr/naervefur/Templates/glaerur/fituvit.htm";
 	JCompatTable				table;
 	
-	public String getRds( String colname ) {
+	public float getRdsf( String colname, String unitname ) {
+		float ff = -1.0f;
+		
+		int r = table.getSelectedRow();
+		
+		int base = 4;
+		if( r >= 0 ) {
+			base = r+2;
+		} else {
+			int age = fp.getSelectedAge();
+			String sex = fp.getSelectedSex();
+			if( sex != null && sex.equals("Karl") ) base += 8;
+			if( age < 14 ) base+=1;
+			else if( age < 18 ) base+=2;
+			else if( age < 31 ) base+=3;
+			else if( age < 61 ) base+=4;
+			else base+=5;
+		}
+		
+		int i = 0;
+		String colName = model.getColumnName(i);
+		String unitName = null;
+		
+		/*if( colname.contains("Kalí") ) {
+			System.err.println(colname + "  " + ff);
+		}*/
+		
+		boolean one = false;
+		if( colname.length() == 1 ) {
+			String[] spl = colName.split(" - ");
+			colName = spl[0];
+			while( !colName.equals(colname) ) {
+				i++;
+				if( i == model.getColumnCount() ) break;
+				
+				colName = model.getColumnName(i);
+				spl = colName.split(" - ");
+				colName = spl[0];
+			}
+			unitName = spl[1].trim();
+		} else {
+			while( !colName.contains(colname) ) {
+				i++;
+				if( i == model.getColumnCount() ) {
+					break;
+				}
+				colName = model.getColumnName(i);
+			}
+			String[] spl = colName.split(" - ");
+			unitName = spl[1].trim();
+		}
+		
+		String ret = null;
+		if( i < model.getColumnCount() ) {
+			Object[] obj = rows.get( base );
+			ret = (String)obj[i];
+		}
+		
+		if( ret != null ) {
+			try {
+				ff = Float.parseFloat( ret );
+				
+				if( !unitName.equals(unitname) ) {
+					if( unitName.equals("mg") ) {
+						if( unitname.equals("g") ) ff*=1000.0f; 
+					} else if( unitName.equals("g") ) {
+						if( unitname.equals("mg") ) {
+							ff*=1000.0f; 
+						}
+					}
+				}
+			} catch( Exception e ) {
+				e.printStackTrace();
+			}
+		}
+		return ff;
+	}
+	
+	public String getRds( String colname, String unitname ) {
 		String ret = null;
 		
 		int r = table.getSelectedRow();
@@ -83,6 +161,10 @@ public class RdsPanel extends JSplitPane {
 		}
 		
 		return ret;
+	}
+	
+	public String getRds( String colname ) {
+		return getRds( colname, null );
 	}
 	
 	public RdsPanel( final FriendsPanel fp, final SortTable st ) {
