@@ -117,4 +117,8 @@ public class JCompatTable extends JXTable {
 			this.setFilters( fp );
 		}
 	}
+	
+	public void setRowSelectionIntervalSuper( int r1, int r2 ) {
+		super.setRowSelectionInterval(r1, r2);
+	}
 }

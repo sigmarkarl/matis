@@ -570,8 +570,15 @@ public class RecipePanel extends JSplitPane {
 				if( arg2 == 2 && nr != -1 ) {
 					String item = (String)arg0;
 					if( item != null ) {
-						if( !item.equals("g") ) recipeDetailTable.setValueAt(1.0f, nr, 1);
-						else recipeDetailTable.setValueAt(100.0f, nr, 1);
+						int rr = recipeTable.convertRowIndexToModel(r);
+						if( rr >= 0 && rr < recipes.size() ) {
+							Recipe rep = recipes.get(rr);
+							RecipeIngredient ri = rep.ingredients.get( arg1 );
+							if( !ri.unit.equals( item ) ) { 
+								if( !item.equals("g") ) recipeDetailTable.setValueAt(1.0f, nr, 1);
+								else recipeDetailTable.setValueAt(100.0f, nr, 1);
+							}
+						}
 					}
 						
 					recipeDetailTable.repaint();

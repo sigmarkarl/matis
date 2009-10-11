@@ -314,7 +314,10 @@ public class DetailPanel extends JSplitPane {
 								}
 							}
 							
-							if( ret != 0.0f ) return (ret * 100.0f) / tot;
+							if( ret != 0.0f ) {
+								return ret;
+								//return (ret * 100.0f) / tot;
+							}
 								
 							return null;
 						}
