@@ -8,7 +8,7 @@ import javax.swing.table.TableModel;
 
 public class MyFilter extends RowFilter<TableModel,Integer> {
 	String			filterText;
-	int				fInd = 1;
+	int				fInd = 0;
 	Set<String> 	cropped = new HashSet<String>();
 	TableModel		leftModel;
 	

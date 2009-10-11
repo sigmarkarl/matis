@@ -179,10 +179,23 @@ public class ImagePanel extends JComponent {
 		}		
 		//imageNameCache.put(oname, val);
 		
-		if( index == leftTable.getSelectedRow() ) {
+		int sr = leftTable.getSelectedRow();
+		if( index == sr ) {
 			progressbar.setVisible( false );
 			img = image;
 			ImagePanel.this.repaint();
+		} else {
+			if( sr >= 0 && sr < leftTable.getRowCount() ) {
+				Object obj = leftTable.getValueAt(sr, 0);
+				if( obj != null ) {
+					String s = (String)obj;
+					if( val.equals(imageNameCache.get(s)) ) {
+						progressbar.setVisible( false );
+						img = image;
+						ImagePanel.this.repaint();
+					}
+				}
+			}
 		}
 	}
 	
@@ -212,7 +225,8 @@ public class ImagePanel extends JComponent {
 			t.start();
 			progressbar.setVisible( true );
 		} else {
-			System.err.println( "already trying " + val );
+			imgUrl = val;
+			progressbar.setVisible( true );
 		}
 	}
 
@@ -391,13 +405,14 @@ public class ImagePanel extends JComponent {
 						e2.printStackTrace();
 					}
 					
-					if( urlstr != null ) vals.remove( urlstr );
+					if( urlstr != null ) {
+						vals.remove( urlstr );
+						if( !imageCache.containsKey( urlstr ) ) {
+							imageCache.put( urlstr, null );
+						}
+					}
 					if( vals.size() == 0 ) {
 						progressbar.setVisible( false );
-					}
-					
-					if( !imageNameCache.containsKey( str ) ) {
-						imageNameCache.put( str, null );
 					}
 					ImagePanel.this.repaint();
 				}

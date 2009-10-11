@@ -1,5 +1,7 @@
 package org.simmi;
 
+import java.awt.Rectangle;
+
 import javax.swing.DropMode;
 import javax.swing.JTable;
 
@@ -38,5 +40,17 @@ public class JCompatTable extends JTable {
 	
 	public void setFilter( MyFilter filter, JCompatTable table ) {
 		this.filter = filter;
+	}
+	
+	public void setRowSelectionIntervalSuper( int r1, int r2 ) {
+		super.setRowSelectionInterval(r1, r2);
+	}
+	
+	public void scrollRectToVisible( Rectangle rect ) {
+		super.scrollRectToVisible( rect );
+	}
+	
+	public void setBounds( int x, int y, int w, int h ) {		 
+		super.setBounds(x, y, w, h);
 	}
 }

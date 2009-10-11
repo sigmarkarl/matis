@@ -29,10 +29,13 @@ public class RdsPanel extends JSplitPane {
 	final Color 				paleGreen = new Color( 20,230,60,96 ); 
 	final FriendsPanel 			fp;
 	TableModel					model;
+	TableModel					rowHeaderModel;
 	SortTable					st;
 	Map<String,String>			detailMapping = new HashMap<String,String>();
 	final String 				vurl = "http://www.fa.is/deildir/Efnafraedi/Naeringarfr/naervefur/Templates/glaerur/vatnsvit.htm";
 	final String 				furl = "http://www.fa.is/deildir/Efnafraedi/Naeringarfr/naervefur/Templates/glaerur/fituvit.htm";
+	JSplitPane					tableSplit;
+	JCompatTable				rowHeader;
 	JCompatTable				table;
 	
 	public float getRdsf( String colname, String unitname ) {
@@ -167,6 +170,7 @@ public class RdsPanel extends JSplitPane {
 		return getRds( colname, null );
 	}
 	
+	boolean sel = false;
 	public RdsPanel( final FriendsPanel fp, final SortTable st ) {
 		super( JSplitPane.VERTICAL_SPLIT );
 		
@@ -189,6 +193,9 @@ public class RdsPanel extends JSplitPane {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		rowHeader = new JCompatTable();
+		rowHeader.setAutoCreateRowSorter( true );
 		
 		table = new JCompatTable() {
 			public Component prepareRenderer( TableCellRenderer renderer, int row, int column ) {
@@ -221,16 +228,16 @@ public class RdsPanel extends JSplitPane {
 				return String.class;
 			}
 			public int getColumnCount() {
-				return rows.get(0).length;
+				return rows.get(0).length-1;
 			}
 			public String getColumnName(int columnIndex) {
-				return rows.get(0)[columnIndex] + " - " + rows.get(1)[columnIndex];
+				return rows.get(0)[columnIndex+1] + " - " + rows.get(1)[columnIndex+1];
 			}
 			public int getRowCount() {
 				return Math.max( 0, rows.size()-2 );
 			}
 			public Object getValueAt(int rowIndex, int columnIndex) {
-				return rows.get( rowIndex + 2 )[columnIndex];
+				return rows.get( rowIndex + 2 )[columnIndex+1];
 			}
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
 				return false;
@@ -238,6 +245,18 @@ public class RdsPanel extends JSplitPane {
 			public void removeTableModelListener(TableModelListener l) {}
 			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {}
 		};
+		rowHeaderModel = new TableModel() {
+			public void addTableModelListener(TableModelListener l) {}
+			public Class<?> getColumnClass(int columnIndex) {return String.class;}
+			public int getColumnCount() {return 1;}
+			public String getColumnName(int columnIndex) {return (String)rows.get(0)[0];}
+			public int getRowCount() {return Math.max( 0, rows.size()-2 );}
+			public Object getValueAt(int rowIndex, int columnIndex) {return rows.get( rowIndex + 2 )[0];}
+			public boolean isCellEditable(int rowIndex, int columnIndex) {return false;}
+			public void removeTableModelListener(TableModelListener l) {}
+			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {}
+		};
+		rowHeader.setModel( rowHeaderModel );
 		
 		table.setColumnSelectionAllowed( true );
 		table.addMouseListener( new MouseAdapter() {
@@ -293,10 +312,39 @@ public class RdsPanel extends JSplitPane {
 			}
 		});
 		
+		table.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
+			public void valueChanged(ListSelectionEvent e) {
+				boolean s = sel;
+				sel = false;
+				if( s ) {
+					//sel = false;
+					int r = table.getSelectedRow();
+					if( r != -1 ) rowHeader.setRowSelectionInterval(r,r);
+				} else sel = true;
+			}
+		});
+		
+		rowHeader.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
+			public void valueChanged(ListSelectionEvent e) {
+				boolean s = sel;
+				sel = true;
+				if( !s ) {
+					//sel = true;
+					int r = rowHeader.getSelectedRow();
+					if( r != -1 ) table.setRowSelectionInterval(r,r);
+				} else sel = false;
+			}
+		});
+		
+		JScrollPane	rowHeaderScroll = new JScrollPane( JScrollPane.VERTICAL_SCROLLBAR_NEVER, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS );
 		JScrollPane tableScrollPane = new JScrollPane( table );
+		tableScrollPane.setRowHeaderView( rowHeader );
+		rowHeaderScroll.setViewport( tableScrollPane.getRowHeader() );
 		JScrollPane editorScroll = new JScrollPane( editor );
 		
-		this.setTopComponent( tableScrollPane );
+		tableSplit = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT, rowHeaderScroll, tableScrollPane );
+		
+		this.setTopComponent( tableSplit );
 		this.setBottomComponent( editorScroll );
 		
 		this.setDividerLocation( 300 );
