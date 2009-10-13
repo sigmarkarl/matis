@@ -13,11 +13,11 @@
     <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
         <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{RecipePanel.java"/>
         <file path="/sorttable/src/thsGroups.txt"/>
-        <file path="/sorttable/src/matis.png"/>
         <file path="/sorttable/src/smooth.png"/>
+        <file path="/sorttable/src/matis.png"/>
         <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{DetailPanel.java"/>
-        <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{VitaminPanel.java"/>
         <file path="/sorttable/src/skmt.txt"/>
+        <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{VitaminPanel.java"/>
         <file path="/sorttable/src/du.png"/>
         <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{HabitsPanel.java"/>
         <file path="/sorttable/src/rds.png"/>
@@ -42,6 +42,7 @@
         <javaElement handleIdentifier="=sorttable/loc"/>
         <javaElement handleIdentifier="=sorttable/src&lt;org.netbeans.saas"/>
         <file path="/sorttable/src/myndir.txt"/>
+        <file path="/sorttable/src/re.png"/>
         <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{CompleteReader.java"/>
         <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{FriendsPanel.java"/>
         <file path="/sorttable/src/helix.png"/>

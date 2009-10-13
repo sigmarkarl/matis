@@ -5,7 +5,9 @@ import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,9 +23,12 @@ import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
+import javax.swing.event.CellEditorListener;
+import javax.swing.event.ChangeEvent;
 import javax.swing.event.RowSorterEvent;
 import javax.swing.event.RowSorterListener;
 import javax.swing.event.TableModelListener;
+import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableModel;
 
 import org.simmi.RecipePanel.Recipe;
@@ -79,6 +84,26 @@ public class DetailPanel extends JSplitPane {
 		
 		this.setTopComponent( bottom );
 		this.setBottomComponent( top );
+	}
+	
+	ByteArrayOutputStream	baos = new ByteArrayOutputStream();
+	PrintStream				ps = new PrintStream( baos );
+	public final class PercStr implements Comparable<PercStr> {
+		final float	val;
+		
+		public PercStr( Float val ) {
+			this.val = val;
+		}
+		
+		public String toString() {
+			baos.reset();
+			ps.printf("%.2f %%", val);
+			return baos.toString();
+		}
+
+		public int compareTo(PercStr o) {
+			return Float.compare(val,o.val);
+		}
 	}
 	
 	public DetailPanel( final RdsPanel rdsp, final String lang, final ImagePanel imgPanel, final JCompatTable table, final JCompatTable topTable, final JCompatTable leftTable, final List<Object[]> stuff, final List<String> ngroupList, final List<String> ngroupGroups, final Map<String,Integer> foodInd, final List<Recipe> recipes ) throws IOException {
@@ -159,16 +184,23 @@ public class DetailPanel extends JSplitPane {
 				super.sorterChanged(e);
 			}
 		};
-		/*detailTable.getDefaultEditor( Boolean.class ).addCellEditorListener( new CellEditorListener() {
-			public void editingCanceled(ChangeEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			public void editingStopped(ChangeEvent e) {
-				updateModels( table, topTable );
-			}
-		});*/
+		
+		TableCellEditor tce = null;
+		try{ 
+			tce = detailTable.getDefaultEditor( Boolean.class );
+		} catch( Exception e ) {
+			e.printStackTrace();
+		}
+		
+		if( tce != null ) {
+			tce.addCellEditorListener( new CellEditorListener() {
+				public void editingCanceled(ChangeEvent e) {}
+	
+				public void editingStopped(ChangeEvent e) {
+					updateModels( table, topTable );
+				}
+			});
+		}
 		
 		JPopupMenu popup = new JPopupMenu();
 		Action action = new AbstractAction("Sýna Alla") {
@@ -210,7 +242,7 @@ public class DetailPanel extends JSplitPane {
 		popup.add( action );
 		detailTable.setComponentPopupMenu( popup );
 		detailTable.setAutoCreateRowSorter( true );
-		detailModel = new TableModel() {
+		detailModel = new TableModel() {			
 			public void addTableModelListener(TableModelListener l) {
 				// TODO Auto-generated method stub
 				
@@ -219,12 +251,13 @@ public class DetailPanel extends JSplitPane {
 			public Class<?> getColumnClass(int columnIndex) {
 				if( columnIndex == 3 ) return Float.class;
 				if( columnIndex == 4 ) return Float.class;
-				else if( columnIndex == 5 ) return Boolean.class;
+				if( columnIndex == 5 ) return PercStr.class;
+				else if( columnIndex == 6 ) return Boolean.class;
 				return String.class;
 			}
 	
 			public int getColumnCount() {
-				return 6;
+				return 7;
 			}
 	
 			public String getColumnName(int columnIndex) {
@@ -234,6 +267,7 @@ public class DetailPanel extends JSplitPane {
 					else if( columnIndex == 2 ) return "Eining";
 					else if( columnIndex == 3 ) return "Mæligildi";
 					else if( columnIndex == 4 ) return "RDS";
+					else if( columnIndex == 5 ) return "RDS %";
 					return "Sýna dálk";
 				} else {
 					if( columnIndex == 0 ) return "Name";
@@ -241,6 +275,7 @@ public class DetailPanel extends JSplitPane {
 					else if( columnIndex == 2 ) return "Unit";
 					else if( columnIndex == 3 ) return "Measure";
 					else if( columnIndex == 4 ) return "Rds";
+					else if( columnIndex == 5 ) return "Rds %";
 					return "Show Column";
 				}
 			}
@@ -395,6 +430,14 @@ public class DetailPanel extends JSplitPane {
 						}*/
 					}
 					return null;
+				} else if( columnIndex == 5 ) {					
+					Float val = (Float)this.getValueAt(rowIndex, 3);
+					Float rds = (Float)this.getValueAt(rowIndex, 4);
+					
+					if( val != null && rds != null ) {
+						PercStr perc = new PercStr( (100.0f*val)/rds );
+						return perc;
+					}
 				} else {
 					return showColumn.get( rowIndex );
 				}

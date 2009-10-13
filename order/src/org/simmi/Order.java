@@ -1,16 +1,22 @@
 package org.simmi;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.DriverManager;
@@ -18,26 +24,49 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.EventObject;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.swing.AbstractAction;
+import javax.swing.AbstractCellEditor;
 import javax.swing.JApplet;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JEditorPane;
+import javax.swing.JLabel;
 import javax.swing.JScrollPane;
+import javax.swing.JSpinner;
 import javax.swing.JTable;
+import javax.swing.RowFilter;
+import javax.swing.SpinnerListModel;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelListener;
+import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
 
 public class Order extends JApplet {
 	JScrollPane	scrollpane = new JScrollPane();
 	JScrollPane	pscrollpane = new JScrollPane();
 	JTable		table = new JTable();
 	JTable		ptable = new JTable();
+	
+	JEditorPane	ed = new JEditorPane();
+	
+	JLabel		label = new JLabel( "Framl:", JLabel.RIGHT );
+	JLabel		plabel = new JLabel( "Byrgir:", JLabel.RIGHT );
+	
+	JComboBox	combo = new JComboBox();
+	JComboBox	pcombo = new JComboBox();
+	
 	TableModel	model;
 	TableModel	pmodel;
 	TableModel	nullmodel;
@@ -47,23 +76,30 @@ public class Order extends JApplet {
 	List<Pnt>	pntlist;
 	int			ordno = 0;
 	
+	byte[] bb = new byte[1024];	
+	Map<String,String>	pMap = new HashMap<String,String>();
+	
 	final Color bg = Color.white;//new Color( 0,0,0,0 );
 	
 	public class Pnt {
+		Boolean		e_Mikilvægt;
 		Integer		Númer;
 		String		Nafn;
 		String		PantaðAf;
-		Integer		Magn;
+		Integer		e_Magn;
 		Date		Pantað;
 		Date		Afgreitt;
+		String		_Lýsing;
 		
-		public Pnt( int ordno, String name, String user, int quant, Date orddate, Date purdate ) {
+		public Pnt( boolean urgent, int ordno, String name, String user, int quant, Date orddate, Date purdate, String description ) {
+			this.e_Mikilvægt = urgent;
 			this.Númer = ordno;
 			this.Nafn = name;
 			this.PantaðAf = user;
-			this.Magn = quant;
+			this.e_Magn = quant;
 			this.Pantað = orddate;
 			this.Afgreitt = purdate;
+			this._Lýsing = description;
 		}
 	}
 	
@@ -71,13 +107,13 @@ public class Order extends JApplet {
 		String  Nafn;
 		String	Framleiðandi;
 		String	Byrgir;
-		Integer	Cat;
+		Integer	_Cat;
 		
 		public Ord( String name, String prdc, String selr, int cat ) {
 			this.Nafn = name;
 			this.Framleiðandi = prdc;
 			this.Byrgir = selr;
-			this.Cat = cat;
+			this._Cat = cat;
 		}
 	};
 	
@@ -106,15 +142,10 @@ public class Order extends JApplet {
 	}
 	
 	public TableModel createModel( final List<?> datalist, final Class cls ) {
-		
-		//return createTestModel();
-		
+		//System.err.println( cls );
 		return new TableModel() {
 			@Override
-			public void addTableModelListener(TableModelListener l) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void addTableModelListener(TableModelListener l) {}
 
 			@Override
 			public Class<?> getColumnClass(int columnIndex) {
@@ -129,7 +160,7 @@ public class Order extends JApplet {
 
 			@Override
 			public String getColumnName(int columnIndex) {
-				return cls.getDeclaredFields()[columnIndex].getName();
+				return cls.getDeclaredFields()[columnIndex].getName().replace("e_", "");
 			}
 
 			@Override
@@ -141,12 +172,14 @@ public class Order extends JApplet {
 			public Object getValueAt(int rowIndex, int columnIndex) {
 				Object ret = null;
 				try {
-					Field f = cls.getDeclaredFields()[columnIndex];
-					ret = f.get( datalist.get(rowIndex) );
-					
-					if( ret != null && ret.getClass() != f.getType() ) {
-						System.err.println( ret.getClass() + "  " + f.getType() );
-						ret = null;
+					if( columnIndex >= 0 ) {
+						Field f = cls.getDeclaredFields()[columnIndex];
+						ret = f.get( datalist.get(rowIndex) );
+						
+						if( ret != null && ret.getClass() != f.getType() ) {
+							System.err.println( ret.getClass() + "  " + f.getType() );
+							ret = null;
+						}
 					}
 				} catch (IllegalArgumentException e) {
 					// TODO Auto-generated catch block
@@ -163,14 +196,14 @@ public class Order extends JApplet {
 
 			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
-				return cls.getDeclaredFields()[columnIndex].getName().equals("Magn") && this.getValueAt(rowIndex, columnIndex-1).equals(user);
+				Field[] ff = cls.getDeclaredFields();
+				Field 	f = ff[columnIndex];
+				//System.err.println( ff.length + "  " + columnIndex + "  " + f.getName() );
+				return f.getName().startsWith("e_") && this.getValueAt(rowIndex, 3).equals(user);
 			}
 
 			@Override
-			public void removeTableModelListener(TableModelListener l) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void removeTableModelListener(TableModelListener l) {}
 
 			@Override
 			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
@@ -192,13 +225,13 @@ public class Order extends JApplet {
 	public List<Pnt>	loadPnt() throws SQLException {
 		List<Pnt>	pntList = new ArrayList<Pnt>();
 		
-		String sql = "select [ordno], [name], [user], [quant], [orddate], [purdate] from [order].[dbo].[order]";// where [user] = '"+user+"'";
+		String sql = "select [ordno], [name], [user], [quant], [orddate], [purdate], [urgent], [description] from [order].[dbo].[order]";// where [user] = '"+user+"'";
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
 		ResultSet 			rs = ps.executeQuery();
 
 		while (rs.next()) {
-			pntList.add( new Pnt( rs.getInt(1), rs.getString(2), rs.getString(3), rs.getInt(4), rs.getDate(5), rs.getDate(6) ) );
+			pntList.add( new Pnt( rs.getBoolean(7), rs.getInt(1), rs.getString(2), rs.getString(3), rs.getInt(4), rs.getDate(5), rs.getDate(6), rs.getString(8) ) );
 		}
 		
 		rs.close();
@@ -260,14 +293,14 @@ public class Order extends JApplet {
 	
 	public void order( String name, int quant ) throws SQLException {
 		ordno++;
-		String ord = ordno+",'"+name+"','"+user+"',"+quant+",GetDate(),null";
+		String ord = ordno+",'"+name+"','"+user+"',"+quant+",GetDate(),null,0,null";
 		String sql = "insert into [order].[dbo].[order] values ("+ord+")";
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
 		boolean				b = ps.execute();
 		
 		if( !b ) {
-			pntlist.add( new Pnt( ordno, name, user, quant, new Date( System.currentTimeMillis() ), null ) );
+			pntlist.add( new Pnt( false, ordno, name, user, quant, new Date( System.currentTimeMillis() ), null, "" ) );
 		}
 		
 		ps.close();
@@ -284,6 +317,20 @@ public class Order extends JApplet {
 		return b;
 	}
 	
+	public String loadEmp() throws IOException {
+		URL url = new URL( "http://www.matis.is/um-matis-ohf/starfsfolk/svid/" );
+		InputStream stream = url.openStream();
+		
+		int r = stream.read(bb);
+		String ret = "";
+		while( r > 0 ) {
+			ret += new String( bb, 0, r );
+			r = stream.read(bb);
+		}
+		
+		return ret;
+	}
+	
 	public void init() {
 		try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
@@ -298,8 +345,41 @@ public class Order extends JApplet {
 		}
 		
 		try {
+			String val = loadEmp();
+			String[] vals = val.split( "<h3>" );
+			
+			for( int i = 1; i < vals.length; i++ ) {
+				String sstr = vals[i];
+				int hind = sstr.indexOf("</h3>");
+				String svid = sstr.substring(0, hind);
+				
+				String[] subs = sstr.split("<a href=\"/um-matis-ohf/");
+				if( subs.length > 1 ) {
+					String currentStr = null;
+					for( String str : subs ) {
+						currentStr = str;
+						int ind = str.indexOf("</a>");
+						if( ind > 0 ) {
+							String person = str.substring(0,ind);
+							if( !person.contains("fyrirtaeki") ) {
+								break;
+							} else {
+								pMap.put(person, svid);
+							}
+						}
+					}
+					if( !subs[ subs.length-1 ].equals(currentStr) ) break;
+				}
+			}
+		} catch (IOException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
+		
+		try {
 			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=order;integratedSecurity=true;";
+			//String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=order;integratedSecurity=true;";
+			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=order;user=simmi;password=drsmorc.311;";
 			con = DriverManager.getConnection(connectionUrl);
 		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -360,7 +440,7 @@ public class Order extends JApplet {
 				int[] 			rr = ptable.getSelectedRows();
 				Set<Pnt>		remset = new HashSet<Pnt>();
 				for( int r : rr ) {
-					int			ordno = (Integer)ptable.getValueAt(r, 0);
+					int			ordno = (Integer)ptable.getValueAt(r, 1);
 					//String		name = (String)ptable.getValueAt(r, 1);
 					String 		username = (String)ptable.getValueAt(r, 2);
 					//int 		quant = (Integer)ptable.getValueAt(r, 3);
@@ -427,8 +507,16 @@ public class Order extends JApplet {
 			public void setBounds( int x, int y, int w, int h ) {
 				super.setBounds(x, y, w, h);
 				
-				scrollpane.setBounds( (int)(0.05*w), (int)(0.05*h), (int)(0.35*w), (int)(0.9*h) );
-				pscrollpane.setBounds( (int)(0.60*w), (int)(0.05*h), (int)(0.35*w), (int)(0.9*h) );
+				label.setBounds( (int)(0.05*w), (int)(0.05*h), (int)(0.07*w), 25 );
+				plabel.setBounds( (int)(0.22*w), (int)(0.05*h), (int)(0.08*w), 25 );
+				
+				combo.setBounds( (int)(0.12*w), (int)(0.05*h), (int)(0.10*w), 25 );
+				pcombo.setBounds( (int)(0.30*w), (int)(0.05*h), (int)(0.10*w), 25 );
+				
+				scrollpane.setBounds( (int)(0.05*w), (int)(0.1*h), (int)(0.35*w), (int)(0.85*h) );
+				pscrollpane.setBounds( (int)(0.60*w), (int)(0.1*h), (int)(0.35*w), (int)(0.50*h) );
+				ed.setBounds( (int)(0.60*w), (int)(0.6*h), (int)(0.35*w), (int)(0.40*h) );
+				
 				addbtn.setBounds( (int)(0.5*w)-75, (int)(0.35*h), 150, 25 );
 				rembtn.setBounds( (int)(0.5*w)-75, (int)(0.35*h)+30, 150, 25 );
 			}
@@ -437,20 +525,176 @@ public class Order extends JApplet {
 		this.setBackground( bg );
 		this.getContentPane().setBackground( bg );
 		
+		combo.addItem("Allir");
+		pcombo.addItem("Allir");
+		
+		Set<String>	comboOptions = new HashSet<String>();
+		Set<String>	pcomboOptions = new HashSet<String>();
+		
+		for( int r = 0; r < model.getRowCount(); r++ ) {
+			String str = (String)model.getValueAt(r, 1);
+			if( str != null && str.length() > 0 ) {
+				comboOptions.add(str);
+			}
+		}
+		
+		for( int r = 0; r < model.getRowCount(); r++ ) {
+			String str = (String)model.getValueAt(r, 2);
+			if( str != null && str.length() > 0 ) {
+				pcomboOptions.add(str);
+			}
+		}
+		
+		for( String str : comboOptions ) {
+			combo.addItem(str);
+		}
+		
+		for( String str : pcomboOptions ) {
+			pcombo.addItem(str);
+		}
+		
+		combo.addItemListener( new ItemListener() {	
+			@Override
+			public void itemStateChanged(ItemEvent e) {
+				pcombo.setSelectedItem("Allir");
+				((TableRowSorter<TableModel>)table.getRowSorter()).setRowFilter( new RowFilter<TableModel, Integer>() {
+					@Override
+					public boolean include(javax.swing.RowFilter.Entry<? extends TableModel, ? extends Integer> entry) {
+						String sel = (String)combo.getSelectedItem();
+						if( sel.equals("Allir") ) return true; 
+						int r = entry.getIdentifier();
+						Object str = (String)model.getValueAt( r, 1 );
+						if( str.equals( sel ) ) return true;
+						return false;
+					}
+				});
+			}
+		});
+		
+		pcombo.addItemListener( new ItemListener() {	
+			@Override
+			public void itemStateChanged(ItemEvent e) {
+				combo.setSelectedItem("Allir");
+				((TableRowSorter<TableModel>)table.getRowSorter()).setRowFilter( new RowFilter<TableModel, Integer>() {
+					@Override
+					public boolean include(javax.swing.RowFilter.Entry<? extends TableModel, ? extends Integer> entry) {
+						String sel = (String)pcombo.getSelectedItem();
+						if( sel.equals("Allir") ) return true; 
+						int r = entry.getIdentifier();
+						Object str = (String)model.getValueAt( r, 2 );
+						if( str.equals( sel ) ) return true;
+						
+						return false;
+					}
+				});
+			}
+		});
+		
 		//table.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
 		//table.setColumnSelectionAllowed( true );
 		table.setAutoCreateRowSorter( true );
 		table.setModel( model );
 		ptable.setAutoCreateRowSorter( true );
 		ptable.setModel( pmodel );
+		
+		ptable.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
+			String oldname = "";
+			
+			public void valueChanged(ListSelectionEvent e) {
+				int r = ptable.getSelectedRow();
+				if( r != -1 ) {
+					String name = (String)ptable.getValueAt(r, 3);
+					if( !name.equals( oldname ) ) {
+						for( String person : pMap.keySet() ) {
+							if( person.toLowerCase().contains(name.toLowerCase()) ) {
+								int ind = person.indexOf('"');
+								String link = person.substring(0, ind);
+								try {
+									URL url = new URL( "http://www.matis.is/um-matis-ohf/"+link );
+									InputStream stream = url.openStream();
+									
+									String ret = "";
+									r = stream.read(bb);
+									while( r > 0 ) {
+										ret += new String( bb, 0, r );
+										r = stream.read(bb);
+									}
+									
+									String[] ss = ret.split("<div class=\"boxbody\">");
+									for( int i = 1; i < 2; i++ ) {
+										String s = ss[i];
+										ind = s.indexOf("></ul>");
+										String sub = "<html>"+s.substring(0, ind)+"></ul>";
+										sub = sub.replace("</div>", "");
+										sub = sub.replace("<img src=\"","<img src=\"http://www.matis.is");
+										sub = sub.replace("Sigmar St","Sigmar%20St");
+										sub += "</html>";
+										
+										ed.setEditable( false );
+										ed.setContentType("text/html");
+										ed.setText( sub );
+									}
+									//ed.setPage( url );
+								} catch (MalformedURLException e1) {
+									e1.printStackTrace();
+								} catch (IOException e2) {
+									e2.printStackTrace();
+								}
+							}
+						}
+						oldname = name;
+					}
+				}
+			}
+		});
+		
+		//table.getColumnModel().getColumn(0).
+		//ptable.getColumn("Magn").setCellEditor( new SpinnerEditor(items));
+		//ptable.getColumn("Magn").setCellRenderer( new Spinner)
+		
 		scrollpane.setViewportView( table );
 		pscrollpane.setViewportView( ptable );
+		c.add( combo );
+		c.add( pcombo );
+		c.add( label );
+		c.add( plabel );
 		c.add( scrollpane );
 		c.add( pscrollpane );
+		c.add( ed );
 		c.add( addbtn );
 		c.add( rembtn );
 		this.add( c );
 	}
+	
+	 public class SpinnerEditor extends AbstractCellEditor implements TableCellEditor {
+		 final JSpinner spinner = new JSpinner();
+		
+		 // Initializes the spinner.
+		 public SpinnerEditor(String[] items) {
+		     spinner.setModel(new SpinnerListModel(java.util.Arrays.asList(items)));
+		 }
+		
+		 // Prepares the spinner component and returns it.
+		 public Component getTableCellEditorComponent(JTable table, Object value,
+		         boolean isSelected, int row, int column) {
+		     spinner.setValue(value);
+		     return spinner;
+		 }
+		
+		 // Enables the editor only for double-clicks.
+		 public boolean isCellEditable(EventObject evt) {
+		     if (evt instanceof MouseEvent) {
+		         return ((MouseEvent)evt).getClickCount() >= 2;
+		     }
+		     return true;
+		 }
+		
+		 // Returns the spinners current value.
+		 public Object getCellEditorValue() {
+		     return spinner.getValue();
+		 }
+	 }
+
 	
 	public final Color b1 = new Color( 0,100,255 );
 	public final Color b2 = new Color( 200,200,255 );
