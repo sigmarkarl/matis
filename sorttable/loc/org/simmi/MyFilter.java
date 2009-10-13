@@ -6,6 +6,9 @@ import java.util.Set;
 import javax.swing.RowFilter;
 import javax.swing.table.TableModel;
 
+import org.jdesktop.swingx.decorator.PipelineEvent;
+import org.jdesktop.swingx.decorator.PipelineListener;
+
 public class MyFilter extends RowFilter<TableModel,Integer> {
 	String			filterText;
 	int				fInd = 0;
@@ -32,5 +35,13 @@ public class MyFilter extends RowFilter<TableModel,Integer> {
 				return false;
 		}
 		return true;
+	}
+	
+	public void addFilterListener( final Runnable r ) {
+		/*addPipelineListener( new PipelineListener() {
+			public void contentsChanged(PipelineEvent arg0) {
+				r.run();
+			}
+		});*/
 	}
 }

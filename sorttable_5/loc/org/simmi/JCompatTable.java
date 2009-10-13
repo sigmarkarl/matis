@@ -4,13 +4,17 @@ import javax.swing.DropMode;
 import javax.swing.RowSorter;
 import javax.swing.event.RowSorterEvent;
 import javax.swing.event.TableModelEvent;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
 import org.jdesktop.swingx.JXTable;
 import org.jdesktop.swingx.decorator.Filter;
 import org.jdesktop.swingx.decorator.FilterPipeline;
 import org.jdesktop.swingx.decorator.PatternFilter;
+import org.jdesktop.swingx.decorator.PipelineEvent;
+import org.jdesktop.swingx.decorator.PipelineListener;
 import org.jdesktop.swingx.decorator.FilterPipeline.IdentityFilter;
+import org.jdesktop.swingx.table.TableColumnExt;
 
 public class JCompatTable extends JXTable {
 	
@@ -20,20 +24,22 @@ public class JCompatTable extends JXTable {
 	TableModel	model;
 	
 	public JCompatTable( TableModel model ) {
-		super( model );		
+		super( model );	
 		sorter = new MySorter( model );
-		if( MyFilter.pfilt == null ) {
-			MyFilter.pfilt = new PatternFilter();
-		}
+		init();
 	}
 	
 	public JCompatTable() {
 		super();
-		if( MyFilter.pfilt == null ) {
-			MyFilter.pfilt = new PatternFilter();
-		}
+		init();
 		
 		//this.getColumnExt(1).
+	}
+	
+	public void init() {
+		if( MyFilter.pfilt == null ) {
+			MyFilter.pfilt = new PatternFilter();	
+		}
 	}
 	
 	public void setRowSelectionInterval(int r1, int r2) {
@@ -48,6 +54,14 @@ public class JCompatTable extends JXTable {
 		super.setModel( model );
 		this.sorter = new MySorter( model );
 		this.model = model;
+		
+		//this.getSortController().
+		/*for( TableColumn tc : this.getColumns() ) {
+			if( tc instanceof TableColumnExt ) {
+				TableColumnExt tce = (TableColumnExt)tc;
+				tce.getSorter();
+			}
+		}*/
 	}
 	
 	/**
@@ -93,7 +107,7 @@ public class JCompatTable extends JXTable {
 		super.setFilters( fp );
 	}
 	
-	public void setFilter( final MyFilter filter ) {
+	public MyFilter setFilter( final MyFilter filter ) {
 		if( !filter.isAssigned() ) {
 			this.filter = filter;
 			this.setFilters( filter );
@@ -116,6 +130,14 @@ public class JCompatTable extends JXTable {
 			this.filter = fp;
 			this.setFilters( fp );
 		}
+		
+		return this.filter;
+		
+		/*this.filter.addPipelineListener( new PipelineListener() {		
+			public void contentsChanged(PipelineEvent arg0) {
+				
+			}
+		});*/
 	}
 	
 	public void setRowSelectionIntervalSuper( int r1, int r2 ) {

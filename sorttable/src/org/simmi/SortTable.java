@@ -12,6 +12,8 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Window;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
@@ -40,6 +42,7 @@ import javax.imageio.ImageIO;
 import javax.swing.DefaultRowSorter;
 import javax.swing.ImageIcon;
 import javax.swing.JApplet;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -94,6 +97,7 @@ public class SortTable extends JApplet {
 	JTabbedPane tabbedPane;
 	RecipePanel recipe;
 	FriendsPanel friendsPanel;
+	JComboBox	combo;
 
 	ImagePanel imgPanel;
 	JComponent graph;
@@ -502,7 +506,7 @@ public class SortTable extends JApplet {
 
 	public void updateFilter( int val ) {
 		// currentSorter = (MySorter)leftTableSorter;
-		
+		combo.setSelectedIndex(0);
 		System.err.println( val );
 
 		String text = field.getText();
@@ -706,6 +710,7 @@ public class SortTable extends JApplet {
 
 	boolean sel = false;
 
+	int		size = 300;
 	public void initGui(String sessionKey, String currentUser) throws IOException {
 		SortTable.this.getRootPane().setBackground(bgcolor);
 		SortTable.this.requestFocus();
@@ -1063,12 +1068,10 @@ public class SortTable extends JApplet {
 		// leftTable.setRowSorter( table.getRowSorter() );
 		// leftTable.setAutoCreateRowSorter( true );
 
-		JComponent topComp = new JComponent() {
-		};
+		JComponent topComp = new JComponent() {};
 		topComp.setLayout(new BorderLayout());
 
-		JComponent topLeftComp = new JComponent() {
-		};
+		JComponent topLeftComp = new JComponent() {};
 		topLeftComp.setLayout(new BorderLayout());
 
 		topTable.setShowGrid(true);
@@ -1127,12 +1130,78 @@ public class SortTable extends JApplet {
 		 */
 
 		// logoPaint.setPreferredSize( new Dimension( 32, 32 ) );
-		topLeftComp.add(topLeftTable);
+		//topLeftComp.add(topLeftTable, BorderLayout.EAST );
 		// topLeftComp.add( logoPaint, BorderLayout.WEST );
 		topLeftComp.add(leftTable.getTableHeader(), BorderLayout.SOUTH);
 		// topScrollPane.setViewportView( topTable );
 		// scrollPane.setColumnHeader( topScrollPane.getViewport() );
 		// scrollPane.setColumnHeaderView( topTable );
+		
+		JComboBox	topLeftCombo = new JComboBox() {
+			private boolean layingOut = false;
+
+			public void doLayout() {
+		        try {
+		            layingOut = true;
+		            super.doLayout();
+		        }
+		        finally {
+		            layingOut = false;
+		        }
+		    }
+
+		    public Dimension getSize() {
+		        Dimension sz = super.getSize();
+		        if (!layingOut) {
+		            sz.width = Math.max(sz.width, size);
+		        }
+		        return sz;
+		    }
+		};
+		combo = topLeftCombo;
+		
+		Set<String>	foodTypes = new HashSet<String>();
+		for( Object[] objs : stuff ) {
+			if( objs[1] != null ) foodTypes.add( (String)objs[1] );
+		}
+		
+		topLeftCombo.addItem( "Allar fæðutegundir" );
+		for( String ft : foodTypes ) {
+			topLeftCombo.addItem( ft.length() > 64 ? ft.substring(0, 64)+"..." : ft );
+		}
+		
+		Dimension d = new Dimension( 20, 20 );
+		//topLeftCombo.setMaximumSize( d );
+		size = Math.max(20, topLeftCombo.getPreferredSize().width );
+		topLeftCombo.setPreferredSize( d );
+		topLeftCombo.setMinimumSize( d );
+		topLeftComp.add( topLeftCombo );
+		
+		topLeftCombo.addItemListener( new ItemListener() {
+			public void itemStateChanged(ItemEvent e) {
+				String item = (String)combo.getSelectedItem();
+				item = item.substring( 0, Math.min( 100,item.length() ) );
+				if( item.equals("Allar fæðutegundir") ) {
+					filter.filterText = null;
+					filter.fInd = 0;
+					
+					//leftTable.getColumnModel().getColumn(1).setMinWidth( 0 );
+					leftTable.getColumnModel().getColumn(1).setMaxWidth( 1000 );
+					leftTable.getColumnModel().getColumn(1).setPreferredWidth( leftTable.getWidth()/2 );
+					leftTable.getColumnModel().getColumn(1).setWidth( leftTable.getWidth()/2 );
+				} else {
+					filter.filterText = item;
+					filter.fInd = 1;
+					
+					leftTable.getColumnModel().getColumn(1).setMinWidth( 0 );
+					leftTable.getColumnModel().getColumn(1).setMaxWidth( 0 );
+					//leftTable.getColumnModel().getColumn(1).setPreferredWidth( 0 );
+					leftTable.getColumnModel().getColumn(1).setWidth( 0 );
+				}
+				leftTable.updateFilter();
+				table.updateFilter();
+			}
+		});
 
 		JViewport spec = new JViewport() {
 			public void setView(Component view) {
@@ -1149,6 +1218,7 @@ public class SortTable extends JApplet {
 			}
 		};
 		leftSpec.setView(topLeftComp);
+		
 		scrollPane.setColumnHeader(spec);
 		topTable.setTableHeader(null);
 		topScrollPane.setViewport(scrollPane.getColumnHeader());
@@ -1197,10 +1267,10 @@ public class SortTable extends JApplet {
 			public void stateChanged(ChangeEvent e) {
 				if (tabbedPane.getSelectedComponent() == rightSplitPane) {
 					leftScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
-					leftSplitPane.setDividerLocation(60);
+					//leftSplitPane.setDividerLocation(60);
 				} else {
 					leftScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-					leftSplitPane.setDividerLocation(0);
+					//leftSplitPane.setDividerLocation(0);
 				}
 			}
 
@@ -1223,13 +1293,14 @@ public class SortTable extends JApplet {
 		}
 
 		RdsPanel rdsPanel = new RdsPanel(fp, SortTable.this);
-
+		
 		rightSplitPane = new LinkedSplitPane(JSplitPane.VERTICAL_SPLIT, topScrollPane, scrollPane);
 		leftSplitPane = new LinkedSplitPane(JSplitPane.VERTICAL_SPLIT, topLeftScrollPane, leftComponent);
 		rightSplitPane.setLinkedSplitPane(leftSplitPane);
 		leftSplitPane.setLinkedSplitPane(rightSplitPane);
 
 		leftSplitPane.setOneTouchExpandable(true);
+		leftSplitPane.setDividerLocation( 50 );
 
 		HabitsPanel eat = new HabitsPanel(lang);
 		try {
@@ -1381,11 +1452,11 @@ public class SortTable extends JApplet {
 			}
 
 			public int getRowCount() {
-				return 2;
+				return 1;
 			}
 
 			public Object getValueAt(int rowIndex, int columnIndex) {
-				Object[] obj = stuff.get(rowIndex);
+				Object[] obj = stuff.get(rowIndex+1);
 				int realColumnIndex = detail.convertIndex(columnIndex);
 				return obj[realColumnIndex + 2];
 			}
@@ -1689,7 +1760,30 @@ public class SortTable extends JApplet {
 		leftTable.sorter = leftTableSorter;
 		table.sorter = tableSorter;
 		leftTable.setFilter(filter);
-		table.setFilter(filter);
+		MyFilter subfilt = table.setFilter(filter);
+		
+		filter.addFilterListener( new Runnable() {
+			public void run() {
+				//leftTable.setSortable( true );
+				//table.setSortable( false );
+				table.setSortOrder( leftTable.getSortedColumn(), org.jdesktop.swingx.decorator.SortOrder.UNSORTED);
+				
+				table.repaint();
+				leftTable.repaint();
+			}
+		});
+		
+		subfilt.addFilterListener( new Runnable() {
+			public void run() {
+				//leftTable.getSortedColumn();
+				//leftTable.setSortable( false );
+				//table.setSortable( true );
+				leftTable.setSortOrder( leftTable.getSortedColumn(), org.jdesktop.swingx.decorator.SortOrder.UNSORTED);
+				
+				table.repaint();
+				leftTable.repaint();
+			}
+		});
 
 		graph = new GraphPanel(rdsPanel, lang, new JCompatTable[] { table, leftTable, topTable }, model, topModel);
 

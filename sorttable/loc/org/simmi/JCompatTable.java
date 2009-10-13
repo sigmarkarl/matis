@@ -5,6 +5,8 @@ import java.awt.Rectangle;
 import javax.swing.DropMode;
 import javax.swing.JTable;
 
+import org.jdesktop.swingx.decorator.SortOrder;
+
 public class JCompatTable extends JTable {
 	MySorter	sorter;
 	MyFilter	filter;
@@ -34,8 +36,9 @@ public class JCompatTable extends JTable {
 		sorter.setRowFilter( filter );
 	}
 	
-	public void setFilter(MyFilter filter) {
+	public MyFilter setFilter(MyFilter filter) {
 		this.filter = filter;
+		return this.filter;
 	}
 	
 	public void setFilter( MyFilter filter, JCompatTable table ) {
@@ -52,5 +55,14 @@ public class JCompatTable extends JTable {
 	
 	public void setBounds( int x, int y, int w, int h ) {		 
 		super.setBounds(x, y, w, h);
+	}
+
+	public void setSortOrder(Object object, SortOrder ascending) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public Object getSortedColumn() {
+		return null;
 	}
 }

@@ -20,6 +20,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.event.RowSorterEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
@@ -37,6 +38,9 @@ public class RdsPanel extends JSplitPane {
 	JSplitPane					tableSplit;
 	JCompatTable				rowHeader;
 	JCompatTable				table;
+	MySorter					currentSorter;
+	MySorter					rowHeaderSorter;
+	MySorter					tableSorter;
 	
 	public float getRdsf( String colname, String unitname ) {
 		float ff = -1.0f;
@@ -93,7 +97,7 @@ public class RdsPanel extends JSplitPane {
 		String ret = null;
 		if( i < model.getColumnCount() ) {
 			Object[] obj = rows.get( base );
-			ret = (String)obj[i];
+			ret = (String)obj[i+1];
 		}
 		
 		if( ret != null ) {
@@ -102,10 +106,10 @@ public class RdsPanel extends JSplitPane {
 				
 				if( !unitName.equals(unitname) ) {
 					if( unitName.equals("mg") ) {
-						if( unitname.equals("g") ) ff*=1000.0f; 
+						if( unitname.equals("g") ) ff*=1000.0f;
 					} else if( unitName.equals("g") ) {
 						if( unitname.equals("mg") ) {
-							ff*=1000.0f; 
+							ff*=1000.0f;
 						}
 					}
 				}
@@ -160,7 +164,7 @@ public class RdsPanel extends JSplitPane {
 		
 		if( i < model.getColumnCount() ) {
 			Object[] obj = rows.get( base );
-			ret = (String)obj[i];
+			ret = (String)obj[i+1];
 		}
 		
 		return ret;
@@ -194,10 +198,22 @@ public class RdsPanel extends JSplitPane {
 			e.printStackTrace();
 		}
 		
-		rowHeader = new JCompatTable();
+		rowHeader = new JCompatTable() {
+			public void sorterChanged(RowSorterEvent e) {
+				currentSorter = (MySorter) e.getSource();
+				table.repaint();
+				super.sorterChanged(e);
+			}
+		};
 		rowHeader.setAutoCreateRowSorter( true );
 		
 		table = new JCompatTable() {
+			public void sorterChanged(RowSorterEvent e) {
+				currentSorter = (MySorter) e.getSource();
+				rowHeader.repaint();
+				super.sorterChanged(e);
+			}
+			
 			public Component prepareRenderer( TableCellRenderer renderer, int row, int column ) {
 				Component c = super.prepareRenderer(renderer, row, column);
 				int age = fp.getSelectedAge();
@@ -278,6 +294,38 @@ public class RdsPanel extends JSplitPane {
 		table.setModel( model );
 		table.setColumnSelectionAllowed( true );
 		
+		tableSorter = new MySorter(model) {
+			public int convertRowIndexToModel(int index) {
+				return currentSorter.convertRowIndexToModelSuper(index);
+			}
+
+			public int convertRowIndexToView(int index) {
+				return currentSorter.convertRowIndexToViewSuper(index);
+				// leftTableSorter.
+			}
+
+			public int getViewRowCount() {
+				return rowHeaderSorter.getViewRowCount();
+			}
+		};
+
+		currentSorter = (MySorter) tableSorter;
+		rowHeaderSorter = new MySorter( rowHeaderModel ) {
+			public int convertRowIndexToModel(int index) {
+				return currentSorter.convertRowIndexToModelSuper(index);
+			}
+
+			public int convertRowIndexToView(int index) {
+				return currentSorter.convertRowIndexToViewSuper(index);
+			}
+		};
+		
+		rowHeader.setRowSorter( rowHeaderSorter );
+		table.setRowSorter( tableSorter );
+		
+		rowHeader.sorter = rowHeaderSorter;
+		table.sorter = tableSorter;
+		
 		final JEditorPane editor = new JEditorPane();
 		editor.setEditable( false );
 		editor.setContentType("text/html");
@@ -295,25 +343,23 @@ public class RdsPanel extends JSplitPane {
 		table.getSelectionModel().addListSelectionListener( new ListSelectionListener(){
 			public void valueChanged(ListSelectionEvent e) {
 				int c = table.getSelectedColumn();
-				String cName = table.getColumnName(c);
-				if( detailMapping.containsKey(cName) ) {
-					String vfl = detailMapping.get(cName);
-					try {
-						if( vfl.contains("Vatnsl") && !vurl.equals(editor.getPage().toString()) ) {
-							editor.setPage(vurl);
-						} else if( vfl.contains("Fitul") && !furl.equals(editor.getPage().toString()) ) {
-							editor.setPage(furl);
+				if( c != -1 ) {
+					String cName = table.getColumnName(c);
+					if( detailMapping.containsKey(cName) ) {
+						String vfl = detailMapping.get(cName);
+						try {
+							if( vfl.contains("Vatnsl") && !vurl.equals(editor.getPage().toString()) ) {
+								editor.setPage(vurl);
+							} else if( vfl.contains("Fitul") && !furl.equals(editor.getPage().toString()) ) {
+								editor.setPage(furl);
+							}
+						} catch (IOException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
 						}
-					} catch (IOException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
 					}
 				}
-			}
-		});
-		
-		table.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
-			public void valueChanged(ListSelectionEvent e) {
+				
 				boolean s = sel;
 				sel = false;
 				if( s ) {
