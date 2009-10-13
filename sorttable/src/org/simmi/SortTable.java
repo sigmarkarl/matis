@@ -37,6 +37,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import javax.imageio.ImageIO;
 import javax.swing.DefaultRowSorter;
@@ -287,7 +288,7 @@ public class SortTable extends JApplet {
 		ngroupList = new ArrayList<String>();
 		ngroupGroups = new ArrayList<String>();
 
-		Integer[] ii = { 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 16, 17, 20, 21, 23, 24, 29, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 44, 137, 138 };
+		Integer[] ii = { 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 20, 21, 23, 24, 29, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 44, 137, 138 };
 		final Set<Integer> is = new HashSet<Integer>(Arrays.asList(ii));
 
 		List<String[]> idList = new ArrayList<String[]>();
@@ -1160,12 +1161,13 @@ public class SortTable extends JApplet {
 		};
 		combo = topLeftCombo;
 		
-		Set<String>	foodTypes = new HashSet<String>();
+		Set<String>	foodTypes = new TreeSet<String>();
 		for( Object[] objs : stuff ) {
 			if( objs[1] != null ) foodTypes.add( (String)objs[1] );
 		}
 		
 		topLeftCombo.addItem( "Allar fæðutegundir" );
+		topLeftCombo.addItem( "Uppskriftir" );
 		for( String ft : foodTypes ) {
 			topLeftCombo.addItem( ft.length() > 64 ? ft.substring(0, 64)+"..." : ft );
 		}
@@ -1190,7 +1192,7 @@ public class SortTable extends JApplet {
 					leftTable.getColumnModel().getColumn(1).setPreferredWidth( leftTable.getWidth()/2 );
 					leftTable.getColumnModel().getColumn(1).setWidth( leftTable.getWidth()/2 );
 				} else {
-					filter.filterText = item;
+					filter.filterText = "(?i).*" + item + ".*";
 					filter.fInd = 1;
 					
 					leftTable.getColumnModel().getColumn(1).setMinWidth( 0 );
@@ -1518,7 +1520,7 @@ public class SortTable extends JApplet {
 					if (r < recipe.recipes.size()) {
 						Recipe rep = recipe.recipes.get(r);
 						if (columnIndex == 1) {
-							return "Uppskrift - " + rep.group;
+							return "Uppskriftir - " + rep.group;
 						} else {
 							return rep.name + " - " + rep.author;
 						}

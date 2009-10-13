@@ -6,9 +6,6 @@ import java.util.Set;
 import javax.swing.RowFilter;
 import javax.swing.table.TableModel;
 
-import org.jdesktop.swingx.decorator.PipelineEvent;
-import org.jdesktop.swingx.decorator.PipelineListener;
-
 public class MyFilter extends RowFilter<TableModel,Integer> {
 	String			filterText;
 	int				fInd = 0;
@@ -24,10 +21,13 @@ public class MyFilter extends RowFilter<TableModel,Integer> {
 	public boolean include( javax.swing.RowFilter.Entry<? extends TableModel, ? extends Integer> entry ) {
 		// String filterText = field.getText();
 		String gval = (String)leftModel.getValueAt(entry.getIdentifier(), 0);
-		String val = fInd == 0 ? gval : (String) leftModel.getValueAt(entry.getIdentifier(), 1);
+		String val = fInd == 0 ? gval : (String)leftModel.getValueAt(entry.getIdentifier(), 1);
 		if (filterText != null) {
-			if (val != null)
-				return val.toString().matches(filterText);
+			if (val != null) {
+				boolean b = val.matches(filterText);
+				//if( b ) System.err.println( val + "  " + filterText + "  " + b );
+				return b;
+			}
 			return false;
 		} else {
 			boolean b = cropped.contains(gval);

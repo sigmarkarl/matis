@@ -560,8 +560,8 @@ public class GraphPanel extends JTabbedPane {
 			}
 		});*/
 		
-		SkifuGraph perc = new SkifuGraph( "Hlutföll", new String[] {"Alcohol", "Protein, total", "Carbohydrates, total", "Fat, total", "Ash", "Water"},
-			new String[] {"Alkóhól", "Prótín", "Kolvetni", "Fita", "Aska", "Vatn"}, tables );
+		SkifuGraph perc = new SkifuGraph( "Hlutföll", new String[] {"Alkóhól", "Prótein, alls", "Kolvetni, alls", "Fita, alls", "Steinefni, alls", "Vatn"},
+			new String[] {"Alkóhól", "Prótín", "Kolvetni", "Fita", "Steinefni", "Vatn"}, tables );
 		
 		vitaminv = new VitaminPanel( true, leftTable, this, rdsPanel, lang );
 		vitaminf = new VitaminPanel( false, leftTable, this, rdsPanel, lang );
@@ -574,8 +574,8 @@ public class GraphPanel extends JTabbedPane {
 		this.addTab(null, new VerticalTextIcon( "Fitul-Vítm",  tabPlacement==JTabbedPane.RIGHT ), vitaminf);
 	}
 	
-	public class VerticalTextIcon implements Icon, SwingConstants{ 
-	    private Font font = UIManager.getFont("Label.font"); 
+	public class VerticalTextIcon implements Icon, SwingConstants {
+	    private Font font = UIManager.getFont("Label.font");
 	    private FontMetrics fm = Toolkit.getDefaultToolkit().getFontMetrics(font); 
 	 
 	    private String text; 
@@ -585,7 +585,7 @@ public class GraphPanel extends JTabbedPane {
 	    public VerticalTextIcon(String text, boolean clockwize){ 
 	        this.text = text; 
 	        width = SwingUtilities.computeStringWidth(fm, text); 
-	        height = fm.getHeight(); 
+	        height = fm.getHeight();
 	        this.clockwize = clockwize; 
 	    } 
 	 
@@ -593,7 +593,7 @@ public class GraphPanel extends JTabbedPane {
 	        Graphics2D g2 = (Graphics2D)g;
 	        g2.setRenderingHint( RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON );
 	        Font oldFont = g.getFont(); 
-	        Color oldColor = g.getColor(); 
+	        Color oldColor = g.getColor();
 	        AffineTransform oldTransform = g2.getTransform(); 
 	 
 	        g.setFont(font); 
