@@ -288,7 +288,7 @@ public class SortTable extends JApplet {
 		ngroupList = new ArrayList<String>();
 		ngroupGroups = new ArrayList<String>();
 
-		Integer[] ii = { 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 20, 21, 23, 24, 29, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 44, 137, 138 };
+		Integer[] ii = { 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 20, 21, 23, 24, 28, 29, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 44, 137, 138 };
 		final Set<Integer> is = new HashSet<Integer>(Arrays.asList(ii));
 
 		List<String[]> idList = new ArrayList<String[]>();
@@ -1787,7 +1787,7 @@ public class SortTable extends JApplet {
 			}
 		});
 
-		graph = new GraphPanel(rdsPanel, lang, new JCompatTable[] { table, leftTable, topTable }, model, topModel);
+		graph = new GraphPanel(rdsPanel, lang, new JCompatTable[] { table, leftTable, topTable }, topModel);
 
 		ImageIcon fodicon = null;
 		ImageIcon helicon = null;
