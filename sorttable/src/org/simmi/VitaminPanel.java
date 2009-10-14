@@ -125,11 +125,11 @@ public class VitaminPanel extends JComponent {
 			
 			double[] dvals = null;
 			if( waterSol ) {
-				float cc = (float)Math.max( parent.stuffYou( "Vitamin C" ), 0.0 );
-				float bt1 = (float)Math.max( parent.stuffYou( "Vitamin B1" ), 0.0 );
-				float bt2 = (float)Math.max( parent.stuffYou( "Vitamin B2" ), 0.0 );
-				float bt6 = (float)Math.max( parent.stuffYou( "Vitamin B6" ), 0.0 );
-				float bt12 = (float)Math.max( parent.stuffYou( "Vitamin B12" ), 0.0 );
+				float cc = (float)Math.max( parent.stuffYou( "C-vítamín" ), 0.0 );
+				float bt1 = (float)Math.max( parent.stuffYou( "B1-vítamín, þíamín" ), 0.0 );
+				float bt2 = (float)Math.max( parent.stuffYou( "B2-vítamín, ríbóflavín" ), 0.0 );
+				float bt6 = (float)Math.max( parent.stuffYou( "B6-vítamín" ), 0.0 );
+				float bt12 = (float)Math.max( parent.stuffYou( "B12-vítamín" ), 0.0 );
 				String ccval = rdsPanel.getRds("C - mg");
 				String bb1val = rdsPanel.getRds("B1 - mg");
 				String bb2val = rdsPanel.getRds("B2 - mg");
@@ -153,14 +153,14 @@ public class VitaminPanel extends JComponent {
 					dvals = dvalstmp;
 				}			
 			} else {
-				float va = (float)Math.max( parent.stuffYou( "Vitamin A" ), 0.0 );
-				float vd = (float)Math.max( parent.stuffYou( "Vitamin D" ), 0.0 );
-				float ve = (float)Math.max( parent.stuffYou( "Vitamin E" ), 0.0 );
-				float vk = (float)Math.max( parent.stuffYou( "Vitamin K" ), 0.0 );
+				float va = (float)Math.max( parent.stuffYou( "A-vítamín, RJ" ), 0.0 );
+				float vd = (float)Math.max( parent.stuffYou( "D-vítamín" ), 0.0 );
+				float ve = (float)Math.max( parent.stuffYou( "E-vítamín, a-TJ" ), 0.0 );
+				//float vk = (float)Math.max( parent.stuffYou( "K-vítamín" ), 0.0 );
 				String vas = rdsPanel.getRds("A - RJ");
 				String vds = rdsPanel.getRds("D - ug");
 				String ves = rdsPanel.getRds("E - α-TJ");
-				String vks = rdsPanel.getRds("K - mg");
+				//String vks = rdsPanel.getRds("K - mg");
 			
 				if( va >= 0.0f && vas != null ) {
 					float vaval = Float.parseFloat( vas );
@@ -168,8 +168,8 @@ public class VitaminPanel extends JComponent {
 					if( vds != null ) vdval = Float.parseFloat( vds );
 					float veval = 1.0f;
 					if( ves != null ) veval = Float.parseFloat( ves );
-					float vkval = 1.0f;
-					if( vks != null ) vkval = Float.parseFloat( vks );
+					//float vkval = 1.0f;
+					//if( vks != null ) vkval = Float.parseFloat( vks );
 					
 					double div = va / vaval;
 					double vav = div;//Math.log10( div );
@@ -180,10 +180,10 @@ public class VitaminPanel extends JComponent {
 					div = ve / veval;
 					double vev = div;//Math.log10( div );
 					
-					div = vk / vkval;
-					double vkv = div;//Math.log10( div );
+					//div = vk / vkval;
+					//double vkv = div;//Math.log10( div );
 					
-					double[] dvalstmp =  { vav, vdv, vev, vkv };
+					double[] dvalstmp =  { vav, vdv, vev };
 					dvals = dvalstmp;
 				}
 			}
@@ -348,7 +348,7 @@ public class VitaminPanel extends JComponent {
 			g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/40 ) );
 			int aa = 10;
 			int hh = this.getHeight()/30;
-			for( int i = 0; i < (waterSol ? 5 : 4); i++ ) {
+			for( int i = 0; i < (waterSol ? 5 : 3); i++ ) {
 				g2.setColor( c1s[i] );
 				g2.fillRoundRect( (19*w)/20, ((i+1)*this.getHeight())/25-hh/2, hh, hh, aa, aa );
 				g2.setColor( Color.darkGray );
@@ -389,10 +389,10 @@ public class VitaminPanel extends JComponent {
 				else str = "E";
 				strw = g2.getFontMetrics().stringWidth(str);
 				g2.drawString(str, (19*w)/20-strw-hh/2, (3*this.getHeight())/25+hh/4 );
-				if( lang.equals("IS") ) str = "K - menakvínon";
+				/*if( lang.equals("IS") ) str = "K - menakvínon";
 				else str = "K";
 				strw = g2.getFontMetrics().stringWidth(str);
-				g2.drawString(str, (19*w)/20-strw-hh/2, (4*this.getHeight())/25+hh/4 );
+				g2.drawString(str, (19*w)/20-strw-hh/2, (4*this.getHeight())/25+hh/4 );*/
 			}
 		}
 	}

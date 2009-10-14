@@ -307,6 +307,8 @@ public class DetailPanel extends JSplitPane {
 								return "Vatn";
 							} else if( efni.contains("Kólesteról") ) {
 								return "Fituefni";
+							} else if( efni.contains("Steinefni") ) {
+								return "Steinefni";
 							}
 						}
 						return ret;

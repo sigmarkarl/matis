@@ -22,6 +22,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
 public class GraphPanel extends JTabbedPane {
@@ -33,7 +34,6 @@ public class GraphPanel extends JTabbedPane {
 	
 	JCompatTable	table, leftTable, topTable;
 	TableModel	topModel;
-	TableModel	model;
 	
 	/**
 	 * 
@@ -43,7 +43,7 @@ public class GraphPanel extends JTabbedPane {
 	public float stuffYou( String whr ) {
 		int r = leftTable.getSelectedRow();
 		if( r >= 0 && r < leftTable.getRowCount() ) {
-			r = leftTable.convertRowIndexToModel(r);
+			//r = leftTable.convertRowIndexToModel(r);
 			return stuffYou( r, whr );
 		}
 		return -1.0f;
@@ -52,30 +52,40 @@ public class GraphPanel extends JTabbedPane {
 	public float stuffYou( int row, String whr ) {
 		float f = -1.0f;
 		
-		int col = 0;
-		String val = (String)topModel.getValueAt(0, col);
+		TableColumn	tc = null;
+		try {
+			tc = table.getColumn(whr);
+		} catch( Exception e ) {
+			
+		}
+		
+		if( tc != null ) {
+			int col = tc.getModelIndex();
+		/*String val = (String)topModel.getValueAt(0, col);
 		while( !(val != null && val.contains(whr)) ) {
 			col++;
 			if( col < topModel.getColumnCount() ) {
 				val = (String)topModel.getValueAt(0, col);
 			} else break;
 		}
-		if( col < model.getColumnCount() ) {
-			Float ff = (Float)model.getValueAt(row, col);
+		if( col < model.getColumnCount() ) {*/
+			Float ff = (Float)table.getValueAt(row, col);
 			if( ff != null ) f = ff;
+		} else {
+			System.err.println(whr);
 		}
+			
 		return f;
 	}
 	
 	Font font;
-	public GraphPanel( final RdsPanel rdsPanel, final String lang, JCompatTable[]	tables, TableModel model, TableModel topModel ) {
+	public GraphPanel( final RdsPanel rdsPanel, final String lang, JCompatTable[]	tables, TableModel topModel ) {
 		super( JTabbedPane.RIGHT, JTabbedPane.WRAP_TAB_LAYOUT );
 		
 		table = tables[0];
 		leftTable = tables[1];
 		topTable = tables[2];
 		this.topModel = topModel;
-		this.model = model;
 		
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		final PrintStream ps = new PrintStream( baos );
@@ -89,13 +99,8 @@ public class GraphPanel extends JTabbedPane {
 				g2.setRenderingHint( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON );
 				g2.setRenderingHint( RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON );
 				
-				int row = leftTable.getSelectedRow();
-				int rrow = row;
+				int row = leftTable.getSelectedRow();				
 				if( row != -1 ) {
-					rrow = leftTable.convertRowIndexToModel(row);
-				}
-				
-				if( rrow != -1 ) {
 					Object oval = leftTable.getValueAt(row, 0);
 					
 					g2.setColor(Color.darkGray);
@@ -118,155 +123,153 @@ public class GraphPanel extends JTabbedPane {
 						enStr = "Energy (in 100g)";
 					}
 					g2.drawString( enStr, 10, (int)(this.getHeight()/13.7) );
+							
+					float alc = 0.0f;
+					float prt = 0.0f;
+					float cbh = 0.0f;
+					float fat = 0.0f;
 					
-					if( rrow >= 0 ) {					
-						float alc = 0.0f;
-						float prt = 0.0f;
-						float cbh = 0.0f;
-						float fat = 0.0f;
-						
-						if( lang.equals("IS") ) {
-							alc = stuffYou(rrow, "Alcohol");
-							prt = stuffYou(rrow, "Protein, total");
-							cbh = stuffYou(rrow, "Carbohydrates, total");
-							fat = stuffYou(rrow, "Fat, total");
-						} else {
-							alc = stuffYou(rrow, "ALC");
-							prt = stuffYou(rrow, "PROCNT");
-							cbh = stuffYou(rrow, "CHOCDF");
-							fat = stuffYou(rrow, "FAT");
+					if( lang.equals("IS") ) {
+						alc = stuffYou(row, "Alkóhól");
+						prt = stuffYou(row, "Prótein, alls");
+						cbh = stuffYou(row, "Kolvetni, alls");
+						fat = stuffYou(row, "Fita, alls");
+					} else {
+						alc = stuffYou(row, "ALC");
+						prt = stuffYou(row, "PROCNT");
+						cbh = stuffYou(row, "CHOCDF");
+						fat = stuffYou(row, "FAT");
+					}
+					
+					double alco = alc*29.0;
+					double prto = prt*17.0;
+					double cbho = cbh*17.0;
+					double fato = fat*37.0;
+					double f = (17.0*prt + 17.0*cbh + 37.0*fat + 29.0*alc)*100.0;
+					
+					if( lang.equals("IS") ) {
+						if( f > 0 ) {
+							double fv = Math.round( f )/100.0;
+							double fcal = f/4.184;
+							double fvcal = Math.round( fcal )/100.0;
+							
+							ps.flush();
+							baos.reset();
+							ps.printf( "%.1f %s", fvcal, " kcal" );
+							String calStr = baos.toString();
+							int strw = g.getFontMetrics().stringWidth(calStr);
+							g2.drawString(calStr, 10, this.getHeight()/9 );
+							
+							ps.flush();
+							baos.reset();
+							ps.printf(" (%.1f %s)", fv, "kJ" );
+							String kjStr = baos.toString();
+							g2.drawString(kjStr, 15+strw, this.getHeight()/9 );
+						}
+					} else {
+						float ff = stuffYou( row, "ENERC_KJ" );
+						if( ff > 0 ) {
+							g2.drawString(ff+" kJ", 10, this.getHeight()/10 );
 						}
 						
-						double alco = alc*29.0;
-						double prto = prt*17.0;
-						double cbho = cbh*17.0;
-						double fato = fat*37.0;
-						double f = (17.0*prt + 17.0*cbh + 37.0*fat + 29.0*alc)*100.0;
-						
-						if( lang.equals("IS") ) {
-							if( f > 0 ) {
-								double fv = Math.round( f )/100.0;
-								double fcal = f/4.184;
-								double fvcal = Math.round( fcal )/100.0;
-								
-								ps.flush();
-								baos.reset();
-								ps.printf( "%.1f %s", fvcal, " kcal" );
-								String calStr = baos.toString();
-								int strw = g.getFontMetrics().stringWidth(calStr);
-								g2.drawString(calStr, 10, this.getHeight()/9 );
-								
-								ps.flush();
-								baos.reset();
-								ps.printf(" (%.1f %s)", fv, "kJ" );
-								String kjStr = baos.toString();
-								g2.drawString(kjStr, 15+strw, this.getHeight()/9 );
-							}
-						} else {
-							float ff = stuffYou( rrow, "ENERC_KJ" );
-							if( ff > 0 ) {
-								g2.drawString(ff+" kJ", 10, this.getHeight()/10 );
-							}
-							
-							ff = stuffYou( rrow, "ENERC_KCAL" );
-							if( ff > 0 ) {
-								g2.drawString(ff+" kcal", 10, this.getHeight()/7 );
-							}
+						ff = stuffYou( row, "ENERC_KCAL" );
+						if( ff > 0 ) {
+							g2.drawString(ff+" kcal", 10, this.getHeight()/7 );
 						}
+					}
+					
+					float total = alc + prt + cbh + fat;
+					
+					if( total > 0 ) {
+						String title = GraphPanel.this.getTitleAt( GraphPanel.this.getSelectedIndex() );
+						int w = this.getWidth();
+						int h = this.getHeight();
 						
-						float total = alc + prt + cbh + fat;
+						int t = Math.min(w, h);
+						t = (3*t)/4;
 						
-						if( total > 0 ) {
-							String title = GraphPanel.this.getTitleAt( GraphPanel.this.getSelectedIndex() );
-							int w = this.getWidth();
-							int h = this.getHeight();
-							
-							int t = Math.min(w, h);
-							t = (3*t)/4;
-							
-							Paint p = g2.getPaint();
-							
-							Color r1 = new Color( 200, 100, 100 );
-							Color r2 = new Color( 200, 150, 150 );
-							GradientPaint gp = new GradientPaint( (w-t)/2, (h-t)/2, r1, (w+t)/2, (h+t)/2, r2 );
-							g2.setPaint( gp );
-							int n = (int)((alc*360.0f)/total);
-							g2.fillArc( (w-t)/2, (h-t)/2, t, t, 0, n );
-							
-							Color g1 = new Color( 100, 200, 100 );
-							Color gn = new Color( 150, 200, 150 );
-							gp = new GradientPaint( (w-t)/2, (h-t)/2, g1, (w+t)/2, (h+t)/2, gn );
-							g2.setPaint( gp );
-							int nn = (int)(((alc+prt)*360.0f)/total);
-							g2.fillArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
-							
-							Color b1 = new Color( 100, 100, 200 );
-							Color b2 = new Color( 150, 150, 200 );
-							gp = new GradientPaint( (w-t)/2, (h-t)/2, b1, (w+t)/2, (h+t)/2, b2 );
-							g2.setPaint( gp );
-							n = nn;
-							nn = (int)(((alc+prt+cbh)*360.0f)/total);
-							g2.fillArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
-							
-							Color y1 = new Color( 200, 200, 100 );
-							Color y2 = new Color( 200, 200, 150 );
-							gp = new GradientPaint( (w-t)/2, (h-t)/2, y1, (w+t)/2, (h+t)/2, y2 );
-							g2.setPaint( gp );
-							n = nn;
-							nn = (int)(360.0f);
-							g2.fillArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
-							
-							g2.setPaint(p);
-							
-							g2.setColor( Color.darkGray );
-							n = (int)((alc*360.0f)/total);
-							g2.drawArc( (w-t)/2, (h-t)/2, t, t, 0, n );
-							nn = (int)(((alc+prt)*360.0f)/total);
-							g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
-							n = nn;
-							nn = (int)(((alc+prt+cbh)*360.0f)/total);
-							g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
-							n = nn;
-							nn = (int)(360.0f);
-							g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
-							
-							int a = 10;
-							int hh = this.getHeight()/30;
-							g2.setColor( r1 );
-							g2.fillRoundRect( (19*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
-							g2.setColor( g1 );
-							g2.fillRoundRect( (19*w)/20, (2*this.getHeight())/25-hh/2, hh, hh, a, a );
-							g2.setColor( b1 );
-							g2.fillRoundRect( (19*w)/20, (3*this.getHeight())/25-hh/2, hh, hh, a, a );
-							g2.setColor( y1 );
-							g2.fillRoundRect( (19*w)/20, (4*this.getHeight())/25-hh/2, hh, hh, a, a );
-							
-							g2.setColor( Color.darkGray );
-							g2.drawRoundRect( (19*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
-							g2.drawRoundRect( (19*w)/20, (2*this.getHeight())/25-hh/2, hh, hh, a, a );
-							g2.drawRoundRect( (19*w)/20, (3*this.getHeight())/25-hh/2, hh, hh, a, a );
-							g2.drawRoundRect( (19*w)/20, (4*this.getHeight())/25-hh/2, hh, hh, a, a );
-							
-							g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/40 ) );
-							g2.setColor( Color.darkGray );
-							String str;
-							if( lang.equals("IS") ) str = "Alkóhól";
-							else str = "Alcohol";
-							int strw = g2.getFontMetrics().stringWidth(str);
-							g2.drawString(str, (19*w)/20-strw-hh/2, (1*this.getHeight())/25+hh/4 );
-							if( lang.equals("IS") ) str = "Prótein";
-							else str = "Protein";
-							strw = g2.getFontMetrics().stringWidth(str);
-							g2.drawString(str, (19*w)/20-strw-hh/2, (2*this.getHeight())/25+hh/4 );
-							if( lang.equals("IS") ) str = "Kolvetni";
-							else str = "Carbohydrates";
-							strw = g2.getFontMetrics().stringWidth(str);
-							g2.drawString(str, (19*w)/20-strw-hh/2, (3*this.getHeight())/25+hh/4 );
-							if( lang.equals("IS") ) str = "Fita";
-							else str = "Fat";
-							strw = g2.getFontMetrics().stringWidth(str);
-							g2.drawString(str, (19*w)/20-strw-hh/2, (4*this.getHeight())/25+hh/4 );
-						}
+						Paint p = g2.getPaint();
+						
+						Color r1 = new Color( 200, 100, 100 );
+						Color r2 = new Color( 200, 150, 150 );
+						GradientPaint gp = new GradientPaint( (w-t)/2, (h-t)/2, r1, (w+t)/2, (h+t)/2, r2 );
+						g2.setPaint( gp );
+						int n = (int)((alc*360.0f)/total);
+						g2.fillArc( (w-t)/2, (h-t)/2, t, t, 0, n );
+						
+						Color g1 = new Color( 100, 200, 100 );
+						Color gn = new Color( 150, 200, 150 );
+						gp = new GradientPaint( (w-t)/2, (h-t)/2, g1, (w+t)/2, (h+t)/2, gn );
+						g2.setPaint( gp );
+						int nn = (int)(((alc+prt)*360.0f)/total);
+						g2.fillArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
+						
+						Color b1 = new Color( 100, 100, 200 );
+						Color b2 = new Color( 150, 150, 200 );
+						gp = new GradientPaint( (w-t)/2, (h-t)/2, b1, (w+t)/2, (h+t)/2, b2 );
+						g2.setPaint( gp );
+						n = nn;
+						nn = (int)(((alc+prt+cbh)*360.0f)/total);
+						g2.fillArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
+						
+						Color y1 = new Color( 200, 200, 100 );
+						Color y2 = new Color( 200, 200, 150 );
+						gp = new GradientPaint( (w-t)/2, (h-t)/2, y1, (w+t)/2, (h+t)/2, y2 );
+						g2.setPaint( gp );
+						n = nn;
+						nn = (int)(360.0f);
+						g2.fillArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
+						
+						g2.setPaint(p);
+						
+						g2.setColor( Color.darkGray );
+						n = (int)((alc*360.0f)/total);
+						g2.drawArc( (w-t)/2, (h-t)/2, t, t, 0, n );
+						nn = (int)(((alc+prt)*360.0f)/total);
+						g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
+						n = nn;
+						nn = (int)(((alc+prt+cbh)*360.0f)/total);
+						g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
+						n = nn;
+						nn = (int)(360.0f);
+						g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
+						
+						int a = 10;
+						int hh = this.getHeight()/30;
+						g2.setColor( r1 );
+						g2.fillRoundRect( (19*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
+						g2.setColor( g1 );
+						g2.fillRoundRect( (19*w)/20, (2*this.getHeight())/25-hh/2, hh, hh, a, a );
+						g2.setColor( b1 );
+						g2.fillRoundRect( (19*w)/20, (3*this.getHeight())/25-hh/2, hh, hh, a, a );
+						g2.setColor( y1 );
+						g2.fillRoundRect( (19*w)/20, (4*this.getHeight())/25-hh/2, hh, hh, a, a );
+						
+						g2.setColor( Color.darkGray );
+						g2.drawRoundRect( (19*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
+						g2.drawRoundRect( (19*w)/20, (2*this.getHeight())/25-hh/2, hh, hh, a, a );
+						g2.drawRoundRect( (19*w)/20, (3*this.getHeight())/25-hh/2, hh, hh, a, a );
+						g2.drawRoundRect( (19*w)/20, (4*this.getHeight())/25-hh/2, hh, hh, a, a );
+						
+						g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/40 ) );
+						g2.setColor( Color.darkGray );
+						String str;
+						if( lang.equals("IS") ) str = "Alkóhól";
+						else str = "Alcohol";
+						int strw = g2.getFontMetrics().stringWidth(str);
+						g2.drawString(str, (19*w)/20-strw-hh/2, (1*this.getHeight())/25+hh/4 );
+						if( lang.equals("IS") ) str = "Prótein";
+						else str = "Protein";
+						strw = g2.getFontMetrics().stringWidth(str);
+						g2.drawString(str, (19*w)/20-strw-hh/2, (2*this.getHeight())/25+hh/4 );
+						if( lang.equals("IS") ) str = "Kolvetni";
+						else str = "Carbohydrates";
+						strw = g2.getFontMetrics().stringWidth(str);
+						g2.drawString(str, (19*w)/20-strw-hh/2, (3*this.getHeight())/25+hh/4 );
+						if( lang.equals("IS") ) str = "Fita";
+						else str = "Fat";
+						strw = g2.getFontMetrics().stringWidth(str);
+						g2.drawString(str, (19*w)/20-strw-hh/2, (4*this.getHeight())/25+hh/4 );
 					}
 				}
 			}
@@ -281,9 +284,9 @@ public class GraphPanel extends JTabbedPane {
 				g2.setRenderingHint( RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON );
 				
 				int row = leftTable.getSelectedRow();
-				int rrow = row;
-				if( row != -1 ) rrow = leftTable.convertRowIndexToModel(row);
-				if( rrow != -1 ) {
+				//int rrow = row;
+				//if( row != -1 ) rrow = leftTable.convertRowIndexToModel(row);
+				if( row != -1 ) {
 					Object oval = leftTable.getValueAt(row, 0);
 					
 					g2.setColor(Color.darkGray);
@@ -307,246 +310,244 @@ public class GraphPanel extends JTabbedPane {
 					}
 					g2.drawString( enStr, 10, (int)(this.getHeight()/13.7) );
 					
-					if( rrow >= 0 ) {					
-						float alc = 0.0f;
-						float prt = 0.0f;
-						float cbh = 0.0f;
-						float fat = 0.0f;
-						
-						if( lang.equals("IS") ) {
-							alc = stuffYou(rrow, "Alcohol");
-							prt = stuffYou(rrow, "Protein, total");
-							cbh = stuffYou(rrow, "Carbohydrates, total");
-							fat = stuffYou(rrow, "Fat, total");
-						} else {
-							alc = stuffYou(rrow, "ALC");
-							prt = stuffYou(rrow, "PROCNT");
-							cbh = stuffYou(rrow, "CHOCDF");
-							fat = stuffYou(rrow, "FAT");
+					float alc = 0.0f;
+					float prt = 0.0f;
+					float cbh = 0.0f;
+					float fat = 0.0f;
+					
+					if( lang.equals("IS") ) {
+						alc = stuffYou(row, "Alkóhól");
+						prt = stuffYou(row, "Prótein, alls");
+						cbh = stuffYou(row, "Kolvetni, alls");
+						fat = stuffYou(row, "Fita, alls");
+					} else {
+						alc = stuffYou(row, "ALC");
+						prt = stuffYou(row, "PROCNT");
+						cbh = stuffYou(row, "CHOCDF");
+						fat = stuffYou(row, "FAT");
+					}
+					
+					double alco = alc*29.0;
+					double prto = prt*17.0;
+					double cbho = cbh*17.0;
+					double fato = fat*37.0;
+					double f = (17.0*prt + 17.0*cbh + 37.0*fat + 29.0*alc)*100.0;
+					
+					if( lang.equals("IS") ) {
+						if( f > 0 ) {
+							double fv = Math.round( f )/100.0;
+							double fcal = f/4.184;
+							double fvcal = Math.round( fcal )/100.0;
+							
+							ps.flush();
+							baos.reset();
+							ps.printf( "%.1f %s", fvcal, " kcal" );
+							String calStr = baos.toString();
+							int strw = g.getFontMetrics().stringWidth(calStr);
+							g2.drawString(calStr, 10, this.getHeight()/9 );
+							
+							ps.flush();
+							baos.reset();
+							ps.printf(" (%.1f %s)", fv, "kJ" );
+							String kjStr = baos.toString();
+							g2.drawString(kjStr, 15+strw, this.getHeight()/9 );
+						}
+					} else {
+						float ff = stuffYou( row, "ENERC_KJ" );
+						if( ff > 0 ) {
+							g2.drawString(ff+" kJ", 10, this.getHeight()/10 );
 						}
 						
-						double alco = alc*29.0;
-						double prto = prt*17.0;
-						double cbho = cbh*17.0;
-						double fato = fat*37.0;
-						double f = (17.0*prt + 17.0*cbh + 37.0*fat + 29.0*alc)*100.0;
-						
-						if( lang.equals("IS") ) {
-							if( f > 0 ) {
-								double fv = Math.round( f )/100.0;
-								double fcal = f/4.184;
-								double fvcal = Math.round( fcal )/100.0;
-								
-								ps.flush();
-								baos.reset();
-								ps.printf( "%.1f %s", fvcal, " kcal" );
-								String calStr = baos.toString();
-								int strw = g.getFontMetrics().stringWidth(calStr);
-								g2.drawString(calStr, 10, this.getHeight()/9 );
-								
-								ps.flush();
-								baos.reset();
-								ps.printf(" (%.1f %s)", fv, "kJ" );
-								String kjStr = baos.toString();
-								g2.drawString(kjStr, 15+strw, this.getHeight()/9 );
-							}
-						} else {
-							float ff = stuffYou( rrow, "ENERC_KJ" );
-							if( ff > 0 ) {
-								g2.drawString(ff+" kJ", 10, this.getHeight()/10 );
-							}
-							
-							ff = stuffYou( rrow, "ENERC_KCAL" );
-							if( ff > 0 ) {
-								g2.drawString(ff+" kcal", 10, this.getHeight()/7 );
-							}
+						ff = stuffYou( row, "ENERC_KCAL" );
+						if( ff > 0 ) {
+							g2.drawString(ff+" kcal", 10, this.getHeight()/7 );
 						}
+					}
+					
+					float total = alc + prt + cbh + fat;
+					
+					if( total > 0 ) {
+						int w = this.getWidth();
+						int h = this.getHeight();
 						
-						float total = alc + prt + cbh + fat;
+						//int t = Math.min(w, h);
+						int th = (3*h)/4;
+						int tw = (3*w)/4;
+						int tnrw = (1*w)/2;
+						int bil = w/30;
 						
-						if( total > 0 ) {
-							int w = this.getWidth();
-							int h = this.getHeight();
-							
-							//int t = Math.min(w, h);
-							int th = (3*h)/4;
-							int tw = (3*w)/4;
-							int tnrw = (1*w)/2;
-							int bil = w/30;
-							
-							g.setColor( Color.darkGray );
-							g.drawLine( (w-tw)/2, (h-th)/2+10, (w-tw)/2, (h+th)/2);
-							g.drawLine( (w-tw)/2, (h+th)/2, (w+tw)/2, (h+th)/2);
-							
-							g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/40 ) );
-							
-							int hh = (h+th)/2;
-							String str = "g";
-							int strw = g.getFontMetrics().stringWidth(str);
+						g.setColor( Color.darkGray );
+						g.drawLine( (w-tw)/2, (h-th)/2+10, (w-tw)/2, (h+th)/2);
+						g.drawLine( (w-tw)/2, (h+th)/2, (w+tw)/2, (h+th)/2);
+						
+						g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/40 ) );
+						
+						int hh = (h+th)/2;
+						String str = "g";
+						int strw = g.getFontMetrics().stringWidth(str);
+						g.setColor( Color.darkGray );
+						g.drawString( str, (w-tw)/2-strw-10, hh);
+						for( int i = 1; i < 10; i++ ) {
+							hh = (h+th)/2-(i*th)/10;
+							str = i*10.0f+"";
+							strw = g.getFontMetrics().stringWidth(str);
 							g.setColor( Color.darkGray );
 							g.drawString( str, (w-tw)/2-strw-10, hh);
-							for( int i = 1; i < 10; i++ ) {
-								hh = (h+th)/2-(i*th)/10;
-								str = i*10.0f+"";
-								strw = g.getFontMetrics().stringWidth(str);
-								g.setColor( Color.darkGray );
-								g.drawString( str, (w-tw)/2-strw-10, hh);
-								g.setColor( Color.lightGray );
-								g.drawLine( (w-tw)/2, hh, (w+tw)/2, hh );
-							}
-							
-							Stroke stroke = g2.getStroke();
-							float[] ff = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f};
-							BasicStroke bs = new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1.0f, ff, 0.0f);
-							g2.setStroke( bs );
-							
-							hh = (h+th)/2;
-							str = "kcal";
+							g.setColor( Color.lightGray );
+							g.drawLine( (w-tw)/2, hh, (w+tw)/2, hh );
+						}
+						
+						Stroke stroke = g2.getStroke();
+						float[] ff = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+						BasicStroke bs = new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1.0f, ff, 0.0f);
+						g2.setStroke( bs );
+						
+						hh = (h+th)/2;
+						str = "kcal";
+						strw = g.getFontMetrics().stringWidth(str);
+						g.setColor( Color.darkGray );
+						g.drawString( str, (w+tw)/2+10, hh);
+						for( int i = 100; i < 900; i+=100 ) {
+							hh = (int)((h+th)/2-(i*th)/884.0);
+							str = i+"";
 							strw = g.getFontMetrics().stringWidth(str);
 							g.setColor( Color.darkGray );
 							g.drawString( str, (w+tw)/2+10, hh);
-							for( int i = 100; i < 900; i+=100 ) {
-								hh = (int)((h+th)/2-(i*th)/884.0);
-								str = i+"";
-								strw = g.getFontMetrics().stringWidth(str);
-								g.setColor( Color.darkGray );
-								g.drawString( str, (w+tw)/2+10, hh);
-								g.setColor( Color.lightGray );
-								g.drawLine( (w-tw)/2, hh, (w+tw)/2, hh );
-							}
-							
-							g2.setStroke( stroke );
-							Paint p = g2.getPaint();
-							
-							Color aGray1 = new Color( 220, 220, 220, 224 );
-							Color aGray2 = new Color( 220, 220, 220, 64 );
-							
-							Color r1 = new Color( 200, 100, 100 );
-							Color g1 = new Color( 100, 200, 100 );
-							Color b1 = new Color( 100, 100, 200 );
-							Color y1 = new Color( 200, 200, 100 );
-							
-							Color r2 = new Color( 250, 150, 150 );
-							GradientPaint gp = new GradientPaint( (w-tnrw)/2-bil, 0,r1, (w-tnrw)/2+bil, 0, r2 );
-							g2.setPaint( gp );
-							//int n = (int)((alc*360.0f)/total);
-							int val = (int)(th*alc/100.0);
-							g2.fillRect( (w-tnrw)/2-bil, (h+th)/2-val, bil, val );
-							int val2 = (int)(th*alco/3700.0);
-							g2.fillRect( (w-tnrw)/2, (h+th)/2-val2, bil, val2 );
-							
-							gp = new GradientPaint( (w-tnrw)/2-2*bil/3, 0, aGray1, (w-tnrw)/2, 0, aGray2 );
-							g2.setPaint( gp );
-							g2.fillRect( (w-tnrw)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
-							g2.fillRect( (w-tnrw)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
-							
-							g2.setPaint(p);
-							g2.setColor( Color.darkGray );
-							g2.drawRect( (w-tnrw)/2-bil, (h+th)/2-val, bil, val );
-							g2.drawRect( (w-tnrw)/2, (h+th)/2-val2, bil, val2 );
-							
-							Color gn = new Color( 150, 250, 150 );
-							gp = new GradientPaint( (w-tnrw/3)/2-bil, 0, g1, (w-tnrw/3)/2+bil, 0, gn );
-							g2.setPaint( gp );
-							val = (int)(th*prt/100.0);
-							g2.fillRect( (w-tnrw/3)/2-bil, (h+th)/2-val, bil, val );
-							val2 = (int)(th*prto/3700.0);
-							g2.fillRect( (w-tnrw/3)/2, (h+th)/2-val2, bil, val2 );
-							
-							gp = new GradientPaint( (w-tnrw/3)/2-2*bil/3, 0, aGray1, (w-tnrw/3)/2, 0, aGray2 );
-							g2.setPaint( gp );
-							g2.fillRect( (w-tnrw/3)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
-							g2.fillRect( (w-tnrw/3)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
-							
-							g2.setPaint(p);
-							g2.setColor( Color.darkGray );
-							g2.drawRect( (w-tnrw/3)/2-bil, (h+th)/2-val, bil, val );
-							g2.drawRect( (w-tnrw/3)/2, (h+th)/2-val2, bil, val2 );
-							
-							Color b2 = new Color( 150, 150, 250 );
-							gp = new GradientPaint( (w+tnrw/3)/2-bil, 0, b1, (w+tnrw/3)/2+bil, 0, b2 );
-							g2.setPaint( gp );
-							val = (int)(th*cbh/100.0);
-							g2.fillRect( (w+tnrw/3)/2-bil, (h+th)/2-val, bil, val );
-							val2 = (int)(th*cbho/3700.0);
-							g2.fillRect( (w+tnrw/3)/2, (h+th)/2-val2, bil, val2 );
-							
-							gp = new GradientPaint( (w+tnrw/3)/2-2*bil/3, 0, aGray1, (w+tnrw/3)/2, 0, aGray2 );
-							g2.setPaint( gp );
-							g2.fillRect( (w+tnrw/3)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
-							g2.fillRect( (w+tnrw/3)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
-							
-							g2.setPaint(p);
-							g2.setColor( Color.darkGray );
-							g2.drawRect( (w+tnrw/3)/2-bil, (h+th)/2-val, bil, val );
-							g2.drawRect( (w+tnrw/3)/2, (h+th)/2-val2, bil, val2 );
-							
-							Color y2 = new Color( 250, 250, 150 );
-							gp = new GradientPaint( (w+tnrw)/2-bil, 0, y1, (w+tnrw)/2+bil, 0, y2 );
-							g2.setPaint( gp );
-							val = (int)(th*fat/100.0);
-							g2.fillRect( (w+tnrw)/2-bil, (h+th)/2-val, bil, val );
-							val2 = (int)(th*fato/3700.0);
-							g2.fillRect( (w+tnrw)/2, (h+th)/2-val2, bil, val2 );
-							
-							gp = new GradientPaint( (w+tnrw)/2-2*bil/3, 0, aGray1, (w+tnrw)/2, 0, aGray2 );
-							g2.setPaint( gp );
-							g2.fillRect( (w+tnrw)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
-							g2.fillRect( (w+tnrw)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
-							
-							g2.setPaint(p);
-							g2.setColor( Color.darkGray );
-							g2.drawRect( (w+tnrw)/2-bil, (h+th)/2-val, bil, val );
-							g2.drawRect( (w+tnrw)/2, (h+th)/2-val2, bil, val2 );
-							
-							/*g2.setColor( Color.darkGray );
-							n = (int)((alc*360.0f)/total);
-							g2.drawArc( (w-t)/2, (h-t)/2, t, t, 0, n );
-							nn = (int)(((alc+prt)*360.0f)/total);
-							g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
-							n = nn;
-							nn = (int)(((alc+prt+cbh)*360.0f)/total);
-							g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
-							n = nn;
-							nn = (int)(360.0f);
-							g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );*/
-							
-							int a = 10;
-							hh = this.getHeight()/30;
-							g2.setColor( r1 );
-							g2.fillRoundRect( (19*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
-							g2.setColor( g1 );
-							g2.fillRoundRect( (19*w)/20, (2*this.getHeight())/25-hh/2, hh, hh, a, a );
-							g2.setColor( b1 );
-							g2.fillRoundRect( (15*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
-							g2.setColor( y1 );
-							g2.fillRoundRect( (15*w)/20, (2*this.getHeight())/25-hh/2, hh, hh, a, a );
-							
-							g2.setColor( Color.darkGray );
-							g2.drawRoundRect( (19*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
-							g2.drawRoundRect( (19*w)/20, (2*this.getHeight())/25-hh/2, hh, hh, a, a );
-							g2.drawRoundRect( (15*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
-							g2.drawRoundRect( (15*w)/20, (2*this.getHeight())/25-hh/2, hh, hh, a, a );
-							
-							g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/40 ) );
-							g2.setColor( Color.darkGray );
-							if( lang.equals("IS") ) str = "Alkóhól";
-							else str = "Alcohol";
-							strw = g2.getFontMetrics().stringWidth(str);
-							g2.drawString(str, (19*w)/20-strw-hh/2, (1*this.getHeight())/25+hh/4 );
-							if( lang.equals("IS") ) str = "Prótein";
-							else str = "Protein";
-							strw = g2.getFontMetrics().stringWidth(str);
-							g2.drawString(str, (19*w)/20-strw-hh/2, (2*this.getHeight())/25+hh/4 );
-							if( lang.equals("IS") ) str = "Kolvetni";
-							else str = "Carbohydrates";
-							strw = g2.getFontMetrics().stringWidth(str);
-							g2.drawString(str, (15*w)/20-strw-hh/2, (1*this.getHeight())/25+hh/4 );
-							if( lang.equals("IS") ) str = "Fita";
-							else str = "Fat";
-							strw = g2.getFontMetrics().stringWidth(str);
-							g2.drawString(str, (15*w)/20-strw-hh/2, (2*this.getHeight())/25+hh/4 );
+							g.setColor( Color.lightGray );
+							g.drawLine( (w-tw)/2, hh, (w+tw)/2, hh );
 						}
+						
+						g2.setStroke( stroke );
+						Paint p = g2.getPaint();
+						
+						Color aGray1 = new Color( 220, 220, 220, 224 );
+						Color aGray2 = new Color( 220, 220, 220, 64 );
+						
+						Color r1 = new Color( 200, 100, 100 );
+						Color g1 = new Color( 100, 200, 100 );
+						Color b1 = new Color( 100, 100, 200 );
+						Color y1 = new Color( 200, 200, 100 );
+						
+						Color r2 = new Color( 250, 150, 150 );
+						GradientPaint gp = new GradientPaint( (w-tnrw)/2-bil, 0,r1, (w-tnrw)/2+bil, 0, r2 );
+						g2.setPaint( gp );
+						//int n = (int)((alc*360.0f)/total);
+						int val = (int)(th*alc/100.0);
+						g2.fillRect( (w-tnrw)/2-bil, (h+th)/2-val, bil, val );
+						int val2 = (int)(th*alco/3700.0);
+						g2.fillRect( (w-tnrw)/2, (h+th)/2-val2, bil, val2 );
+						
+						gp = new GradientPaint( (w-tnrw)/2-2*bil/3, 0, aGray1, (w-tnrw)/2, 0, aGray2 );
+						g2.setPaint( gp );
+						g2.fillRect( (w-tnrw)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
+						g2.fillRect( (w-tnrw)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
+						
+						g2.setPaint(p);
+						g2.setColor( Color.darkGray );
+						g2.drawRect( (w-tnrw)/2-bil, (h+th)/2-val, bil, val );
+						g2.drawRect( (w-tnrw)/2, (h+th)/2-val2, bil, val2 );
+						
+						Color gn = new Color( 150, 250, 150 );
+						gp = new GradientPaint( (w-tnrw/3)/2-bil, 0, g1, (w-tnrw/3)/2+bil, 0, gn );
+						g2.setPaint( gp );
+						val = (int)(th*prt/100.0);
+						g2.fillRect( (w-tnrw/3)/2-bil, (h+th)/2-val, bil, val );
+						val2 = (int)(th*prto/3700.0);
+						g2.fillRect( (w-tnrw/3)/2, (h+th)/2-val2, bil, val2 );
+						
+						gp = new GradientPaint( (w-tnrw/3)/2-2*bil/3, 0, aGray1, (w-tnrw/3)/2, 0, aGray2 );
+						g2.setPaint( gp );
+						g2.fillRect( (w-tnrw/3)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
+						g2.fillRect( (w-tnrw/3)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
+						
+						g2.setPaint(p);
+						g2.setColor( Color.darkGray );
+						g2.drawRect( (w-tnrw/3)/2-bil, (h+th)/2-val, bil, val );
+						g2.drawRect( (w-tnrw/3)/2, (h+th)/2-val2, bil, val2 );
+						
+						Color b2 = new Color( 150, 150, 250 );
+						gp = new GradientPaint( (w+tnrw/3)/2-bil, 0, b1, (w+tnrw/3)/2+bil, 0, b2 );
+						g2.setPaint( gp );
+						val = (int)(th*cbh/100.0);
+						g2.fillRect( (w+tnrw/3)/2-bil, (h+th)/2-val, bil, val );
+						val2 = (int)(th*cbho/3700.0);
+						g2.fillRect( (w+tnrw/3)/2, (h+th)/2-val2, bil, val2 );
+						
+						gp = new GradientPaint( (w+tnrw/3)/2-2*bil/3, 0, aGray1, (w+tnrw/3)/2, 0, aGray2 );
+						g2.setPaint( gp );
+						g2.fillRect( (w+tnrw/3)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
+						g2.fillRect( (w+tnrw/3)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
+						
+						g2.setPaint(p);
+						g2.setColor( Color.darkGray );
+						g2.drawRect( (w+tnrw/3)/2-bil, (h+th)/2-val, bil, val );
+						g2.drawRect( (w+tnrw/3)/2, (h+th)/2-val2, bil, val2 );
+						
+						Color y2 = new Color( 250, 250, 150 );
+						gp = new GradientPaint( (w+tnrw)/2-bil, 0, y1, (w+tnrw)/2+bil, 0, y2 );
+						g2.setPaint( gp );
+						val = (int)(th*fat/100.0);
+						g2.fillRect( (w+tnrw)/2-bil, (h+th)/2-val, bil, val );
+						val2 = (int)(th*fato/3700.0);
+						g2.fillRect( (w+tnrw)/2, (h+th)/2-val2, bil, val2 );
+						
+						gp = new GradientPaint( (w+tnrw)/2-2*bil/3, 0, aGray1, (w+tnrw)/2, 0, aGray2 );
+						g2.setPaint( gp );
+						g2.fillRect( (w+tnrw)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
+						g2.fillRect( (w+tnrw)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
+						
+						g2.setPaint(p);
+						g2.setColor( Color.darkGray );
+						g2.drawRect( (w+tnrw)/2-bil, (h+th)/2-val, bil, val );
+						g2.drawRect( (w+tnrw)/2, (h+th)/2-val2, bil, val2 );
+						
+						/*g2.setColor( Color.darkGray );
+						n = (int)((alc*360.0f)/total);
+						g2.drawArc( (w-t)/2, (h-t)/2, t, t, 0, n );
+						nn = (int)(((alc+prt)*360.0f)/total);
+						g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
+						n = nn;
+						nn = (int)(((alc+prt+cbh)*360.0f)/total);
+						g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
+						n = nn;
+						nn = (int)(360.0f);
+						g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );*/
+						
+						int a = 10;
+						hh = this.getHeight()/30;
+						g2.setColor( r1 );
+						g2.fillRoundRect( (19*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
+						g2.setColor( g1 );
+						g2.fillRoundRect( (19*w)/20, (2*this.getHeight())/25-hh/2, hh, hh, a, a );
+						g2.setColor( b1 );
+						g2.fillRoundRect( (15*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
+						g2.setColor( y1 );
+						g2.fillRoundRect( (15*w)/20, (2*this.getHeight())/25-hh/2, hh, hh, a, a );
+						
+						g2.setColor( Color.darkGray );
+						g2.drawRoundRect( (19*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
+						g2.drawRoundRect( (19*w)/20, (2*this.getHeight())/25-hh/2, hh, hh, a, a );
+						g2.drawRoundRect( (15*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
+						g2.drawRoundRect( (15*w)/20, (2*this.getHeight())/25-hh/2, hh, hh, a, a );
+						
+						g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/40 ) );
+						g2.setColor( Color.darkGray );
+						if( lang.equals("IS") ) str = "Alkóhól";
+						else str = "Alcohol";
+						strw = g2.getFontMetrics().stringWidth(str);
+						g2.drawString(str, (19*w)/20-strw-hh/2, (1*this.getHeight())/25+hh/4 );
+						if( lang.equals("IS") ) str = "Prótein";
+						else str = "Protein";
+						strw = g2.getFontMetrics().stringWidth(str);
+						g2.drawString(str, (19*w)/20-strw-hh/2, (2*this.getHeight())/25+hh/4 );
+						if( lang.equals("IS") ) str = "Kolvetni";
+						else str = "Carbohydrates";
+						strw = g2.getFontMetrics().stringWidth(str);
+						g2.drawString(str, (15*w)/20-strw-hh/2, (1*this.getHeight())/25+hh/4 );
+						if( lang.equals("IS") ) str = "Fita";
+						else str = "Fat";
+						strw = g2.getFontMetrics().stringWidth(str);
+						g2.drawString(str, (15*w)/20-strw-hh/2, (2*this.getHeight())/25+hh/4 );
 					}
 				}
 			}
