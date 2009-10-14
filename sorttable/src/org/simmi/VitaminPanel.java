@@ -120,7 +120,6 @@ public class VitaminPanel extends JComponent {
 					g.drawLine( (w-tw)/2, hh, (w+tw)/2, hh );
 				}
 			}
-			
 			Paint p = g2.getPaint();
 			
 			double[] dvals = null;
