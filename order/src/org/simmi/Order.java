@@ -2,9 +2,11 @@ package org.simmi;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ItemEvent;
@@ -35,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.AbstractCellEditor;
 import javax.swing.JApplet;
@@ -64,15 +67,19 @@ import javax.swing.table.TableRowSorter;
 public class Order extends JApplet {
 	JScrollPane	scrollpane = new JScrollPane();
 	JScrollPane	pscrollpane = new JScrollPane();
+	JScrollPane ascrollpane = new JScrollPane();
 	JTable		table = new JTable();
 	JTable		ptable = new JTable();
+	JTable		atable = new JTable();
 	
 	Map<String,Integer>	modelRowMap = new HashMap<String,Integer>();
 	
+	JScrollPane	scrolled = new JScrollPane();
 	JEditorPane	ed = new JEditorPane();
 	
 	JLabel		vorur = new JLabel( "Vörur", JLabel.CENTER );
 	JLabel		pantanir = new JLabel( "Pantanir", JLabel.CENTER );
+	JLabel		afgreitt = new JLabel( "Afgreitt", JLabel.CENTER );
 	
 	JLabel		label = new JLabel( "Framl:", JLabel.CENTER );
 	JLabel		plabel = new JLabel( "Byrgir:", JLabel.CENTER );
@@ -80,13 +87,18 @@ public class Order extends JApplet {
 	JComboBox	combo = new JComboBox();
 	JComboBox	pcombo = new JComboBox();
 	
-	JComboBox	vcombo = new JComboBox();
+	JComboBox	vcombo;
+	JComboBox	stcombo;
 	
 	JButton		newItem = new JButton( "Ný vara" );
 	JButton		delItem = new JButton( "Eyða vöru" );
 	
+	JButton		afgreida = new JButton();
+	
 	TableModel	model;
 	TableModel	pmodel;
+	TableModel	amodel;
+	
 	TableModel	nullmodel;
 	JComponent	c;
 	Connection	con;
@@ -96,6 +108,10 @@ public class Order extends JApplet {
 	List<Vara>		ordlist;
 	
 	int				ordno = 0;
+	
+	Pontun			currentSel = null;
+	
+	Map<String,Image>	faces = new HashMap<String,Image>();
 	
 	VDialog 		d = new VDialog();
 	
@@ -117,7 +133,7 @@ public class Order extends JApplet {
 		
 		boolean		appr = false;
 		
-		JButton ok = new JButton( new AbstractAction("OK") {	
+		JButton ok = new JButton( new AbstractAction("OK") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				appr = true;
@@ -142,27 +158,33 @@ public class Order extends JApplet {
 		public void setBounds( int x, int y, int w, int h ) {
 			super.setBounds(x, y, w, h);
 			
-			name.setBounds(5, 5, 100, 25);
-			cat.setBounds(250, 5, 50, 25);
-			frml.setBounds(5, 35, 100, 25);
-			brgr.setBounds(200, 35, 100, 25);
+			name.setBounds(0, 15, 95, 25);
+			cat.setBounds(275, 15, 95, 25);
+			frml.setBounds(0, 45, 95, 25);
+			brgr.setBounds(275, 45, 95, 25);
 			
-			nameField.setBounds(110, 5, 300, 25);
-			catField.setBounds(300, 5, 100, 25);
-			frmlCombo.setBounds(110, 35, 100, 25);
-			brgrCombo.setBounds(300, 35, 100, 25);
+			nameField.setBounds(100, 15, 225, 25);
+			catField.setBounds(375, 15, 150, 25);
+			frmlCombo.setBounds(100, 45, 150, 25);
+			brgrCombo.setBounds(375, 45, 150, 25);
 			
-			ok.setBounds(100, 70, 100, 25);
-			cancel.setBounds(300, 70, 100, 25);
+			ok.setBounds(140, 100, 100, 25);
+			cancel.setBounds(310, 100, 100, 25);
 		}
 		
 		private void init() {
 			this.setLayout( null );
 			
+			this.setUndecorated( true );
 			this.setModal( true );
 			this.setResizable( false );
 			this.setTitle("Ný Vara");
+			/*this.getRootPane().setBackground( Color.white );
+			this.getRootPane().setForeground( Color.white );
 			this.setBackground( Color.white );
+			this.setForeground( Color.white );*/
+			this.getContentPane().setBackground( Color.white );
+			//this.getContentPane().setForeground( Color.white );
 			
 			this.add( name );
 			this.add( cat );
@@ -189,18 +211,22 @@ public class Order extends JApplet {
 		String		PantaðAf;
 		Integer		e_Magn;
 		Date		Pantað;
-		Date		Afgreitt;
+		Date		_Afgreitt;
 		String		_Lýsing;
+		String		VerkNúmer;
+		String		Staðsetning;
 		
-		public Pontun( boolean urgent, int ordno, String name, String user, int quant, Date orddate, Date purdate, String description ) {
+		public Pontun( boolean urgent, int ordno, String name, String user, int quant, Date orddate, Date purdate, String description, String vn, String st ) {
 			this.e_Mikilvægt = urgent;
 			this._Númer = ordno;
 			this.Nafn = name;
 			this.PantaðAf = user;
 			this.e_Magn = quant;
 			this.Pantað = orddate;
-			this.Afgreitt = purdate;
+			this._Afgreitt = purdate;
 			this._Lýsing = description;
+			this.VerkNúmer = vn;
+			this.Staðsetning = st;
 		}
 	}
 	
@@ -326,13 +352,13 @@ public class Order extends JApplet {
 	public List<Pontun>	loadPnt() throws SQLException {
 		List<Pontun>	pntList = new ArrayList<Pontun>();
 		
-		String sql = "select [ordno], [name], [user], [quant], [orddate], [purdate], [urgent], [description] from [order].[dbo].[Pontun]";// where [user] = '"+user+"'";
+		String sql = "select [ordno], [name], [user], [quant], [orddate], [purdate], [urgent], [description], [jobid], [location] from [order].[dbo].[Pontun]";// where [user] = '"+user+"'";
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
 		ResultSet 			rs = ps.executeQuery();
 
 		while (rs.next()) {
-			pntList.add( new Pontun( rs.getBoolean(7), rs.getInt(1), rs.getString(2), rs.getString(3), rs.getInt(4), rs.getDate(5), rs.getDate(6), rs.getString(8) ) );
+			pntList.add( new Pontun( rs.getBoolean(7), rs.getInt(1), rs.getString(2), rs.getString(3), rs.getInt(4), rs.getDate(5), rs.getDate(6), rs.getString(8), rs.getString(9), rs.getString(10) ) );
 		}
 		
 		rs.close();
@@ -360,7 +386,7 @@ public class Order extends JApplet {
 		
 		List<Vara>	ordlist = new ArrayList<Vara>();
 		
-		String sql = "select [varno], [name], [byrgir], [framl] from [order].[dbo].[Vara]"; // where [user] = '"+user+"'";
+		String sql = "select [cat], [name], [byrgir], [framl] from [order].[dbo].[Vara]"; // where [user] = '"+user+"'";
 		PreparedStatement 	ps = con.prepareStatement(sql);
 		ResultSet 			rs = ps.executeQuery();
 
@@ -407,6 +433,16 @@ public class Order extends JApplet {
 		return l_ordno;
 	}*/
 	
+	public void updateorder( Pontun order ) throws SQLException {
+		//String ord = ordno+",'"+name+"','"+user+"',"+quant+",GetDate(),null,0,null";
+		String sql = "update [order].[dbo].[Pontun] set [quant] = "+order.e_Magn+", [Description] = '"+order._Lýsing+"' where [ordno] = "+order._Númer;
+		
+		PreparedStatement 	ps = con.prepareStatement(sql);
+		boolean				b = ps.execute();
+		
+		ps.close();
+	}
+	
 	public void updateorder( Pontun order, int quant ) throws SQLException {
 		//String ord = ordno+",'"+name+"','"+user+"',"+quant+",GetDate(),null,0,null";
 		String sql = "update [order].[dbo].[Pontun] set [quant] = "+quant+" where [ordno] = "+order._Númer;
@@ -423,16 +459,16 @@ public class Order extends JApplet {
 		ps.close();
 	}
 	
-	public void order( String name, int quant ) throws SQLException {
+	public void order( String name, int quant, String verknr, String location ) throws SQLException {
 		ordno++;
-		String ord = ordno+",'"+name+"','"+user+"',"+quant+",GetDate(),null,0,null";
+		String ord = ordno+",'"+name+"','"+user+"',"+quant+",GetDate(),null,0,null,'"+verknr.substring(0, 10)+"','"+location+"'";
 		String sql = "insert into [order].[dbo].[Pontun] values ("+ord+")";
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
 		boolean				b = ps.execute();
 		
 		if( !b ) {
-			pntlist.add( new Pontun( false, ordno, name, user, quant, new Date( System.currentTimeMillis() ), null, "" ) );
+			pntlist.add( new Pontun( false, ordno, name, user, quant, new Date( System.currentTimeMillis() ), null, "", verknr, location ) );
 		}
 		
 		ps.close();
@@ -520,6 +556,50 @@ public class Order extends JApplet {
 			e.printStackTrace();
 		}
 		
+		vcombo = new JComboBox() {
+			private boolean layingOut = false;
+
+			public void doLayout() {
+		        try {
+		            layingOut = true;
+		            super.doLayout();
+		        }
+		        finally {
+		            layingOut = false;
+		        }
+		    }
+
+		    public Dimension getSize() {
+		        Dimension sz = super.getSize();
+		        if (!layingOut) {
+		            sz.width = Math.max(sz.width, this.getPreferredSize().width);
+		        }
+		        return sz;
+		    }
+		};
+		
+		stcombo = new JComboBox() {
+			private boolean layingOut = false;
+
+			public void doLayout() {
+		        try {
+		            layingOut = true;
+		            super.doLayout();
+		        }
+		        finally {
+		            layingOut = false;
+		        }
+		    }
+
+		    public Dimension getSize() {
+		        Dimension sz = super.getSize();
+		        if (!layingOut) {
+		            sz.width = Math.max(sz.width, this.getPreferredSize().width);
+		        }
+		        return sz;
+		    }
+		};
+		
 		try {
 			String val = loadEmp();
 			String[] vals = val.split( "<h3>" );
@@ -567,6 +647,10 @@ public class Order extends JApplet {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		stcombo.addItem("Borgartún");
+		stcombo.addItem("Skúlagata");
+		stcombo.addItem("Gylfaflöt");
 		
 		try {
 			//String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=order;integratedSecurity=true;";
@@ -626,7 +710,7 @@ public class Order extends JApplet {
 						if( tpnt != null ) {
 							updateorder( tpnt, tpnt.e_Magn+1 );
 						} else {
-							order( name, quant );
+							order( name, quant, (String)vcombo.getSelectedItem(), (String)stcombo.getSelectedItem() );
 						}
 					} catch (SQLException e1) {
 						// TODO Auto-generated catch block
@@ -641,6 +725,13 @@ public class Order extends JApplet {
 		final JButton	rembtn = new JButton(new AbstractAction("<< Afpanta") {
 			public void actionPerformed(ActionEvent e) {
 				removeSelectedRows();
+			}
+		});
+		
+		afgreida.setAction( new AbstractAction("<< Afgreiða") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				
 			}
 		});
 		
@@ -680,29 +771,40 @@ public class Order extends JApplet {
 				if( domain != null ) str += " on "+domain;
 				int strw = g.getFontMetrics().stringWidth( str );
 				g.drawString( str, (this.getWidth()-strw)/2, 20 );
+				
+				if( user != null ) {
+					Image face = getImage(user);
+					if( face != null ) g.drawImage( face, (this.getWidth()-face.getWidth(this))/2, 50, this );
+				}
 			}
 			
 			public void setBounds( int x, int y, int w, int h ) {
 				super.setBounds(x, y, w, h);
 				
-				vcombo.setBounds( (int)(0.5*w)-120, (int)(0.05*h), 240, 25 );
+				vcombo.setBounds( (int)(0.5*w)-75, 260, 150, 25 );
+				stcombo.setBounds( (int)(0.5*w)-75, 290, 150, 25 );
 				
 				label.setBounds( (int)(0.05*w), 50, (int)(0.15*w), 25 );
 				plabel.setBounds( (int)(0.25*w), 50, (int)(0.15*w), 25 );
 				combo.setBounds( (int)(0.05*w), 70, (int)(0.15*w), 25 );
 				pcombo.setBounds( (int)(0.25*w), 70, (int)(0.15*w), 25 );
-				newItem.setBounds( (int)(0.05*w), 110+(int)(0.50*h), (int)(0.15*w), 25 );
-				delItem.setBounds( (int)(0.25*w), 110+(int)(0.50*h), (int)(0.15*w), 25 );
+				newItem.setBounds( (int)(0.05*w), 110+(int)(0.40*h), (int)(0.15*w), 25 );
+				delItem.setBounds( (int)(0.25*w), 110+(int)(0.40*h), (int)(0.15*w), 25 );
 				
 				vorur.setBounds( (int)(0.05*w), 30, (int)(0.35*w), 25 );
 				pantanir.setBounds( (int)(0.60*w), 30, (int)(0.35*w), 25 );
+				afgreitt.setBounds( (int)(0.05*w), (int)(0.60*h)-30, (int)(0.35*w), 25 );
 				
-				scrollpane.setBounds( (int)(0.05*w), 100, (int)(0.35*w), (int)(0.50*h) );
-				pscrollpane.setBounds( (int)(0.60*w), 100, (int)(0.35*w), (int)(0.50*h) );
-				ed.setBounds( (int)(0.60*w), (int)(0.6*h), (int)(0.35*w), (int)(0.40*h) );
+				scrollpane.setBounds( (int)(0.05*w), 100, (int)(0.35*w), (int)(0.40*h) );
+				ascrollpane.setBounds( (int)(0.05*w), (int)(0.6*h), (int)(0.35*w), (int)(0.35*h) );
+				pscrollpane.setBounds( (int)(0.60*w), 100, (int)(0.35*w), (int)(0.40*h) );
 				
-				addbtn.setBounds( (int)(0.5*w)-75, (int)(0.35*h), 150, 25 );
-				rembtn.setBounds( (int)(0.5*w)-75, (int)(0.35*h)+30, 150, 25 );
+				scrolled.setBounds( (int)(0.60*w)+150, (int)(0.6*h), (int)(0.35*w)-150, (int)(0.35*h) );
+				
+				addbtn.setBounds( (int)(0.5*w)-75, 350, 150, 25 );
+				rembtn.setBounds( (int)(0.5*w)-75, 380, 150, 25 );
+				
+				afgreida.setBounds( (int)(0.5*w)-75, (int)(0.6*h)+100, 150, 25 );
 			}
 		};
 
@@ -730,10 +832,12 @@ public class Order extends JApplet {
 		}
 		
 		for( String str : comboOptions ) {
+			d.frmlCombo.addItem( str );
 			combo.addItem(str);
 		}
 		
 		for( String str : pcomboOptions ) {
+			d.brgrCombo.addItem( str );
 			pcombo.addItem(str);
 		}
 		
@@ -786,11 +890,32 @@ public class Order extends JApplet {
 		}
 		
 		ptable.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
-			String oldname = "";
+			//String oldname = "";
 			
 			public void valueChanged(ListSelectionEvent e) {
+				if( currentSel != null && !currentSel.equals(ed.getText()) ) {
+					currentSel._Lýsing = ed.getText().replaceAll("'", "");
+					try {
+						updateorder(currentSel);
+					} catch (SQLException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+				}
+				
 				int r = ptable.getSelectedRow();
-				if( r != -1 ) {					
+				if( r != -1 ) {
+					int mr = ptable.convertRowIndexToModel(r);
+					Pontun pnt = pntlist.get(mr);
+					currentSel = pnt;
+					ed.setText( currentSel._Lýsing );
+					
+					if( pnt.PantaðAf.equals(user) ) {
+						ed.setEditable( true );
+					} else {
+						ed.setEditable( false );
+					}
+					
 					String name = (String)ptable.getValueAt(r, 2);
 					String vara = (String)ptable.getValueAt(r, 1);
 					
@@ -801,46 +926,10 @@ public class Order extends JApplet {
 						table.scrollRectToVisible( table.getCellRect(nr, 0, false) );
 					}
 					
-					if( !name.equals( oldname ) ) {
-						for( String person : pMap.keySet() ) {
-							if( person.toLowerCase().contains(name.toLowerCase()) ) {
-								int ind = person.indexOf('"');
-								String link = person.substring(0, ind);
-								try {
-									URL url = new URL( "http://www.matis.is/um-matis-ohf/"+link );
-									InputStream stream = url.openStream();
-									
-									String ret = "";
-									r = stream.read(bb);
-									while( r > 0 ) {
-										ret += new String( bb, 0, r );
-										r = stream.read(bb);
-									}
-									
-									String[] ss = ret.split("<div class=\"boxbody\">");
-									for( int i = 1; i < 2; i++ ) {
-										String s = ss[i];
-										ind = s.indexOf("></ul>");
-										String sub = "<html>"+s.substring(0, ind)+"></ul>";
-										sub = sub.replace("</div>", "");
-										sub = sub.replace("<img src=\"","<img src=\"http://www.matis.is");
-										sub = sub.replace("Sigmar St","Sigmar%20St");
-										sub += "</html>";
-										
-										ed.setEditable( false );
-										ed.setContentType("text/html");
-										ed.setText( sub );
-									}
-									//ed.setPage( url );
-								} catch (MalformedURLException e1) {
-									e1.printStackTrace();
-								} catch (IOException e2) {
-									e2.printStackTrace();
-								}
-							}
-						}
+					/*if( !name.equals( oldname ) ) {
+						ll
 						oldname = name;
-					}
+					}*/
 				}
 			}
 		});
@@ -886,7 +975,12 @@ public class Order extends JApplet {
 		newItem.setAction( new AbstractAction("Ný vara") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				newItem();
+				try {
+					newItem();
+				} catch (SQLException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 			}
 		});
 		
@@ -898,12 +992,15 @@ public class Order extends JApplet {
 					int rr = table.convertRowIndexToModel(r);
 					int cat = (Integer)model.getValueAt(rr, 3);
 					try {
-						if( delItem( cat ) ) {
-							for( Vara v : ordlist ) {
-								if( v._Cat == cat ) {
-									ordlist.remove( v );
-									break;
-								}
+						delItem( cat );
+						for( Vara v : ordlist ) {
+							if( v._Cat == cat ) {
+								combo.removeItem( v.Framleiðandi );
+								pcombo.removeItem( v.Byrgir );
+								
+								ordlist.remove( v );
+								table.tableChanged( new TableModelEvent(model) );
+								break;
 							}
 						}
 					} catch (SQLException e1) {
@@ -914,18 +1011,27 @@ public class Order extends JApplet {
 			}
 		});
 		
+		scrolled.setViewportView( ed );
+		
 		scrollpane.setViewportView( table );
 		pscrollpane.setViewportView( ptable );
+		ascrollpane.setViewportView( atable );
+		
 		c.add( combo );
 		c.add( pcombo );
 		c.add( vcombo );
+		c.add( stcombo );
 		c.add( label );
 		c.add( plabel );
 		c.add( vorur );
 		c.add( pantanir );
+		c.add( afgreitt );
 		c.add( scrollpane );
 		c.add( pscrollpane );
-		c.add( ed );
+		c.add( ascrollpane );
+		c.add( scrolled );
+		
+		c.add( afgreida );
 		
 		c.add( newItem );
 		c.add( delItem );
@@ -935,8 +1041,70 @@ public class Order extends JApplet {
 		this.add( c );
 	}
 	
+	final Image getImage( String name ) {
+		if( faces.containsKey( name ) ) {
+			return faces.get(name);
+		} else {
+			for( String person : pMap.keySet() ) {
+				if( person.toLowerCase().contains(name.toLowerCase()) ) {
+					int ind = person.indexOf('"');
+					String link = person.substring(0, ind);
+					try {
+						URL url = new URL( "http://www.matis.is/um-matis-ohf/"+link );
+						InputStream stream = url.openStream();
+						
+						String ret = "";
+						int r = stream.read(bb);
+						while( r > 0 ) {
+							ret += new String( bb, 0, r );
+							r = stream.read(bb);
+						}
+						stream.close();
+						
+						int i = ret.indexOf("<img src=\"");
+						if( i >= 0 ) {
+							i += 10;
+							int e = ret.indexOf("\"", i);
+							String urlstr = "http://www.matis.is"+ret.substring(i, e);
+							//urlstr = URLEncoder.encode( urlstr, "UTF-8" );
+							urlstr = urlstr.replace(" ", "%20");
+							
+							url = new URL( urlstr );
+							Image image = ImageIO.read( url );
+							
+							faces.put(user, image);
+							
+							return image;
+						}
+						
+						/*String[] ss = ret.split("<div class=\"boxbody\">");
+						for( int i = 1; i < 2; i++ ) {
+							String s = ss[i];
+							ind = s.indexOf("></ul>");
+							String sub = "<html>"+s.substring(0, ind)+"></ul>";
+							sub = sub.replace("</div>", "");
+							sub = sub.replace("<img src=\"","<img src=\"http://www.matis.is");
+							sub = sub.replace("Sigmar St","Sigmar%20St");
+							sub += "</html>";
+							
+							ed.setEditable( false );
+							ed.setContentType("text/html");
+							ed.setText( sub );
+						}*/
+						//ed.setPage( url );
+					} catch (MalformedURLException e1) {
+						e1.printStackTrace();
+					} catch (IOException e2) {
+						e2.printStackTrace();
+					}
+				}
+			}
+		}
+		return null;
+	}
+	
 	protected Vara queryVara() {
-		d.setSize(500, 150);
+		d.setSize(550, 140);
 		d.setLocationRelativeTo( this );
 		d.setVisible( true );
 		
@@ -954,26 +1122,49 @@ public class Order extends JApplet {
 		return null;
 	}
 	
-	protected void newItem() {
+	protected void newItem() throws SQLException {
 		Vara v = queryVara();
 		
 		if( v != null ) {
-			/*String ord = ordno+",'"+name+"','"+user+"',"+quant+",GetDate(),null,0,null";
+			String ord = "'"+v.Nafn+"','"+v.Framleiðandi+"','"+v.Byrgir+"',"+v._Cat+",'"+user+"'";
 			String sql = "insert into [order].[dbo].[Vara] values ("+ord+")";
 			
 			PreparedStatement 	ps = con.prepareStatement(sql);
 			boolean				b = ps.execute();
 			
 			if( !b ) {
-				ordlist.add( new Pontun( false, ordno, name, user, quant, new Date( System.currentTimeMillis() ), null, "" ) );
+				ordlist.add( v );
+				
+				int i;
+				String str = null;
+				for( i = 0; i < combo.getItemCount(); i++ ) {
+					str = (String)combo.getItemAt(i);
+					if( str.compareTo(v.Framleiðandi) >= 0 ) break;
+				}
+					
+				if( !str.equals(v.Framleiðandi) ) {
+					combo.insertItemAt(v.Framleiðandi, i);
+				}
+				
+				str =null;
+				for( i = 0; i < pcombo.getItemCount(); i++ ) {
+					str = (String)pcombo.getItemAt(i);
+					if( str.compareTo(v.Byrgir) >= 0 ) break;
+				}
+				
+				if( !str.equals(v.Byrgir) ) {
+					pcombo.insertItemAt(v.Byrgir, i);
+				}
+				
+				table.tableChanged( new TableModelEvent(model) );
 			}
 			
-			ps.close();*/
+			ps.close();
 		}
-	}
+	}	
 	
 	protected boolean delItem( int cat ) throws SQLException {
-		String sql = "delete from [order].[dbo].[Vara] where varno = "+cat;
+		String sql = "delete from [order].[dbo].[Vara] where cat = "+cat;
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
 		boolean				b = ps.execute();

@@ -198,15 +198,22 @@ public class Parentage extends JApplet {
 									URL url = new URL(stuff);
 									File f = new File( URLDecoder.decode( url.getFile(), "UTF-8" ) );
 									//URLDecoder.decode( f, "UTF-8" )
+									
+									villur = 0;
 									load( f.getCanonicalPath() );
-									int i = 0;
-									File nf = File.createTempFile("tmp", ".xlsx");
+									villur = 1;
+									load( f.getCanonicalPath() );
+									villur = 2;
+									load( f.getCanonicalPath() );
+									
+									//int i = 0;
+									//File nf = File.createTempFile("tmp", ".xlsx");
 									//File nf = new File( System.getProperty("user.home"), "tmp"+i+".xlsx" );
 									/*while( nf.exists() && !nf.canWrite() && i < 10 ) {
 										i++;
 										nf = new File( System.getProperty("user.home"), "tmp"+i+".xlsx" );
 									}*/
-									workbook.write( new FileOutputStream( nf ) );
+									//workbook.write( new FileOutputStream( nf ) );
 								}
 							}
 						} else {
@@ -252,6 +259,7 @@ public class Parentage extends JApplet {
 		XSSFRow 	b_row = b_sheet.getRow(0);
 		while( b_row.getCell(cellcount) != null ) cellcount++;
 		//markercount -= 2;
+		cellcount = 37;
 		System.err.println( cellcount );
 		
 		Set<XSSFRow>	set = new HashSet<XSSFRow>();
@@ -277,15 +285,15 @@ public class Parentage extends JApplet {
 				XSSFRow 	m_row = m_sheet.getRow(mr++);
 				while( m_row != null ) {
 					if( m_row.getCell(0) != null && m_row.getCell(0).getStringCellValue().length() > 0 ) {
-						int c = 2;
+						int c = 1;
 						
 						int dcount = 0;
 						int	mcount = 0;
 						while( c < cellcount ) {
 							XSSFCell	b_a1 = b_row.getCell(c);
 							XSSFCell	b_a2 = b_row.getCell(c+1);
-							XSSFCell	m_a1 = m_row.getCell(c-1);
-							XSSFCell	m_a2 = m_row.getCell(c);
+							XSSFCell	m_a1 = m_row.getCell(c);
+							XSSFCell	m_a2 = m_row.getCell(c+1);
 							
 							boolean nb = m_a1 == null || m_a2 == null || b_a1 == null || b_a2 == null;
 							
@@ -309,7 +317,7 @@ public class Parentage extends JApplet {
 							
 							c += 2;
 						}
-						if( mcount+dcount >= (cellcount-2)/2-villur ) {
+						if( mcount+dcount >= (cellcount-1)/2-villur ) {
 							XSSFCell cell = m_row.getCell(0);
 							
 							if( cell != null ) {
@@ -325,15 +333,15 @@ public class Parentage extends JApplet {
 				XSSFRow 	f_row = f_sheet.getRow(fr++);
 				while( f_row != null ) {
 					if( f_row.getCell(0) != null && f_row.getCell(0).getStringCellValue().length() > 0 ) {
-						int c = 2;
+						int c = 1;
 						
 						int dcount = 0;
 						int	mcount = 0;
 						while( c < cellcount ) {
 							XSSFCell	b_a1 = b_row.getCell(c);
 							XSSFCell	b_a2 = b_row.getCell(c+1);
-							XSSFCell	f_a1 = f_row.getCell(c-1);
-							XSSFCell	f_a2 = f_row.getCell(c);
+							XSSFCell	f_a1 = f_row.getCell(c);
+							XSSFCell	f_a2 = f_row.getCell(c+1);
 							
 							boolean nb = f_a1 == null || f_a2 == null || b_a1 == null || b_a2 == null;
 							
@@ -357,7 +365,7 @@ public class Parentage extends JApplet {
 							
 							c += 2;
 						}
-						if( mcount+dcount >= (cellcount-2)/2-villur ) {
+						if( mcount+dcount >= (cellcount-1)/2-villur ) {
 							XSSFCell cell = f_row.getCell(0);
 							
 							if( cell != null ) {
@@ -371,16 +379,16 @@ public class Parentage extends JApplet {
 				set.clear();
 				for( XSSFRow mrow : mlist ) {
 					for( XSSFRow frow : flist ) {
-						int c = 2;
+						int c = 1;
 						int dcount = 0;
 						int	mcount = 0;
 						while( c < cellcount ) {
 							XSSFCell	b_a1 = b_row.getCell(c);
 							XSSFCell	b_a2 = b_row.getCell(c+1);
-							XSSFCell	m_a1 = mrow.getCell(c-1);
-							XSSFCell	m_a2 = mrow.getCell(c);
-							XSSFCell	f_a1 = frow.getCell(c-1);
-							XSSFCell	f_a2 = frow.getCell(c);
+							XSSFCell	m_a1 = mrow.getCell(c);
+							XSSFCell	m_a2 = mrow.getCell(c+1);
+							XSSFCell	f_a1 = frow.getCell(c);
+							XSSFCell	f_a2 = frow.getCell(c+1);
 							
 							String ba1 = b_a1 == null || b_a1.getStringCellValue().length() == 0 ? null : b_a1.getStringCellValue();
 							String ba2 = b_a2 == null || b_a2.getStringCellValue().length() == 0 ? null : b_a2.getStringCellValue();
@@ -425,7 +433,7 @@ public class Parentage extends JApplet {
 							
 							c += 2;
 						}
-						if( mcount+dcount >= (cellcount-2)/2-villur ) {
+						if( mcount+dcount >= (cellcount-1)/2-villur ) {
 							XSSFCell mcell = mrow.getCell(0);
 							XSSFCell fcell = frow.getCell(0);
 							
@@ -486,7 +494,7 @@ public class Parentage extends JApplet {
 			workbook.write( fos );
 			fos.close();
 			
-			Desktop.getDesktop().open( f );
+			//Desktop.getDesktop().open( f );
 		} else {
 			File f = File.createTempFile("tmp", ".xlsx");
 			FileOutputStream fos = new FileOutputStream(f);
