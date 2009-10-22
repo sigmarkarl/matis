@@ -115,6 +115,7 @@ public class Order extends JApplet {
 	Map<String,Image>	faces = new HashMap<String,Image>();
 	
 	VDialog 		d = new VDialog();
+	Image			image = null;
 	
 	byte[] bb = new byte[1024];	
 	Map<String,String>	pMap = new HashMap<String,String>();
@@ -793,6 +794,10 @@ public class Order extends JApplet {
 					Image face = getImage(user);
 					if( face != null ) g.drawImage( face, (this.getWidth()-face.getWidth(this))/2, 50, this );
 				}
+				
+				if( image != null ) {
+					g.drawImage( image, (this.getWidth()-image.getWidth(this))/2, 50, this );
+				}
 			}
 			
 			public void setBounds( int x, int y, int w, int h ) {
@@ -801,22 +806,22 @@ public class Order extends JApplet {
 				vcombo.setBounds( (int)(0.5*w)-75, 260, 150, 25 );
 				stcombo.setBounds( (int)(0.5*w)-75, 290, 150, 25 );
 				
-				label.setBounds( (int)(0.05*w), 50, (int)(0.15*w), 25 );
+				label.setBounds( (int)(0.00*w), 50, (int)(0.15*w), 25 );
 				plabel.setBounds( (int)(0.25*w), 50, (int)(0.15*w), 25 );
-				combo.setBounds( (int)(0.05*w), 70, (int)(0.15*w), 25 );
+				combo.setBounds( (int)(0.00*w), 70, (int)(0.15*w), 25 );
 				pcombo.setBounds( (int)(0.25*w), 70, (int)(0.15*w), 25 );
-				newItem.setBounds( (int)(0.05*w), 110+(int)(0.40*h), (int)(0.15*w), 25 );
+				newItem.setBounds( (int)(0.00*w), 110+(int)(0.40*h), (int)(0.15*w), 25 );
 				delItem.setBounds( (int)(0.25*w), 110+(int)(0.40*h), (int)(0.15*w), 25 );
 				
-				vorur.setBounds( (int)(0.05*w), 30, (int)(0.35*w), 25 );
-				pantanir.setBounds( (int)(0.60*w), 30, (int)(0.35*w), 25 );
-				afgreitt.setBounds( (int)(0.05*w), (int)(0.60*h)-30, (int)(0.35*w), 25 );
+				vorur.setBounds( (int)(0.00*w), 30, (int)(0.40*w), 25 );
+				pantanir.setBounds( (int)(0.60*w), 30, (int)(0.40*w), 25 );
+				afgreitt.setBounds( (int)(0.00*w), (int)(0.60*h)-30, (int)(0.40*w), 25 );
 				
-				scrollpane.setBounds( (int)(0.05*w), 100, (int)(0.35*w), (int)(0.40*h) );
-				ascrollpane.setBounds( (int)(0.05*w), (int)(0.6*h), (int)(0.35*w), (int)(0.35*h) );
-				pscrollpane.setBounds( (int)(0.60*w), 100, (int)(0.35*w), (int)(0.40*h) );
+				scrollpane.setBounds( (int)(0.00*w), 100, (int)(0.40*w), (int)(0.40*h) );
+				ascrollpane.setBounds( (int)(0.00*w), (int)(0.6*h), (int)(0.40*w), (int)(0.40*h) );
+				pscrollpane.setBounds( (int)(0.60*w), 100, (int)(0.40*w), (int)(0.40*h) );
 				
-				scrolled.setBounds( (int)(0.60*w)+150, (int)(0.6*h), (int)(0.35*w)-150, (int)(0.35*h) );
+				scrolled.setBounds( (int)(0.60*w)+150, (int)(0.6*h), (int)(0.40*w)-150, (int)(0.40*h) );
 				
 				addbtn.setBounds( (int)(0.5*w)-75, 340, 150, 25 );
 				rembtn.setBounds( (int)(0.5*w)-75, 370, 150, 25 );
@@ -961,6 +966,13 @@ public class Order extends JApplet {
 				if( e.getKeyCode() == KeyEvent.VK_DELETE ) {
 					removeSelectedRows();
 				}
+			}
+		});
+		
+		ptable.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				
 			}
 		});
 		
