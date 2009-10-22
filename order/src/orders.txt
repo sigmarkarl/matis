@@ -1,0 +1,93 @@
+Petriskálar 480 stk í kassa		kassi	Sarstedt	62701195		Groco
+Contact dish 60 x15  11 stk x36 í kassa	 	kassi	Nunc	62701291		Groco
+Pípetta 1 ml ster. sérp. 86,1251,001, 100 stk x10 í kassa		kassi	Sarstedt	62701391		Groco
+Orion buffer pH 4.01 475 ml		flöskur	Fisher	62713944		Groco
+Orion buffer pH 7.00 475 ml		flöskur	Fisher	62713945		Groco
+Orion buffer pH 10.00 475 ml		flöskur	Fisher	62713946		Groco
+Microfil 100 ml 150/pk 1 pk		kassi	Millipore	62004149		Groco
+Maukpokar- Bagpage plus 400 25 stk x10		kassi	Bagpage	62719288		Groco
+Autoklavapoki lítill 300 x500 mm 50 stk			Sarstedt	62701203		Groco
+Autoklavapoki stór 600 x780 mm 50 stk			Sarstedt	62701204		Groco
+Nessler reagent 500ml		flöskur	Hach	62720046		Groco
+Nessler reagent 500ml		flöskur	Hach	62720046		Groco
+Rochelle salt-pva reagent 500ml		flöskur	Hach	62720047		Groco
+Sodium chloride standard solution		flöskur	Hach	65000178		Groco
+Nitrogen ammonia std sol 500ml		kassi	Hach	65007631		Groco
+Nalgene wide -mouth pp 1000ml 24 stk/kassa		kassi	Nalgene	62714440		Groco
+Nalgene wide -mouth 500ml 48 stk/kassa		kassi	Nalgene	62716619		Groco
+Nalgene wide -mouth sq pp 60ml 12 stk			Nalgene	62714415		Groco
+Nalgene wide -mouth 250ml 12 stk			Nalgene	62714439		Groco
+API Listeria		pakki	API	62713688		Groco
+COD vials  LR eec 0-150 mg/l 25/pk 1 pk		pakki	Hach	62719639		Groco
+COD vials HR  0-1500 mg/l 25/pk 1 pk		pakki	Hach	62001747		Groco
+Syringe filters 0,2 uM 30 mm Sterílt 50/pk 10462200		pakki	Whatman	62715900		Groco
+Syring filters  0,45 uM 30 mm Sterílt 50/pk 10462100		pakki	Whatman	62715901		Groco				
+Ox. Listeria sab. oxford CM856B		krukka 500g	Oxoid	788856		Distica
+Ox. Campigen CN035A		Pakki	Oxoid	35		Distica
+Ox.Anareogen 3.5L AN035A		Pakki	Oxoid	788035		Distica
+Ox. Sabouraud Dextrose agar CM41		krukka 500g	Oxoid	769041		Distica
+Ox. Maximum recovery dilutent CM733		krukka 500g	Oxoid	733		Distica
+Ox. Typtone soya broth CM129B		krukka 500g	Oxoid	789129		Distica
+Ox. CFC supplement SR103E		Pakki	Oxoid	788103		Distica
+Ox. Egg yolk tellurite emuls. SR054C		flöskur 100 ml	Oxoid	789547		Distica
+Ox. Listeria E.B. base CM863B		krukka 500g	Oxoid	788863		Distica
+Ox. Bolton broth selective suppl		Pakki	Oxoid	SR0183E		Distica
+Ox. Plate count agar CM325B		krukka 500g	Oxoid	788325		Distica
+Ox. Perfringens Suppl.TSC Sr088		Pakki	Oxoid	88		Distica
+Ox. Tryptone soya agar		krukka 500g	Oxoid	131		Distica
+Ox. Baird-Parker Medium CM275		krukka 500g	Oxoid	760275		Distica
+Ox. Brilliant green agar		krukka 500g	Oxoid	780263		Distica
+Ox. Blood free Campylobact. sel.agar		krukka 500g	Oxoid	780739		Distica
+Ox. buffered pep. water CM509B		krukka 500g	Oxoid	785509		Distica
+Ox. Egg yolk emulsion SR047C		Flaska	Oxoid	788047		Distica
+Ox. Bacillus Cer. sel. suppl. SR099C		Pakki	Oxoid	788099		Distica
+Ox. CN supplement SR102E		Pakki	Oxoid	788102		Distica
+Ox. Lauryl Tryptose Broth CM451B		krukka 500g	Oxoid	788451		Distica
+Ox. XLD medium CM469B		krukka 500g	Oxoid	788469		Distica
+Ox. VRBGA CM485B		krukka 500g	Oxoid	788485		Distica
+Ox. Pseudomonas agar base CM559B		krukka 500g	Oxoid	788559		Distica
+Ox. Bacillus Cereus Sel Cm617B			Oxoid	788617		Distica
+Ox. Sorbitol Mac. agar CM8123		krukka 500g	Oxoid	788813		Distica
+Ox. Listeria Sel.Suppl.Ox.SR140E		Pakki	Oxoid	788140		Distica
+Ox. Rappaport vas. soya CM866B		krukka 500g	Oxoid	788866		Distica
+Ox. VRBA CM107B		krukka 500g	Oxoid	789107		Distica
+Ox. Palcam Sel. supplement SR150E		Pakki	Oxoid	789150		Distica
+Ox. DRBC agar base CM727B		krukka 500g	Oxoid	789727		Distica
+Ox. Mannitol salt agar CM0085		krukka 500g	Oxoid	CM0085B		Distica
+Ox. E.E. broth		krukka 500g	Oxoid	CM0317B		Distica
+Ox. Bolton Selective enrichment broth		pakki	Oxoid	CM0983		Distica
+Ox. Chromogenic Listeria agar base		pakki	Oxoid	CM1084B		Distica
+Ox. Chromogenic Listeria sel suppl		pakki	Oxoid	SR0226E		Distica
+Ox. Chromogenic Listeria Different suppl		pakki	Oxoid	SR0244E		Distica
+Ox.Set-Rpla			Oxoid	TD0900A		Distica
+EPP.Pipette Tips 0,5-20 ul reloads				0030 073.401		Distica
+EPP.Pipette Tips 20-30 ul reloads				0030 073.444		Distica
+EPP.Pipette Tips 50-1000 ul reloads				0030 073.460		Distica	
+Falcon PP glös m/loki 220 ml 100		Kassi	Falcon	75004015		Ísl. ameríska
+MacConkey broth		krukka 500g	Difco	75220100		Ísl. ameríska
+D/E Neutralizing agar		krukka 500g	Difco	75268620		Ísl. ameríska
+M-Endo agar Les		krukka 500g	Difco	75273620		Ísl. ameríska
+Bacto Agar		krukka 500g	Difco	75214010		Ísl. ameríska
+MacConkey agar		krukka 500g	Difco	75211387		Ísl. ameríska
+BBL Peptone		krukka 500g	Difco	75211677		Ísl. ameríska
+Bacto Tryptone		krukka 500g	Difco	75211705		Ísl. ameríska
+BBL Yeast extract		krukka 500g	Difco	75212750		Ísl. ameríska
+Difco nutrent agar		krukka 500g	Difco	75213000		Ísl. ameríska
+Difco R2A agar		krukka 500g	Difco	75218263		Ísl. ameríska
+Taxo oxidase slides 75 stk		Pakki	BBL	75231746		Ísl. ameríska
+M FC agar		krukka 500g	Difco	75267720		Ísl. ameríska
+TT Hanja broth base		krukka 500g	Difco	75249120		Ísl. ameríska
+BBL Mannitol Salt agar		krukka 500g	Difco	75211407		Ísl. ameríska
+Brain heart infusion		krukka 500g	Difco	75211059		Ísl. ameríska
+TSI-Tryple sugar iron agar		krukka 500g	Difco	75226540		Ísl. ameríska
+Proteose Peptone		krukka 500g	Difco	75211684		Ísl. ameríska
+Gelatin		krukka 500g	Difco	75214340		Ísl. ameríska				
+Autoklave tapes ST100.25		Rúllur		80009923		Parlogis
+Kovas Indol reagens 1.09293.0100		flaska 100ml		62001476		Parlogis
+Merck anaerotest 1.15112		pakki	Merck	62713045		Parlogis
+Ultrasnap ATP prof  100 stk í kassa		Kassi		VIT-PRO013		Landvélar
+Bómull 500 gr rúlla		Rúlla		BAS443-010		Logaland
+Rúllur gegnsæ 15 cmx 200m 2/kassa		Kassar		VP402468		Logaland
+Rúllur gegnsæ 10 cmx 200m 3/kassa		Kassar		VP402467		Logaland
+Isopropyl alcohol 20 ltr		Fata		1013		Olís
+ME 0,45 47 MM WG IND 100/pk sterile filter		Pakki		A045H047A 		Kemía
