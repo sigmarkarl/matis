@@ -92,6 +92,7 @@ public class Order extends JApplet {
 	
 	JButton		newItem = new JButton( "Ný vara" );
 	JButton		delItem = new JButton( "Eyða vöru" );
+	JButton		pantanytt = new JButton();
 	
 	JButton		afgreida = new JButton();
 	
@@ -543,6 +544,28 @@ public class Order extends JApplet {
 		ps.close();
 	}
 	
+	private void panta(String name) {
+		int 		quant = 1;
+		Pontun 		tpnt = null;
+		for( Pontun pnt : pntlist ) {
+			if( pnt.Nafn.equals( name ) && pnt.PantaðAf.equals(user) ) {
+				tpnt = pnt;
+				break;
+			}
+		}
+		
+		try {
+			if( tpnt != null ) {
+				updateorder( tpnt, tpnt.e_Magn+1 );
+			} else {
+				order( name, quant, (String)vcombo.getSelectedItem(), (String)stcombo.getSelectedItem() );
+			}
+		} catch (SQLException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+	}
+	
 	public void init() {
 		try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
@@ -689,33 +712,27 @@ public class Order extends JApplet {
 			@Override
 			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {}
 		};
+		
+		pantanytt.setAction( new AbstractAction("Panta nýja vöru") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					Vara v = newItem();
+					panta( v.Nafn );
+					ptable.tableChanged( new TableModelEvent( pmodel ) );
+				} catch (SQLException e1) {
+					e1.printStackTrace();
+				}
+			}
+		});
 			
 		final JButton	addbtn = new JButton( new AbstractAction("Panta >>") {
 			public void actionPerformed(ActionEvent e) {
 				int[] rr = table.getSelectedRows();
 				for( int r : rr ) { 
 					String		name = (String)table.getValueAt(r, 0);
-					//String		name = (String)table.getValueAt(r, 0);
-					int 		quant = 1;
-					
-					Pontun tpnt = null;
-					for( Pontun pnt : pntlist ) {
-						if( pnt.Nafn.equals( name ) && pnt.PantaðAf.equals(user) ) {
-							tpnt = pnt;
-							break;
-						}
-					}
-					
-					try {
-						if( tpnt != null ) {
-							updateorder( tpnt, tpnt.e_Magn+1 );
-						} else {
-							order( name, quant, (String)vcombo.getSelectedItem(), (String)stcombo.getSelectedItem() );
-						}
-					} catch (SQLException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					}
+					//String		name = (String)table.getValueAt(r, 0);					
+					panta(name);
 				}
 				ptable.tableChanged( new TableModelEvent( pmodel ) );
 				//ptable.setModel( nullmodel );
@@ -801,8 +818,9 @@ public class Order extends JApplet {
 				
 				scrolled.setBounds( (int)(0.60*w)+150, (int)(0.6*h), (int)(0.35*w)-150, (int)(0.35*h) );
 				
-				addbtn.setBounds( (int)(0.5*w)-75, 350, 150, 25 );
-				rembtn.setBounds( (int)(0.5*w)-75, 380, 150, 25 );
+				addbtn.setBounds( (int)(0.5*w)-75, 340, 150, 25 );
+				rembtn.setBounds( (int)(0.5*w)-75, 370, 150, 25 );
+				pantanytt.setBounds( (int)(0.5*w)-75, 400, 150, 25 );
 				
 				afgreida.setBounds( (int)(0.5*w)-75, (int)(0.6*h)+100, 150, 25 );
 			}
@@ -1035,6 +1053,7 @@ public class Order extends JApplet {
 		
 		c.add( newItem );
 		c.add( delItem );
+		c.add( pantanytt );
 		
 		c.add( addbtn );
 		c.add( rembtn );
@@ -1122,7 +1141,7 @@ public class Order extends JApplet {
 		return null;
 	}
 	
-	protected void newItem() throws SQLException {
+	protected Vara newItem() throws SQLException {
 		Vara v = queryVara();
 		
 		if( v != null ) {
@@ -1157,11 +1176,16 @@ public class Order extends JApplet {
 				}
 				
 				table.tableChanged( new TableModelEvent(model) );
+				
+				int mr = model.getRowCount()-1;
+				modelRowMap.put( (String)model.getValueAt( mr, 0), mr );
 			}
 			
 			ps.close();
 		}
-	}	
+		
+		return v;
+	}
 	
 	protected boolean delItem( int cat ) throws SQLException {
 		String sql = "delete from [order].[dbo].[Vara] where cat = "+cat;

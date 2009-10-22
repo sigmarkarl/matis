@@ -56,16 +56,17 @@ public class Flanking extends JApplet {
 			return false;
 		}
 		
-		int LEN = 4;
 		public Sequence( String name, int length, String sequence ) {
+			int LEN = 4;
+			
 			this.name = name;
 			this.length = length;
 			//this.htmlsequence = sequence;
 			
 			this._repeats = new ArrayList<Repeat>();
 			
-			for( int i = 2; i < 5; i++ ) {
-				for( int k = 0; k < sequence.length()-LEN*i; k++ ) {
+			for( int k = 0; k < sequence.length()-LEN*4; k++ ) {
+				for( int i = 2; i < 5; i++ ) {
 					boolean yes = true;
 					for( Repeat r : _repeats ) {
 						if( r.length != i && k >= r.start && k <= r.stop ) {
@@ -86,7 +87,20 @@ public class Flanking extends JApplet {
 							Repeat r = new Repeat();
 							r.start = k;
 							r.length = i;
-							r.stop = k+i*LEN;
+							
+							int u = LEN;
+							while( yes ) {
+								for( int l = k; l < k+i; l++ ) {
+									int val = l+u*i;
+									if( val >= sequence.length() || sequence.charAt(l) != sequence.charAt(val) ) {
+										yes = false;
+										break;
+									}
+								}
+								if( yes ) u++;
+							}
+							
+							r.stop = k+i*u;
 							
 							k = r.stop;
 							
@@ -102,6 +116,11 @@ public class Flanking extends JApplet {
 			
 			int offset = 0;
 			for( Repeat r : _repeats ) {
+				//int startval = r.start+offset;
+				/*char c = buf.charAt( startval );
+				if( c != 'A' && c != 'C' && c != 'G' && c != 'T' ) {
+					System.err.println( startval + "   " + buf.toString() );
+				}*/
 				if( r.length == 2 ) {
 					buf.insert(r.start+offset, "<b><font color=#00aa00>");
 				} else if( r.length == 3 ) {

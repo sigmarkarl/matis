@@ -15,18 +15,20 @@ import java.util.Set;
 
 import javax.media.opengl.GL;
 
-public class ModelDraw {
+import com.sun.jna.Native;
+
+public class ModelDraw {	
+	static {
+		Native.register("3dsim");
+    	//System.loadLibrary("3ds");
+    }
+	
 	public static native int countFaces( String fname );
 	public static native int countVertices( String fname );
 	public static native void getVertices( ByteBuffer vertexBuffer, String fname );
 	
-	static {
-    	System.loadLibrary("3ds");
-    }
-	
 	int			matSize;
-	
-	int faces = 0;
+	int 		faces = 0;
 	//int vertices = 0;
 	ByteBuffer	vertexBuffer = null;
 	//ByteBuffer	indexBuffer = null;
