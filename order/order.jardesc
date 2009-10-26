@@ -12,6 +12,7 @@
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
         <file path="/order/src/orders.txt"/>
+        <file path="/order/src/persons.txt"/>
         <javaElement handleIdentifier="=order/src&lt;org.simmi"/>
     </selectedElements>
 </jardesc>
