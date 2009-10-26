@@ -203,8 +203,8 @@ public class Parentage extends JApplet {
 									load( f.getCanonicalPath() );
 									villur = 1;
 									load( f.getCanonicalPath() );
-									villur = 2;
-									load( f.getCanonicalPath() );
+									//villur = 2;
+									//load( f.getCanonicalPath() );
 									
 									//int i = 0;
 									//File nf = File.createTempFile("tmp", ".xlsx");
