@@ -145,7 +145,7 @@ public class GraphPanel extends JTabbedPane {
 					double prto = prt*17.0;
 					double cbho = cbh*17.0;
 					double fato = fat*37.0;
-					double f = (17.0*prt + 17.0*cbh + 37.0*fat + 29.0*alc)*100.0;
+					double f = (alco + prto + cbho + fato)*100.0;
 					
 					if( lang.equals("IS") ) {
 						if( f > 0 ) {
@@ -185,8 +185,8 @@ public class GraphPanel extends JTabbedPane {
 						int w = this.getWidth();
 						int h = this.getHeight();
 						
-						int t = Math.min(w, h);
-						t = (3*t)/4;
+						int torig = Math.min(w, h);
+						int t = (3*torig)/4;
 						
 						Paint p = g2.getPaint();
 						
@@ -233,6 +233,30 @@ public class GraphPanel extends JTabbedPane {
 						n = nn;
 						nn = (int)(360.0f);
 						g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
+						
+						float[] val = { (float)alc, (float)prt, (float)cbh, (float)fat };
+						g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/40 ) );
+						float tot = 0.0f;
+						float last = 0.0f;
+						int i = 0;
+						double tt = (5*torig)/6;
+						for( float ff : val ) {
+							tot += ff;
+							if( ff > 1.0f ) {
+								double dn = -(last*2.0*Math.PI)/total;
+								double dnn = -((tot)*2.0*Math.PI)/total;
+								double hrn = (dn+dnn)/2.0;
+								
+								double cmpt = (100.0*ff)/total;
+								String fstr =  Double.toString( Math.floor( 10.0*cmpt ) / 10.0 );
+								int strw = g2.getFontMetrics().stringWidth( fstr );
+								int strh = g2.getFontMetrics().getHeight();
+								g2.drawString( fstr, (int)((w+tt*Math.cos(hrn)-strw)/2.0), (int)((h+tt*Math.sin(hrn)+strh)/2.0) );
+								//g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
+							}
+							last = tot;
+							i++;
+						}
 						
 						int a = 10;
 						int hh = this.getHeight()/30;
@@ -561,18 +585,34 @@ public class GraphPanel extends JTabbedPane {
 			}
 		});*/
 		
-		SkifuGraph perc = new SkifuGraph( "Hlutföll", new String[] {"Alkóhól", "Prótein, alls", "Kolvetni, alls", "Fita, alls", "Steinefni, alls", "Vatn"},
-			new String[] {"Alkóhól", "Prótín", "Kolvetni", "Fita", "Steinefni", "Vatn"}, tables );
+		String[] comb;
+		String[] cnames;
+		if( lang.equals("IS") ) {
+			comb = new String[] {"Alkóhól", "Prótein, alls", "Kolvetni, alls", "Fita, alls", "Steinefni, alls", "Vatn"};
+			cnames = new String[] {"Alkóhól", "Prótín", "Kolvetni", "Fita", "Steinefni", "Vatn"};
+		} else {
+			comb = new String[] {"Alcohol, ethyl", "Protein", "Carbohydrate, by difference", "Total lipid (fat)", "Ash", "Water"};
+			cnames = new String[] {"Alcohol", "Protein", "Carbohydrades", "Fat", "Ash", "Water"};
+		}
+		
+		SkifuGraph perc = new SkifuGraph( "Hlutföll", comb, cnames, tables );
 		
 		vitaminv = new VitaminPanel( true, leftTable, this, rdsPanel, lang );
 		vitaminf = new VitaminPanel( false, leftTable, this, rdsPanel, lang );
 		
-		
-		this.addTab(null, new VerticalTextIcon( "Hlutföll",  tabPlacement==JTabbedPane.RIGHT ), perc);
-		this.addTab(null, new VerticalTextIcon( "Orka",  tabPlacement==JTabbedPane.RIGHT ), energy);
-		this.addTab(null, new VerticalTextIcon( "Orkuhlutföll",  tabPlacement==JTabbedPane.RIGHT ), energyPart);
-		this.addTab(null, new VerticalTextIcon( "Vatnsl-Vítm",  tabPlacement==JTabbedPane.RIGHT ), vitaminv);
-		this.addTab(null, new VerticalTextIcon( "Fitul-Vítm",  tabPlacement==JTabbedPane.RIGHT ), vitaminf);
+		if( lang.equals("IS") ) {
+			this.addTab(null, new VerticalTextIcon( "Hlutföll",  tabPlacement==JTabbedPane.RIGHT ), perc);
+			this.addTab(null, new VerticalTextIcon( "Orka",  tabPlacement==JTabbedPane.RIGHT ), energy);
+			this.addTab(null, new VerticalTextIcon( "Orkuhlutföll",  tabPlacement==JTabbedPane.RIGHT ), energyPart);
+			this.addTab(null, new VerticalTextIcon( "Vatnsl-Vítm",  tabPlacement==JTabbedPane.RIGHT ), vitaminv);
+			this.addTab(null, new VerticalTextIcon( "Fitul-Vítm",  tabPlacement==JTabbedPane.RIGHT ), vitaminf);
+		} else {
+			this.addTab(null, new VerticalTextIcon( "Range",  tabPlacement==JTabbedPane.RIGHT ), perc);
+			this.addTab(null, new VerticalTextIcon( "Energy",  tabPlacement==JTabbedPane.RIGHT ), energy);
+			this.addTab(null, new VerticalTextIcon( "Energy-Range",  tabPlacement==JTabbedPane.RIGHT ), energyPart);
+			this.addTab(null, new VerticalTextIcon( "Water-Vitam",  tabPlacement==JTabbedPane.RIGHT ), vitaminv);
+			this.addTab(null, new VerticalTextIcon( "Fat-Vitam",  tabPlacement==JTabbedPane.RIGHT ), vitaminf);
+		}
 	}
 	
 	public class VerticalTextIcon implements Icon, SwingConstants {
