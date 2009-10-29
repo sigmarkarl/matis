@@ -77,6 +77,7 @@ public class SkifuGraph extends JComponent {
 	public float stuffYou( int row, String whr ) {
 		float f = 0.0f;
 		
+		//System.err.println(whr);
 		int col = table.getColumn(whr).getModelIndex(); //getValueAt(0, col);
 		/*while( !(val != null && val.equals(whr)) && col < topTable.getColumnCount()-1 ) {
 			col++;

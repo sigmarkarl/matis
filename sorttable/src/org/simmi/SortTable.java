@@ -264,7 +264,7 @@ public class SortTable extends JApplet {
 				line = br.readLine();
 			}
 		} else {
-			inputStream = ClassLoader.getSystemResourceAsStream("FD_GROUP.txt");
+			inputStream = this.getClass().getResourceAsStream("FD_GROUP.txt");
 			br = new BufferedReader(new InputStreamReader(inputStream));
 			line = br.readLine();
 			while (line != null) {
@@ -336,7 +336,7 @@ public class SortTable extends JApplet {
 				nutList[1].add(vals[4]);
 			}
 		} else {
-			inputStream = ClassLoader.getSystemResourceAsStream("NUTR_DEF.txt");
+			inputStream = this.getClass().getResourceAsStream("NUTR_DEF.txt");
 			br = new BufferedReader(new InputStreamReader(inputStream));
 			line = br.readLine();
 			int i = 0;
@@ -390,7 +390,7 @@ public class SortTable extends JApplet {
 				line = br.readLine();
 			}
 		} else {
-			inputStream = ClassLoader.getSystemResourceAsStream("FOOD_DES.txt");
+			inputStream = this.getClass().getResourceAsStream("FOOD_DES.txt");
 			br = new BufferedReader(new InputStreamReader(inputStream));
 			line = br.readLine();
 			while (line != null) {
@@ -398,8 +398,8 @@ public class SortTable extends JApplet {
 				String val = split[1];
 				split[1] = fgroupMap.get(val);
 				Object[] array = new Object[2 + ngroupList.size()];
-				array[0] = split[1];
-				array[1] = split[2].substring(1, split[2].length() - 1);
+				array[0] = split[2].substring(1, split[2].length() - 1);
+				array[1] = split[1];
 				for (i = 2; i < array.length; i++) {
 					array[i] = null;
 				}
@@ -486,7 +486,7 @@ public class SortTable extends JApplet {
 			}.run();
 		} else {
 			int start = -1;
-			inputStream = ClassLoader.getSystemResourceAsStream("NUT_DATA.txt");
+			inputStream = this.getClass().getResourceAsStream("NUT_DATA.txt");
 			br = new BufferedReader(new InputStreamReader(inputStream));
 			line = br.readLine();
 			while (line != null) {
@@ -594,7 +594,7 @@ public class SortTable extends JApplet {
 		this.setBackground(bgcolor);
 		System.setProperty("file.encoding", "UTF8");
 
-		lang = "IS";
+		lang = "EN";
 		/*
 		 * String loc = this.getParameter("loc"); if( loc != null ) { lang =
 		 * loc; }
@@ -1840,16 +1840,18 @@ public class SortTable extends JApplet {
 			// tabbedPane.setEnabledAt( tabbedPane.getTabCount()-2, false );
 			tabbedPane.setEnabledAt(tabbedPane.getTabCount() - 1, false);
 		} else {
-			tabbedPane.addTab("List", rightSplitPane);
+			tabbedPane.addTab("Food", fodicon, rightSplitPane);
 			// tabbedPane.addTab( "Image", imgPanel );
-			tabbedPane.addTab("Graph", graph);
-			tabbedPane.addTab("Detail", detail);
-			tabbedPane.addTab("Rds", rdsPanel);
-			tabbedPane.addTab("Recipes", recipe);
+			tabbedPane.addTab("Nutrition", helicon, detail);
+			tabbedPane.addTab("Combination", samicon, graph);
+			tabbedPane.addTab("Recipes", uppicon, recipe);
 			if (fp != null)
-				tabbedPane.addTab("Friends", fp);
-			tabbedPane.addTab("Eating and training", eat);
+				tabbedPane.addTab("Friends", vinicon, fp);
+			tabbedPane.addTab("Rds", rdsicon, rdsPanel);
+			tabbedPane.addTab("Eating and training", maticon, eat);
 			tabbedPane.addTab("Cost of buying", buy);
+			
+			tabbedPane.setEnabledAt(tabbedPane.getTabCount() - 1, false);
 		}
 
 		table.setModel(model);

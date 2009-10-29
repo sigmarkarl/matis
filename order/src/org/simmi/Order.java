@@ -1587,9 +1587,8 @@ public class Order extends JApplet {
 		 public Object getCellEditorValue() {
 		     return spinner.getValue();
 		 }
-	 }
+	}
 
-	
 	public final Color b1 = new Color( 0,100,255 );
 	public final Color b2 = new Color( 200,200,255 );
 	
