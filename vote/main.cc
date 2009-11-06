@@ -10,6 +10,7 @@
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/filesystem.hpp>
 #include <curl/curl.h>
 
 using namespace std;
@@ -67,8 +68,45 @@ void params( int argc, char **argv ) {
 	}
 }
 
+int results( string path ) {
+	boost::filesystem::directory_iterator end_iter;
+
+	map<string,int>	votes;
+	for ( filesystem::directory_iterator dir_itr( path ); dir_itr != end_iter; ++dir_itr ) {
+		if ( filesystem::is_regular_file( dir_itr->status() ) ) {
+			ifstream f1;
+			filesystem::path patt = dir_itr->path();
+			string fname = patt.file_string();
+			f1.open( fname.c_str() );
+
+			//filesystem::path patt( fname );
+			//if( !filesystem::exists( patt ) ) cout << patt << endl;
+
+			string res;
+			while( !f1.eof() ) {
+				getline( f1, res );
+
+				if( votes.find( res ) == votes.end() ) {
+					votes[ res ] = 1;
+				} else {
+					votes[ res ]++;
+				}
+			}
+		}
+	}
+	map<string,int>::iterator it = votes.begin();
+	while( it != votes.end() ) {
+		cout << it->first << "\t" << it->second << endl;
+		it++;
+	}
+
+	return 0;
+}
+
 int main(int argc, char **argv) {
 	//rands();
+
+	return results( "/home/sigmar/results/" );
 
 	map<string,int>	stoi;
 	map<int,string> itos;
