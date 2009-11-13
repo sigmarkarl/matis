@@ -2,6 +2,7 @@ package org.simmi;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
@@ -16,6 +17,8 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -53,6 +56,7 @@ import javax.swing.JLabel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
+import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.RowFilter;
@@ -62,6 +66,7 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.event.CellEditorListener;
 import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelEvent;
@@ -71,6 +76,11 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
+
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class Order extends JApplet {
 	JScrollPane	scrollpane = new JScrollPane();
@@ -122,6 +132,8 @@ public class Order extends JApplet {
 	JButton		afgreida = new JButton();
 	JButton		afhenda = new JButton();
 	
+	JButton		excel = new JButton();
+	
 	TableModel	model;
 	TableModel	pmodel;
 	TableModel	amodel;
@@ -129,6 +141,10 @@ public class Order extends JApplet {
 	
 	TableModel	nullmodel;
 	JComponent	c;
+	JComponent	cvorur;
+	JComponent	cpantanir;
+	JComponent	cafgreitt;
+	JComponent	cafhent;
 	Connection	con;
 	String		user;
 	
@@ -905,6 +921,58 @@ public class Order extends JApplet {
 				}
 			}
 		});
+		
+		excel.setAction( new AbstractAction("Skoða í Excel") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				XSSFWorkbook workbook = new XSSFWorkbook();
+				XSSFSheet sheet1 = workbook.createSheet("Vörur");
+				XSSFSheet sheet2 = workbook.createSheet("Pantanir");
+				XSSFSheet sheet3 = workbook.createSheet("Afgreitt");
+				XSSFSheet sheet4 = workbook.createSheet("Afhent");
+				
+				XSSFSheet[] sheets = { sheet1, sheet2, sheet3, sheet4 };
+				JTable[] 	tables = { table, ptable, atable, rtable };
+				
+				fillExcel( sheets, tables );
+				
+				File xlsxFile;
+				try {
+					xlsxFile = File.createTempFile("tmp", ".xlsx");
+					workbook.write( new FileOutputStream( xlsxFile ) );
+					Desktop.getDesktop().open( xlsxFile );
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+
+			private void fillExcel(XSSFSheet[] sheets, JTable[] tables) {
+				for( int i = 0; i < tables.length; i++ ) {
+					XSSFSheet 	sheet = sheets[i];
+					JTable		table = tables[i];
+					
+					XSSFRow row = sheet.createRow(0);
+					for( int c = 0; c < table.getColumnCount(); c++ ) {
+						String cname = table.getColumnName(c);
+						XSSFCell cell = row.createCell(c);
+						cell.setCellValue(cname);
+					}
+					
+					for( int r = 0; r < table.getRowCount(); r++ ) {
+						row = sheet.createRow(r+1);
+						for( int c = 0; c < table.getColumnCount(); c++ ) {
+							XSSFCell cell = row.createCell(c);
+							Object obj = table.getValueAt( r, c );
+							if( obj instanceof String ) cell.setCellValue( (String)obj );
+							else if( obj instanceof Integer ) cell.setCellValue( (Integer)obj );
+							else if( obj instanceof Date ) cell.setCellValue( ((Date)obj).toString() );
+							else if( obj instanceof Boolean ) cell.setCellValue( (Boolean)obj );
+						}
+					}
+				}
+			}		
+		});
 			
 		final JButton	addbtn = new JButton( new AbstractAction("Panta >>") {
 			public void actionPerformed(ActionEvent e) {
@@ -976,10 +1044,6 @@ public class Order extends JApplet {
 					Image face = getImage(user);
 					if( face != null ) g.drawImage( face, (this.getWidth()-face.getWidth(this))/2, 50, this );
 				}
-				
-				if( image != null ) {
-					g.drawImage( image, (int)(0.6*this.getWidth()), (int)(0.4*this.getHeight()), image.getWidth(this)/2, image.getHeight(this)/2, this );
-				}
 			}
 			
 			public void setBounds( int x, int y, int w, int h ) {
@@ -988,35 +1052,19 @@ public class Order extends JApplet {
 				vcombo.setBounds( (int)(0.5*w)-75, 260, 150, 25 );
 				stcombo.setBounds( (int)(0.5*w)-75, 290, 150, 25 );
 				
-				ylabel.setBounds( (int)(0.00*w), 50, (int)(0.10*w), 25 );
-				label.setBounds( (int)(0.15*w), 50, (int)(0.10*w), 25 );
-				plabel.setBounds( (int)(0.30*w), 50, (int)(0.10*w), 25 );
-				
-				ycombo.setBounds( (int)(0.00*w), 70, (int)(0.10*w), 25 );
-				combo.setBounds( (int)(0.15*w), 70, (int)(0.10*w), 25 );
-				pcombo.setBounds( (int)(0.30*w), 70, (int)(0.10*w), 25 );
-				
-				newItem.setBounds( (int)(0.00*w), 110+(int)(0.40*h), (int)(0.15*w), 25 );
-				delItem.setBounds( (int)(0.25*w), 110+(int)(0.40*h), (int)(0.15*w), 25 );
-				
-				vorur.setBounds( (int)(0.00*w), 30, (int)(0.40*w), 25 );
-				pantanir.setBounds( (int)(0.60*w), 30, (int)(0.40*w), 25 );
-				afgreitt.setBounds( (int)(0.00*w), (int)(0.60*h)-30, (int)(0.40*w), 25 );
-				afhent.setBounds( (int)(0.60*w), (int)(0.60*h)-30, (int)(0.40*w), 25 );
-				
-				scrollpane.setBounds( (int)(0.00*w), 100, (int)(0.40*w), (int)(0.40*h) );
-				ascrollpane.setBounds( (int)(0.00*w), (int)(0.6*h), (int)(0.40*w), (int)(0.40*h) );
-				pscrollpane.setBounds( (int)(0.60*w), 60, (int)(0.40*w), (int)(0.30*h) );
-				rscrollpane.setBounds( (int)(0.60*w), (int)(0.60*h), (int)(0.40*w), (int)(0.40*h) );
-				
-				scrolled.setBounds( (int)(0.60*w)+80, (int)(0.40*h), (int)(0.40*w)-80, 123 );
-				
 				addbtn.setBounds( (int)(0.5*w)-75, 340, 150, 25 );
 				rembtn.setBounds( (int)(0.5*w)-75, 370, 150, 25 );
 				pantanytt.setBounds( (int)(0.5*w)-75, 400, 150, 25 );
 				
 				afgreida.setBounds( (int)(0.5*w)-75, (int)(0.6*h)+100, 150, 25 );
 				afhenda.setBounds( (int)(0.5*w)-75, (int)(0.6*h)+130, 150, 25 );
+				
+				cvorur.setBounds( (int)(0.00*w), 30, (int)(0.40*w), (int)(0.50*h) );
+				cpantanir.setBounds( (int)(0.60*w), 30, (int)(0.40*w), (int)(0.50*h) );
+				cafgreitt.setBounds( (int)(0.00*w), (int)(0.55*h), (int)(0.40*w), (int)(0.45*h) );
+				cafhent.setBounds( (int)(0.60*w), (int)(0.55*h), (int)(0.40*w), (int)(0.45*h) );
+				
+				excel.setBounds( (int)(0.5*w)-75, this.getHeight()-50, 150, 25 );
 			}
 		};
 
@@ -1206,8 +1254,12 @@ public class Order extends JApplet {
 						int nr = modelRowMap.get( vara );
 						if( nr != -1 ) {
 							nr = table.convertRowIndexToView( nr );
-							table.setRowSelectionInterval( nr, nr );
-							table.scrollRectToVisible( table.getCellRect(nr, 0, false) );
+							if( nr >= 0 && nr <= table.getRowCount() ) {
+								table.setRowSelectionInterval( nr, nr );
+								table.scrollRectToVisible( table.getCellRect(nr, 0, false) );
+							} else {
+								System.err.println( nr );
+							}
 						}
 					}
 					
@@ -1371,34 +1423,147 @@ public class Order extends JApplet {
 		
 		//ylabel.setBorder( BorderFactory.createLineBorder( Color.red ) );
 		
-		c.add( ycombo );
-		c.add( combo );
-		c.add( pcombo );
 		c.add( vcombo );
 		c.add( stcombo );
-		c.add( ylabel );
-		c.add( label );
-		c.add( plabel );
-		c.add( vorur );
-		c.add( pantanir );
-		c.add( afgreitt );
-		c.add( afhent );
-		c.add( scrollpane );
-		c.add( pscrollpane );
-		c.add( ascrollpane );
-		c.add( rscrollpane );
-		c.add( scrolled );
 		
 		c.add( afgreida );
 		c.add( afhenda );
-		
-		c.add( newItem );
-		c.add( delItem );
 		c.add( pantanytt );
 		
 		c.add( addbtn );
 		c.add( rembtn );
-		this.add( c );
+		
+		c.add( excel );
+		
+		cvorur = new JComponent() {
+			public void setBounds( int x, int y, int w, int h ) {
+				super.setBounds(x, y, w, h);
+				
+				scrollpane.setBounds( (int)(0.00*w), 70, (int)(1.00*w), (int)(1.0*h)-100 );
+				
+				ylabel.setBounds( (int)(0.00*w), 20, (int)(0.30*w), 25 );
+				label.setBounds( (int)(0.35*w), 20, (int)(0.30*w), 25 );
+				plabel.setBounds( (int)(0.70*w), 20, (int)(0.30*w), 25 );
+				
+				ycombo.setBounds( (int)(0.00*w), 45, (int)(0.30*w), 25 );
+				combo.setBounds( (int)(0.35*w), 45, (int)(0.30*w), 25 );
+				pcombo.setBounds( (int)(0.70*w), 45, (int)(0.30*w), 25 );
+				
+				newItem.setBounds( (int)(0.00*w), (int)(1.0*h)-25, (int)(0.40*w), 25 );
+				delItem.setBounds( (int)(0.60*w), (int)(1.0*h)-25, (int)(0.40*w), 25 );
+				
+				vorur.setBounds( (int)(0.00*w), 0, (int)(1.00*w), 25 );
+			}
+		};
+		cvorur.add( scrollpane );
+		cvorur.add( ycombo );
+		cvorur.add( combo );
+		cvorur.add( pcombo );
+		cvorur.add( ylabel );
+		cvorur.add( label );
+		cvorur.add( plabel );
+		cvorur.add( vorur );
+		cvorur.add( newItem );
+		cvorur.add( delItem );
+		c.add( cvorur );
+		
+		cpantanir = new JComponent() {
+			public void setBounds( int x, int y, int w, int h ) {
+				super.setBounds(x, y, w, h);
+				
+				pscrollpane.setBounds( (int)(0.00*w), 30, (int)(1.00*w), (int)(1.0*h)-135 );
+				pantanir.setBounds( (int)(0.00*w), 0, (int)(1.00*w), 25 );
+				scrolled.setBounds( 80, (int)(1.0*h)-100, (int)(1.0*w)-80, 100 );
+			}
+			
+			public void paintComponent( Graphics g ) {
+				super.paintComponent(g);
+				
+				if( image != null ) {
+					g.drawImage( image, (int)(0.0*this.getWidth())+4, (int)(1.0*this.getHeight())-100+4, image.getWidth(this)/2, image.getHeight(this)/2, this );
+				}
+			}
+		};
+		cpantanir.add( pscrollpane );
+		cpantanir.add( pantanir );
+		cpantanir.add( scrolled );
+		c.add( cpantanir );
+		
+		cafgreitt = new JComponent() {
+			public void setBounds( int x, int y, int w, int h ) {
+				super.setBounds(x, y, w, h);
+				
+				ascrollpane.setBounds( (int)(0.00*w), 30, (int)(1.0*w), (int)(1.0*h)-30 );
+				afgreitt.setBounds( (int)(0.0*w), 0, (int)(1.0*w), 25 );
+			}
+		};
+		cafgreitt.add( ascrollpane );
+		cafgreitt.add( afgreitt );
+		c.add( cafgreitt );
+		
+		cafhent = new JComponent() {
+			public void setBounds( int x, int y, int w, int h ) {
+				super.setBounds(x, y, w, h);
+				
+				rscrollpane.setBounds( (int)(0.00*w), 30, (int)(1.00*w), (int)(1.0*h)-30 );
+				afhent.setBounds( (int)(0.0*w), 0, (int)(1.0*w), 25 );
+			}
+		};
+		cafhent.add( rscrollpane );
+		cafhent.add( afhent );
+		c.add( cafhent );
+		
+		final JTabbedPane tpane = new JTabbedPane();
+		tpane.addTab("Allt", c);
+		tpane.addTab("Vörur", null);
+		tpane.addTab("Pantanir", null);
+		tpane.addTab("Afgreitt", null);
+		tpane.addTab("Afhent", null);
+		
+		tpane.addChangeListener( new ChangeListener() {
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				int i = tpane.getSelectedIndex();
+				if( i == 0 ) {
+					//tpane.setComponentAt(1, null);
+					if( tpane.indexOfComponent(cvorur) > 0 ) {
+						tpane.remove( cvorur );
+						tpane.insertTab("Vörur",null,null,null,1);
+						c.add( cvorur );
+					} 
+					if( tpane.indexOfComponent(cpantanir) > 0 ) {
+						tpane.remove( cpantanir );
+						tpane.insertTab("Pantanir",null,null,null,2);
+						c.add( cpantanir );
+					} 
+					if( tpane.indexOfComponent(cafgreitt) > 0 ) {
+						tpane.remove( cafgreitt );
+						tpane.insertTab("Afgreitt",null,null,null,3);
+						c.add( cafgreitt );
+					} 
+					if( tpane.indexOfComponent(cafhent) > 0 ) {
+						tpane.remove( cafhent );
+						tpane.insertTab("Afhent",null,null,null,4);
+						c.add( cafhent );
+					}
+				} else if( i == 1 ) {
+					c.remove( cvorur );
+					tpane.setComponentAt(1, cvorur);
+				} else if( i == 2 ) {
+					c.remove( cpantanir );
+					tpane.setComponentAt(2, cpantanir);
+				} else if( i == 3 ) {
+					c.remove( cafgreitt );
+					tpane.setComponentAt(3, cafgreitt);
+				} else if( i == 4 ) {
+					c.remove( cafhent );
+					tpane.setComponentAt(4, cafhent);
+				}
+				
+			}
+		});
+		
+		this.add( tpane );
 	}
 	
 	final Image getImage( String name ) {
