@@ -1,18 +1,33 @@
 package org.simmi;
 
+import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Graphics;
+import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import javax.swing.AbstractAction;
 import javax.swing.JApplet;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.event.TableModelListener;
@@ -24,6 +39,125 @@ public class Flanking extends JApplet {
 	JScrollPane	scrollpane = new JScrollPane();
 	JTable		table = new JTable();
 	TableModel	model;
+	ControlComp	buttons;
+	NumComp		nums;
+	
+	class NumComp extends JComponent {
+		JLabel	label;
+		JLabel	len;
+		
+		public NumComp() {
+			super();
+			
+			this.setLayout( new FlowLayout() );
+			
+			label = new JLabel( "Number of reads:" );
+			len = new JLabel( "", JLabel.RIGHT );
+			
+			len.setPreferredSize( new Dimension( 50, 25 ) );
+			this.add( label );
+			this.add( len );
+		}
+	};
+	
+	class ControlComp extends JComponent {
+		JTextField	minSeqField;
+		JTextField 	minRepeatField;
+		JTextField 	leftFlankingField;
+		JTextField 	rightFlankingField;
+		
+		public int getRightFlankingLength() {
+			int rightFlankingLength = 20;
+			String rf = rightFlankingField.getText();
+			rightFlankingLength = Integer.parseInt(rf);
+			return rightFlankingLength;
+		}
+		
+		public int getLeftFlankingLength() {
+			int leftFlankingLength = 20;
+			String lf = leftFlankingField.getText();
+			leftFlankingLength = Integer.parseInt(lf);
+			return leftFlankingLength;
+		}
+		
+		public int getMinSeqLength() {
+			int minSeqLength = 20;
+			String msl = minSeqField.getText();
+			minSeqLength = Integer.parseInt(msl);
+			return minSeqLength;
+		}
+		
+		public int getMinRepeatLength() {
+			int minRepeatLength = 20;
+			String mrl = minRepeatField.getText();
+			minRepeatLength = Integer.parseInt(mrl);
+			return minRepeatLength;
+		}
+		
+		public ControlComp() {
+			super();
+			
+			this.setLayout( new FlowLayout() );
+			
+			Dimension d = new Dimension( 50,25 );
+			
+			JLabel minSeqLength = new JLabel( "Min Seq Length" );
+			this.add( minSeqLength );
+			minSeqField = new JTextField( "100" );
+			this.add( minSeqField );
+			minSeqField.setPreferredSize( d );
+			minSeqField.setSize( d );
+			JLabel	minRepeatLength = new JLabel( "Min Repeat Length" );
+			this.add( minRepeatLength );
+			minRepeatField = new JTextField( "50" );
+			this.add( minRepeatField );
+			minRepeatField.setPreferredSize( d );
+			minRepeatField.setSize( d );
+			JLabel	leftFlankingLength = new JLabel( "Left Flank Len" );
+			this.add( leftFlankingLength );
+			leftFlankingField = new JTextField( "20" );
+			this.add( leftFlankingField );
+			leftFlankingField.setPreferredSize( d );
+			leftFlankingField.setSize( d );
+			JLabel	rightFlankingLength = new JLabel( "Right Flank Len" );
+			this.add( rightFlankingLength );
+			rightFlankingField = new JTextField( "20" );
+			this.add( rightFlankingField );
+			rightFlankingField.setPreferredSize( d );
+			rightFlankingField.setSize( d );
+			
+			final JTextField fileField = new JTextField( "" );
+			d = new Dimension( 300,25 );
+			fileField.setPreferredSize( d );
+			JButton	reload = new JButton( new AbstractAction("Load") {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					String text = fileField.getText();
+					if( text.length() == 0 ) {
+						JFileChooser fc = new JFileChooser();
+						if( fc.showOpenDialog( Flanking.this ) == JFileChooser.APPROVE_OPTION ) {
+							File f = fc.getSelectedFile();
+							try {
+								text = f.toURI().toURL().toString();
+								fileField.setText( text );
+							} catch (MalformedURLException e1) {
+								e1.printStackTrace();
+							}
+						}
+					}
+									
+					load( text );
+				}
+			});
+			this.add(reload);
+			this.add( fileField );
+		}
+		
+		public void paintComponent( Graphics g ) {
+			super.paintComponent(g);
+		}
+		
+	}
 	
 	class Repeat implements Comparable<Repeat> {
 		int	start;
@@ -42,6 +176,10 @@ public class Flanking extends JApplet {
 		String			htmlsequence;
 		List<Repeat>	_repeats;
 		
+		public boolean hasRepeats() {
+			return _repeats.size() > 0; 
+		}
+		
 		public boolean hasRepeats( int length ) {
 			for( Repeat r : _repeats ) {
 				if( r.length == length ) return true;
@@ -52,6 +190,20 @@ public class Flanking extends JApplet {
 		public boolean hasRepeatsMoreThan( int length ) {
 			for( Repeat r : _repeats ) {
 				if( r.length > length ) return true;
+			}
+			return false;
+		}
+		
+		public boolean hasFlankingEnds( int left, int right ) {
+			for( Repeat r : _repeats ) {
+				if( r.start < left || length-r.stop < right ) return false;
+			}
+			return true;
+		}
+		
+		public boolean hasMinimumRepeatLength( int length ) {
+			for( Repeat r : _repeats ) {
+				if( r.stop-r.start > length ) return true;
 			}
 			return false;
 		}
@@ -138,20 +290,36 @@ public class Flanking extends JApplet {
 		}
 	};
 	
-	String[] loadFna( String filename ) throws IOException {
-		File file = new File( filename );
-		ByteBuffer bb = ByteBuffer.allocate( (int)file.length() );
-		FileInputStream	stream = new FileInputStream( file );
-		
-		int total = 0;
-		int r = stream.read( bb.array() );
-		while( r > 0 ) {
-			total += r;
-			r = stream.read( bb.array(), total, bb.limit()-total );
+	String[] loadFna( String urlstr ) throws IOException {
+		String[] split = urlstr.split("/");
+		String name = split[ split.length-1 ];
+		String home = System.getProperty("user.home");
+		File file = new File( home, name );
+		InputStream stream = null;
+		ByteBuffer bb = null;
+		if( file.exists() ) {
+			stream = new FileInputStream( file );
+			bb = ByteBuffer.allocate( (int)file.length() );		
+		} else {
+			URL url = new URL( urlstr );
+			stream = url.openStream();
+			bb = ByteBuffer.allocate( 1000000 );
 		}
 		
-		String s = new String( bb.array() );
-		String[] split = s.split(">");
+		String	s = "";
+		int r = stream.read( bb.array() );
+		while( r > 0 ) {
+			s += new String( bb.array(), 0, r );
+			r = stream.read( bb.array() );
+		}
+		
+		/*if( !(stream instanceof FileInputStream) ) {
+			FileWriter fw = new FileWriter( file );
+			fw.write( s );
+		}*/
+		
+		//String s = new String( bb.array() );
+		split = s.split(">");
 		
 		return split;
 	}
@@ -260,6 +428,68 @@ public class Flanking extends JApplet {
 		};
 	}
 	
+	void load( String urlstr ) {
+		try {
+			split = loadFna( urlstr );
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		List<Sequence>	seqList = new ArrayList<Sequence>();
+		
+		int minSeqLen = 100;
+		int left = 20;
+		int right = 20;
+		int minRepeatLen = 50;
+		
+		if( buttons != null ) {
+			left = buttons.getLeftFlankingLength();
+			right = buttons.getRightFlankingLength();
+			minSeqLen = buttons.getMinSeqLength();
+			minRepeatLen = buttons.getMinRepeatLength();
+		}
+		
+		int max = 0;
+		int row = 0;
+		for( String s : split ) {
+			int i = s.indexOf('\n');
+			if( i > 0 ) {
+				String head = s.substring(0, i);
+				String foot = s.substring(i+1);
+				String[] spl = head.split("[ ]+");
+				String seq = foot.replace("\n", "");
+				int seqlen = seq.length();
+				if( seqlen > minSeqLen ) {
+					Sequence seqobj = new Sequence( spl[0], seqlen, seq );
+					if( seqobj.hasRepeats() && seqobj.hasFlankingEnds( left, right ) && seqobj.hasMinimumRepeatLength(minRepeatLen) ) {
+						if( seqlen > max ) {
+							max = seqlen;
+							row = seqList.size();
+						}
+						seqList.add( seqobj );
+					}
+				}
+			}
+		}
+		System.err.println( seqList.size() );
+		
+		model = createModel( seqList );
+		
+		table.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
+		table.setAutoCreateRowSorter( true );
+		table.setModel( model );
+		scrollpane.setViewportView( table );
+		
+		TableColumn tc = table.getColumnModel().getColumn(2);
+		TableCellRenderer tcr = table.getDefaultRenderer(model.getColumnClass(2));
+		Component c = tcr.getTableCellRendererComponent(table,model.getValueAt(row,2),false,false,row,2);
+		
+		tc.setPreferredWidth( c.getPreferredSize().width );
+		
+		nums.len.setText( Integer.toString(seqList.size()) );
+		this.repaint();
+	}
+	
 	String[] split;
 	public void init() {
 		try {
@@ -278,48 +508,16 @@ public class Flanking extends JApplet {
 			e.printStackTrace();
 		}
 		
-		try {
-			split = loadFna( "/home/sigmar/sild/2.TCA.454Reads.fna" );
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		//load( "http://test.matis.is/flanking/2.TCA.454Reads.fna" );
 		
-		List<Sequence>	seqList = new ArrayList<Sequence>();
+		buttons = new ControlComp();
+		nums = new NumComp();
 		
-		int max = 0;
-		int row = 0;
-		for( String s : split ) {
-			int i = s.indexOf('\n');
-			if( i > 0 ) {
-				String head = s.substring(0, i);
-				String foot = s.substring(i+1);
-				String[] spl = head.split("[ ]+");
-				String seq = foot.replace("\n", "");
-				int seqlen = seq.length();
-				if( seqlen > 100 ) {
-					if( seqlen > max ) {
-						max = seqlen;
-						row = seqList.size();
-					}
-					Sequence seqobj = new Sequence( spl[0], seqlen, seq );
-					if( seqobj.hasRepeatsMoreThan(3) ) seqList.add( seqobj );
-				}
-			}
-		}
-		System.err.println( seqList.size() );
-		
-		model = createModel( seqList );
-		
-		table.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
-		table.setAutoCreateRowSorter( true );
-		table.setModel( model );
-		scrollpane.setViewportView( table );
-		
-		TableColumn tc = table.getColumnModel().getColumn(2);
-		TableCellRenderer tcr = table.getDefaultRenderer(model.getColumnClass(2));
-		Component c = tcr.getTableCellRendererComponent(table,model.getValueAt(row,2),false,false,row,2);
-		tc.setPreferredWidth(c.getPreferredSize().width);
-		
-		this.add( scrollpane );
+		JComponent comp = new JComponent() {};
+		comp.setLayout( new BorderLayout() );
+		comp.add( scrollpane );
+		this.add( nums, BorderLayout.NORTH );
+		comp.add( buttons, BorderLayout.SOUTH );
+		this.add( comp );
 	}
 }
