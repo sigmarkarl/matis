@@ -65,6 +65,7 @@ public class Flanking extends JApplet {
 		JTextField 	minRepeatField;
 		JTextField 	leftFlankingField;
 		JTextField 	rightFlankingField;
+		JTextField	minRepeatNumField;
 		
 		public int getRightFlankingLength() {
 			int rightFlankingLength = 20;
@@ -94,6 +95,13 @@ public class Flanking extends JApplet {
 			return minRepeatLength;
 		}
 		
+		public int getMinRepeatNum() {
+			int minRepeatNum = 4;
+			String mrl = minRepeatNumField.getText();
+			minRepeatNum = Integer.parseInt(mrl);
+			return minRepeatNum;
+		}
+		
 		public ControlComp() {
 			super();
 			
@@ -113,6 +121,13 @@ public class Flanking extends JApplet {
 			this.add( minRepeatField );
 			minRepeatField.setPreferredSize( d );
 			minRepeatField.setSize( d );
+			JLabel	minRepeatNum = new JLabel( "Min Repeat Num" );
+			this.add( minRepeatNum );
+			minRepeatNumField = new JTextField( "4" );
+			this.add( minRepeatNumField );
+			minRepeatNumField.setPreferredSize( d );
+			minRepeatNumField.setSize( d );
+			
 			JLabel	leftFlankingLength = new JLabel( "Left Flank Len" );
 			this.add( leftFlankingLength );
 			leftFlankingField = new JTextField( "20" );
@@ -145,8 +160,8 @@ public class Flanking extends JApplet {
 							}
 						}
 					}
-									
-					load( text );
+					
+					if( text.length() > 0 ) load( text );
 				}
 			});
 			this.add(reload);
@@ -175,6 +190,10 @@ public class Flanking extends JApplet {
 		Integer			length;
 		String			htmlsequence;
 		List<Repeat>	_repeats;
+		
+		public void clear() {
+			_repeats.clear();
+		}
 		
 		public boolean hasRepeats() {
 			return _repeats.size() > 0; 
@@ -208,7 +227,14 @@ public class Flanking extends JApplet {
 			return false;
 		}
 		
-		public Sequence( String name, int length, String sequence ) {
+		/*public boolean hasMinimumRepeatNum( int num ) {
+			for( Repeat r : _repeats ) {
+				if( r.stop-r.start > length ) return true;
+			}
+			return false;
+		}*/
+		
+		public Sequence( String name, int length, String sequence, int repNum ) {
 			int LEN = 4;
 			
 			this.name = name;
@@ -229,10 +255,17 @@ public class Flanking extends JApplet {
 					
 					if( yes ) {
 						for( int l = k; l < k+i; l++ ) {
-							if( sequence.charAt(l) != sequence.charAt(l+i) || sequence.charAt(l) != sequence.charAt(l+i*2) || sequence.charAt(l) != sequence.charAt(l+i*3) ) {
+							for( int r = 1; r < repNum; r++ ) {
+								if( sequence.charAt(l) != sequence.charAt(l+i*r) ) {
+									yes = false;
+									break;
+								}
+							}
+							if( !yes ) break;
+							/*if( sequence.charAt(l) != sequence.charAt(l+i) || sequence.charAt(l) != sequence.charAt(l+i*2) || sequence.charAt(l) != sequence.charAt(l+i*3) ) {
 								yes = false;
 								break;
-							}
+							}*/
 						}
 						
 						if( yes ) {
@@ -441,12 +474,14 @@ public class Flanking extends JApplet {
 		int left = 20;
 		int right = 20;
 		int minRepeatLen = 50;
+		int minRepeatNum = 4;
 		
 		if( buttons != null ) {
 			left = buttons.getLeftFlankingLength();
 			right = buttons.getRightFlankingLength();
 			minSeqLen = buttons.getMinSeqLength();
 			minRepeatLen = buttons.getMinRepeatLength();
+			minRepeatNum = buttons.getMinRepeatNum();
 		}
 		
 		int max = 0;
@@ -460,13 +495,16 @@ public class Flanking extends JApplet {
 				String seq = foot.replace("\n", "");
 				int seqlen = seq.length();
 				if( seqlen > minSeqLen ) {
-					Sequence seqobj = new Sequence( spl[0], seqlen, seq );
-					if( seqobj.hasRepeats() && seqobj.hasFlankingEnds( left, right ) && seqobj.hasMinimumRepeatLength(minRepeatLen) ) {
+					Sequence seqobj = new Sequence( spl[0], seqlen, seq, minRepeatNum );
+					if( seqobj.hasRepeats() && seqobj.hasFlankingEnds( left, right ) 
+							&& seqobj.hasMinimumRepeatLength(minRepeatLen) /*&& seqobj.hasMinimumRepeatLength(minRepeatNum)*/ ) {
 						if( seqlen > max ) {
 							max = seqlen;
 							row = seqList.size();
 						}
 						seqList.add( seqobj );
+					} else {
+						seqobj.clear();
 					}
 				}
 			}
