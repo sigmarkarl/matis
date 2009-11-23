@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/poi"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="/opt/poi-3.5-FINAL/poi-3.5-FINAL-20090928.jar"/>
+	<classpathentry kind="lib" path="/opt/poi-3.5-FINAL/poi-ooxml-3.5-FINAL-20090928.jar"/>
+	<classpathentry kind="lib" path="/opt/poi-3.5-FINAL/ooxml-lib/xmlbeans-2.3.0.jar"/>
+	<classpathentry kind="lib" path="/opt/poi-3.5-FINAL/ooxml-lib/dom4j-1.6.1.jar"/>
+	<classpathentry kind="lib" path="/opt/poi-3.5-FINAL/ooxml-lib/geronimo-stax-api_1.0_spec-1.0.jar"/>
+	<classpathentry kind="lib" path="/opt/poi-3.5-FINAL/ooxml-lib/ooxml-schemas-1.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

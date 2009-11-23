@@ -1,6 +1,7 @@
 package com.matis.prokaria;
 
 import java.awt.BasicStroke;
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -51,6 +52,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.ToolTipManager;
 import javax.swing.TransferHandler;
@@ -388,8 +390,7 @@ public class Fiskur extends JApplet {
 		e.setSize(d);
 		e.setContentType("text/html");
 		// e.setText("<html><body><center>Copyright 2009, Matis, ohf</center></body></html>");
-		e
-				.setText("<html><body><center><span style=\"color:gray\">Copyright 2009, Matis, ohf</span></center></body></html>");
+		e.setText("<html><body><center><span style=\"color:gray\">Copyright 2009, Matis, ohf</span></center></body></html>");
 
 		subc = new JComponent() {
 			public void paintComponent(Graphics g) {
@@ -425,7 +426,7 @@ public class Fiskur extends JApplet {
 				g2.drawRoundRect(0, 0, w - 1, h - 1, 24, 24);
 				g2.setStroke(stroke);
 
-				String str = "MATE ME RIGHT";
+				String str = "MateMeRight";
 				g2.drawImage(mimg, 15, 15, 30, 30, this);
 				g2.setFont(g2.getFont().deriveFont(Font.BOLD, 16.0f));
 				g2.setColor(Color.gray);
@@ -526,8 +527,9 @@ public class Fiskur extends JApplet {
 
 			public void setBounds(int x, int y, int w, int h) {
 				if (subc != null && table != null) {
-					subc.setLocation(Math.max(0, (w - subc.getWidth()) / 2), 8);
-					splitpane.setBounds(15, 125, 870, 455);
+					//subc.setLocation(Math.max(0, (w - subc.getWidth()) / 2), 8);
+					subc.setBounds(15, 15, w-30, 100);
+					splitpane.setBounds(15, 125, w-30, h-140);
 				}
 				super.setBounds(x, y, w, h);
 			}
@@ -1042,6 +1044,14 @@ public class Fiskur extends JApplet {
 		tabbedPane.addTab("Summary", summaryScroll);
 		tabbedPane.addTab("Matrix", matrixScroll);
 		tabbedPane.addTab("Surface", matrixSurface);
+		
+		JTextField	search = new JTextField();
+		JComponent leftComp = new JComponent() {
+			
+		};
+		leftComp.setLayout( new BorderLayout() );
+		leftComp.add( scrollpane );
+		leftComp.add( search, BorderLayout.SOUTH );
 
 		splitpane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, scrollpane, tabbedPane);
 		c.add(splitpane);
@@ -1257,8 +1267,10 @@ public class Fiskur extends JApplet {
 
 	public void setBounds(int x, int y, int w, int h) {
 		if (c != null) {
-			c.setLocation(Math.max(0, (w - c.getWidth()) / 2), Math.max(0, (h - c.getHeight()) / 2));
+			c.setBounds(50, 50, w-100, h-100);
+			//c.setLocation(Math.max(0, (w - c.getWidth()) / 2), Math.max(0, (h - c.getHeight()) / 2));
 			e.setLocation((w - c.getWidth()) / 2, (h + c.getHeight()) / 2);
+			e.setBounds(50, h-50, w-100, 50);
 		}
 		super.setBounds(x, y, w, h);
 	}

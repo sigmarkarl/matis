@@ -16,9 +16,11 @@ import javax.swing.JTextField;
 public class Prop extends JComponent {
 	JLabel			nLabel;
 	JLabel			ktLabel;
+	JLabel			hmLabel;
 	JLabel			textLabel;
 	JTextField		name;
 	JTextField		kt;
+	JTextField		home;
 	JEditorPane		text;
 	
 	public Corp		currentCorp = null;
@@ -27,17 +29,21 @@ public class Prop extends JComponent {
 	public Prop() {
 		nLabel = new JLabel("Nafn:");
 		ktLabel = new JLabel("Kennitala:");
+		hmLabel = new JLabel("Heimili:");
 		textLabel = new JLabel("Texti:");
 		name = new JTextField();
 		kt = new JTextField();
+		home = new JTextField();
 		text = new JEditorPane();
 		text.setEditable( true );
 		
 		this.add(nLabel);
 		this.add(ktLabel);
+		this.add(hmLabel);
 		this.add(textLabel);
 		this.add(name);
 		this.add(kt);
+		this.add(home);
 		this.add(text);
 		
 		this.setLayout( null );
@@ -67,6 +73,7 @@ public class Prop extends JComponent {
 		};
 		name.addKeyListener( kl );
 		kt.addKeyListener( kl );
+		home.addKeyListener( kl );
 		text.addKeyListener( kl );
 	}
 	
@@ -82,10 +89,12 @@ public class Prop extends JComponent {
 	public void setBounds( int x, int y, int w, int h ) {
 		nLabel.setBounds( 5, 5, 90, 25 );
 		ktLabel.setBounds( 5, 35, 90, 25 );
-		textLabel.setBounds( 5, 65, 90, 25 );
+		hmLabel.setBounds( 5, 65, 90, 25 );
+		textLabel.setBounds( 5, 95, 90, 25 );
 		name.setBounds( 100, 5, 295, 25 );
 		kt.setBounds( 100, 35, 295, 25 );
-		text.setBounds( 100, 65, 295, 225 );
+		home.setBounds( 100, 65, 295, 25 );
+		text.setBounds( 100, 95, 295, 225 );
 		
 		super.setBounds( x,y,w,h );
 	}
