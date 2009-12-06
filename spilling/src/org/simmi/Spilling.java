@@ -18,6 +18,7 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -129,6 +130,186 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 		//c.repaint();
 	}
 	
+	void backtrack( Point p, Corp c ) {		
+		double hx = hhx;
+		double hy = hhy;
+		double hz = hhz;
+		
+		//System.err.println( "doing " + hx + "  " + hy + "  " + hz );
+		
+		double d = dzoomval;
+		double zval = d;
+		double mval = d * 1.5;
+		
+		/*if (np != null && p != null) {
+			if (!shift)
+				hy += (np.x - p.x) / 100.0;
+			hx += (np.y - p.y) / 100.0;
+			if (shift)
+				hz += (np.x - p.x) / 100.0;
+		}*/
+		
+		//System.err.println( p + "    " + np );
+
+		double cosx = Math.cos(hx);
+		double sinx = Math.sin(hx);
+		double cosy = Math.cos(hy);
+		double siny = Math.sin(hy);
+		double cosz = Math.cos(hz);
+		double sinz = Math.sin(hz);
+		
+		double len = Corp.corpList.size();
+		cx = 0.0;
+		cy = 0.0;
+		cz = 0.0;
+		for( Corp rel : Corp.corpList ) {
+			cx += rel.x;
+			cy += rel.y;
+			cz += rel.z;
+		}
+		cx /= len;
+		cy /= len;
+		cz /= len;
+		
+		double dx = p.x - this.getWidth()/2;
+		double dy = p.y - this.getHeight()/2;
+		double dz = zoomval;
+		
+		//System.err.println( "dfuckxyz " + dx + "  " + dy + "  " + dz );
+			
+		double lz = dz;
+		double lx = ( dx * (zval + dz) ) / mval;
+		double ly = ( dy * (zval + dz) ) / mval;
+		
+		//System.err.println( "lfuckxyz " + lx + "  " + ly + "  " + lz );
+		
+		double nz = lz - zoomval;
+		double nx = lx * cosz - ly * sinz;
+		double ny = ly * cosz + lx * sinz;
+		
+		//System.err.println( "nfuckxyz " + nx + "  " + ny + "  " + nz );
+		
+		double xx = nx;
+		double zz = nz * cosx - ny * sinx;
+		double yy = ny * cosx + nz * sinx;
+		
+		//System.err.println( "xfuckxyz " + xx + "  " + yy + "  " + zz + "  " + cosx + "   " + sinx );
+		
+		c.y = yy + cy;
+		c.x = xx * cosy + zz * siny + cx;
+		c.z = zz * cosy - xx * siny + cz;
+		
+		//System.err.println( "fock " + c.x + "  " + c.y + "  " + c.z + "  point  " + p.x + "   " + p.y );
+	}
+	
+	public void backtest( double x, double y ) {		
+		double hx = hhx;
+		double hy = hhy;
+		double hz = hhz;
+		
+		System.err.println( "testing " + hx + "  " + hy + "  " + hz );
+		
+		double d = dzoomval;
+		double zval = d;
+		double mval = d * 1.5;
+		
+		if (np != null && p != null) {
+			if (!shift)
+				hy += (np.x - p.x) / 100.0;
+			hx += (np.y - p.y) / 100.0;
+			if (shift)
+				hz += (np.x - p.x) / 100.0;
+		}
+		
+		System.err.println( p + "    " + np );
+
+		double cosx = Math.cos(hx);
+		double sinx = Math.sin(hx);
+		double cosy = Math.cos(hy);
+		double siny = Math.sin(hy);
+		double cosz = Math.cos(hz);
+		double sinz = Math.sin(hz);
+		
+		double len = Corp.corpList.size();
+		cx = 0.0;
+		cy = 0.0;
+		cz = 0.0;
+		for( Corp rel : Corp.corpList ) {
+			cx += rel.x;
+			cy += rel.y;
+			cz += rel.z;
+		}
+		cx /= len;
+		cy /= len;
+		cz /= len;
+		
+		System.err.println( "xyz " + x + "  " + y + "  " + cz );
+		
+		double dx = x - this.getWidth()/2;
+		double dy = y - this.getHeight()/2;
+		double dz = cz;
+		
+		System.err.println( "dxyz " + dx + "  " + dy + "  " + dz );
+		
+		double lz = dz;
+		double lx = ( dx * (zval + dz) ) / mval;
+		double ly = ( dy * (zval + dz) ) / mval;
+		
+		System.err.println( "lxyz " + lx + "  " + ly + "  " + lz );
+		
+		double nz = lz - zoomval;
+		double nx = lx * cosz - ly * sinz;
+		double ny = ly * cosz + lx * sinz;
+		
+		System.err.println( "nxyz " + nx + "  " + ny + "  " + nz );
+		
+		double xx = nx;
+		double zz = nz * cosx - ny * sinx;
+		double yy = ny * cosx + nz * sinx;
+		
+		System.err.println( "xxyz " + xx + "  " + yy + "  " + zz + "  " + cosx + "   " + sinx );
+		
+		double ry = yy + cy;
+		double rx = xx * cosy + zz * siny + cx;
+		double rz = zz * cosy - xx * siny + cz;
+		
+		System.err.println( "erm " + cx + "  " + cy + "  " + cz );
+		System.err.println( "erm " + hx + "  " + hy + "  " + hz );
+		System.err.println( "erm " + cosx + "  " + cosy + "  " + cosz );
+		
+		System.err.println( "rxyz " + rx + "  " + ry + "  " + rz );
+		
+		xx = (rx - cx) * cosy - (rz - cz) * siny;
+		yy = (ry - cy);
+		zz = (rx - cx) * siny + (rz - cz) * cosy;
+		
+		System.err.println( "xxyz " + xx + "  " + yy + "  " + zz );
+
+		nx = xx;
+		ny = yy * cosx - zz * sinx;
+		nz = yy * sinx + zz * cosx; // cz;
+		
+		System.err.println( "nxyz " + nx + "  " + ny + "  " + nz );
+
+		lx = nx * cosz + ny * sinz;
+		ly = ny * cosz - nx * sinz;
+		lz = nz + zoomval;
+		
+		System.err.println( "lxyz " + lx + "  " + ly + "  " + lz );
+
+		dz = lz;
+		dx = (lx * mval) / (zval + dz);
+		dy = (ly * mval) / (zval + dz);
+		
+		System.err.println( "dxyz " + dx + "  " + dy + "  " + dz );
+		
+		x = dx+this.getWidth()/2;
+		y = dy+this.getHeight()/2;
+		double z = dz;
+		
+		System.err.println( "xyz " + x + "  " + y + "  " + z );
+	}
+	
 	double zoomval = 500.0;
 	double dzoomval = 500.0;
 	public void depth() {
@@ -192,6 +373,18 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 			
 			rel.depz = dz;
 
+			/*if( rel == Corp.corpList.get(Corp.corpList.size()-1) ) {
+				System.err.println( "hoho " + cx + "  " + cy + "  " + cz );
+				System.err.println( "hoho " + hx + "  " + hy + "  " + hz );
+				System.err.println( "hoho " + cosx + "  " + cosy + "  " + cosz );
+				System.err.println( "heyr " + rel.x + "   " + rel.y + "   " + rel.z );
+				System.err.println( "xx " + xx + "   " + yy + "   " + zz );
+				System.err.println( "nx " + nx + "   " + ny + "   " + nz );
+				System.err.println( "lx " + lx + "   " + ly + "   " + lz );
+				System.err.println( "dx " + dx + "   " + dy + "   " + dz );
+				System.err.println( "x " + x + "   " + y );
+			}*/
+			//System.err.println( "set bounds " + x + "   " + y + "   " + rel.x + "   " + rel.y + "   " + rel.z );
 			rel.setBounds( x, y, size, size );
 		}
 	}
@@ -262,7 +455,7 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 									g.setColor( Color.gray );
 									g.drawLine( x1, y1, x2, y2 );
 									
-									if( !toggle && p == null ) {
+									if( drawLinkNames && !toggle && p == null ) {
 										Set<String> strset = corp.connections.get(cc);
 										int x = (x1+x2)/2;
 										int y = (y1+y2)/2;
@@ -296,7 +489,8 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 						int strWidth = g.getFontMetrics().stringWidth( corp.name );
 						g.setColor( Color.black );
 						if( (corp.type.equals("person") && drawPersonNames) || (corp.type.equals("corp") && drawCorpNames) ) {
-							g.drawString( corp.name, c.getX()+(c.getWidth()-strWidth)/2, c.getY()+c.getHeight()+15 );
+							if( corp.name.length() > 50 ) g.drawString( corp.name.substring(0, 50), c.getX()+(c.getWidth()-strWidth)/2, c.getY()+c.getHeight()+15 );
+							else g.drawString( corp.name, c.getX()+(c.getWidth()-strWidth)/2, c.getY()+c.getHeight()+15 );
 						}
 					}
 				}
@@ -377,6 +571,13 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 				c.repaint();
 			}
 		});
+		popup.add( new AbstractAction("Show/Hide Links Names") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				drawLinkNames = !drawLinkNames;
+				c.repaint();
+			}
+		});
 		popup.add( new AbstractAction("Show/Hide Person Names") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -395,7 +596,11 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 		popup.add( new AbstractAction("Add Person") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				Corp 		corp = new Corp("unknown","person",m.x,m.y);
+				Corp 		corp = new Corp("unknown","person",0.0,0.0);
+				
+				//backtest( m.x, m.y );
+				
+				backtrack( m, corp );
 				try {
 					corp.save();
 				} catch (IOException e2) {
@@ -442,7 +647,7 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 						Random rand = new Random();
 						int i = 0;
 						XSSFRow 	corpRow = corpSheet.getRow( ++i );
-						while( i < 300 ) {
+						while( i < 500 ) {
 							XSSFCell cell = null;
 							if( corpRow != null ) cell = corpRow.getCell(7);
 							if( cell != null ) {
@@ -550,7 +755,7 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 								int l = 0;
 								while( l < 5 ) {
 									cell = corpRow.getCell(l);
-									if( cell != null ) {
+									if( cell != null && cell.getCellType() == XSSFCell.CELL_TYPE_STRING ) {
 										String	id = cell.getStringCellValue();
 										
 										if( id.length() > 0 ) {

@@ -2,10 +2,11 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/usr/share/java/jogl.jar"/>
-	<classpathentry kind="lib" path="/usr/share/java/gluegen-rt.jar"/>
 	<classpathentry kind="lib" path="/opt/poi-3.5-FINAL/poi-3.5-FINAL-20090928.jar"/>
 	<classpathentry kind="lib" path="/opt/poi-3.5-FINAL/poi-ooxml-3.5-FINAL-20090928.jar"/>
+	<classpathentry kind="lib" path="/usr/share/java/jogl.jar"/>
+	<classpathentry kind="lib" path="/opt/poi-3.5-FINAL/poi-contrib-3.5-FINAL-20090928.jar"/>
+	<classpathentry kind="lib" path="/opt/poi-3.5-FINAL/poi-scratchpad-3.5-FINAL-20090928.jar"/>
 	<classpathentry kind="lib" path="/opt/poi-3.5-FINAL/ooxml-lib/dom4j-1.6.1.jar"/>
 	<classpathentry kind="lib" path="/opt/poi-3.5-FINAL/ooxml-lib/geronimo-stax-api_1.0_spec-1.0.jar"/>
 	<classpathentry kind="lib" path="/opt/poi-3.5-FINAL/ooxml-lib/ooxml-schemas-1.0.jar"/>
