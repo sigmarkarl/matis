@@ -6,15 +6,15 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
+import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileWriter;
+import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.lang.reflect.Field;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -161,7 +161,13 @@ public class Flanking extends JApplet {
 						}
 					}
 					
-					if( text.length() > 0 ) load( text );
+					if( text.length() > 0 )
+						try {
+							load( text );
+						} catch (IOException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
 				}
 			});
 			this.add(reload);
@@ -213,11 +219,28 @@ public class Flanking extends JApplet {
 			return false;
 		}
 		
-		public boolean hasFlankingEnds( int left, int right ) {
-			for( Repeat r : _repeats ) {
-				if( r.start < left || length-r.stop < right ) return false;
+		public boolean hasFlankingEnds( int left, int right, int min ) {
+			Repeat first = _repeats.get(0);
+			Repeat next = first;
+			int rlen = next.stop-next.start;
+			
+			int oold = first.start;
+			int nnew = 0;
+			
+			for( int i = 1; i < _repeats.size(); i++ ) {
+				next = _repeats.get(i);
+				nnew = next.start - first.stop;
+
+				if( rlen >= min && oold > left && nnew > right ) return true;
+				oold = nnew;
+				first = next;
+				rlen = first.stop-first.start;
 			}
-			return true;
+			
+			nnew = length - next.stop;
+			if( rlen >= min && oold > left && nnew > right ) return true;
+			
+			return false;
 		}
 		
 		public boolean hasMinimumRepeatLength( int length ) {
@@ -323,27 +346,68 @@ public class Flanking extends JApplet {
 		}
 	};
 	
-	String[] loadFna( String urlstr ) throws IOException {
+	int row = 0;
+	List<Sequence> loadFna( String urlstr ) throws IOException {
 		String[] split = urlstr.split("/");
 		String name = split[ split.length-1 ];
 		String home = System.getProperty("user.home");
 		File file = new File( home, name );
-		InputStream stream = null;
-		ByteBuffer bb = null;
+		Reader reader;
+		//InputStream stream = null;
+		//ByteBuffer bb = null;
 		if( file.exists() ) {
-			stream = new FileInputStream( file );
-			bb = ByteBuffer.allocate( (int)file.length() );		
+			reader = new FileReader( file );
+			//bb = ByteBuffer.allocate( (int)file.length() );		
 		} else {
 			URL url = new URL( urlstr );
-			stream = url.openStream();
-			bb = ByteBuffer.allocate( 1000000 );
+			reader = new InputStreamReader( url.openStream() );
+			//bb = ByteBuffer.allocate( 1000000 );
 		}
 		
-		String	s = "";
-		int r = stream.read( bb.array() );
-		while( r > 0 ) {
-			s += new String( bb.array(), 0, r );
-			r = stream.read( bb.array() );
+		int left = 20;
+		int right = 20;
+		int minSeqLen = 100;
+		int minRepeatLen = 50;
+		int minRepeatNum = 4;
+		
+		if( buttons != null ) {
+			left = buttons.getLeftFlankingLength();
+			right = buttons.getRightFlankingLength();
+			minSeqLen = buttons.getMinSeqLength();
+			minRepeatLen = buttons.getMinRepeatLength();
+			minRepeatNum = buttons.getMinRepeatNum();
+		}
+		
+		List<Sequence>	seqList = new ArrayList<Sequence>();
+		
+		BufferedReader br = new BufferedReader( reader );
+		String line = br.readLine();
+		String seq = "";
+		String head = null;
+		int max = 0;
+		row = 0;
+		while( line != null ) {
+			if( line.startsWith(">") ) {
+				int seqlen = seq.length();
+				if( seqlen > minSeqLen ) {
+					String[] spl = head.split("[ ]+");
+					Sequence seqobj = new Sequence( spl[0].substring(1), seqlen, seq, minRepeatNum );
+					if( seqobj.hasRepeats() && seqobj.hasFlankingEnds( left, right, minRepeatLen ) && seqobj.hasMinimumRepeatLength(minRepeatLen) /*&& seqobj.hasMinimumRepeatLength(minRepeatNum)*/ ) {
+						if( seqlen > max ) {
+							max = seqlen;
+							row = seqList.size();
+						}
+						seqList.add( seqobj );
+					} else {
+						seqobj.clear();
+					}
+				}
+				seq = "";
+				head = line;
+			} else {
+				seq += line;
+			}
+			line = br.readLine();
 		}
 		
 		/*if( !(stream instanceof FileInputStream) ) {
@@ -352,9 +416,8 @@ public class Flanking extends JApplet {
 		}*/
 		
 		//String s = new String( bb.array() );
-		split = s.split(">");
 		
-		return split;
+		return seqList;
 	}
 	
 	static {
@@ -461,17 +524,10 @@ public class Flanking extends JApplet {
 		};
 	}
 	
-	void load( String urlstr ) {
-		try {
-			split = loadFna( urlstr );
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	void load( String urlstr ) throws IOException {		
+		List<Sequence>	seqList = loadFna( urlstr );
 		
-		List<Sequence>	seqList = new ArrayList<Sequence>();
-		
-		int minSeqLen = 100;
-		int left = 20;
+		/*int left = 20;
 		int right = 20;
 		int minRepeatLen = 50;
 		int minRepeatNum = 4;
@@ -479,7 +535,6 @@ public class Flanking extends JApplet {
 		if( buttons != null ) {
 			left = buttons.getLeftFlankingLength();
 			right = buttons.getRightFlankingLength();
-			minSeqLen = buttons.getMinSeqLength();
 			minRepeatLen = buttons.getMinRepeatLength();
 			minRepeatNum = buttons.getMinRepeatNum();
 		}
@@ -494,21 +549,18 @@ public class Flanking extends JApplet {
 				String[] spl = head.split("[ ]+");
 				String seq = foot.replace("\n", "");
 				int seqlen = seq.length();
-				if( seqlen > minSeqLen ) {
-					Sequence seqobj = new Sequence( spl[0], seqlen, seq, minRepeatNum );
-					if( seqobj.hasRepeats() && seqobj.hasFlankingEnds( left, right ) 
-							&& seqobj.hasMinimumRepeatLength(minRepeatLen) /*&& seqobj.hasMinimumRepeatLength(minRepeatNum)*/ ) {
-						if( seqlen > max ) {
-							max = seqlen;
-							row = seqList.size();
-						}
-						seqList.add( seqobj );
-					} else {
-						seqobj.clear();
+				Sequence seqobj = new Sequence( spl[0], seqlen, seq, minRepeatNum );
+				if( seqobj.hasRepeats() && seqobj.hasFlankingEnds( left, right ) && seqobj.hasMinimumRepeatLength(minRepeatLen) /*&& seqobj.hasMinimumRepeatLength(minRepeatNum)* ) {
+					if( seqlen > max ) {
+						max = seqlen;
+						row = seqList.size();
 					}
+					seqList.add( seqobj );
+				} else {
+					seqobj.clear();
 				}
 			}
-		}
+		}*/
 		System.err.println( seqList.size() );
 		
 		model = createModel( seqList );

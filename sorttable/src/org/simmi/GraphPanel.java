@@ -630,7 +630,11 @@ public class GraphPanel extends JTabbedPane {
 	        this.clockwize = clockwize; 
 	    } 
 	 
-	    public void paintIcon(Component c, Graphics g, int x, int y){ 
+	    public void paintIcon(Component c, Graphics g, int x, int y){
+	    	fm = g.getFontMetrics();
+	    	width = SwingUtilities.computeStringWidth(fm, text);
+	    	height = fm.getHeight();
+	    	
 	        Graphics2D g2 = (Graphics2D)g;
 	        g2.setRenderingHint( RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON );
 	        Font oldFont = g.getFont(); 
