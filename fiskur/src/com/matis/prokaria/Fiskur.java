@@ -30,6 +30,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -50,6 +52,7 @@ import javax.media.opengl.GLEventListener;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ActionMap;
+import javax.swing.ButtonGroup;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.InputMap;
@@ -57,7 +60,10 @@ import javax.swing.JApplet;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JEditorPane;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
 import javax.swing.JPopupMenu;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
@@ -77,10 +83,14 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.RowSorterEvent;
 import javax.swing.event.RowSorterListener;
+import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -90,11 +100,11 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 public class Fiskur extends JApplet {
 	JComponent 		c;
 	
-	List<String> 	markers;
-	List<String> 	malefish;
-	List<String> 	femalefish;
-	List<Float>		ffactor;
-	List<Float>		mfactor;
+	List<String> 	markers = new ArrayList<String>();
+	List<String> 	malefish = new ArrayList<String>();
+	List<String> 	femalefish = new ArrayList<String>();
+	List<Float>		ffactor = new ArrayList<Float>();
+	List<Float>		mfactor = new ArrayList<Float>();
 	
 	int[] mmatrix;
 	int[] fmatrix;
@@ -234,34 +244,39 @@ public class Fiskur extends JApplet {
 		}
 	}
 
-	public void parseData(String data) {
+	public void parseData(String data, int start) {
 		String[] split = data.split("\\n");
 		String[] vals = split[0].split("\\t");
+		
+		boolean div = vals[0].contains("/");
+		
 		int r = (split.length - 1);
-		int c = (vals.length - 3);
+		int c = (vals.length - start);
+		if( div ) c *= 2;
 
-		markers = new ArrayList<String>();
+		markers.clear();
 		for (int i = 0; i < c; i++) {
-			markers.add(vals[i + 3]);
+			markers.add(vals[i + start]);
 		}
 
-		malefish = new ArrayList<String>();
-		femalefish = new ArrayList<String>();
-		mfactor = new ArrayList<Float>();
-		ffactor = new ArrayList<Float>();
+		malefish.clear();
+		femalefish.clear();
+		mfactor.clear();
+		ffactor.clear();
 
+		String startstr = null;
 		for (int i = 0; i < r; i++) {
 			vals = split[i + 1].split("\\t");
 
-			if (vals[0].equalsIgnoreCase("pcod1") ) {
+			String val = vals[0];
+			if( startstr == null ) startstr = val;
+			if( val.equalsIgnoreCase("female") || val.equals(startstr) ) {
 				femalefish.add(vals[1]);
 				ffactor.add( Float.parseFloat( vals[2] ) );
 			} else {
 				malefish.add(vals[1]);
 				mfactor.add( Float.parseFloat( vals[2] ) );
 			}
-			
-			
 		}
 
 		fmatrix = new int[femalefish.size() * c];
@@ -273,14 +288,15 @@ public class Fiskur extends JApplet {
 		for (int i = 0; i < r; i++) {
 			vals = split[i + 1].split("\\t");
 
-			if (vals[0].equalsIgnoreCase("pcod1")) {
+			String val = vals[0];
+			if( val.equalsIgnoreCase("female") || val.equals(startstr) ) {
 				for (int k = 0; k < c; k++) {
-					fmatrix[f * c + k] = Integer.parseInt(vals[k + 3]);
+					fmatrix[f * c + k] = Integer.parseInt(vals[k + start]);
 				}
 				f++;
 			} else {
 				for (int k = 0; k < c; k++) {
-					mmatrix[m * c + k] = Integer.parseInt(vals[k + 3]);
+					mmatrix[m * c + k] = Integer.parseInt(vals[k + start]);
 				}
 				m++;
 			}
@@ -292,12 +308,14 @@ public class Fiskur extends JApplet {
 		String 	female;
 		int 	rank;
 		float	factor;
+		double	khrank;
 
-		public Tuple(String f1, String f2, int r, float f) {
+		public Tuple(String f1, String f2, int r, float f, double khr) {
 			male = f2;
 			female = f1;
 			rank = r;
 			factor = f;
+			khrank = khr;
 		}
 
 		@Override
@@ -306,14 +324,62 @@ public class Fiskur extends JApplet {
 			return 0;
 		}
 	};
+	
+	/*public double calc(int ix, int iy) {
+	    double sum = 0;
+	    int NL = pop.getNumLoci();
+	    for (int L = 0; L < NL; L++) {
+//	      log.info("ix=" + ix + ", iy=" + iy + ", L=" + L);
+	      int a = pop.getAllele(ix, L, TYPE);
+	      int b = pop.getAllele(ix, L, TYPE2);
+	      int c = pop.getAllele(iy, L, TYPE);
+	      int d = pop.getAllele(iy, L, TYPE2);
+	      if (a == -1 || b == -1 || c == -1 || d == -1)
+	        continue; //ignore
+
+	      double x2 = (a == b ? 4: 2); // sum_j x_j^2
+	      double y2 = (c == d ? 4: 2); // sum_j y_j^2
+	      double xy
+	        = (a == c ? 1: 0)
+	        + (a == d ? 1: 0)
+	        + (b == c ? 1: 0)
+	        + (b == d ? 1: 0);
+	      double dist = x2 - 2. * xy + y2;
+	      sum += dist;
+	    }
+	    double dij = sum / (4. * NL);
+	    return dij;
+	  }*/
 
 	public List<Tuple> calcData() {
 		int mr = malefish.size();
 		int fr = femalefish.size();
-		int c = markers.size();
+		int cl = markers.size();
 
 		List<Tuple> tupleList = new ArrayList<Tuple>();
 
+		double h = 0.0;
+		for( int i = 0; i < cl; i+=2 ) {
+			double sum = 0.0;
+			for( int m = 0; m < mr; m++ ) {
+				int a = mmatrix[m * cl + i];
+				int b = mmatrix[m * cl + i + 1];
+				
+				sum += (a == b) ? 0 : 1;
+			}
+			
+			for( int f = 0; f < fr; f++ ) {
+				int a = fmatrix[f * cl + i];
+				int b = fmatrix[f * cl + i + 1];
+				
+				sum += (a == b) ? 0 : 1;
+			}
+			sum /= (fr + mr);
+			
+			h += sum;
+		}
+		h /= (cl/2);
+		
 		for (int i = 0; i < fr; i++) {
 			String n1 = femalefish.get(i);
 			float  ff = ffactor.get(i);
@@ -321,10 +387,28 @@ public class Fiskur extends JApplet {
 				String n2 = malefish.get(k);
 				float  mf = mfactor.get(k);
 				int rank = 0;
-				for (int u = 0; u < c; u++) {
-					rank += Math.abs(fmatrix[i * c + u] - mmatrix[k * c + u]);
+				double sum = 0;
+				for (int u = 0; u < cl; u+=2) {
+					int a = fmatrix[i * cl + u];
+					int b = fmatrix[i * cl + u + 1];
+					int c = mmatrix[k * cl + u];
+					int d = mmatrix[k * cl + u + 1];
+					rank += Math.abs(a - c);
+					rank += Math.abs(b - d);
+					
+					double x2 = (a == b ? 4: 2); // sum_j x_j^2
+				    double y2 = (c == d ? 4: 2); // sum_j y_j^2
+				    double xy = (a == c ? 1: 0)
+				        + (a == d ? 1: 0)
+				        + (b == c ? 1: 0)
+				        + (b == d ? 1: 0);
+				    double dist = x2 - 2. * xy + y2;
+				    sum += dist;
 				}
-				tupleList.add(new Tuple(n1, n2, rank, mf+ff));
+				double dij = sum / (2. * cl);
+				double val = 1.0 - dij/h;
+				System.err.println( i + "  " + k + "   " + dij + "  " + val );
+				tupleList.add( new Tuple(n1, n2, rank, mf+ff, val) );
 			}
 		}
 		//unsortedTupleList = tupleList;
@@ -338,8 +422,7 @@ public class Fiskur extends JApplet {
 	public void start() {
 		super.start();
 		try {
-			UIManager
-					.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
+			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -435,7 +518,7 @@ public class Fiskur extends JApplet {
 
 			@Override
 			public Class<?> getColumnClass(int columnIndex) {
-				return Integer.class;
+				return Double.class;
 			}
 
 			@Override
@@ -459,12 +542,12 @@ public class Fiskur extends JApplet {
 
 			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
-				int val = columnIndex * femalefish.size() + rowIndex;
+				int val = columnIndex * malefish.size() + rowIndex;
 				//int rval = table.convertRowIndexToModel( val );
 				
 				if( val >= 0 && val < tupleList.size() ) {
 					Tuple tup = tupleList.get( val );
-					return tup.rank;
+					return tup.khrank;
 				}
 				
 				return -1;
@@ -500,7 +583,7 @@ public class Fiskur extends JApplet {
 
 			@Override
 			public Class<?> getColumnClass(int columnIndex) {
-				return Integer.class;
+				return Double.class;
 			}
 
 			@Override
@@ -528,7 +611,7 @@ public class Fiskur extends JApplet {
 				//int rval = table.convertRowIndexToModel( val );
 				if( val >= 0 && val < tupleList.size() ) {
 					Tuple tup = tupleList.get( val );
-					return tup.rank;
+					return tup.khrank;
 				}
 				
 				return -1;
@@ -536,7 +619,6 @@ public class Fiskur extends JApplet {
 
 			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
-				// TODO Auto-generated method stub
 				return false;
 			}
 
@@ -672,10 +754,102 @@ public class Fiskur extends JApplet {
 		};
 	}
 	
+	public void kinWrite( File f ) throws IOException {
+		FileWriter	fw = new FileWriter( f );
+		fw.write( "id" );
+		fw.write( "\tgid" );
+		
+		int i = 0;
+		for( String marker : markers ) {
+			if( i % 2 == 0 ) fw.write( "\t"+marker );
+			else fw.write( "/"+marker );
+			
+			i++;
+		}
+		
+		int msize = mmatrix.length/malefish.size();
+		int count = 0;
+		for( String male : malefish ) {
+			fw.write( "\n"+male );
+			fw.write( "\tmale" );
+			
+			for( i = count; i < count+msize; i++ ) {
+				if( i%2 == 0 ) fw.write( "\t"+mmatrix[i] );
+				else fw.write( "/"+mmatrix[i] );
+			}
+			
+			count+=msize;
+		}
+		
+		int fsize = fmatrix.length/femalefish.size();
+		count = 0;
+		for( String female : femalefish ) {
+			fw.write( "\n"+female );
+			fw.write( "\tfemale" );
+			
+			for( i = count; i < count+fsize; i++ ) {
+				if( i%2 == 0 ) fw.write( "\t"+fmatrix[i] );
+				else fw.write( "/"+fmatrix[i] );
+			}
+			
+			count+=fsize;
+		}
+		
+		fw.close();
+	}
+	
+	public void kintoolExport() throws IOException {
+		JFileChooser fc = new JFileChooser();
+		if( fc.showSaveDialog( this ) == JFileChooser.APPROVE_OPTION ) {
+			File f = fc.getSelectedFile();
+			kinWrite( f );
+		} else {
+			File f = File.createTempFile("tmp", ".txt");
+			kinWrite( f );
+			Desktop.getDesktop().open( f );
+		}
+	}
+	
+	public void pairRel() {
+		/*SysPopFactory.
+		pop.
+		RMtrxOutbredKonHeg kh = new RMtrxOutbredKonHeg(pop);*/
+	}
+ 	
+	public void importStuff() throws IOException {
+		JFileChooser	fc = new JFileChooser();
+		if( fc.showOpenDialog( this ) == JFileChooser.APPROVE_OPTION ) {
+			File f = fc.getSelectedFile();
+			String path = f.getAbsolutePath();
+			if( path.endsWith(".xlsx" ) ) {
+				
+			} else if( path.endsWith(".txt") ) {
+				char[]	cc = new char[1024];
+				String val = "";
+				FileReader fr = new FileReader(f);
+				int r = fr.read( cc );
+				while( r > 0 ) {
+					val += new String( cc, 0, r );
+					r = fr.read( cc );
+				}
+				
+				parseData( val, 3 );
+				tupleList = calcData();
+				pairRel();
+				reload();
+			}
+		}
+	}
+	
+	/*class TestTable {
+		public void prepare() {
+			super.p
+		}
+	}*/
+	
 	public void init() {
 		try {
-			UIManager
-					.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
+			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -707,7 +881,32 @@ public class Fiskur extends JApplet {
 		// e.setText("<html><body><center>Copyright 2009, Matis, ohf</center></body></html>");
 		e.setText("<html><body><center><span style=\"color:gray\">Copyright 2009, Matis, ohf</span></center></body></html>");
 
+		final JLabel		pairrel = new JLabel("Pairwise relatedness");
+		
+		final JRadioButton	kenheg = new JRadioButton();
+		final JRadioButton	maxlik = new JRadioButton();
+		
+		ButtonGroup		bg = new ButtonGroup();
+		bg.add( kenheg );
+		bg.add( maxlik );
+		
+		final JButton	importbutton = new JButton();
 		final JButton	xlbutton = new JButton();
+		final JButton	kgbutton = new JButton();
+		
+		kenheg.setAction( new AbstractAction("Kenelov&Heg") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				
+			}
+		});
+		
+		maxlik.setAction( new AbstractAction("Maximum likelihood") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				
+			}
+		});
 		
 		subc = new JComponent() {
 			public void paintComponent(Graphics g) {
@@ -779,6 +978,13 @@ public class Fiskur extends JApplet {
 			public void setBounds( int x, int y, int w, int h ) {
 				super.setBounds(x,y,w,h);
 				
+				pairrel.setBounds( 400, 15, 180, 25 );
+				
+				kenheg.setBounds( 400, 40, 180, 25 );
+				maxlik.setBounds( 400, 65, 180, 25 );
+				
+				importbutton.setBounds( 300, 15, 70, h-30 );
+				kgbutton.setBounds( w-330, 15, 70, h-30 );
 				xlbutton.setBounds( w-250, 15, 70, h-30 );
 			}
 
@@ -798,7 +1004,7 @@ public class Fiskur extends JApplet {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				XSSFWorkbook	wb = new XSSFWorkbook( );
-				
+				writeWorkbook(wb);
 				try {
 					File			f = File.createTempFile("tmp", ".xlsx");
 					wb.write( new FileOutputStream(f) );
@@ -815,7 +1021,37 @@ public class Fiskur extends JApplet {
 		xlbutton.setAction(a);
 		xlbutton.setIcon( new ImageIcon(xlimg.getScaledInstance(56,56, Image.SCALE_SMOOTH)) );
 		xlbutton.setToolTipText( "Export to excel" );
+		
+		kgbutton.setAction( new AbstractAction("<html><center>Export<br>to<br>Kinship<center></html>") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					kintoolExport();
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+		});
+		
+		importbutton.setAction( new AbstractAction("Import") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					importStuff();
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+		});
+		
+		subc.add( pairrel );
+		subc.add( kenheg );
+		subc.add( maxlik );
+		subc.add( importbutton );
 		subc.add( xlbutton );
+		subc.add( kgbutton );
 
 		final JScrollPane scrollpane = new JScrollPane();
 		final JScrollPane mscrollpane = new JScrollPane();
@@ -845,7 +1081,7 @@ public class Fiskur extends JApplet {
 				}
 				if (obj != null) {
 					String stuff = obj.toString();
-					parseData(stuff);
+					parseData( stuff, 3 );
 					tupleList = calcData();
 					
 					FloatBuffer	fdata = sd.dataBuffer;
@@ -905,12 +1141,55 @@ public class Fiskur extends JApplet {
 		 * this.getRootPane().setBackground( Color.white );
 		 */
 
-		table = new JTable();		
+		table = new JTable() {
+			Color origColor1 = null;
+			Color origColor2 = null;
+			Color origSelectColor = null;
+			
+			public Component prepareRenderer( TableCellRenderer renderer, int row, int column ) {
+				Component c = super.prepareRenderer(renderer, row, column);
+				
+				boolean sel = this.getSelectionModel().isSelectedIndex(row) && this.getColumnModel().getSelectionModel().isSelectedIndex(column);
+				boolean rel = row % 2 == 0;
+				//if( this.getSel)
+				
+				boolean set = origColor1 != null && origColor2 != null && origSelectColor != null;
+				
+				if( !set ) {
+					if( !sel ) {
+						if( rel ) {
+							if( origColor1 == null ) origColor1 = c.getBackground();
+						} else {
+							if( origColor2 == null ) origColor2 = c.getBackground();
+						}
+					} else {
+						if( origSelectColor == null ) origSelectColor = c.getBackground();
+					}
+					this.repaint();
+				} else {
+					Object obj = this.getValueAt(row, column);
+					if( column == 3 && obj instanceof Double ) {
+						double val = (Double)this.getValueAt(row, column);
+						if( val < 0.03 ) c.setBackground( Color.red );
+						else if( val < 0.06 ) c.setBackground( Color.yellow );
+						else c.setBackground( Color.green );
+					} else {
+						if( sel ) c.setBackground( origSelectColor );
+						else {
+							if( rel ) c.setBackground( origColor1 );
+							else c.setBackground( origColor2 );
+						}
+						//System.err.println( obj + "  " + this.getModel().getColumnClass(column) );
+					}
+				}
+				
+				return c;
+			}
+		};
 		table.setComponentPopupMenu( popup );
 		table.setColumnSelectionAllowed( true );
 		table.setAutoCreateRowSorter(true);
 		TableModel model = new TableModel() {
-
 			@Override
 			public void addTableModelListener(TableModelListener arg0) {
 				// TODO Auto-generated method stub
@@ -922,7 +1201,7 @@ public class Fiskur extends JApplet {
 				if (arg0 < 2)
 					return String.class;
 				else if (arg0 == 2)
-					return Integer.class;
+					return Double.class;
 				else if (arg0 == 3)
 					return Float.class;
 
@@ -940,10 +1219,10 @@ public class Fiskur extends JApplet {
 					return "Male";
 				else if (arg0 == 1)
 					return "Female";
-				else if (arg0 == 2)
-					return "Similarity Rank";
 				else if (arg0 == 3)
-					return "K Factor";
+					return "Inbreeding value";
+				else if (arg0 == 2)
+					return "Performance factor";
 
 				return null;
 			}
@@ -965,9 +1244,9 @@ public class Fiskur extends JApplet {
 						return t.male;
 					if (arg1 == 1)
 						return t.female;
-					else if(arg1 == 2)
-						return t.rank;
 					else if(arg1 == 3)
+						return t.khrank;
+					else if(arg1 == 2)
 						return t.factor;
 				}
 				return null;
@@ -1004,7 +1283,7 @@ public class Fiskur extends JApplet {
 		mtable.setComponentPopupMenu( popup );
 		mtable.setColumnSelectionAllowed( true );
 		//mtable.setAutoCreateRowSorter(true);
-		TableModel	mmodel = new TableModel() {
+		final TableModel	mmodel = new TableModel() {
 
 			@Override
 			public void addTableModelListener(TableModelListener arg0) {}
@@ -1029,7 +1308,7 @@ public class Fiskur extends JApplet {
 				if (arg0 == 0)
 					return "Male";
 				else if (arg0 == 1)
-					return "Performance Factor";
+					return "Performance factor";
 
 				return null;
 			}
@@ -1074,7 +1353,7 @@ public class Fiskur extends JApplet {
 		mtable.setModel( mmodel );
 		mscrollpane.setViewportView(mtable);
 		
-		MySorter mtableSorter = new MySorter("male", mmodel) {
+		final MySorter mtableSorter = new MySorter("male", mmodel) {
 			public int convertRowIndexToModel(int index) {
 				return currentSorter.convertRowIndexToModelSuper("male", index);
 			}
@@ -1111,7 +1390,7 @@ public class Fiskur extends JApplet {
 		ftable.setComponentPopupMenu( popup );
 		ftable.setColumnSelectionAllowed( true );
 		//ftable.setAutoCreateRowSorter(true);
-		TableModel fmodel = new TableModel() {
+		final TableModel fmodel = new TableModel() {
 
 			@Override
 			public void addTableModelListener(TableModelListener arg0) {}
@@ -1143,7 +1422,6 @@ public class Fiskur extends JApplet {
 			@Override
 			public int getRowCount() {
 				if (femalefish != null) {
-					System.err.println( femalefish.size() );
 					return femalefish.size();
 				}
 
@@ -1175,7 +1453,7 @@ public class Fiskur extends JApplet {
 		ftable.setModel( fmodel );
 		fscrollpane.setViewportView( ftable );
 		
-		MySorter ftableSorter = new MySorter("female",fmodel) {
+		final MySorter ftableSorter = new MySorter("female",fmodel) {
 			public int convertRowIndexToModel(int index) {
 				return currentSorter.convertRowIndexToModelSuper("female", index);
 			}
@@ -1187,7 +1465,6 @@ public class Fiskur extends JApplet {
 
 			public int getViewRowCount() {
 				int rowcount = currentSorter.getViewRowCountSuper();
-				//System.err.println( rowcount + "  " + currentSorter.name + "  " + currentSorter.model.getRowCount() );
 				return rowcount;
 				//return leftTableSorter.getViewRowCount();
 			}
@@ -1212,8 +1489,8 @@ public class Fiskur extends JApplet {
 				FloatBuffer	fdata = sd.dataBuffer;
 				fdata.rewind();
 				for( int i = 0; i < table.getRowCount(); i++ ) {
-					int val = (Integer)table.getValueAt(i, 2);
-					fdata.put( (float)((val-100)/200.0) );
+					double val = (Double)table.getValueAt(i, 3);
+					fdata.put( (float)((val-1.0)/2.0) );
 				}
 				sd.loadData();
 				if( tabbedPane.getTitleAt( tabbedPane.getSelectedIndex() ).equals("Surface") ) matrixSurface.display();
@@ -1496,10 +1773,36 @@ public class Fiskur extends JApplet {
 		//matrixModel = maleModel();
 
 		matrixTable = new JTable() {
+			/**
+			 * 
+			 */
+			Color origColor = null;
+			
+			private static final long serialVersionUID = 1L;
+
 			public void sorterChanged( RowSorterEvent re ) {
 				super.sorterChanged( re );
 				//mtable.repaint();
 				//ftable.repaint();
+			}
+			
+			public Component prepareRenderer( TableCellRenderer renderer, int row, int column ) {
+				Component c = super.prepareRenderer(renderer, row, column);
+				
+				if( origColor == null ) origColor = c.getBackground();
+				
+				Object obj = this.getValueAt(row, column);
+				if( obj instanceof Double ) {
+					double val = (Double)this.getValueAt(row, column);
+					if( val < 0.03 ) c.setBackground( Color.red );
+					else if( val < 0.06 ) c.setBackground( Color.yellow );
+					else c.setBackground( Color.green );
+				} else {
+					c.setBackground( origColor );
+					//System.err.println( obj + "  " + this.getModel().getColumnClass(column) );
+				}
+				
+				return c;
 			}
 		};
 		matrixTable.addMouseListener( new MouseAdapter() {
@@ -1525,6 +1828,7 @@ public class Fiskur extends JApplet {
 		matrixTable.setColumnSelectionAllowed( true );
 		matrixTable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
 		final JScrollPane matrixScroll = new JScrollPane(matrixTable);
+		matrixScroll.setHorizontalScrollBarPolicy( JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS );
 		
 		//matrixScroll.setRowHeaderView( )
 		
@@ -1541,8 +1845,8 @@ public class Fiskur extends JApplet {
 			@Override
 			public Class<?> getColumnClass(int columnIndex) {
 				if( columnIndex == 0 ) return String.class;
-				else if( columnIndex == 1 ) return Integer.class;
-				else if( columnIndex == 2 ) return Float.class;
+				else if( columnIndex == 1 ) return Float.class;
+				else if( columnIndex == 2 ) return Double.class;
 				
 				return String.class;
 			}
@@ -1575,8 +1879,8 @@ public class Fiskur extends JApplet {
 					if( b ) return t.female;
 					return t.male;
 				}
-				else if( columnIndex == 1 ) return t.rank;
-				else if( columnIndex == 2 ) return t.factor;
+				else if( columnIndex == 1 ) return t.factor;
+				else if( columnIndex == 2 ) return t.khrank;
 				
 				return "";
 			}
@@ -1600,7 +1904,51 @@ public class Fiskur extends JApplet {
 			}
 			
 		};
-		summaryTable = new JTable();
+		summaryTable = new JTable() {
+			Color origColor1 = null;
+			Color origColor2 = null;
+			Color origSelectColor = null;
+			
+			public Component prepareRenderer( TableCellRenderer renderer, int row, int column ) {
+				Component c = super.prepareRenderer(renderer, row, column);
+				
+				boolean sel = this.getSelectionModel().isSelectedIndex(row);
+				boolean rel = row % 2 == 0;
+				//if( this.getSel)
+				
+				boolean set = origColor1 != null && origColor2 != null && origSelectColor != null;
+				
+				if( !set ) {
+					if( !sel ) {
+						if( rel ) {
+							if( origColor1 == null ) origColor1 = c.getBackground();
+						} else {
+							if( origColor2 == null ) origColor2 = c.getBackground();
+						}
+					} else {
+						if( origSelectColor == null ) origSelectColor = c.getBackground();
+					}
+					this.repaint();
+				} else {
+					Object obj = this.getValueAt(row, column);
+					if( column == 2 && obj instanceof Double ) {
+						double val = (Double)this.getValueAt(row, column);
+						if( val < 0.03 ) c.setBackground( Color.red );
+						else if( val < 0.06 ) c.setBackground( Color.yellow );
+						else c.setBackground( Color.green );
+					} else {
+						if( sel ) c.setBackground( origSelectColor );
+						else {
+							if( rel ) c.setBackground( origColor1 );
+							else c.setBackground( origColor2 );
+						}
+						//System.err.println( obj + "  " + this.getModel().getColumnClass(column) );
+					}
+				}
+				
+				return c;
+			}
+		};
 		summaryTable.setAutoCreateRowSorter( true );
 		JScrollPane		summaryScroll = new JScrollPane( summaryTable );
 		
@@ -1636,7 +1984,9 @@ public class Fiskur extends JApplet {
 		tabbedPane.addChangeListener( new ChangeListener() {	
 			@Override
 			public void stateChanged(ChangeEvent e) {
-				if( tabbedPane.getTitleAt( tabbedPane.getSelectedIndex() ).equals("Matrix") ) {
+				int selind = tabbedPane.getSelectedIndex();
+				String seltit = tabbedPane.getTitleAt( selind );
+				if( seltit.equals("Matrix") ) {
 					int v = sex.getSelectedIndex();
 					String title = sex.getIconAt(v).toString();
 					
@@ -1647,10 +1997,12 @@ public class Fiskur extends JApplet {
 							matrixTable.setModel( femaleModel() );							
 							matrixScroll.setRowHeaderView( mtable );
 							mscrollpane.setViewport( matrixScroll.getRowHeader() );
+							mscrollpane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_NEVER );
 						} else {
 							matrixTable.setModel( maleModel() );
 							matrixScroll.setRowHeaderView( ftable );
 							fscrollpane.setViewport( matrixScroll.getRowHeader() );
+							fscrollpane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_NEVER );
 						}
 						
 						MySorter sorter = new MySorter( "matrix", matrixTable.getModel() ) {
@@ -1674,7 +2026,7 @@ public class Fiskur extends JApplet {
 						};
 						sorter.addRowSorterListener( rsl );
 					}
-				} else if( tabbedPane.getTitleAt( tabbedPane.getSelectedIndex() ).equals("Genotypes") ) {
+				} else if( seltit.equals("Genotypes") ) {
 					int v = sex.getSelectedIndex();
 					String title = sex.getIconAt(v).toString();
 					
@@ -1685,10 +2037,12 @@ public class Fiskur extends JApplet {
 							genotypeTable.setModel( femaleGenotypes() );
 							genotypeScroll.setRowHeaderView( mtable );
 							mscrollpane.setViewport( genotypeScroll.getRowHeader() );
+							mscrollpane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_NEVER );
 						} else {
 							genotypeTable.setModel( maleGenotypes() );
 							genotypeScroll.setRowHeaderView( ftable );
 							fscrollpane.setViewport( genotypeScroll.getRowHeader() );
+							mscrollpane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_NEVER );
 						}
 						
 						MySorter sorter = new MySorter( "genotype", matrixTable.getModel() ) {
@@ -1712,7 +2066,11 @@ public class Fiskur extends JApplet {
 						};
 						sorter.addRowSorterListener( rsl );
 					}
+				} else if( seltit.equals("Summary") ) {
+					mscrollpane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_ALWAYS );
+					fscrollpane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_ALWAYS );
 				}
+				
 			}
 		});
 		
@@ -1729,6 +2087,7 @@ public class Fiskur extends JApplet {
 						tabbedPane.setSelectedIndex(0);
 					}
 				} else if( title.equals("Male") ) {
+					currentSorter = mtableSorter;
 					if( subtitle.equals("Matrix") ) {
 						matrixTable.setModel( femaleModel() );					
 						matrixScroll.setRowHeaderView( mtable );
@@ -1738,7 +2097,9 @@ public class Fiskur extends JApplet {
 						genotypeScroll.setRowHeaderView( mtable );
 						mscrollpane.setViewport( genotypeScroll.getRowHeader() );
 					}
+					mtable.tableChanged( new TableModelEvent( mmodel ) );
 				} else if( title.equals("Female") ) {
+					currentSorter = ftableSorter;
 					if( subtitle.equals("Matrix") ) {
 						matrixTable.setModel( maleModel() );			
 						matrixScroll.setRowHeaderView( ftable );
@@ -1748,6 +2109,7 @@ public class Fiskur extends JApplet {
 						genotypeScroll.setRowHeaderView( ftable );
 						fscrollpane.setViewport( genotypeScroll.getRowHeader() );
 					}
+					ftable.tableChanged( new TableModelEvent( fmodel ) );
 				}
 				
 				RowSorterListener rsl = new RowSorterListener() {
@@ -1872,7 +2234,6 @@ public class Fiskur extends JApplet {
 						return o1 == o2 ? 1 : 0;
 					}
 				});
-				System.err.println(b);
 				if( b != -1 ) {
 					try {
 						obj = support.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
@@ -1895,7 +2256,7 @@ public class Fiskur extends JApplet {
 								URL url = new URL( stuff );
 								wbStuff( url.getFile() );
 							}
-							parseData(stuff);
+							parseData( stuff, 3 );
 							tupleList = calcData();
 							
 							reload();
@@ -1926,7 +2287,7 @@ public class Fiskur extends JApplet {
 				stuff += new String( bb, 0, read );
 				read = in.read( bb );
 			}
-			parseData(stuff);
+			parseData( stuff, 3 );
 			tupleList = calcData();
 			reload();
 		} catch (IOException e1) {
@@ -1935,14 +2296,163 @@ public class Fiskur extends JApplet {
 		}
 	}
 	
+	public void writeWorkbook( XSSFWorkbook wb ) {
+		XSSFSheet sheet = wb.createSheet("Male Genotypes");
+		XSSFRow row = sheet.createRow(0);
+		int i = 0;
+		for( String marker : markers ) {
+			XSSFCell cell = row.createCell(++i);
+			cell.setCellValue( marker );
+			//cell.setCellStyle( CellStyle.)
+		}
+		
+		int r = 0;
+		for( String male : malefish ) {
+			int start = r*markers.size();
+			row = sheet.createRow(++r);
+			XSSFCell cell = row.createCell(0);
+			cell.setCellValue( male );
+			for( i = 0; i < markers.size(); i++ ) {
+				cell = row.createCell(i+1);
+				cell.setCellValue( mmatrix[i+start] );
+			}
+		}
+		
+		sheet = wb.createSheet("Female Genotypes");
+		row = sheet.createRow(0);
+		i = 0;
+		for( String marker : markers ) {
+			XSSFCell cell = row.createCell(++i);
+			cell.setCellValue( marker );
+			//cell.setCellStyle( CellStyle.)
+		}
+		
+		r = 0;
+		for( String female : femalefish ) {
+			int start = r*markers.size();
+			row = sheet.createRow(++r);
+			XSSFCell cell = row.createCell(0);
+			cell.setCellValue( female );
+			for( i = 0; i < markers.size(); i++ ) {
+				cell = row.createCell(i+1);
+				cell.setCellValue( fmatrix[i+start] );
+			}
+		}
+		
+		CellStyle greenstyle = wb.createCellStyle();
+	    greenstyle.setFillForegroundColor(IndexedColors.GREEN.getIndex());
+	    greenstyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
+	    
+	    CellStyle yellowstyle = wb.createCellStyle();
+	    yellowstyle.setFillForegroundColor(IndexedColors.YELLOW.getIndex());
+	    yellowstyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
+	    
+	    CellStyle redstyle = wb.createCellStyle();
+	    redstyle.setFillForegroundColor(IndexedColors.RED.getIndex());
+	    redstyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
+
+		
+		sheet = wb.createSheet("Pairwise relatedness");
+		row = sheet.createRow(0);
+		XSSFCell cell = row.createCell(0);
+		cell.setCellValue("Male");
+		cell = row.createCell(1);
+		cell.setCellValue("Female");
+		cell = row.createCell(2);
+		cell.setCellValue("Konolov&Heg(2008)");
+		cell = row.createCell(3);
+		cell.setCellValue("Simmi");
+		cell = row.createCell(4);
+		cell.setCellValue("Performance factor");
+		
+		i = 0;
+		for( Tuple t : tupleList ) {
+			row = sheet.createRow(++i);
+			cell = row.createCell(0);
+			cell.setCellValue(t.male);
+			cell = row.createCell(1);
+			cell.setCellValue(t.female);
+			cell = row.createCell(2);
+			cell.setCellValue(t.khrank);
+			if( t.khrank < 0.03 ) {
+				cell.setCellStyle( redstyle );
+			} else if( t.khrank < 0.06 ) {
+				cell.setCellStyle( yellowstyle );
+			} else {
+				cell.setCellStyle( greenstyle );
+			}
+			cell = row.createCell(3);
+			cell.setCellValue(t.rank);
+			cell = row.createCell(4);
+			cell.setCellValue(t.factor);
+		}
+		
+		sheet = wb.createSheet("Male relatedness matrix");
+		row = sheet.createRow(0);
+		i = 0;
+		for( String male : malefish ) {
+			cell = row.createCell(++i);
+			cell.setCellValue(male);
+		}
+		i = 0;
+		int cl = 0;
+		for( Tuple t : tupleList ) {
+			if( cl % malefish.size() == 0 ) {
+				row = sheet.createRow(++i);
+				cl = 0;
+				cell = row.createCell(cl);
+				cell.setCellValue(t.male);
+			}
+			cell = row.createCell(++cl);
+			cell.setCellValue(t.khrank);
+			if( t.khrank < 0.03 ) {
+				cell.setCellStyle( redstyle );
+			} else if( t.khrank < 0.06 ) {
+				cell.setCellStyle( yellowstyle );
+			} else {
+				cell.setCellStyle( greenstyle );
+			}
+		}
+		
+		sheet = wb.createSheet("Female relatedness matrix");
+		row = sheet.createRow(0);
+		i = 0;
+		for( String female : femalefish ) {
+			cell = row.createCell(++i);
+			cell.setCellValue(female);
+		}
+		i = 0;
+		cl = 0;
+		for( int k = 0; k < tupleList.size(); k++ ) {
+			int rr = k/femalefish.size();
+			int cc = k%femalefish.size();
+			Tuple t = tupleList.get( cc*malefish.size() + rr );
+			if( cl % femalefish.size() == 0 ) {
+				row = sheet.createRow(++i);
+				cl = 0;
+				cell = row.createCell(cl);
+				cell.setCellValue(t.female);
+			}
+			cell = row.createCell(++cl);
+			cell.setCellValue(t.khrank);
+			if( t.khrank < 0.03 ) {
+				cell.setCellStyle( redstyle );
+			} else if( t.khrank < 0.06 ) {
+				cell.setCellStyle( yellowstyle );
+			} else {
+				cell.setCellStyle( greenstyle );
+			}
+		}
+	}
+	
 	public void wbStuff( String path ) throws IOException {
 		XSSFWorkbook 	wb = new XSSFWorkbook( path );
 		XSSFSheet		ws = wb.getSheetAt(0);
 		
-		malefish = new ArrayList<String>();
-		femalefish = new ArrayList<String>();
-		mfactor = new ArrayList<Float>();
-		ffactor = new ArrayList<Float>();
+		malefish.clear();
+		femalefish.clear();
+		mfactor.clear();
+		ffactor.clear();
 		
 		int i = 0;
 		XSSFRow			wr = ws.getRow( i++ );
