@@ -18,10 +18,12 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import java.awt.geom.Point2D;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Random;
@@ -389,6 +391,157 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 		}
 	}
 	
+	public void excelLoad( InputStream is ) throws IOException {
+		final int fasti = 1000;
+		final int zoffset = 0;
+		XSSFWorkbook workbook = new XSSFWorkbook( is );
+		XSSFSheet corpSheet = workbook.getSheet("Adilar");
+		//XSSFSheet linkSheet = workbook.getSheet("Links");
+		
+		Corp.corpMap.clear();
+		c.removeAll();
+		
+		Random rand = new Random();
+		int i = 0;
+		XSSFRow 	corpRow = corpSheet.getRow( ++i );
+		while( i < 500 ) {
+			XSSFCell cell = null;
+			if( corpRow != null ) cell = corpRow.getCell(7);
+			if( cell != null ) {
+				String name = cell.getStringCellValue();
+				
+				cell = corpRow.getCell(9);
+				String kt = "";
+				if( cell != null ) {
+					int ctype = cell.getCellType();
+					if( ctype == XSSFCell.CELL_TYPE_NUMERIC ) {
+						kt = Integer.toString( (int)cell.getNumericCellValue() );
+					} else if( ctype == XSSFCell.CELL_TYPE_STRING ) { 
+						kt = cell.getStringCellValue();
+					}
+				}
+				
+				cell = corpRow.getCell(10);
+				String desc = "";
+				if( cell != null ) desc = cell.getStringCellValue();
+				
+				cell = corpRow.getCell(11);
+				String home = "";
+				if( cell != null ) home = cell.getStringCellValue();
+				
+				cell = corpRow.getCell(16);
+				String father = "";
+				if( cell != null ) father = cell.getStringCellValue();
+				
+				cell = corpRow.getCell(17);
+				String mother = "";
+				if( cell != null ) mother = cell.getStringCellValue();
+				
+				cell = corpRow.getCell(18);
+				String maki = "";
+				if( cell != null ) maki = cell.getStringCellValue();
+				
+				Corp corp = null;
+				if( !Corp.corpMap.containsKey(name) ) {
+					corp = new Corp( name );
+					corp.type = "person";
+					corp.text = desc;
+					corp.home = home;
+					corp.kt = kt;
+					corp.x = rand.nextInt(fasti);
+					corp.y = rand.nextInt(fasti);
+					corp.z = rand.nextInt(fasti)-zoffset;
+					c.add( corp );
+					//corp.setBounds( (int)(corp.x-Corp.size/2), (int)(corp.y-Corp.size/2), Corp.size, Corp.size );
+				} else {
+					corp = Corp.corpMap.get(name);
+					corp.text += "\n\n"+desc;
+				}
+				
+				if( father.length() > 0 ) {
+					Corp fcorp = null;
+					if( Corp.corpMap.containsKey(father) ) {
+						fcorp = Corp.corpMap.get(father);
+					} else {
+						fcorp = new Corp( father );
+						fcorp.type = "person";
+						fcorp.x = rand.nextInt(fasti);
+						fcorp.y = rand.nextInt(fasti);
+						fcorp.z = rand.nextInt(fasti)-zoffset;
+						c.add( fcorp );
+					}
+					
+					corp.connections.put( fcorp, new HashSet<String>( Arrays.asList( new String[] {"barn"} ) ) );
+					fcorp.connections.put( corp, new HashSet<String>( Arrays.asList( new String[] {"faðir"} ) ) );
+				}
+				
+				if( mother.length() > 0 ) {
+					Corp mcorp = null;
+					if( Corp.corpMap.containsKey(mother) ) {
+						mcorp = Corp.corpMap.get(mother);
+					} else {
+						mcorp = new Corp( mother );
+						mcorp.type = "person";
+						mcorp.x = rand.nextInt(fasti);
+						mcorp.y = rand.nextInt(fasti);
+						mcorp.z = rand.nextInt(fasti)-zoffset;
+						c.add( mcorp );
+					}
+					
+					corp.connections.put( mcorp, new HashSet<String>( Arrays.asList( new String[] {"barn"} ) ) );
+					mcorp.connections.put( corp, new HashSet<String>( Arrays.asList( new String[] {"móðir"} ) ) );
+				}
+				
+				if( maki.length() > 0 ) {
+					Corp mcorp = null;
+					if( Corp.corpMap.containsKey(maki) ) {
+						mcorp = Corp.corpMap.get(maki);
+					} else {
+						mcorp = new Corp( maki );
+						mcorp.type = "person";
+						mcorp.x = rand.nextInt(fasti);
+						mcorp.y = rand.nextInt(fasti);
+						mcorp.z = rand.nextInt(fasti)-zoffset;
+						c.add( mcorp );
+					}
+					
+					corp.connections.put( mcorp, new HashSet<String>( Arrays.asList( new String[] {"maki"} ) ) );
+					mcorp.connections.put( corp, new HashSet<String>( Arrays.asList( new String[] {"maki"} ) ) );
+				}
+				
+				int l = 0;
+				while( l < 5 ) {
+					cell = corpRow.getCell(l);
+					if( cell != null && cell.getCellType() == XSSFCell.CELL_TYPE_STRING ) {
+						String	id = cell.getStringCellValue();
+						
+						if( id.length() > 0 ) {
+							Corp link = null;
+							if( !Corp.corpMap.containsKey(id) ) {
+								link = new Corp( id );
+								link.type = "corp";
+								link.x = rand.nextInt(fasti);
+								link.y = rand.nextInt(fasti);
+								link.z = rand.nextInt(fasti)-zoffset;
+								c.add( link );
+								//link.setBounds( (int)(link.x-Corp.size/2), (int)(link.y-Corp.size/2), Corp.size, Corp.size );
+							} else {
+								link = Corp.corpMap.get( id );
+							}
+							
+							corp.connections.put( link, new HashSet<String>( Arrays.asList( new String[] {"link"} ) ) );
+							link.connections.put( corp, new HashSet<String>( Arrays.asList( new String[] {"link"} ) ) );
+						}
+					}
+					l++;
+				}
+			}
+			
+			corpRow = corpSheet.getRow( ++i );
+		}
+		Spilling.this.repaint();
+	}
+	
 	public void init() {
 		try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
@@ -593,6 +746,13 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 			}
 		});
 		popup.addSeparator();
+		popup.add( new AbstractAction("Enable/Disable autosave") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Corp.autosave = !Corp.autosave;
+			}
+		});
+		popup.addSeparator();
 		popup.add( new AbstractAction("Add Person") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -627,166 +787,31 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 		});
 		popup.addSeparator();
 		
-		final int fasti = 1000;
-		final int zoffset = 0;
+		popup.add( new AbstractAction("Load sample data") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				InputStream is = this.getClass().getResourceAsStream("/Greining2_new2.xlsx");
+				try {
+					excelLoad( is );
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+		});
+		
 		popup.add( new AbstractAction("Import from dirty Excel") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				JFileChooser fc = new JFileChooser();
 				if( fc.showOpenDialog( Spilling.this ) == JFileChooser.APPROVE_OPTION ) {
 					File f = fc.getSelectedFile();
-					XSSFWorkbook workbook;
 					try {
-						workbook = new XSSFWorkbook( f.getCanonicalPath() );
-						XSSFSheet corpSheet = workbook.getSheet("Adilar");
-						//XSSFSheet linkSheet = workbook.getSheet("Links");
-						
-						Corp.corpMap.clear();
-						c.removeAll();
-						
-						Random rand = new Random();
-						int i = 0;
-						XSSFRow 	corpRow = corpSheet.getRow( ++i );
-						while( i < 500 ) {
-							XSSFCell cell = null;
-							if( corpRow != null ) cell = corpRow.getCell(7);
-							if( cell != null ) {
-								String name = cell.getStringCellValue();
-								
-								cell = corpRow.getCell(9);
-								String kt = "";
-								if( cell != null ) {
-									int ctype = cell.getCellType();
-									if( ctype == XSSFCell.CELL_TYPE_NUMERIC ) {
-										kt = Integer.toString( (int)cell.getNumericCellValue() );
-									} else if( ctype == XSSFCell.CELL_TYPE_STRING ) { 
-										kt = cell.getStringCellValue();
-									}
-								}
-								
-								cell = corpRow.getCell(10);
-								String desc = "";
-								if( cell != null ) desc = cell.getStringCellValue();
-								
-								cell = corpRow.getCell(11);
-								String home = "";
-								if( cell != null ) home = cell.getStringCellValue();
-								
-								cell = corpRow.getCell(16);
-								String father = "";
-								if( cell != null ) father = cell.getStringCellValue();
-								
-								cell = corpRow.getCell(17);
-								String mother = "";
-								if( cell != null ) mother = cell.getStringCellValue();
-								
-								cell = corpRow.getCell(18);
-								String maki = "";
-								if( cell != null ) maki = cell.getStringCellValue();
-								
-								Corp corp = null;
-								if( !Corp.corpMap.containsKey(name) ) {
-									corp = new Corp( name );
-									corp.type = "person";
-									corp.text = desc;
-									corp.home = home;
-									corp.kt = kt;
-									corp.x = rand.nextInt(fasti);
-									corp.y = rand.nextInt(fasti);
-									corp.z = rand.nextInt(fasti)-zoffset;
-									c.add( corp );
-									//corp.setBounds( (int)(corp.x-Corp.size/2), (int)(corp.y-Corp.size/2), Corp.size, Corp.size );
-								} else {
-									corp = Corp.corpMap.get(name);
-									corp.text += "\n\n"+desc;
-								}
-								
-								if( father.length() > 0 ) {
-									Corp fcorp = null;
-									if( Corp.corpMap.containsKey(father) ) {
-										fcorp = Corp.corpMap.get(father);
-									} else {
-										fcorp = new Corp( father );
-										fcorp.type = "person";
-										fcorp.x = rand.nextInt(fasti);
-										fcorp.y = rand.nextInt(fasti);
-										fcorp.z = rand.nextInt(fasti)-zoffset;
-										c.add( fcorp );
-									}
-									
-									corp.connections.put( fcorp, new HashSet<String>( Arrays.asList( new String[] {"barn"} ) ) );
-									fcorp.connections.put( corp, new HashSet<String>( Arrays.asList( new String[] {"faðir"} ) ) );
-								}
-								
-								if( mother.length() > 0 ) {
-									Corp mcorp = null;
-									if( Corp.corpMap.containsKey(mother) ) {
-										mcorp = Corp.corpMap.get(mother);
-									} else {
-										mcorp = new Corp( mother );
-										mcorp.type = "person";
-										mcorp.x = rand.nextInt(fasti);
-										mcorp.y = rand.nextInt(fasti);
-										mcorp.z = rand.nextInt(fasti)-zoffset;
-										c.add( mcorp );
-									}
-									
-									corp.connections.put( mcorp, new HashSet<String>( Arrays.asList( new String[] {"barn"} ) ) );
-									mcorp.connections.put( corp, new HashSet<String>( Arrays.asList( new String[] {"móðir"} ) ) );
-								}
-								
-								if( maki.length() > 0 ) {
-									Corp mcorp = null;
-									if( Corp.corpMap.containsKey(maki) ) {
-										mcorp = Corp.corpMap.get(maki);
-									} else {
-										mcorp = new Corp( maki );
-										mcorp.type = "person";
-										mcorp.x = rand.nextInt(fasti);
-										mcorp.y = rand.nextInt(fasti);
-										mcorp.z = rand.nextInt(fasti)-zoffset;
-										c.add( mcorp );
-									}
-									
-									corp.connections.put( mcorp, new HashSet<String>( Arrays.asList( new String[] {"maki"} ) ) );
-									mcorp.connections.put( corp, new HashSet<String>( Arrays.asList( new String[] {"maki"} ) ) );
-								}
-								
-								int l = 0;
-								while( l < 5 ) {
-									cell = corpRow.getCell(l);
-									if( cell != null && cell.getCellType() == XSSFCell.CELL_TYPE_STRING ) {
-										String	id = cell.getStringCellValue();
-										
-										if( id.length() > 0 ) {
-											Corp link = null;
-											if( !Corp.corpMap.containsKey(id) ) {
-												link = new Corp( id );
-												link.type = "corp";
-												link.x = rand.nextInt(fasti);
-												link.y = rand.nextInt(fasti);
-												link.z = rand.nextInt(fasti)-zoffset;
-												c.add( link );
-												//link.setBounds( (int)(link.x-Corp.size/2), (int)(link.y-Corp.size/2), Corp.size, Corp.size );
-											} else {
-												link = Corp.corpMap.get( id );
-											}
-											
-											corp.connections.put( link, new HashSet<String>( Arrays.asList( new String[] {"link"} ) ) );
-											link.connections.put( corp, new HashSet<String>( Arrays.asList( new String[] {"link"} ) ) );
-										}
-									}
-									l++;
-								}
-							}
-							
-							corpRow = corpSheet.getRow( ++i );
-						}
-						System.err.println( i );
-						Spilling.this.repaint();
-					} catch (IOException e1) {
-						// TODO Auto-generated catch block
+						excelLoad( new FileInputStream( f ) );
+					} catch (FileNotFoundException e1) {
 						e1.printStackTrace();
+					} catch (IOException e2) {
+						e2.printStackTrace();
 					}
 				}
 			}
