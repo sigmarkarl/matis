@@ -2,7 +2,6 @@ package org.simmi;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GradientPaint;
@@ -304,15 +303,7 @@ public class Intro extends JApplet {
 						SortTable.lof = "com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel";
 						SortTable.updateLof();
 					} else {
-						try {
-							Desktop.getDesktop().browse(e.getURL().toURI());
-						} catch (IOException e1) {
-							// TODO Auto-generated catch block
-							e1.printStackTrace();
-						} catch (URISyntaxException e1) {
-							// TODO Auto-generated catch block
-							e1.printStackTrace();
-						}
+						CompatUtilities.browse( e.getURL() );						
 					}
 				}
 			}

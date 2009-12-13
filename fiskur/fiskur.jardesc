@@ -4,13 +4,16 @@
     <options buildIfNeeded="true" compress="true" descriptionLocation="/fiskur/fiskur.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
     <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
     <selectedProjects/>
-    <manifest generateManifest="true" manifestLocation="" manifestVersion="1.0" reuseManifest="false" saveManifest="false" usesManifest="true">
+    <manifest generateManifest="true" mainClassHandleIdentifier="=fiskur/src&lt;com.matis.prokaria{Fiskur.java[Fiskur" manifestLocation="" manifestVersion="1.0" reuseManifest="false" saveManifest="false" usesManifest="true">
         <sealing sealJar="false">
             <packagesToSeal/>
             <packagesToUnSeal/>
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
-        <javaElement handleIdentifier="=fiskur"/>
+        <file path="/fiskur/.classpath"/>
+        <file path="/fiskur/.project"/>
+        <javaElement handleIdentifier="=fiskur/src"/>
+        <file path="/fiskur/fiskur.jardesc"/>
     </selectedElements>
 </jardesc>

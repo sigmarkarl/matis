@@ -4,8 +4,7 @@ import java.awt.Rectangle;
 
 import javax.swing.DropMode;
 import javax.swing.JTable;
-
-import org.jdesktop.swingx.decorator.SortOrder;
+import javax.swing.SortOrder;
 
 public class JCompatTable extends JTable {
 	MySorter	sorter;
@@ -58,7 +57,6 @@ public class JCompatTable extends JTable {
 	}
 
 	public void setSortOrder(Object object, SortOrder ascending) {
-		// TODO Auto-generated method stub
 		
 	}
 

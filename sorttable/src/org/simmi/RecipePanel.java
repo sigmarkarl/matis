@@ -1,7 +1,6 @@
 package org.simmi;
 
 import java.awt.BorderLayout;
-import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Rectangle;
@@ -820,15 +819,7 @@ public class RecipePanel extends JSplitPane {
 		recipeInfo.addHyperlinkListener( new HyperlinkListener() {
 			public void hyperlinkUpdate(HyperlinkEvent e) {
 				if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-					try {
-						Desktop.getDesktop().browse( e.getURL().toURI() );
-					} catch (IOException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					} catch (URISyntaxException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					}
+					CompatUtilities.browse( e.getURL() );
 				}
 			}
 		});

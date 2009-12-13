@@ -18,7 +18,6 @@ import java.util.Calendar;
 import java.util.Enumeration;
 import java.util.GregorianCalendar;
 import java.util.List;
-import java.util.Locale;
 import java.util.TooManyListenersException;
 
 import javax.management.timer.Timer;
@@ -48,19 +47,19 @@ public class HabitsPanel extends JComponent {
 	List<List<String>>			eatList = new ArrayList<List<String>>();
 	JSplitPane					splitpane;
 	JToolBar					toolbar;
-	//JXDatePicker				datepicker;
+	JXDatePicker				datepicker;
 	
 	public HabitsPanel( String lang ) {
 		super();
 		
-		//datepicker = new JXDatePicker();
+		datepicker = new JXDatePicker();
 		/*DateSelectionModel mod = new DateSelectionModel() {
 			
-		};*/
-		//datepicker.setMonthView(new JXM)
+		};
+		//datepicker.setMonthView(new JXM)*/
 		this.setLayout( new BorderLayout() );
 		toolbar = new JToolBar();
-		//toolbar.add( datepicker );
+		toolbar.add( datepicker );
 		this.add( toolbar, BorderLayout.NORTH );
 		splitpane = new JSplitPane( JSplitPane.VERTICAL_SPLIT );
 		this.add( splitpane );
@@ -208,14 +207,11 @@ public class HabitsPanel extends JComponent {
 
 			public Object getValueAt(int arg0, int arg1) {
 				cal.setTimeInMillis( time+arg1*Timer.ONE_DAY );
-				String str;
-				if( arg0 == 1 ) str = cal.get(Calendar.DAY_OF_MONTH) + ". "+cal.getDisplayName( Calendar.MONTH, Calendar.SHORT, Locale.getDefault());
-				else str = cal.getDisplayName( Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.getDefault());
+				String str = CompatUtilities.getDateString( cal, arg0 == 1 );
 				return str;
 			}
 
 			public boolean isCellEditable(int arg0, int arg1) {
-				// TODO Auto-generated method stub
 				return false;
 			}
 

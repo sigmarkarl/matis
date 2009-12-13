@@ -19,13 +19,39 @@ import com.sun.jna.Native;
 
 public class ModelDraw {	
 	static {
-		Native.register("3dsim");
+		Native.register("3ds");
     	//System.loadLibrary("3ds");
     }
 	
-	public static native int countFaces( String fname );
-	public static native int countVertices( String fname );
-	public static native void getVertices( ByteBuffer vertexBuffer, String fname );
+	public static native int countFaces();
+	//public static native int countVertices( String fname );
+	//public static native void getVertices( ByteBuffer vertexBuffer, String fname );
+	
+	public static int countFaces( String fname ) {
+		//Lib3dsFile file = Lib3dsLibrary.INSTANCE.lib3ds_file_load( fname );
+		//Lib3dsMesh[] meshes = file.meshes.castToArray();
+		//System.err.println( meshes.length );
+		//f = lib3ds_file_open( filename );
+		//fprintf( stderr, "opening %s %d\n", filename, f->nmaterials );
+		/*int totalFaces = 0;
+		int i;
+	    for (i = 0; i < f->nmeshes; ++i) {
+	    	Lib3dsMesh* mesh = f->meshes[i];
+	    	totalFaces += mesh->nfaces;
+	    }
+
+	    for (i = 0; i < f->nmaterials; ++i) {
+	    	fprintf( stderr, "%s\n", f->materials[i]->texture1_map.name );
+	    	fprintf( stderr, "%s\n", f->materials[i]->texture2_map.name );
+	    	//fprintf( stderr, "%s\n", f->materials[i]-> );
+	    }
+
+	    fprintf( stderr, "done %d file\n", totalFaces );
+
+		return totalFaces;*/
+
+		return 0;
+	}
 	
 	int			matSize;
 	int 		faces = 0;
@@ -94,22 +120,26 @@ public class ModelDraw {
 		
 		try {
 			faces = ModelDraw.countFaces( f.getCanonicalPath() );
-			//vertices = ModelDraw.countVertices( f.getCanonicalPath() );
-			
-			//System.err.println( faces + "   " + vertices );
-			
-			vertexBuffer = ByteBuffer.allocateDirect( faces*4*6*3 );
-			//indexBuffer = ByteBuffer.allocateDirect( faces*4*3 );
-			vertexBuffer.order( ByteOrder.nativeOrder() );
-			//indexBuffer.order( ByteOrder.nativeOrder() );
-			
-			//fileBuffer = ByteBuffer.allocateDirect( 4*faces*6*3 );
-			//fileBuffer.order( ByteOrder.nativeOrder() );
-			ModelDraw.getVertices( vertexBuffer, f.getCanonicalPath() );
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		//vertices = ModelDraw.countVertices( f.getCanonicalPath() );
+		//System.err.println( faces + "   " + vertices );
+		
+		
+		
+		vertexBuffer = ByteBuffer.allocateDirect( faces*4*6*3 );
+		//indexBuffer = ByteBuffer.allocateDirect( faces*4*3 );
+		vertexBuffer.order( ByteOrder.nativeOrder() );
+		//indexBuffer.order( ByteOrder.nativeOrder() );
+		
+		//fileBuffer = ByteBuffer.allocateDirect( 4*faces*6*3 );
+		//fileBuffer.order( ByteOrder.nativeOrder() );
+		
+		
+		
+		//ModelDraw.getVertices( vertexBuffer, f.getCanonicalPath() );
 		
 		FloatBuffer ff = vertexBuffer.asFloatBuffer();
 		float val = 1000.0f;
@@ -434,6 +464,7 @@ public class ModelDraw {
 			gl.glInterleavedArrays( GL.GL_N3F_V3F, 0, vertexBuffer );
 			gl.glDrawArrays( GL.GL_TRIANGLES, 0, 3*faces );
 			gl.glCullFace( GL.GL_FRONT );
+			System.err.println( vertexBuffer.limit() );
 			gl.glInterleavedArrays( GL.GL_N3F_V3F, 0, vertexBuffer );
 			gl.glDrawArrays( GL.GL_TRIANGLES, 0, 3*faces );
 			gl.glTranslatef(-50.0f, 100.0f, 0.0f);

@@ -4,17 +4,13 @@ import javax.swing.DropMode;
 import javax.swing.RowSorter;
 import javax.swing.event.RowSorterEvent;
 import javax.swing.event.TableModelEvent;
-import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
 import org.jdesktop.swingx.JXTable;
 import org.jdesktop.swingx.decorator.Filter;
 import org.jdesktop.swingx.decorator.FilterPipeline;
 import org.jdesktop.swingx.decorator.PatternFilter;
-import org.jdesktop.swingx.decorator.PipelineEvent;
-import org.jdesktop.swingx.decorator.PipelineListener;
 import org.jdesktop.swingx.decorator.FilterPipeline.IdentityFilter;
-import org.jdesktop.swingx.table.TableColumnExt;
 
 public class JCompatTable extends JXTable {
 	

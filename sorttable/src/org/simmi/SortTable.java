@@ -1768,7 +1768,7 @@ public class SortTable extends JApplet {
 			public void run() {
 				//leftTable.setSortable( true );
 				//table.setSortable( false );
-				table.setSortOrder( leftTable.getSortedColumn(), org.jdesktop.swingx.decorator.SortOrder.UNSORTED);
+				table.setSortOrder( leftTable.getSortedColumn(), CompatUtilities.UNSORTED );
 				
 				table.repaint();
 				leftTable.repaint();
@@ -1780,7 +1780,7 @@ public class SortTable extends JApplet {
 				//leftTable.getSortedColumn();
 				//leftTable.setSortable( false );
 				//table.setSortable( true );
-				leftTable.setSortOrder( leftTable.getSortedColumn(), org.jdesktop.swingx.decorator.SortOrder.UNSORTED);
+				leftTable.setSortOrder( leftTable.getSortedColumn(), CompatUtilities.UNSORTED );
 				
 				table.repaint();
 				leftTable.repaint();
