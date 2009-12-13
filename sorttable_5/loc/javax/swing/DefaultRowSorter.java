@@ -2,8 +2,6 @@ package javax.swing;
 
 import java.util.List;
 
-import javax.swing.RowSorter.SortKey;
-
 public abstract class DefaultRowSorter<M, I> extends RowSorter<M> {
 	private List<SortKey> sortKeys;
 	
