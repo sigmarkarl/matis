@@ -97,7 +97,7 @@ public class SortTable extends JApplet {
 	JTabbedPane tabbedPane;
 	RecipePanel recipe;
 	FriendsPanel friendsPanel;
-	JComboBox	combo;
+	JComboBox combo;
 
 	ImagePanel imgPanel;
 	JComponent graph;
@@ -355,7 +355,7 @@ public class SortTable extends JApplet {
 			while (line != null) {
 				String[] split = line.split("\\t");
 				foodInd.put(split[1], k);
-				//foodNameInd.put(split[2], k);
+				// foodNameInd.put(split[2], k);
 				k++;
 
 				String val = split[6];
@@ -485,10 +485,10 @@ public class SortTable extends JApplet {
 		return result;
 	}
 
-	public void updateFilter( int val ) {
+	public void updateFilter(int val) {
 		// currentSorter = (MySorter)leftTableSorter;
 		combo.setSelectedIndex(0);
-		System.err.println( val );
+		System.err.println(val);
 
 		String text = field.getText();
 		if (text.length() > 0) {
@@ -507,20 +507,20 @@ public class SortTable extends JApplet {
 			leftTable.updateFilter();
 			table.updateFilter();
 		}
-		
-		if( leftTable.getRowCount() > 0 ) {
-			if( val == 1 ) {
+
+		if (leftTable.getRowCount() > 0) {
+			if (val == 1) {
 				sel = false;
 				leftTable.setRowSelectionIntervalSuper(0, 0);
 			}
-			
+
 			int r = leftTable.getSelectedRow();
-			
-			if( r != -1 ) {
-				Rectangle	selrect = leftTable.getCellRect(r, 0, false);
-				//System.err.println( selrect );
-				//leftTable.repaint();
-				table.scrollRectToVisible( selrect );
+
+			if (r != -1) {
+				Rectangle selrect = leftTable.getCellRect(r, 0, false);
+				// System.err.println( selrect );
+				// leftTable.repaint();
+				table.scrollRectToVisible(selrect);
 			}
 		}
 
@@ -579,7 +579,7 @@ public class SortTable extends JApplet {
 
 		// List<Object[]> sublist = Collections.
 	}
-	
+
 	public void loadStuff() {
 		lang = "IS";
 		/*
@@ -594,14 +594,16 @@ public class SortTable extends JApplet {
 
 				Collections.sort(stuff, new Comparator<Object[]>() {
 					public int compare(Object[] o1, Object[] o2) {
-						if (o1[0] == null || o2[0] == null) return Integer.MIN_VALUE;
+						if (o1[0] == null || o2[0] == null)
+							return Integer.MIN_VALUE;
 						return ((String) o1[0]).compareToIgnoreCase((String) o2[0]);
 					}
 				});
-				
+
 				int i = 0;
-				for( Object[] oo : stuff ) {
-					if( oo[0] != null ) foodNameInd.put((String)oo[0], i++);
+				for (Object[] oo : stuff) {
+					if (oo[0] != null)
+						foodNameInd.put((String) oo[0], i++);
 				}
 			} catch (IOException e) {
 				// TODO Auto-generated catch bloc
@@ -659,7 +661,7 @@ public class SortTable extends JApplet {
 				}
 			}
 		});
-		
+
 		try {
 			URL url = this.getDocumentBase();
 			String urlstr = url.toString();
@@ -702,7 +704,8 @@ public class SortTable extends JApplet {
 
 	boolean sel = false;
 
-	int		size = 300;
+	int size = 300;
+
 	public void initGui(String sessionKey, String currentUser) throws IOException {
 		SortTable.this.getRootPane().setBackground(bgcolor);
 		SortTable.this.requestFocus();
@@ -1060,10 +1063,12 @@ public class SortTable extends JApplet {
 		// leftTable.setRowSorter( table.getRowSorter() );
 		// leftTable.setAutoCreateRowSorter( true );
 
-		JComponent topComp = new JComponent() {};
+		JComponent topComp = new JComponent() {
+		};
 		topComp.setLayout(new BorderLayout());
 
-		JComponent topLeftComp = new JComponent() {};
+		JComponent topLeftComp = new JComponent() {
+		};
 		topLeftComp.setLayout(new BorderLayout());
 
 		topTable.setShowGrid(true);
@@ -1122,74 +1127,75 @@ public class SortTable extends JApplet {
 		 */
 
 		// logoPaint.setPreferredSize( new Dimension( 32, 32 ) );
-		//topLeftComp.add(topLeftTable, BorderLayout.EAST );
+		// topLeftComp.add(topLeftTable, BorderLayout.EAST );
 		// topLeftComp.add( logoPaint, BorderLayout.WEST );
 		topLeftComp.add(leftTable.getTableHeader(), BorderLayout.SOUTH);
 		// topScrollPane.setViewportView( topTable );
 		// scrollPane.setColumnHeader( topScrollPane.getViewport() );
 		// scrollPane.setColumnHeaderView( topTable );
-		
-		JComboBox	topLeftCombo = new JComboBox() {
+
+		JComboBox topLeftCombo = new JComboBox() {
 			private boolean layingOut = false;
 
 			public void doLayout() {
-		        try {
-		            layingOut = true;
-		            super.doLayout();
-		        }
-		        finally {
-		            layingOut = false;
-		        }
-		    }
+				try {
+					layingOut = true;
+					super.doLayout();
+				} finally {
+					layingOut = false;
+				}
+			}
 
-		    public Dimension getSize() {
-		        Dimension sz = super.getSize();
-		        if (!layingOut) {
-		            sz.width = Math.max(sz.width, size);
-		        }
-		        return sz;
-		    }
+			public Dimension getSize() {
+				Dimension sz = super.getSize();
+				if (!layingOut) {
+					sz.width = Math.max(sz.width, size);
+				}
+				return sz;
+			}
 		};
 		combo = topLeftCombo;
-		
-		Set<String>	foodTypes = new TreeSet<String>();
-		for( Object[] objs : stuff ) {
-			if( objs[1] != null ) foodTypes.add( (String)objs[1] );
+
+		Set<String> foodTypes = new TreeSet<String>();
+		for (Object[] objs : stuff) {
+			if (objs[1] != null)
+				foodTypes.add((String) objs[1]);
 		}
-		
-		topLeftCombo.addItem( "Allar fæðutegundir" );
-		topLeftCombo.addItem( "Uppskriftir" );
-		for( String ft : foodTypes ) {
-			topLeftCombo.addItem( ft.length() > 64 ? ft.substring(0, 64)+"..." : ft );
+
+		topLeftCombo.addItem("Allar fæðutegundir");
+		topLeftCombo.addItem("Uppskriftir");
+		for (String ft : foodTypes) {
+			topLeftCombo.addItem(ft.length() > 64 ? ft.substring(0, 64) + "..." : ft);
 		}
-		
-		Dimension d = new Dimension( 20, 20 );
-		//topLeftCombo.setMaximumSize( d );
-		size = Math.max(20, topLeftCombo.getPreferredSize().width );
-		topLeftCombo.setPreferredSize( d );
-		topLeftCombo.setMinimumSize( d );
-		topLeftComp.add( topLeftCombo );
-		
-		topLeftCombo.addItemListener( new ItemListener() {
+
+		Dimension d = new Dimension(20, 20);
+		// topLeftCombo.setMaximumSize( d );
+		size = Math.max(20, topLeftCombo.getPreferredSize().width);
+		topLeftCombo.setPreferredSize(d);
+		topLeftCombo.setMinimumSize(d);
+		topLeftComp.add(topLeftCombo);
+
+		topLeftCombo.addItemListener(new ItemListener() {
 			public void itemStateChanged(ItemEvent e) {
-				String item = (String)combo.getSelectedItem();
-				item = item.substring( 0, Math.min( 100,item.length() ) );
-				if( item.equals("Allar fæðutegundir") ) {
+				String item = (String) combo.getSelectedItem();
+				item = item.substring(0, Math.min(100, item.length()));
+				if (item.equals("Allar fæðutegundir")) {
 					filter.filterText = null;
 					filter.fInd = 0;
-					
-					//leftTable.getColumnModel().getColumn(1).setMinWidth( 0 );
-					leftTable.getColumnModel().getColumn(1).setMaxWidth( 1000 );
-					leftTable.getColumnModel().getColumn(1).setPreferredWidth( leftTable.getWidth()/2 );
-					leftTable.getColumnModel().getColumn(1).setWidth( leftTable.getWidth()/2 );
+
+					// leftTable.getColumnModel().getColumn(1).setMinWidth( 0 );
+					leftTable.getColumnModel().getColumn(1).setMaxWidth(1000);
+					leftTable.getColumnModel().getColumn(1).setPreferredWidth(leftTable.getWidth() / 2);
+					leftTable.getColumnModel().getColumn(1).setWidth(leftTable.getWidth() / 2);
 				} else {
 					filter.filterText = "(?i).*" + item + ".*";
 					filter.fInd = 1;
-					
-					leftTable.getColumnModel().getColumn(1).setMinWidth( 0 );
-					leftTable.getColumnModel().getColumn(1).setMaxWidth( 0 );
-					//leftTable.getColumnModel().getColumn(1).setPreferredWidth( 0 );
-					leftTable.getColumnModel().getColumn(1).setWidth( 0 );
+
+					leftTable.getColumnModel().getColumn(1).setMinWidth(0);
+					leftTable.getColumnModel().getColumn(1).setMaxWidth(0);
+					// leftTable.getColumnModel().getColumn(1).setPreferredWidth(
+					// 0 );
+					leftTable.getColumnModel().getColumn(1).setWidth(0);
 				}
 				leftTable.updateFilter();
 				table.updateFilter();
@@ -1211,7 +1217,7 @@ public class SortTable extends JApplet {
 			}
 		};
 		leftSpec.setView(topLeftComp);
-		
+
 		scrollPane.setColumnHeader(spec);
 		topTable.setTableHeader(null);
 		topScrollPane.setViewport(scrollPane.getColumnHeader());
@@ -1260,10 +1266,10 @@ public class SortTable extends JApplet {
 			public void stateChanged(ChangeEvent e) {
 				if (tabbedPane.getSelectedComponent() == rightSplitPane) {
 					leftScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
-					//leftSplitPane.setDividerLocation(60);
+					// leftSplitPane.setDividerLocation(60);
 				} else {
 					leftScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-					//leftSplitPane.setDividerLocation(0);
+					// leftSplitPane.setDividerLocation(0);
 				}
 			}
 
@@ -1286,14 +1292,14 @@ public class SortTable extends JApplet {
 		}
 
 		RdsPanel rdsPanel = new RdsPanel(fp, SortTable.this);
-		
+
 		rightSplitPane = new LinkedSplitPane(JSplitPane.VERTICAL_SPLIT, topScrollPane, scrollPane);
 		leftSplitPane = new LinkedSplitPane(JSplitPane.VERTICAL_SPLIT, topLeftScrollPane, leftComponent);
 		rightSplitPane.setLinkedSplitPane(leftSplitPane);
 		leftSplitPane.setLinkedSplitPane(rightSplitPane);
 
 		leftSplitPane.setOneTouchExpandable(true);
-		leftSplitPane.setDividerLocation( 50 );
+		leftSplitPane.setDividerLocation(50);
 
 		HabitsPanel eat = new HabitsPanel(lang);
 		try {
@@ -1311,15 +1317,15 @@ public class SortTable extends JApplet {
 		field.getDocument().addDocumentListener(new DocumentListener() {
 
 			public void changedUpdate(DocumentEvent e) {
-				updateFilter( 0 );
+				updateFilter(0);
 			}
 
 			public void insertUpdate(DocumentEvent e) {
-				updateFilter( 1 );
+				updateFilter(1);
 			}
 
 			public void removeUpdate(DocumentEvent e) {
-				updateFilter( 2 );
+				updateFilter(2);
 			}
 		});
 		// final JFrame f = new JFrame();
@@ -1449,7 +1455,7 @@ public class SortTable extends JApplet {
 			}
 
 			public Object getValueAt(int rowIndex, int columnIndex) {
-				Object[] obj = stuff.get(rowIndex+1);
+				Object[] obj = stuff.get(rowIndex + 1);
 				int realColumnIndex = detail.convertIndex(columnIndex);
 				return obj[realColumnIndex + 2];
 			}
@@ -1691,7 +1697,7 @@ public class SortTable extends JApplet {
 					}
 
 					if (ret != 0.0f) {
-						//return (ret * 100.0f) / tot;
+						// return (ret * 100.0f) / tot;
 						return ret;
 					}
 				}
@@ -1754,25 +1760,25 @@ public class SortTable extends JApplet {
 		table.sorter = tableSorter;
 		leftTable.setFilter(filter);
 		MyFilter subfilt = table.setFilter(filter);
-		
-		filter.addFilterListener( new Runnable() {
+
+		filter.addFilterListener(new Runnable() {
 			public void run() {
-				//leftTable.setSortable( true );
-				//table.setSortable( false );
-				table.setSortOrder( leftTable.getSortedColumn(), CompatUtilities.UNSORTED );
-				
+				// leftTable.setSortable( true );
+				// table.setSortable( false );
+				table.setSortOrder(leftTable.getSortedColumn(), CompatUtilities.UNSORTED);
+
 				table.repaint();
 				leftTable.repaint();
 			}
 		});
-		
-		subfilt.addFilterListener( new Runnable() {
+
+		subfilt.addFilterListener(new Runnable() {
 			public void run() {
-				//leftTable.getSortedColumn();
-				//leftTable.setSortable( false );
-				//table.setSortable( true );
-				leftTable.setSortOrder( leftTable.getSortedColumn(), CompatUtilities.UNSORTED );
-				
+				// leftTable.getSortedColumn();
+				// leftTable.setSortable( false );
+				// table.setSortable( true );
+				leftTable.setSortOrder(leftTable.getSortedColumn(), CompatUtilities.UNSORTED);
+
 				table.repaint();
 				leftTable.repaint();
 			}
@@ -1841,7 +1847,7 @@ public class SortTable extends JApplet {
 			tabbedPane.addTab("Rds", rdsicon, rdsPanel);
 			tabbedPane.addTab("Eating and training", maticon, eat);
 			tabbedPane.addTab("Cost of buying", buy);
-			
+
 			tabbedPane.setEnabledAt(tabbedPane.getTabCount() - 1, false);
 		}
 
@@ -1955,27 +1961,25 @@ public class SortTable extends JApplet {
 		CompatUtilities.updateLof();
 		System.setProperty("file.encoding", "UTF8");
 
-		/*ToolTipManager.sharedInstance().setInitialDelay(0);
-		try {
-			sortTable.stuff = sortTable.parseData(sortTable.lang);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
-		
+		/*
+		 * ToolTipManager.sharedInstance().setInitialDelay(0); try {
+		 * sortTable.stuff = sortTable.parseData(sortTable.lang); } catch
+		 * (IOException e) { // TODO Auto-generated catch block
+		 * e.printStackTrace(); }
+		 */
+
 		sortTable.loadStuff();
-		
+
 		sortTable.getContentPane().setBackground(Color.white);
 		sortTable.setBackground(Color.white);
 
 		sortTable.frame();
-		/*SwingUtilities.invokeLater(new Runnable() {
-			public void run() {
-				sortTable.frame();
-			}
-		});*/
+		/*
+		 * SwingUtilities.invokeLater(new Runnable() { public void run() {
+		 * sortTable.frame(); } });
+		 */
 	}
-	
+
 	public void frame() {
 		try {
 			JFrame frame = new JFrame();
@@ -1984,8 +1988,8 @@ public class SortTable extends JApplet {
 			this.initGui(null, null);
 			frame.setLayout(new BorderLayout());
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-			frame.add( this.getSplitPane(), BorderLayout.CENTER );
-			//frame.getContentPane().add( new JButton("simmi") );
+			frame.add(this.getSplitPane(), BorderLayout.CENTER);
+			// frame.getContentPane().add( new JButton("simmi") );
 			frame.pack();
 			frame.setSize(800, 600);
 			// frame.add(sortTable.getEditor(), BorderLayout.SOUTH);
@@ -2093,7 +2097,8 @@ public class SortTable extends JApplet {
 		List<RowSorter.SortKey> sortKeys = new ArrayList<RowSorter.SortKey>();
 		int c = 0;
 		System.err.println(str);
-		while( c < model.getColumnCount() && !model.getColumnName(c++).contains(str) );
+		while (c < model.getColumnCount() && !model.getColumnName(c++).contains(str))
+			;
 		if (c < model.getColumnCount()) {
 			RowSorter.SortKey sortKey = new RowSorter.SortKey(c, SortOrder.DESCENDING);
 			sortKeys.add(sortKey);

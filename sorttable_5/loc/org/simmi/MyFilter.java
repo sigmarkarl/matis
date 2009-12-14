@@ -25,7 +25,7 @@ public class MyFilter extends FilterPipeline {
 	public MyFilter( Filter[] filters ) {
 		super( filters );
 		filt = filters[0];
-		
+			
 		init();
 	}
 	
