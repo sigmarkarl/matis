@@ -43,7 +43,7 @@ public class MyFilter extends FilterPipeline {
 		if( filt instanceof PatternFilter ) {
 			PatternFilter pfilt = (PatternFilter)filt;
 			pfilt.setPattern( filterText, 0 );
-			pfilt.setColumnIndex( 0 );
+			pfilt.setColumnIndex( fInd );
 			
 			this.filterChanged( filt );
 		} else {

@@ -7,12 +7,19 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.Calendar;
 
+import javax.swing.LookAndFeel;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 
 import org.jdesktop.swingx.decorator.SortOrder;
 
 public class CompatUtilities {
+	public static String lof = "";
 	public static SortOrder UNSORTED = SortOrder.UNSORTED;
+	
+	public static void updateLof() {
+	}
 	
 	public static Frame getWindowAncestor( Component comp ) {
 		return (Frame)SwingUtilities.getWindowAncestor( comp );

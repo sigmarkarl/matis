@@ -297,11 +297,11 @@ public class Intro extends JApplet {
 			public void hyperlinkUpdate(HyperlinkEvent e) {
 				if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
 					if (e.getDescription().equals("dark")) {
-						SortTable.lof = "org.jvnet.substance.skin.SubstanceRavenGraphiteLookAndFeel";
-						SortTable.updateLof();
+						CompatUtilities.lof = "org.jvnet.substance.skin.SubstanceRavenGraphiteLookAndFeel";
+						CompatUtilities.updateLof();
 					} else if (e.getDescription().equals("light")) {
-						SortTable.lof = "com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel";
-						SortTable.updateLof();
+						CompatUtilities.lof = "com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel";
+						CompatUtilities.updateLof();
 					} else {
 						CompatUtilities.browse( e.getURL() );						
 					}
