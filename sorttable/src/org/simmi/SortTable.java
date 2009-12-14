@@ -43,6 +43,7 @@ import javax.imageio.ImageIO;
 import javax.swing.DefaultRowSorter;
 import javax.swing.ImageIcon;
 import javax.swing.JApplet;
+import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -60,8 +61,6 @@ import javax.swing.SortOrder;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -135,28 +134,9 @@ public class SortTable extends JApplet {
 
 	// static String lof =
 	// "org.jvnet.substance.skin.SubstanceRavenGraphiteLookAndFeel";
-	static String lof = "com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel";
-
-	static void updateLof() {
-		try {
-			UIManager.setLookAndFeel(lof);
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (UnsupportedLookAndFeelException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
 
 	static {
-		updateLof();
+		CompatUtilities.updateLof();
 		System.setProperty("file.encoding", "UTF8");
 	}
 
@@ -567,21 +547,7 @@ public class SortTable extends JApplet {
 	};
 
 	public void firstInit() {
-		try {
-			UIManager.setLookAndFeel(lof);
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (UnsupportedLookAndFeelException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		CompatUtilities.updateLof();
 
 		Window window = SwingUtilities.windowForComponent(this);
 		if (window instanceof JFrame) {
@@ -594,7 +560,28 @@ public class SortTable extends JApplet {
 		this.setBackground(bgcolor);
 		System.setProperty("file.encoding", "UTF8");
 
-		lang = "EN";
+		loadStuff();
+
+		// String par = this.getParameter("tab");
+		// System.err.println( "tabpar " + par );
+
+		/*
+		 * try { JSObject jso = JSObject.getWindow( this ); JSObject obj =
+		 * (JSObject)jso.getMember("document"); Object par =
+		 * (JSObject)obj.getMember("param");
+		 * 
+		 * if( par != null && par instanceof Integer ) { Integer ii =
+		 * (Integer)par; selectTabIndex(ii-1);
+		 * 
+		 * System.err.println( "succ " + par ); } else { System.err.println( par
+		 * ); } } catch( Exception e ) { e.printStackTrace(); }
+		 */
+
+		// List<Object[]> sublist = Collections.
+	}
+	
+	public void loadStuff() {
+		lang = "IS";
 		/*
 		 * String loc = this.getParameter("loc"); if( loc != null ) { lang =
 		 * loc; }
@@ -621,23 +608,6 @@ public class SortTable extends JApplet {
 				e.printStackTrace();
 			}
 		}
-
-		// String par = this.getParameter("tab");
-		// System.err.println( "tabpar " + par );
-
-		/*
-		 * try { JSObject jso = JSObject.getWindow( this ); JSObject obj =
-		 * (JSObject)jso.getMember("document"); Object par =
-		 * (JSObject)obj.getMember("param");
-		 * 
-		 * if( par != null && par instanceof Integer ) { Integer ii =
-		 * (Integer)par; selectTabIndex(ii-1);
-		 * 
-		 * System.err.println( "succ " + par ); } else { System.err.println( par
-		 * ); } } catch( Exception e ) { e.printStackTrace(); }
-		 */
-
-		// List<Object[]> sublist = Collections.
 	}
 
 	String sessionKey = null;
@@ -682,12 +652,33 @@ public class SortTable extends JApplet {
 			public void run() {
 				try {
 					initGui(sessionKey, currentUser);
+					SortTable.this.add(splitPane);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
 		});
+		
+		try {
+			URL url = this.getDocumentBase();
+			String urlstr = url.toString();
+			int l = urlstr.length();
+			String c = urlstr.substring(l - 1, l);
+			int v = -1;
+			try {
+				System.err.println(c);
+				v = Integer.parseInt(c);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+			if (v >= 0 && v < 8) {
+				this.selectTabIndex(v - 1);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 		new Thread() {
 			public void run() {
@@ -1896,7 +1887,6 @@ public class SortTable extends JApplet {
 
 		SortTable.this.setLayout(new BorderLayout());
 		splitPane.setBorder(new EmptyBorder(0, 0, 0, 0));
-		SortTable.this.add(splitPane);
 		// SortTable.this.add(ed, BorderLayout.SOUTH);
 		splitPane.setDividerLocation(1.0 / 3.0);
 		splitPane.setDividerLocation(300);
@@ -1913,26 +1903,6 @@ public class SortTable extends JApplet {
 
 		SortTable.this.getContentPane().setBackground(bgcolor);
 		SortTable.this.setBackground(bgcolor);
-
-		try {
-			URL url = this.getDocumentBase();
-			String urlstr = url.toString();
-			int l = urlstr.length();
-			String c = urlstr.substring(l - 1, l);
-			int v = -1;
-			try {
-				System.err.println(c);
-				v = Integer.parseInt(c);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-
-			if (v >= 0 && v < 8) {
-				this.selectTabIndex(v - 1);
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 	}
 
 	public String updateFriends(final String sessionKey, final String currentUser) {
@@ -1982,54 +1952,48 @@ public class SortTable extends JApplet {
 
 		final SortTable sortTable = new SortTable();
 
-		try {
-			UIManager.setLookAndFeel(lof);
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (UnsupportedLookAndFeelException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
+		CompatUtilities.updateLof();
 		System.setProperty("file.encoding", "UTF8");
-		sortTable.lang = "IS";
 
-		ToolTipManager.sharedInstance().setInitialDelay(0);
+		/*ToolTipManager.sharedInstance().setInitialDelay(0);
 		try {
 			sortTable.stuff = sortTable.parseData(sortTable.lang);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}*/
+		
+		sortTable.loadStuff();
+		
 		sortTable.getContentPane().setBackground(Color.white);
 		sortTable.setBackground(Color.white);
 
-		SwingUtilities.invokeLater(new Runnable() {
+		sortTable.frame();
+		/*SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
-				try {
-					JFrame frame = new JFrame();
-					frame.setBackground(Color.white);
-					frame.getContentPane().setBackground(Color.white);
-					sortTable.initGui(null, null);
-					frame.setLayout(new BorderLayout());
-					frame.add(sortTable.getSplitPane());
-					// frame.add(sortTable.getEditor(), BorderLayout.SOUTH);
-					frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-					frame.setSize(800, 600);
-					frame.setVisible(true);
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				sortTable.frame();
 			}
-		});
+		});*/
+	}
+	
+	public void frame() {
+		try {
+			JFrame frame = new JFrame();
+			frame.setBackground(Color.white);
+			frame.getContentPane().setBackground(Color.white);
+			this.initGui(null, null);
+			frame.setLayout(new BorderLayout());
+			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+			frame.add( this.getSplitPane(), BorderLayout.CENTER );
+			//frame.getContentPane().add( new JButton("simmi") );
+			frame.pack();
+			frame.setSize(800, 600);
+			// frame.add(sortTable.getEditor(), BorderLayout.SOUTH);
+			frame.setVisible(true);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	public JTextField getSearchField() {

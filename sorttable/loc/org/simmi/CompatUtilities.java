@@ -12,9 +12,30 @@ import java.util.Locale;
 
 import javax.swing.SortOrder;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 
 public class CompatUtilities {
+	static String lof = "com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel";
 	public static SortOrder UNSORTED = SortOrder.UNSORTED;
+	
+	public static void updateLof() {
+		try {
+			UIManager.setLookAndFeel(lof);
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InstantiationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnsupportedLookAndFeelException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 	
 	public static Window getWindowAncestor( Component comp ) {
 		return SwingUtilities.getWindowAncestor( comp );
