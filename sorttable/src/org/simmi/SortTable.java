@@ -43,7 +43,6 @@ import javax.imageio.ImageIO;
 import javax.swing.DefaultRowSorter;
 import javax.swing.ImageIcon;
 import javax.swing.JApplet;
-import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -654,6 +653,27 @@ public class SortTable extends JApplet {
 			public void run() {
 				try {
 					initGui(sessionKey, currentUser);
+					
+					try {
+						URL url = SortTable.this.getDocumentBase();
+						String urlstr = url.toString();
+						int l = urlstr.length();
+						String c = urlstr.substring(l - 1, l);
+						int v = -1;
+						try {
+							System.err.println(c);
+							v = Integer.parseInt(c);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+
+						if (v >= 0 && v < 8) {
+							SortTable.this.selectTabIndex(v - 1);
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					
 					SortTable.this.add(splitPane);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
@@ -661,26 +681,6 @@ public class SortTable extends JApplet {
 				}
 			}
 		});
-
-		try {
-			URL url = this.getDocumentBase();
-			String urlstr = url.toString();
-			int l = urlstr.length();
-			String c = urlstr.substring(l - 1, l);
-			int v = -1;
-			try {
-				System.err.println(c);
-				v = Integer.parseInt(c);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-
-			if (v >= 0 && v < 8) {
-				this.selectTabIndex(v - 1);
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 
 		new Thread() {
 			public void run() {
