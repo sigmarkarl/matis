@@ -11,20 +11,18 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class Server2Lite {
-	static {
-		System.loadLibrary("sqlite");
-	}
-	
-	public native int test();
-	public native int exec( String sql );
-	
+public class Server2Lite {	
 	Connection con;
+	Connection dcon;
 	
 	public Server2Lite() throws ClassNotFoundException, SQLException {
 		Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
 		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=isgem2;user=simmi;password=drsmorc.311;";
 		con = DriverManager.getConnection(connectionUrl);
+		
+		Class.forName("org.sqlite.JDBC");
+		connectionUrl = "jdbc:sqlite:isgem.db";
+		dcon = DriverManager.getConnection(connectionUrl);
 	}
 	
 	public void load() throws SQLException {
@@ -53,7 +51,10 @@ public class Server2Lite {
 			}
 			tmap.put( tname, val );
 			sql = "create table "+tname+" ("+val+")";
-			exec( sql );
+			
+			PreparedStatement dps = dcon.prepareStatement( sql );
+			dps.execute();
+			dps.close();
 			
 			rsub.close();
 			psub.close();
@@ -92,7 +93,12 @@ public class Server2Lite {
 						if( vstr.length() == 0 ) vstr += res;
 						else vstr += ","+res;
 					}
-					exec( "insert into "+tname+" values ("+vstr+")" );
+					
+					String dsql = "insert into "+tname+" values ("+vstr+")";
+					PreparedStatement dps = dcon.prepareStatement( dsql );
+					dps.execute();
+					dps.close();
+					//exec( "insert into "+tname+" values ("+vstr+")" );
 				}
 			}
 			

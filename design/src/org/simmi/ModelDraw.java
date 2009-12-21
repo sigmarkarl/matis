@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.util.Arrays;
 import java.util.Random;
@@ -15,20 +16,31 @@ import java.util.Set;
 
 import javax.media.opengl.GL;
 
-import com.sun.jna.Native;
-
 public class ModelDraw {	
 	static {
-		Native.register("3ds");
-    	//System.loadLibrary("3ds");
+    	System.loadLibrary("relatron");
     }
 	
-	public static native int countFaces();
-	//public static native int countVertices( String fname );
-	//public static native void getVertices( ByteBuffer vertexBuffer, String fname );
+	//float v = 0.0f;
 	
-	public static int countFaces( String fname ) {
-		//Lib3dsFile file = Lib3dsLibrary.INSTANCE.lib3ds_file_load( fname );
+	private static int 		mx, my;
+    private static double 	dx, dy, dz;
+    private static double 	rx, ry, rz;
+    private static double 	x, y, z;
+    private static double 	a, da;
+    
+    ByteBuffer		normBuffer;
+    DoubleBuffer	normMatrix;
+    
+    ByteBuffer		projectionBuffer;
+	DoubleBuffer 	projectionMatrix;
+	
+	public static native int countFaces( String fname );
+	public static native int countVertices( String fname );
+	public static native void getVertices( ByteBuffer vertexBuffer, String fname );
+	
+	//public static native int countFaces( String fname );
+		/*Lib3dsFile file = Lib3dsLibrary.lib3ds_file_load( fname );
 		//Lib3dsMesh[] meshes = file.meshes.castToArray();
 		//System.err.println( meshes.length );
 		//f = lib3ds_file_open( filename );
@@ -48,10 +60,10 @@ public class ModelDraw {
 
 	    fprintf( stderr, "done %d file\n", totalFaces );
 
-		return totalFaces;*/
+		return totalFaces;
 
-		return 0;
-	}
+		return 50;
+	}*/
 	
 	int			matSize;
 	int 		faces = 0;
@@ -65,7 +77,7 @@ public class ModelDraw {
 	FloatBuffer lightBuffer;
 	
 	int 		size = 6;
-    int 		x, y;
+    int 		px, py;
     int			total;
     
     //ByteBuffer	fileBuffer;
@@ -118,18 +130,35 @@ public class ModelDraw {
 			}
 		}
 		
+		String fname = "";
 		try {
-			faces = ModelDraw.countFaces( f.getCanonicalPath() );
+			fname = f.getCanonicalPath();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		faces = ModelDraw.countFaces( fname );
 		//vertices = ModelDraw.countVertices( f.getCanonicalPath() );
-		//System.err.println( faces + "   " + vertices );
+		//System.err.println( faces );
 		
+		normBuffer = ByteBuffer.allocateDirect( 8*16 );
+		normBuffer.order( ByteOrder.nativeOrder() );
+		normMatrix = normBuffer.asDoubleBuffer();
 		
+		for( int i = 0; i < normMatrix.limit(); i++ ) {
+			if( i%5 == 0 ) normMatrix.put(i, 1.0);
+			else normMatrix.put(i, 0.0);
+		}
 		
-		vertexBuffer = ByteBuffer.allocateDirect( faces*4*6*3 );
+		projectionBuffer = ByteBuffer.allocateDirect( 8*16 );
+		projectionBuffer.order( ByteOrder.nativeOrder() );
+		projectionMatrix = projectionBuffer.asDoubleBuffer();
+		
+		for( int i = 0; i < projectionMatrix.limit(); i++ ) {
+			if( i%5 == 0 ) projectionMatrix.put(i, 1.0);
+			else projectionMatrix.put(i, 0.0);
+		}
+		
+		vertexBuffer = ByteBuffer.allocateDirect( faces*4*10*3 );
 		//indexBuffer = ByteBuffer.allocateDirect( faces*4*3 );
 		vertexBuffer.order( ByteOrder.nativeOrder() );
 		//indexBuffer.order( ByteOrder.nativeOrder() );
@@ -139,14 +168,14 @@ public class ModelDraw {
 		
 		
 		
-		//ModelDraw.getVertices( vertexBuffer, f.getCanonicalPath() );
+		ModelDraw.getVertices( vertexBuffer, fname );
 		
 		FloatBuffer ff = vertexBuffer.asFloatBuffer();
 		float val = 1000.0f;
-		for( int k = 0; k < 6*3*faces; k+=6 ) {
-			ff.put(k+3, ff.get(k+3)/val);
-			ff.put(k+4, ff.get(k+4)/val);
-			ff.put(k+5, ff.get(k+5)/val);
+		for( int k = 0; k < 10*3*faces; k+=10 ) {
+			ff.put(k+7, ff.get(k+7)/val);
+			ff.put(k+8, ff.get(k+8)/val);
+			ff.put(k+9, ff.get(k+9)/val);
 		}
 		
 		/*for( int k = 0; k < 3*3*faces; k+=3 ) {
@@ -157,21 +186,27 @@ public class ModelDraw {
 		
 		initBuffers();
 		initLight();
+		
+		x = 50.0;
+		y = -100.0;
+		z = -200.0;
 		//loadData();
 	}
 	
 	public void mouseDown( GL gl, int ex, int ey, int ebutton ) {
-		x = ex;
-		y = ey;
+		px = ex;
+		py = ey;
 	}
 	 
 	public void mouseRightDrag( GL gl, int ex, int ey ) {
-		float fy = ey-y;
-		float fx = x-ex;
+		float fy = ey-py;
+		float fx = px-ex;
 		gl.glMatrixMode( GL.GL_MODELVIEW );
 		gl.glLoadIdentity();
+		//gl.glTranslatef(0.0f, 0.0f, -v);
 		float a = (float)Math.sqrt(fy*fy+fx*fx);
 		if( a > 0.1f ) gl.glRotated( 0.2*a, fy/a, fx/a, 0 );
+		//gl.glTranslatef(0.0f, 0.0f, v);
 		gl.glMultMatrixf( modelBuffer );
 	}
 	
@@ -202,15 +237,20 @@ public class ModelDraw {
 		FloatBuffer f = lightBuffer;
 		f.rewind();
 		gl.glEnable( GL.GL_LIGHTING );
-		gl.glEnable( GL.GL_LIGHT0 );
+		//gl.glEnable( GL.GL_LIGHT0 );
 		gl.glShadeModel( GL.GL_SMOOTH );
 		gl.glHint( GL.GL_PERSPECTIVE_CORRECTION_HINT, GL.GL_NICEST);
 		int lightNumber = light+GL.GL_LIGHT0;
 		gl.glEnable( lightNumber );
+		f.position(0);
 		gl.glLightfv(lightNumber, GL.GL_POSITION, f );
+		f.position(4);
 		gl.glLightfv(lightNumber, GL.GL_AMBIENT, f );
+		f.position(8);
 		gl.glLightfv(lightNumber, GL.GL_DIFFUSE, f );
+		f.position(12);
 		gl.glLightfv(lightNumber, GL.GL_SPECULAR, f );
+		f.position(16);
 		gl.glLightfv(lightNumber, GL.GL_SPOT_DIRECTION, f );
 		gl.glLightfv(lightNumber, GL.GL_SPOT_EXPONENT, exp_cut, 0 );
 		gl.glLightfv(lightNumber, GL.GL_SPOT_CUTOFF, exp_cut, 1 );
@@ -447,8 +487,143 @@ public class ModelDraw {
 			}
 		}
 	}
+	
+	public void printMatrix( DoubleBuffer matrix ) {
+		for( int i = 0; i < 16; i+=4 ) {
+			System.err.println( matrix.get(i) + "  " + matrix.get(i+1) + "  " + matrix.get(i+2) + "  " + matrix.get(i+3) );
+		}
+	}
 
-	public void draw( GL gl ) {
+	int ik = 0;
+	public void draw( GL gl, char keychar, int w, int h ) {
+		gl.glMatrixMode( GL.GL_PROJECTION );
+		gl.glLoadIdentity();
+		//gl.glLoadMatrixd( projectionMatrix );
+		
+		double r = 1.5;
+		switch (keychar) {
+			case ' ':
+				dx = 5.05f*normMatrix.get(2);
+				dy = 5.05f*normMatrix.get(6);
+				dz = 5.05f*normMatrix.get(10);
+				break;
+			case 'W':
+				dx = -1.01f*normMatrix.get(2);
+				dy = -1.01f*normMatrix.get(6);
+				dz = -1.01f*normMatrix.get(10);
+				break;
+			case 'S':
+				dx = 1.01f*normMatrix.get(2);
+				dy = 1.01f*normMatrix.get(6);
+				dz = 1.01f*normMatrix.get(10);							
+				break;
+			case 'A':
+				dx = -1.01f*normMatrix.get(0);
+				dy = -1.01f*normMatrix.get(4);
+				dz = -1.01f*normMatrix.get(8);
+				break;
+			case 'D':
+				dx = 1.01f*normMatrix.get(0);
+				dy = 1.01f*normMatrix.get(4);
+				dz = 1.01f*normMatrix.get(8);
+				break;
+			case 'Q':
+				dx = -1.01f*normMatrix.get(1);
+				dy = -1.01f*normMatrix.get(5);
+				dz = -1.01f*normMatrix.get(9);
+				break;
+			case 'E':
+				dx = 1.01f*normMatrix.get(1);
+				dy = 1.01f*normMatrix.get(5);
+				dz = 1.01f*normMatrix.get(9);
+				break;
+			case 'w':
+				rx = normMatrix.get(0);
+				ry = normMatrix.get(4);
+				rz = normMatrix.get(8);
+				gl.glRotated(r, rx, ry, rz);
+				break;
+			case 's':
+				rx = normMatrix.get(0);
+				ry = normMatrix.get(4);
+				rz = normMatrix.get(8);
+				gl.glRotated(-r, rx, ry, rz);
+				break;
+			case 'a':
+				rx = normMatrix.get(1);
+				ry = normMatrix.get(5);
+				rz = normMatrix.get(9);
+				gl.glRotated(r, rx, ry, rz);
+				break;
+			case 'd':
+				rx = normMatrix.get(1);
+				ry = normMatrix.get(5);
+				rz = normMatrix.get(9);
+				gl.glRotated(-r, rx, ry, rz);
+				break;
+			case 'q':
+				rx = normMatrix.get(2);
+				ry = normMatrix.get(6);
+				rz = normMatrix.get(10);
+				gl.glRotated(-r, rx, ry, rz);
+				break;
+			case 'e':
+				rx = normMatrix.get(2);
+				ry = normMatrix.get(6);
+				rz = normMatrix.get(10);
+				gl.glRotated(r, rx, ry, rz);
+				break;
+			default:
+				dx = 0.0;
+				dy = 0.0;
+				dz = 0.0;
+				rx = 0.0;
+				ry = 0.0;
+				rz = 0.0;
+		}
+		
+		/*if( ik++ % 20 == 0 ) {
+			printMatrix( projectionMatrix );
+			System.err.println("n");
+			printMatrix( normMatrix );
+		}*/
+		
+		//printMatrix( normMatrix );
+		//printMatrix( projectionMatrix );
+		
+		gl.glGetDoublev( GL.GL_PROJECTION_MATRIX, projectionMatrix );
+		gl.glLoadMatrixd( normMatrix );
+		gl.glMultMatrixd( projectionMatrix );
+		gl.glGetDoublev( GL.GL_PROJECTION_MATRIX, normMatrix );
+		
+		//Gravitron.storeProjectMatrix( projectionBuffer );
+		//Gravitron.loadMatrix( normBuffer );
+		//Gravitron.multMatrix( projectionBuffer );
+		//Gravitron.storeProjectMatrix( normBuffer );
+		
+		x += dx;
+		y += dy;
+		z += dz;
+		a += da;
+		
+		//gl.glMatrixMode( GL.GL_PROJECTION );
+		gl.glLoadIdentity();
+		if (w > h) {
+    		//double aspect = w / h;
+			double aspect = 1.0;
+    	    gl.glFrustum(-aspect, aspect, -1.0, 1.0, 1.0, 5000.0);
+    	} else {
+    		//double aspect = h / w;
+    		double aspect = 1.0;
+    	    gl.glFrustum (-1.0, 1.0, -aspect, aspect, 1.0, 5000.0);
+    	}
+		gl.glMultMatrixd( normMatrix );
+		//gl.glTranslatef(0.0f,0.0f,-200.0f);
+		//gl.glMultMatrixf( normMatrix );
+		gl.glTranslated(x, y, z);
+		
+		gl.glMatrixMode( GL.GL_MODELVIEW );
+		
 		gl.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		gl.glClearDepth(1.0f);
 		gl.glClear( GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT );
@@ -456,22 +631,25 @@ public class ModelDraw {
 		gl.glEnable( GL.GL_COLOR_MATERIAL );
 		gl.glEnable( GL.GL_DEPTH_TEST );
 		gl.glEnable( GL.GL_LIGHTING );
+		gl.glEnable( GL.GL_LIGHT0 );
+		//gl.glEnable( GL.GL_LIGHT1 );
 		
 		if( vertexBuffer != null ) {
 			gl.glEnable( GL.GL_CULL_FACE );
-			gl.glTranslatef(50.0f, -100.0f, 0.0f);
+			//gl.glTranslatef(50.0f, -100.0f, -v);
 			gl.glCullFace( GL.GL_BACK );
-			gl.glInterleavedArrays( GL.GL_N3F_V3F, 0, vertexBuffer );
+			gl.glInterleavedArrays( GL.GL_C4F_N3F_V3F, 0, vertexBuffer );
 			gl.glDrawArrays( GL.GL_TRIANGLES, 0, 3*faces );
 			gl.glCullFace( GL.GL_FRONT );
-			System.err.println( vertexBuffer.limit() );
-			gl.glInterleavedArrays( GL.GL_N3F_V3F, 0, vertexBuffer );
+			gl.glInterleavedArrays( GL.GL_C4F_N3F_V3F, 0, vertexBuffer );
 			gl.glDrawArrays( GL.GL_TRIANGLES, 0, 3*faces );
-			gl.glTranslatef(-50.0f, 100.0f, 0.0f);
+			//gl.glTranslatef(-50.0f, 100.0f, v);
 		}
 		
 		gl.glDisable( GL.GL_COLOR_MATERIAL );
 		gl.glDisable( GL.GL_DEPTH_TEST );
 		gl.glDisable( GL.GL_LIGHTING );
+		gl.glDisable( GL.GL_LIGHT0 );
+		//gl.glDisable( GL.GL_LIGHT1 );
 	}
 }

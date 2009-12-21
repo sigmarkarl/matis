@@ -2,16 +2,20 @@ package org.simmi;
 
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
-import java.net.MalformedURLException;
 
 import javax.media.opengl.GL;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLCanvas;
 import javax.media.opengl.GLEventListener;
 import javax.swing.JApplet;
+import javax.swing.Timer;
 
 public class Design extends JApplet {	
 	int 			mouseState = -1;
@@ -20,30 +24,56 @@ public class Design extends JApplet {
     boolean			d3 = true;	
 	boolean 		showing = true;
 	
+	char			keychar;
+	int				keycode;
+	
 	ModelDraw		md;
 	
 	public void init() {
 		final GLCanvas canvas = new GLCanvas();
 		
+		canvas.addKeyListener( new KeyListener() {
+			@Override
+			public void keyTyped(KeyEvent e) {
+				
+			}
+			
+			@Override
+			public void keyReleased(KeyEvent e) {
+				keycode = 0;
+				keychar = '\0';
+			}
+			
+			@Override
+			public void keyPressed(KeyEvent e) {
+				keychar = e.getKeyChar();
+				keycode = e.getKeyCode();
+				//canvas.repaint();
+			}
+		});
+		
 		md = new ModelDraw( this.getClass().getResource("/vinland.3ds") );
 		canvas.addGLEventListener( new GLEventListener() {
-			
+			int width, height;
 			@Override
 			public void reshape(GLAutoDrawable drawable, int y, int x, int w, int h) {
 				GL gl = drawable.getGL();
 				((Component)drawable).setMinimumSize(new Dimension(0,0));
 				
-				gl.glMatrixMode( GL.GL_PROJECTION );
-            	gl.glLoadIdentity();
+				width = w;
+				height = h;
+				
+				//gl.glMatrixMode( GL.GL_PROJECTION );
+            	//gl.glLoadIdentity();
             	if( d3 ) {
-	            	if (w > h) {
+	            	/*if (w > h) {
 	            		double aspect = w / h;
 	            	    gl.glFrustum(-aspect, aspect, -1.0, 1.0, 1.0, 500.0);
 	            	} else {
 	            		double aspect = h / w;
 	            	    gl.glFrustum (-1.0, 1.0, -aspect, aspect, 1.0, 500.0);
-	            	}
-	        		gl.glTranslatef(0.0f,0.0f,-300.0f);
+	            	}*/
+	        		//gl.glTranslatef(0.0f,0.0f,-200.0f);
 	        		gl.glMatrixMode( GL.GL_MODELVIEW );
             	} else {
             		gl.glMatrixMode( GL.GL_MODELVIEW );
@@ -88,7 +118,7 @@ public class Design extends JApplet {
 				}
 				mouseState = -1;
 				
-				md.draw( gl );
+				md.draw( gl, keychar, width, height );
 			}
 		});
 		
@@ -134,5 +164,12 @@ public class Design extends JApplet {
 		});
 			
 		this.add( canvas );
+		Timer timer = new Timer( 50, new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				canvas.repaint();
+			}
+		});
+		timer.start();
 	}
 }
