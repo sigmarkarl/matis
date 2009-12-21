@@ -34,6 +34,7 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
 
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -41,6 +42,8 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class Fasteign extends JApplet {
+	TableRowSorter<TableModel>	currentSorter;
+	
 	static Map<String,Integer>	mmap = new HashMap<String,Integer>();
 	
 	static {
@@ -220,7 +223,7 @@ public class Fasteign extends JApplet {
 		}
 	}
 	
-	public void createModels( JTable table ) {
+	public void createModels( JTable table, JTable ptable ) {
 		TableModel model = new TableModel() {
 			@Override
 			public void addTableModelListener(TableModelListener l) {}
@@ -249,7 +252,7 @@ public class Fasteign extends JApplet {
 				case 3:
 					return "Dagsetning";
 				default:
-					return null;
+					return "";
 				}
 			}
 
@@ -287,6 +290,82 @@ public class Fasteign extends JApplet {
 			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {}
 		};
 		table.setModel( model );
+		
+		TableModel	pmodel = new TableModel() {
+			@Override
+			public void addTableModelListener(TableModelListener l) {}
+
+			@Override
+			public Class<?> getColumnClass(int columnIndex) {
+				return Double.class;
+			}
+
+			@Override
+			public int getColumnCount() {
+				return 6;
+			}
+
+			@Override
+			public String getColumnName(int columnIndex) {
+				switch( columnIndex ) {
+					case 0:
+						return "Verð";
+					case 1:
+						return "Fasteignamat";
+					case 2:
+						return "Brunabótamat";
+					case 3:
+						return "Fermetraverð";
+					case 4:
+						return "Fermetraverð fasteignamats";
+					case 5:
+						return "Verð/fasteignamat";
+					default:
+						return "";
+				}
+			}
+
+			@Override
+			public int getRowCount() {
+				return iblist.size();
+			}
+
+			@Override
+			public Object getValueAt(int rowIndex, int columnIndex) {
+				Ibud ib = iblist.get(rowIndex);
+				if( columnIndex == 0 ) {
+					return (double)ib.verd;
+				} else if( columnIndex == 1 ) {
+					return (double)ib.fastm;
+				} else if( columnIndex == 2 ) {
+					return (double)ib.brunm;
+				} else if( columnIndex == 3 ) {
+					return (double)ib.verd/(double)ib.ferm;
+				} else if( columnIndex == 4 ) {
+					return (double)ib.fastm/(double)ib.ferm;
+				} else if( columnIndex == 5 ) {
+					return (double)ib.verd/(double)ib.fastm;
+				}
+				
+				return null;
+			}
+
+			@Override
+			public boolean isCellEditable(int rowIndex, int columnIndex) {
+				return false;
+			}
+
+			@Override
+			public void removeTableModelListener(TableModelListener l) {
+				
+			}
+
+			@Override
+			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+				
+			}
+		};
+		ptable.setModel( pmodel );
 	}
 	
 	public void excelExport() throws IOException {
@@ -396,6 +475,12 @@ public class Fasteign extends JApplet {
 		botcomp.add( excelbutton );
 		
 		final JTable		table = new JTable();
+		final JTable		ptable = new JTable();
+		ptable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
+		
+		TableRowSorter<TableModel>	rowSorter = new TableRowSorter<TableModel>();
+		table.setRowSorter(sorter)
+		
 		JButton			button = new JButton( new AbstractAction("Leita") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -419,7 +504,7 @@ public class Fasteign extends JApplet {
 				Thread t = new Thread() {
 					public void run() {
 						calc( tstr );
-						createModels( table );
+						createModels( table, ptable );
 						pgbar.setIndeterminate( false );
 					}
 				};
@@ -436,9 +521,7 @@ public class Fasteign extends JApplet {
 		JScrollPane	pricepane = new JScrollPane();
 		
 		scrollpane.setViewportView( table );
-		
-		JTable		pricetable = new JTable();
-		pricepane.setViewportView( pricetable );
+		pricepane.setViewportView( ptable );
 		
 		splitpane.setLeftComponent( scrollpane );
 		splitpane.setRightComponent( pricepane );

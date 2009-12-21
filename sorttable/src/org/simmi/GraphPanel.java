@@ -128,29 +128,36 @@ public class GraphPanel extends JTabbedPane {
 					float prt = 0.0f;
 					float cbh = 0.0f;
 					float fat = 0.0f;
+					float fib = 0.0f;
 					
 					if( lang.equals("IS") ) {
 						alc = stuffYou(row, "Alkóhól");
 						prt = stuffYou(row, "Prótein, alls");
 						cbh = stuffYou(row, "Kolvetni, alls");
 						fat = stuffYou(row, "Fita, alls");
+						fib = stuffYou(row, "Trefjaefni");
 					} else {
 						alc = stuffYou(row, "ALC");
 						prt = stuffYou(row, "PROCNT");
 						cbh = stuffYou(row, "CHOCDF");
 						fat = stuffYou(row, "FAT");
+						fib = stuffYou(row, "FIB");
 					}
 					
 					double alco = alc*29.0;
 					double prto = prt*17.0;
 					double cbho = cbh*17.0;
 					double fato = fat*37.0;
-					double f = (alco + prto + cbho + fato)*100.0;
+					double fibo = fib*8.0;
+					double f = (alco + prto + cbho + fato + fibo)*100.0;
 					
 					if( lang.equals("IS") ) {
 						if( f > 0 ) {
 							double fv = Math.round( f )/100.0;
-							double fcal = f/4.184;
+							
+							double fcal = alc*7.0 + prt*4.0 + cbh*4.0 + fat*9.0 + 2.0*fib; 
+							fcal *= 100.0;
+							//double fcal = f/4.184;
 							double fvcal = Math.round( fcal )/100.0;
 							
 							ps.flush();
@@ -178,7 +185,7 @@ public class GraphPanel extends JTabbedPane {
 						}
 					}
 					
-					float total = alc + prt + cbh + fat;
+					float total = alc + prt + cbh + fat + fib;
 					
 					if( total > 0 ) {
 						String title = GraphPanel.this.getTitleAt( GraphPanel.this.getSelectedIndex() );
@@ -217,6 +224,14 @@ public class GraphPanel extends JTabbedPane {
 						gp = new GradientPaint( (w-t)/2, (h-t)/2, y1, (w+t)/2, (h+t)/2, y2 );
 						g2.setPaint( gp );
 						n = nn;
+						nn = (int)(((alc+prt+cbh+fat)*360.0f)/total);
+						g2.fillArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
+						
+						Color o1 = new Color( 200, 150, 50 );
+						Color o2 = new Color( 250, 180, 100 );
+						gp = new GradientPaint( (w-t)/2, (h-t)/2, o1, (w+t)/2, (h+t)/2, o2 );
+						g2.setPaint( gp );
+						n = nn;
 						nn = (int)(360.0f);
 						g2.fillArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
 						
@@ -231,10 +246,13 @@ public class GraphPanel extends JTabbedPane {
 						nn = (int)(((alc+prt+cbh)*360.0f)/total);
 						g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
 						n = nn;
+						nn = (int)(((alc+prt+cbh+fat)*360.0f)/total);
+						g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
+						n = nn;
 						nn = (int)(360.0f);
 						g2.drawArc( (w-t)/2, (h-t)/2, t, t, n, nn-n );
 						
-						float[] val = { (float)alc, (float)prt, (float)cbh, (float)fat };
+						float[] val = { (float)alc, (float)prt, (float)cbh, (float)fat, (float)fib };
 						g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/40 ) );
 						float tot = 0.0f;
 						float last = 0.0f;
@@ -268,12 +286,15 @@ public class GraphPanel extends JTabbedPane {
 						g2.fillRoundRect( (19*w)/20, (3*this.getHeight())/25-hh/2, hh, hh, a, a );
 						g2.setColor( y1 );
 						g2.fillRoundRect( (19*w)/20, (4*this.getHeight())/25-hh/2, hh, hh, a, a );
+						g2.setColor( o1 );
+						g2.fillRoundRect( (19*w)/20, (5*this.getHeight())/25-hh/2, hh, hh, a, a );
 						
 						g2.setColor( Color.darkGray );
 						g2.drawRoundRect( (19*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
 						g2.drawRoundRect( (19*w)/20, (2*this.getHeight())/25-hh/2, hh, hh, a, a );
 						g2.drawRoundRect( (19*w)/20, (3*this.getHeight())/25-hh/2, hh, hh, a, a );
 						g2.drawRoundRect( (19*w)/20, (4*this.getHeight())/25-hh/2, hh, hh, a, a );
+						g2.drawRoundRect( (19*w)/20, (5*this.getHeight())/25-hh/2, hh, hh, a, a );
 						
 						g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/40 ) );
 						g2.setColor( Color.darkGray );
@@ -294,6 +315,10 @@ public class GraphPanel extends JTabbedPane {
 						else str = "Fat";
 						strw = g2.getFontMetrics().stringWidth(str);
 						g2.drawString(str, (19*w)/20-strw-hh/2, (4*this.getHeight())/25+hh/4 );
+						if( lang.equals("IS") ) str = "Trefjaefni";
+						else str = "Dietary fiber";
+						strw = g2.getFontMetrics().stringWidth(str);
+						g2.drawString(str, (19*w)/20-strw-hh/2, (5*this.getHeight())/25+hh/4 );
 					}
 				}
 			}
@@ -338,29 +363,35 @@ public class GraphPanel extends JTabbedPane {
 					float prt = 0.0f;
 					float cbh = 0.0f;
 					float fat = 0.0f;
+					float fib = 0.0f;
 					
 					if( lang.equals("IS") ) {
 						alc = stuffYou(row, "Alkóhól");
 						prt = stuffYou(row, "Prótein, alls");
 						cbh = stuffYou(row, "Kolvetni, alls");
 						fat = stuffYou(row, "Fita, alls");
+						fib = stuffYou(row, "Trefjaefni");
 					} else {
 						alc = stuffYou(row, "ALC");
 						prt = stuffYou(row, "PROCNT");
 						cbh = stuffYou(row, "CHOCDF");
 						fat = stuffYou(row, "FAT");
+						fib = stuffYou(row, "FIB");
 					}
 					
 					double alco = alc*29.0;
 					double prto = prt*17.0;
 					double cbho = cbh*17.0;
 					double fato = fat*37.0;
-					double f = (17.0*prt + 17.0*cbh + 37.0*fat + 29.0*alc)*100.0;
+					double fibo = fib*8.0;
+					double f = (17.0*prt + 17.0*cbh + 37.0*fat + 29.0*alc + 8.0*fib)*100.0;
 					
 					if( lang.equals("IS") ) {
 						if( f > 0 ) {
 							double fv = Math.round( f )/100.0;
-							double fcal = f/4.184;
+							//double fcal = f/4.184;
+							double fcal = alc*7.0 + prt*4.0 + cbh*4.0 + fat*9.0 + 2.0*fib; 
+							fcal *= 100.0;
 							double fvcal = Math.round( fcal )/100.0;
 							
 							ps.flush();
@@ -388,7 +419,7 @@ public class GraphPanel extends JTabbedPane {
 						}
 					}
 					
-					float total = alc + prt + cbh + fat;
+					float total = alc + prt + cbh + fat + fib;
 					
 					if( total > 0 ) {
 						int w = this.getWidth();
@@ -451,6 +482,8 @@ public class GraphPanel extends JTabbedPane {
 						Color g1 = new Color( 100, 200, 100 );
 						Color b1 = new Color( 100, 100, 200 );
 						Color y1 = new Color( 200, 200, 100 );
+						Color o1 = new Color( 200, 150, 50 );
+						//Color o2 = new Color( 250, 180, 100 );
 						
 						Color r2 = new Color( 250, 150, 150 );
 						GradientPaint gp = new GradientPaint( (w-tnrw)/2-bil, 0,r1, (w-tnrw)/2+bil, 0, r2 );
@@ -472,47 +505,65 @@ public class GraphPanel extends JTabbedPane {
 						g2.drawRect( (w-tnrw)/2, (h+th)/2-val2, bil, val2 );
 						
 						Color gn = new Color( 150, 250, 150 );
-						gp = new GradientPaint( (w-tnrw/3)/2-bil, 0, g1, (w-tnrw/3)/2+bil, 0, gn );
+						gp = new GradientPaint( (w-tnrw/2)/2-bil, 0, g1, (w-tnrw/3)/2+bil, 0, gn );
 						g2.setPaint( gp );
 						val = (int)(th*prt/100.0);
-						g2.fillRect( (w-tnrw/3)/2-bil, (h+th)/2-val, bil, val );
+						g2.fillRect( (w-tnrw/2)/2-bil, (h+th)/2-val, bil, val );
 						val2 = (int)(th*prto/3700.0);
-						g2.fillRect( (w-tnrw/3)/2, (h+th)/2-val2, bil, val2 );
+						g2.fillRect( (w-tnrw/2)/2, (h+th)/2-val2, bil, val2 );
 						
-						gp = new GradientPaint( (w-tnrw/3)/2-2*bil/3, 0, aGray1, (w-tnrw/3)/2, 0, aGray2 );
+						gp = new GradientPaint( (w-tnrw/2)/2-2*bil/3, 0, aGray1, (w-tnrw/3)/2, 0, aGray2 );
 						g2.setPaint( gp );
-						g2.fillRect( (w-tnrw/3)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
-						g2.fillRect( (w-tnrw/3)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
+						g2.fillRect( (w-tnrw/2)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
+						g2.fillRect( (w-tnrw/2)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
 						
 						g2.setPaint(p);
 						g2.setColor( Color.darkGray );
-						g2.drawRect( (w-tnrw/3)/2-bil, (h+th)/2-val, bil, val );
-						g2.drawRect( (w-tnrw/3)/2, (h+th)/2-val2, bil, val2 );
+						g2.drawRect( (w-tnrw/2)/2-bil, (h+th)/2-val, bil, val );
+						g2.drawRect( (w-tnrw/2)/2, (h+th)/2-val2, bil, val2 );
 						
 						Color b2 = new Color( 150, 150, 250 );
-						gp = new GradientPaint( (w+tnrw/3)/2-bil, 0, b1, (w+tnrw/3)/2+bil, 0, b2 );
+						gp = new GradientPaint( (w)/2-bil, 0, b1, (w+tnrw/3)/2+bil, 0, b2 );
 						g2.setPaint( gp );
 						val = (int)(th*cbh/100.0);
-						g2.fillRect( (w+tnrw/3)/2-bil, (h+th)/2-val, bil, val );
+						g2.fillRect( (w)/2-bil, (h+th)/2-val, bil, val );
 						val2 = (int)(th*cbho/3700.0);
-						g2.fillRect( (w+tnrw/3)/2, (h+th)/2-val2, bil, val2 );
+						g2.fillRect( (w)/2, (h+th)/2-val2, bil, val2 );
 						
 						gp = new GradientPaint( (w+tnrw/3)/2-2*bil/3, 0, aGray1, (w+tnrw/3)/2, 0, aGray2 );
 						g2.setPaint( gp );
-						g2.fillRect( (w+tnrw/3)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
-						g2.fillRect( (w+tnrw/3)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
+						g2.fillRect( (w)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
+						g2.fillRect( (w)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
 						
 						g2.setPaint(p);
 						g2.setColor( Color.darkGray );
-						g2.drawRect( (w+tnrw/3)/2-bil, (h+th)/2-val, bil, val );
-						g2.drawRect( (w+tnrw/3)/2, (h+th)/2-val2, bil, val2 );
+						g2.drawRect( (w)/2-bil, (h+th)/2-val, bil, val );
+						g2.drawRect( (w)/2, (h+th)/2-val2, bil, val2 );
 						
 						Color y2 = new Color( 250, 250, 150 );
-						gp = new GradientPaint( (w+tnrw)/2-bil, 0, y1, (w+tnrw)/2+bil, 0, y2 );
+						gp = new GradientPaint( (w+tnrw/2)/2-bil, 0, y1, (w+tnrw)/2+bil, 0, y2 );
 						g2.setPaint( gp );
 						val = (int)(th*fat/100.0);
-						g2.fillRect( (w+tnrw)/2-bil, (h+th)/2-val, bil, val );
+						g2.fillRect( (w+tnrw/2)/2-bil, (h+th)/2-val, bil, val );
 						val2 = (int)(th*fato/3700.0);
+						g2.fillRect( (w+tnrw/2)/2, (h+th)/2-val2, bil, val2 );
+						
+						gp = new GradientPaint( (w+tnrw/2)/2-2*bil/3, 0, aGray1, (w+tnrw)/2, 0, aGray2 );
+						g2.setPaint( gp );
+						g2.fillRect( (w+tnrw/2)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
+						g2.fillRect( (w+tnrw/2)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
+						
+						g2.setPaint(p);
+						g2.setColor( Color.darkGray );
+						g2.drawRect( (w+tnrw/2)/2-bil, (h+th)/2-val, bil, val );
+						g2.drawRect( (w+tnrw/2)/2, (h+th)/2-val2, bil, val2 );
+						
+						Color o2 = new Color( 250, 180, 100 );
+						gp = new GradientPaint( (w+tnrw)/2-bil, 0, o1, (w+tnrw)/2+bil, 0, o2 );
+						g2.setPaint( gp );
+						val = (int)(th*fib/100.0);
+						g2.fillRect( (w+tnrw)/2-bil, (h+th)/2-val, bil, val );
+						val2 = (int)(th*fibo/3700.0);
 						g2.fillRect( (w+tnrw)/2, (h+th)/2-val2, bil, val2 );
 						
 						gp = new GradientPaint( (w+tnrw)/2-2*bil/3, 0, aGray1, (w+tnrw)/2, 0, aGray2 );
@@ -547,12 +598,15 @@ public class GraphPanel extends JTabbedPane {
 						g2.fillRoundRect( (15*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
 						g2.setColor( y1 );
 						g2.fillRoundRect( (15*w)/20, (2*this.getHeight())/25-hh/2, hh, hh, a, a );
+						g2.setColor( o1 );
+						g2.fillRoundRect( (11*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
 						
 						g2.setColor( Color.darkGray );
 						g2.drawRoundRect( (19*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
 						g2.drawRoundRect( (19*w)/20, (2*this.getHeight())/25-hh/2, hh, hh, a, a );
 						g2.drawRoundRect( (15*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
 						g2.drawRoundRect( (15*w)/20, (2*this.getHeight())/25-hh/2, hh, hh, a, a );
+						g2.drawRoundRect( (11*w)/20, (1*this.getHeight())/25-hh/2, hh, hh, a, a );
 						
 						g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/40 ) );
 						g2.setColor( Color.darkGray );
@@ -572,6 +626,10 @@ public class GraphPanel extends JTabbedPane {
 						else str = "Fat";
 						strw = g2.getFontMetrics().stringWidth(str);
 						g2.drawString(str, (15*w)/20-strw-hh/2, (2*this.getHeight())/25+hh/4 );
+						if( lang.equals("IS") ) str = "Trefjaefni";
+						else str = "Dietary fiber";
+						strw = g2.getFontMetrics().stringWidth(str);
+						g2.drawString(str, (11*w)/20-strw-hh/2, (1*this.getHeight())/25+hh/4 );
 					}
 				}
 			}
@@ -588,11 +646,11 @@ public class GraphPanel extends JTabbedPane {
 		String[] comb;
 		String[] cnames;
 		if( lang.equals("IS") ) {
-			comb = new String[] {"Alkóhól", "Prótein, alls", "Kolvetni, alls", "Fita, alls", "Steinefni, alls", "Vatn"};
-			cnames = new String[] {"Alkóhól", "Prótín", "Kolvetni", "Fita", "Steinefni", "Vatn"};
+			comb = new String[] {"Alkóhól", "Prótein, alls", "Kolvetni, alls", "Fita, alls", "Trefjaefni", "Steinefni, alls", "Vatn"};
+			cnames = new String[] {"Alkóhól", "Prótein", "Kolvetni", "Fita", "Trefjaefni", "Steinefni", "Vatn"};
 		} else {
-			comb = new String[] {"Alcohol, ethyl", "Protein", "Carbohydrate, by difference", "Total lipid (fat)", "Ash", "Water"};
-			cnames = new String[] {"Alcohol", "Protein", "Carbohydrades", "Fat", "Ash", "Water"};
+			comb = new String[] {"Alcohol, ethyl", "Protein", "Carbohydrate, by difference", "Total lipid (fat)", "Dietary fiber", "Ash", "Water"};
+			cnames = new String[] {"Alcohol", "Protein", "Carbohydrades", "Fat", "Dietary fiber", "Ash", "Water"};
 		}
 		
 		SkifuGraph perc = new SkifuGraph( "Hlutföll", comb, cnames, tables );

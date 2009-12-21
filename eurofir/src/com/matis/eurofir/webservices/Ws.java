@@ -13,6 +13,10 @@ public class Ws {
 		new Ws().FoodXML( args[0] );
 	}
 	
+	public boolean nullStr( String val ) {
+		return val == null || val.equals("null");
+	}
+	
 	public void FoodXML( String fnr ) {
 		if( fnr.length() == 1 ) fnr = "000"+fnr;
 		else if( fnr.length() == 2 ) fnr = "00"+fnr;
@@ -44,10 +48,10 @@ public class Ws {
 		p.println("</StandardVocabularies>");
 		
 		p.println("<SenderInformation>");
-        p.println("<Sender>Olafur Reykdal</Sender>");
-        p.println("<OrganisationName>Matis</OrganisationName>");
+        p.println("<Sender>Ólafur Reykdal</Sender>");
+        p.println("<OrganisationName>Matís</OrganisationName>");
         p.println("<SuperOrganisationName></SuperOrganisationName>");
-        p.println("<PostalAddress>Skulagata 4, 101 Reykjavik</PostalAddress>");
+        p.println("<PostalAddress>Skúlagata 4, 101 Reykjavik</PostalAddress>");
         p.println("<Country>IS</Country>");
         p.println("<Telephone>+354 422 5000</Telephone>");
         p.println("<Fax>+354 422 5001</Fax>");
@@ -106,7 +110,7 @@ public class Ws {
                 
                 p.println("<Components>");
                 //String subsql = "select c.EuroFIRComponentIdentifier, c.OriginalComponentCode, c.OriginalComponentName, c.EnglishComponentName from Component c, ComponentValue cv where cv.OriginalFoodCode="+fnr;
-                String subsql = "select c.EuroFIRComponentIdentifier, c.OriginalComponentCode, c.OriginalComponentName, c.EnglishComponentName, c.Unit, 'W' as MatrixUnit, cv.DateOfAnalysis, cv.MethodType, cv.MethodIndicator, cv.MethodParameter, cv.SelectedValue, cv.N, cv.Minimum, cv.Maximum, cv.StandardDeviation, cv.QI_Eurofir, cv.Remarks"
+                String subsql = "select c.EuroFIRComponentIdentifier, c.OriginalComponentCode, c.OriginalComponentName, c.EnglishComponentName, c.Unit, 'W' as MatrixUnit, cv.DateOfAnalysis, cv.MethodType, cv.MethodIndicator, cv.MethodParameter, cv.SelectedValue, cv.ValueType, cv.N, cv.Minimum, cv.Maximum, cv.StandardDeviation, cv.QI_Eurofir, cv.Remarks"
                 	+" from Component c, ComponentValue cv where c.OriginalComponentCode = cv.OriginalComponentCode and OriginalFoodCode = \""+fnr+"\"";
     			PreparedStatement subps = conn.prepareStatement(subsql);
     			ResultSet subrs = subps.executeQuery();
@@ -121,6 +125,7 @@ public class Ws {
     				String methodType = subrs.getString("MethodType");
     				String methodIndicator = subrs.getString("MethodIndicator");
     				String methodParameter = subrs.getString("MethodParameter");
+    				String valueType = subrs.getString("ValueType");
     				String selectedValue = subrs.getString("SelectedValue");
     				String numberOfAnalyses = subrs.getString("N");
     				String minimum = subrs.getString("Minimum");
@@ -131,17 +136,19 @@ public class Ws {
     				
     				p.println("<Component>");
     				
-    				eurocd = (eurocd == null) ? "" : eurocd;
-    				origcd = (origcd == null) ? "" : origcd;
-    				eurocd = (origcpnm == null) ? "" : origcpnm;
-    				eurocd = (engcpnm == null) ? "" : engcpnm;
+    				eurocd = nullStr(eurocd) ? "" : eurocd.trim();
+    				origcd = nullStr(origcd) ? "" : origcd.trim();
+    				origcpnm = nullStr(origcpnm) ? "" : origcpnm.trim();
+    				engcpnm = nullStr(engcpnm) ? "" : engcpnm.trim();
     				
-    				unit = (unit == null) ? "" : unit;
-    				matrixUnit = (matrixUnit == null) ? "" : matrixUnit;
-    				dateAnalysed = (dateAnalysed == null) ? "" : dateAnalysed;
-    				methodType = (methodType == null) ? "" : methodType;
-    				methodIndicator = (methodIndicator == null) ? "" : methodIndicator;
-    				methodParameter = (methodParameter == null) ? "" : methodParameter;
+    				unit = nullStr(unit) ? "" : unit;
+    				matrixUnit = nullStr(matrixUnit) ? "" : matrixUnit;
+    				dateAnalysed = nullStr(dateAnalysed) ? "" : dateAnalysed;
+    				methodType = nullStr(methodType) ? "" : methodType;
+    				methodIndicator = nullStr(methodIndicator) ? "" : methodIndicator;
+    				methodParameter = nullStr(methodParameter) ? "" : methodParameter;
+    				
+    				if( selectedValue.startsWith("<") ) selectedValue = "less than "+selectedValue.substring(1);
     				
                     p.println("<ComponentIdentifiers>");
                     p.println("<ComponentIdentifier system=\"ecompid\">");
@@ -164,21 +171,22 @@ public class Ws {
                     p.println("<Values>");
                     p.println("<Value unit=\""+unit+"\" matrixunit=\""+matrixUnit+"\" dateanalysed=\""+dateAnalysed+"\" methodtype=\""+methodType+"\" methodidentifier=\""+methodIndicator+"\" methodparameter=\""+methodParameter+"\">");
                     
-                    p.println("<SelectedValue valuetype=\"MN\">");
-                    p.println( selectedValue );
+                    valueType = nullStr(valueType) ? "" : valueType;
+                    p.println("<SelectedValue valuetype=\""+valueType+"\">");
+                    p.println( selectedValue.trim() );
                     p.println("</SelectedValue>");
                     
-                    minimum = (minimum == null) ? "<Minimum/>" : "<Minimum>"+minimum+"</Minimum>";
+                    minimum = nullStr(minimum) ? "<Minimum/>" : "<Minimum>"+minimum+"</Minimum>";
                     p.println(minimum);
-                    maximum = (maximum == null) ? "<Maximum/>" : "<Maximum>"+maximum+"</Maximum>";
+                    maximum = nullStr(maximum) ? "<Maximum/>" : "<Maximum>"+maximum+"</Maximum>";
                     p.println(maximum);
-                    standardDeviation = (standardDeviation == null) ? "<StandardDeviation/>" : "<StandardDeviation>"+standardDeviation+"</StandardDeviation>";
+                    standardDeviation = nullStr(standardDeviation) ? "<StandardDeviation/>" : "<StandardDeviation>"+standardDeviation+"</StandardDeviation>";
                     p.println(standardDeviation);
-                    numberOfAnalyses = (numberOfAnalyses == null) ? "<NoOfAnalyses/>" : "<NoOfAnalyses>"+numberOfAnalyses+"</NoOfAnalyses>";
+                    numberOfAnalyses = nullStr(numberOfAnalyses) ? "<NoOfAnalyses/>" : "<NoOfAnalyses>"+numberOfAnalyses+"</NoOfAnalyses>";
                     p.println(numberOfAnalyses);
-                    qualityIndex = (qualityIndex == null) ? "<QualityIndex/>" : "<QualityIndex>"+qualityIndex+"</QualityIndex>";
+                    qualityIndex = nullStr(qualityIndex) ? "<QualityIndex/>" : "<QualityIndex>"+qualityIndex+"</QualityIndex>";
                     p.println( qualityIndex );
-                    remarks = (remarks == null) ? "<Remarks/>" : "<Remarks>"+numberOfAnalyses+"</Remarks>";
+                    remarks = nullStr(remarks) ? "<Remarks/>" : "<Remarks>"+numberOfAnalyses+"</Remarks>";
                     p.println(remarks);
                     //p.println("<QualityIndex>"+qualityIndex+"</QualityIndex>");
                     //p.println("<Remarks>"+remarks+"</Remarks>");

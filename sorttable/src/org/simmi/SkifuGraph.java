@@ -24,9 +24,11 @@ public class SkifuGraph extends JComponent {
 	String[]	columnNames;
 	String[]	isNames;
 	Color[]		darker = {	new Color( 200, 100, 100 ), new Color( 100, 200, 100 ), new Color( 100, 100, 200 ), 
-							new Color( 200, 200, 100 ), new Color( 200, 100, 200 ), new Color( 100, 200, 200 ), new Color( 100, 100, 100 )};
+							new Color( 200, 200, 100 ), new Color( 200, 150, 50 ), new Color( 200, 100, 200 ), new Color( 100, 200, 200 ), 
+							new Color( 100, 100, 100 )};
 	Color[]		brighter = {new Color( 250, 150, 150 ), new Color( 150, 250, 150 ), new Color( 150, 150, 250 ),
-							new Color( 250, 250, 150 ), new Color( 250, 150, 250 ), new Color( 150, 250, 250 ), new Color( 150, 150, 150 )};
+							new Color( 250, 250, 150 ), new Color( 250, 180, 100 ), new Color( 250, 150, 250 ), new Color( 150, 250, 250 ), 
+							new Color( 150, 150, 150 )};
 	Map<String,String>	mm = new HashMap<String,String>();
 	List<Boolean>	using;
 	int w, h;
@@ -60,12 +62,14 @@ public class SkifuGraph extends JComponent {
 						using.set( 2, !using.get(2) );
 					} else if( p.y < (4*h)/25+hh/2 ) {
 						using.set( 3, !using.get(3) );
+					} else if( p.y < h-(4*h)/25+hh/2 ) {
+						using.set( 4, !using.get(4) );
 					} else if( p.y < h-(3*h)/25+hh/2 ) {
 						using.set( 5, !using.get(5) );
 					} else if( p.y < h-(2*h)/25+hh/2 ) {
-						using.set( 4, !using.get(4) );
-					} else if( p.y < h-(1*h)/25+hh/2 ) {
 						using.set( 6, !using.get(6) );
+					} else if( p.y < h-(1*h)/25+hh/2 ) {
+						using.set( 7, !using.get(7) );
 					}
 				}
 				
@@ -282,32 +286,32 @@ public class SkifuGraph extends JComponent {
 				int strw = g2.getFontMetrics().stringWidth(str);
 				g2.drawString(str, (19*w)/20-strw-hh/2, ((i+1)*this.getHeight())/25+hh/4 );
 			}
-			for( i = 4; i < 6; i++ ) {
+			for( i = 4; i < 7; i++ ) {
 				g2.setColor( darker[i] );
-				g2.fillRoundRect( (19*w)/20, h-((i-2)*h)/25-hh/2, hh, hh, a, a );
+				g2.fillRoundRect( (19*w)/20, h+((i-8)*h)/25-hh/2, hh, hh, a, a );
 				g2.setColor( Color.darkGray );
-				g2.drawRoundRect( (19*w)/20, h-((i-2)*h)/25-hh/2, hh, hh, a, a );
+				g2.drawRoundRect( (19*w)/20, h+((i-8)*h)/25-hh/2, hh, hh, a, a );
 				
 				if( !using.get(i) ) {
-					g2.drawLine((19*w)/20, h-((i-2)*h)/25-hh/2, (19*w)/20+hh, h-((i-2)*h)/25-hh/2+hh);
-					g2.drawLine((19*w)/20, h-((i-2)*h)/25-hh/2+hh, (19*w)/20+hh, h-((i-2)*h)/25-hh/2);
+					g2.drawLine((19*w)/20, h+((i-8)*h)/25-hh/2, (19*w)/20+hh, h+((i-8)*h)/25-hh/2+hh);
+					g2.drawLine((19*w)/20, h+((i-8)*h)/25-hh/2+hh, (19*w)/20+hh, h+((i-8)*h)/25-hh/2);
 				}
 				
 				String str = isNames[i];
 				int strw = g2.getFontMetrics().stringWidth(str);
-				g2.drawString(str, (19*w)/20-strw-hh/2, this.getHeight()-((i-2)*this.getHeight())/25+hh/4 );
+				g2.drawString(str, (19*w)/20-strw-hh/2, this.getHeight()+((i-8)*this.getHeight())/25+hh/4 );
 			}
 			g2.setColor( darker[i] );
-			g2.fillRoundRect( (19*w)/20, this.getHeight()-((i-5)*this.getHeight())/25-hh/2, hh, hh, a, a );
+			g2.fillRoundRect( (19*w)/20, this.getHeight()-((i-6)*this.getHeight())/25-hh/2, hh, hh, a, a );
 			g2.setColor( Color.darkGray );
-			g2.drawRoundRect( (19*w)/20, this.getHeight()-((i-5)*this.getHeight())/25-hh/2, hh, hh, a, a );
-			if( !using.get(6) ) {
+			g2.drawRoundRect( (19*w)/20, this.getHeight()-((i-6)*this.getHeight())/25-hh/2, hh, hh, a, a );
+			if( !using.get(7) ) {
 				g2.drawLine((19*w)/20, h-((1)*h)/25-hh/2, (19*w)/20+hh, h-((1)*h)/25-hh/2+hh);
 				g2.drawLine((19*w)/20, h-((1)*h)/25-hh/2+hh, (19*w)/20+hh, h-((1	)*h)/25-hh/2);
 			}				
 			String str = "Afgangur";
 			int strw = g2.getFontMetrics().stringWidth(str);
-			g2.drawString(str, (19*w)/20-strw-hh/2, this.getHeight()-((i-5)*this.getHeight())/25+hh/4 );
+			g2.drawString(str, (19*w)/20-strw-hh/2, this.getHeight()-((i-6)*this.getHeight())/25+hh/4 );
 		}
 	}
 }
