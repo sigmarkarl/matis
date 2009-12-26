@@ -1,0 +1,9 @@
+<env:Envelope xmlns:env="http://schemas.xmlsoap.org/soap/envelope/">
+<env:Body>
+<EuroFIRServiceMDTPResponse xmlns="http://eurofir.webservice.namespace">
+<EuroFIRMetaDataTransportPackage>
+<!--put your data here-->
+</EuroFIRMetaDataTransportPackage>
+</EuroFIRServiceMDTPResponse>
+</env:Body>
+</env:Envelope>

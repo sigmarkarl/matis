@@ -42,8 +42,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.imageio.ImageIO;
@@ -92,6 +94,8 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
+import kingroup_v2.kinship.KinshipREstimator;
+
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
@@ -99,6 +103,7 @@ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -106,6 +111,10 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class Fiskur extends JApplet {
 	JComponent 		c;
+	
+	final Color		myred = new Color(200,100,100);
+	final Color		myyellow = new Color(200,200,100);
+	final Color		mygreen = new Color(100,200,100);
 	
 	List<String> 	markers = new ArrayList<String>();
 	List<Fish>		fishes = new ArrayList<Fish>();
@@ -156,9 +165,62 @@ public class Fiskur extends JApplet {
     
     boolean			d3 = true;	
 	boolean 		showing = true;
+	
+	List<Map<Integer,Integer>>	freq = new ArrayList<Map<Integer,Integer>>();
+	int							freqcount = 0;
+	int							curInd = 1;
+	JSplitPane 					splitpane;
 
-	JSplitPane splitpane;
-
+	public static int delta(int i, int j) {
+		return (i == j) ? 1 : 0;
+	}
+	
+	public double calcAsym() {
+		int mr = malefish.size();
+		int fr = femalefish.size();
+		int cl = markers.size();
+		
+		//SysAlleleFreq freq = pop.getFreq();
+		for (int i = 0; i < fr; i++) {
+			//Fish n1 = femalefish.get(i);
+			//float  ff = ffactor.get(i);
+			for (int k = 0; k < mr; k++) {
+				//Fish n2 = malefish.get(k);
+				//float  mf = mfactor.get(k);
+				double sum = 0;
+				double sumW = 0;
+				for (int u = 0; u < cl; u+=2) {
+					int a = fmatrix[i * cl + u];
+					int b = fmatrix[i * cl + u + 1];
+					int c = mmatrix[k * cl + u];
+					int d = mmatrix[k * cl + u + 1];
+					if (a == -1 || b == -1 || c == -1 || d == -1)
+					  continue; //ignore
+			
+					// PRECOND: (x != -1 || x2 != -1) && (y != -1 || y2 != -1)
+					
+					Map<Integer,Integer>	fmap = freq.get(u);
+					
+					double pa = fmap.containsKey(a) ? fmap.get(a)/freqcount : 0.0;
+					double pb = fmap.containsKey(b) ? fmap.get(b)/freqcount : 0.0;
+					
+					double top = pa * (delta(b, c) + delta(b, d)) + pb * (delta(a, c) + delta(a, d)) - 4. * pa * pb;
+					double bot = 2. * pa * pb;
+					double w = (1. + delta(a, b)) * (pa + pb) - 4. * pa * pb;
+					if ((float)bot == 0f)
+					  return KinshipREstimator.ERROR_VALUE;
+					sum += top / bot;
+					sumW += w / bot;
+			    }
+			    if ((float)sumW == 0f)
+			      return KinshipREstimator.ERROR_VALUE;
+			    
+			    double val = sum / sumW;
+			}
+		}
+	    return 0.0;
+	}
+ 
 	public Fiskur() {
 		super();
 
@@ -324,6 +386,10 @@ public class Fiskur extends JApplet {
 
 		int f = 0;
 		int m = 0;
+		
+		for( int i = 0; i < c; i++ ) {
+			freq.add( new HashMap<Integer,Integer>() );
+		}
 
 		for (int i = 0; i < r; i++) {
 			vals = split[i + 1].split("\\t");
@@ -331,12 +397,26 @@ public class Fiskur extends JApplet {
 			String val = vals[0];
 			if( val.equalsIgnoreCase("female") || val.equals(startstr) ) {
 				for (int k = 0; k < c; k++) {
-					fmatrix[f * c + k] = Integer.parseInt(vals[k + start]);
+					Map<Integer,Integer> fmap = freq.get(k);
+					int ival = Integer.parseInt(vals[k + start]);
+					int value = 1;
+					if( fmap.containsKey(ival) ) value = fmap.get(ival);
+						
+					fmap.put(ival, value);
+					freqcount++;
+					fmatrix[f * c + k] = ival;
 				}
 				f++;
 			} else {
 				for (int k = 0; k < c; k++) {
-					mmatrix[m * c + k] = Integer.parseInt(vals[k + start]);
+					Map<Integer,Integer> fmap = freq.get(k);
+					int ival = Integer.parseInt(vals[k + start]);
+					int value = 1;
+					if( fmap.containsKey(ival) ) value = fmap.get(ival);
+						
+					fmap.put(ival, value);
+					freqcount++;
+					mmatrix[m * c + k] = ival;
 				}
 				m++;
 			}
@@ -349,13 +429,20 @@ public class Fiskur extends JApplet {
 		int 	rank;
 		float	factor;
 		double	khrank;
+		double	lrm;
 
-		public Tuple(Fish f1, Fish f2, int r, float f, double khr) {
+		public Tuple(Fish f1, Fish f2, int r, float f, double khr, double lrmval) {
 			male = f2;
 			female = f1;
 			rank = r;
 			factor = f;
 			khrank = khr;
+			lrm = lrmval;
+		}
+		
+		public double current() {
+			if( curInd == 0 ) return khrank;
+			else return lrm;
 		}
 
 		@Override
@@ -428,6 +515,13 @@ public class Fiskur extends JApplet {
 				float  mf = mfactor.get(k);
 				int rank = 0;
 				double sum = 0;
+				
+				double sum1 = 0.0;
+				double sumW1 = 0.0;
+				double sum2 = 0.0;
+				double sumW2 = 0.0;
+				//double val = 0.0;
+				double lrm = -1.0;
 				for (int u = 0; u < cl; u+=2) {
 					int a = fmatrix[i * cl + u];
 					int b = fmatrix[i * cl + u + 1];
@@ -435,6 +529,33 @@ public class Fiskur extends JApplet {
 					int d = mmatrix[k * cl + u + 1];
 					rank += Math.abs(a - c);
 					rank += Math.abs(b - d);
+					
+					int L = u/2;
+					Map<Integer,Integer>	fmap = freq.get( L );
+					double pa = fmap.containsKey(a) ? (double)fmap.get(a)/(double)freqcount : 0.0;
+					double pb = fmap.containsKey(b) ? (double)fmap.get(b)/(double)freqcount : 0.0;
+					double pc = fmap.containsKey(c) ? (double)fmap.get(c)/(double)freqcount : 0.0;
+					double pd = fmap.containsKey(d) ? (double)fmap.get(d)/(double)freqcount : 0.0;
+					
+					double top1 = pa * (delta(b, c) + delta(b, d)) + pb * (delta(a, c) + delta(a, d)) - 4. * pa * pb;
+					double bot1 = 2. * pa * pb;
+					double w1 = (1. + delta(a, b)) * (pa + pb) - 4. * pa * pb;
+					if ((float)bot1 == 0f) {
+						lrm = KinshipREstimator.ERROR_VALUE;
+						//break;
+					}
+					sum1 += top1 / bot1;
+					sumW1 += w1 / bot1;
+					
+					double top2 = pc * (delta(d, a) + delta(d, b)) + pd * (delta(c, a) + delta(c, b)) - 4. * pc * pd;
+					double bot2 = 2. * pc * pd;
+					double w2 = (1. + delta(c, d)) * (pc + pd) - 4. * pc * pd;
+					if ((float)bot2 == 0f) {
+						lrm = KinshipREstimator.ERROR_VALUE;
+						//break;
+					}
+					sum2 += top2 / bot2;
+					sumW2 += w2 / bot2;
 					
 					double x2 = (a == b ? 4: 2); // sum_j x_j^2
 				    double y2 = (c == d ? 4: 2); // sum_j y_j^2
@@ -445,10 +566,21 @@ public class Fiskur extends JApplet {
 				    double dist = x2 - 2. * xy + y2;
 				    sum += dist;
 				}
+				
+				if( lrm == -1.0 ) {
+					double s1 = sum1/sumW1;
+					double s2 = sum2/sumW2;
+					
+					if( s1 == Double.MAX_VALUE || s2 == Double.MAX_VALUE ) lrm = Double.MAX_VALUE;
+					else {
+						lrm = (s1 + s2)/2.0;
+					}
+				}
+				
 				double dij = sum / (2. * cl);
 				double val = 1.0 - dij/h;
 				System.err.println( i + "  " + k + "   " + dij + "  " + val );
-				tupleList.add( new Tuple(n1, n2, rank, mf+ff, val) );
+				tupleList.add( new Tuple(n1, n2, rank, mf+ff, val, lrm) );
 			}
 		}
 		//unsortedTupleList = tupleList;
@@ -587,7 +719,7 @@ public class Fiskur extends JApplet {
 				
 				if( val >= 0 && val < tupleList.size() ) {
 					Tuple tup = tupleList.get( val );
-					return tup.khrank;
+					return tup.current();
 				}
 				
 				return -1.0;
@@ -651,7 +783,7 @@ public class Fiskur extends JApplet {
 				//int rval = table.convertRowIndexToModel( val );
 				if( val >= 0 && val < tupleList.size() ) {
 					Tuple tup = tupleList.get( val );
-					return tup.khrank;
+					return tup.current();
 				}
 				
 				return -1.0;
@@ -1068,22 +1200,77 @@ public class Fiskur extends JApplet {
 		ButtonGroup		bg = new ButtonGroup();
 		bg.add( kenheg );
 		bg.add( maxlik );
+		maxlik.setSelected( true );
 		
 		final JButton	importbutton = new JButton();
 		final JButton	xlbutton = new JButton();
 		final JButton	kgbutton = new JButton();
 		
-		kenheg.setAction( new AbstractAction("Kenelov&Heg") {
+		kenheg.setAction( new AbstractAction("Konovalov&Heg (2008)") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				curInd = 0;
 				
+				//JTable table = 
+				
+				JComponent supcomp = (JComponent)Fiskur.this.splitpane.getLeftComponent();
+				for( Component comp1 : supcomp.getComponents() ) {
+					if( comp1 instanceof JTabbedPane ) {
+						comp1 = ((JTabbedPane)comp1).getSelectedComponent();
+						if( comp1 instanceof JScrollPane ) {
+							JScrollPane scroll = (JScrollPane)comp1;
+							Component comp2 = scroll.getViewport().getView();
+							if( comp2 instanceof JTable ) {
+								JTable table = (JTable)comp2;
+								table.tableChanged( new TableModelEvent(table.getModel()) );
+							}
+						}
+						break;
+					}
+				}
+				
+				Component comp1 = ((JTabbedPane)Fiskur.this.splitpane.getRightComponent()).getSelectedComponent();
+				if( comp1 instanceof JScrollPane ) {
+					JScrollPane scroll = (JScrollPane)comp1;
+					Component comp2 = scroll.getViewport().getView();
+					if( comp2 instanceof JTable ) {
+						JTable table = (JTable)comp2;
+						table.tableChanged( new TableModelEvent(table.getModel()) );
+					}
+				}
 			}
 		});
 		
-		maxlik.setAction( new AbstractAction("Maximum likelihood") {
+		maxlik.setAction( new AbstractAction("Lynch&Ritland (1999)") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				curInd = 1;
 				
+				JComponent supcomp = (JComponent)Fiskur.this.splitpane.getLeftComponent();
+				for( Component comp1 : supcomp.getComponents() ) {
+					if( comp1 instanceof JTabbedPane ) {
+						comp1 = ((JTabbedPane)comp1).getSelectedComponent();
+						if( comp1 instanceof JScrollPane ) {
+							JScrollPane scroll = (JScrollPane)comp1;
+							Component comp2 = scroll.getViewport().getView();
+							if( comp2 instanceof JTable ) {
+								JTable table = (JTable)comp2;
+								table.tableChanged( new TableModelEvent(table.getModel()) );
+							}
+						}
+						break;
+					}
+				}
+
+				Component comp1 = ((JTabbedPane)Fiskur.this.splitpane.getRightComponent()).getSelectedComponent();
+				if( comp1 instanceof JScrollPane ) {
+					JScrollPane scroll = (JScrollPane)comp1;
+					Component comp2 = scroll.getViewport().getView();
+					if( comp2 instanceof JTable ) {
+						JTable table = (JTable)comp2;
+						table.tableChanged( new TableModelEvent(table.getModel()) );
+					}
+				}
 			}
 		});
 		
@@ -1349,9 +1536,9 @@ public class Fiskur extends JApplet {
 					Object obj = this.getValueAt(row, column);
 					if( column == 3 && obj instanceof Double ) {
 						double val = (Double)this.getValueAt(row, column);
-						if( val < 0.03 ) c.setBackground( Color.red );
-						else if( val < 0.06 ) c.setBackground( Color.yellow );
-						else c.setBackground( Color.green );
+						if( val < 0.03 ) c.setBackground( mygreen );
+						else if( val < 0.06 ) c.setBackground( myyellow );
+						else c.setBackground( myred );
 					} else {
 						if( sel ) c.setBackground( origSelectColor );
 						else {
@@ -1424,7 +1611,7 @@ public class Fiskur extends JApplet {
 					if (arg1 == 1)
 						return t.female.name;
 					else if(arg1 == 3)
-						return t.khrank;
+						return t.current();
 					else if(arg1 == 2)
 						return t.factor;
 				}
@@ -1985,9 +2172,9 @@ public class Fiskur extends JApplet {
 				Object obj = this.getValueAt(row, column);
 				if( obj instanceof Double ) {
 					double val = (Double)this.getValueAt(row, column);
-					if( val < 0.03 ) c.setBackground( Color.red );
-					else if( val < 0.06 ) c.setBackground( Color.yellow );
-					else c.setBackground( Color.green );
+					if( val < 0.03 ) c.setBackground( mygreen );
+					else if( val < 0.06 ) c.setBackground( myyellow );
+					else c.setBackground( myred );
 				} else {
 					c.setBackground( origColor );
 					//System.err.println( obj + "  " + this.getModel().getColumnClass(column) );
@@ -2071,7 +2258,7 @@ public class Fiskur extends JApplet {
 					return t.male.name;
 				}
 				else if( columnIndex == 1 ) return t.factor;
-				else if( columnIndex == 2 ) return t.khrank;
+				else if( columnIndex == 2 ) return t.current();
 				
 				return "";
 			}
@@ -2124,9 +2311,9 @@ public class Fiskur extends JApplet {
 					Object obj = this.getValueAt(row, column);
 					if( column == 2 && obj instanceof Double ) {
 						double val = (Double)this.getValueAt(row, column);
-						if( val < 0.03 ) c.setBackground( Color.red );
-						else if( val < 0.06 ) c.setBackground( Color.yellow );
-						else c.setBackground( Color.green );
+						if( val < 0.03 ) c.setBackground( mygreen );
+						else if( val < 0.06 ) c.setBackground( myyellow );
+						else c.setBackground( myred );
 					} else {
 						if( sel ) c.setBackground( origSelectColor );
 						else {
@@ -2487,17 +2674,37 @@ public class Fiskur extends JApplet {
 	public void writeWorkbook( XSSFWorkbook wb ) {
 		XSSFSheet sheet = wb.createSheet("Fish");
 		XSSFRow row = sheet.createRow(0);
+		
+		XSSFFont	font = wb.createFont();
+		font.setBold( true );
+		
+		CellStyle boldstyle = wb.createCellStyle();
+	    boldstyle.setFont( font );
+	    
 		XSSFCell cell = row.createCell(0);
 		cell.setCellValue( "Name" );
+		cell.setCellStyle( boldstyle );
 		cell = row.createCell(1);
 		cell.setCellValue( "Gender" );
+		cell.setCellStyle( boldstyle );
 		cell = row.createCell(2);
 		cell.setCellValue( "Weight" );
+		cell.setCellStyle( boldstyle );
 		cell = row.createCell(3);
 		cell.setCellValue( "Room" );
+		cell.setCellStyle( boldstyle );
+		
+		int i = 4;
+		for( String marker : markers ) {
+			cell = row.createCell(++i);
+			cell.setCellValue( marker );
+			cell.setCellStyle( boldstyle );
+		}
 		
 		int r = 0;
 		for( Fish male : malefish ) {
+			int start = r*markers.size();
+			
 			row = sheet.createRow(++r);
 			cell = row.createCell(0);
 			cell.setCellValue( male.name );
@@ -2507,9 +2714,16 @@ public class Fiskur extends JApplet {
 			cell.setCellValue( male.weight );
 			cell = row.createCell(3);
 			cell.setCellValue( male.loc );
+			
+			for( i = 0; i < markers.size(); i++ ) {
+				cell = row.createCell(i+5);
+				cell.setCellValue( mmatrix[i+start] );
+			}
 		}
-		
+		int femr = 0;
 		for( Fish female : femalefish ) {
+			int start = (femr++)*markers.size();
+			
 			row = sheet.createRow(++r);
 			cell = row.createCell(0);
 			cell.setCellValue( female.name );
@@ -2519,11 +2733,16 @@ public class Fiskur extends JApplet {
 			cell.setCellValue( female.weight );
 			cell = row.createCell(3);
 			cell.setCellValue( female.loc );
+			
+			for( i = 0; i < markers.size(); i++ ) {
+				cell = row.createCell(i+5);
+				cell.setCellValue( fmatrix[i+start] );
+			}
 		}
 		
 		sheet = wb.createSheet("Male Genotypes");
 		row = sheet.createRow(0);
-		int i = 0;
+		i = 0;
 		for( String marker : markers ) {
 			cell = row.createCell(++i);
 			cell.setCellValue( marker );
@@ -2564,15 +2783,15 @@ public class Fiskur extends JApplet {
 		}
 		
 		CellStyle greenstyle = wb.createCellStyle();
-	    greenstyle.setFillForegroundColor(IndexedColors.GREEN.getIndex());
+	    greenstyle.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
 	    greenstyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
 	    
 	    CellStyle yellowstyle = wb.createCellStyle();
-	    yellowstyle.setFillForegroundColor(IndexedColors.YELLOW.getIndex());
+	    yellowstyle.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
 	    yellowstyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
 	    
 	    CellStyle redstyle = wb.createCellStyle();
-	    redstyle.setFillForegroundColor(IndexedColors.RED.getIndex());
+	    redstyle.setFillForegroundColor(IndexedColors.LIGHT_ORANGE.getIndex());
 	    redstyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
 
 		
@@ -2583,10 +2802,12 @@ public class Fiskur extends JApplet {
 		cell = row.createCell(1);
 		cell.setCellValue("Female");
 		cell = row.createCell(2);
-		cell.setCellValue("Konolov&Heg(2008)");
+		cell.setCellValue("LRM(1999)");
 		cell = row.createCell(3);
-		cell.setCellValue("Simmi");
-		cell = row.createCell(4);
+		cell.setCellValue("Konolov&Heg(2008)");
+		//cell = row.createCell(4);
+		//cell.setCellValue("Simmi");
+		cell = row.createCell(5);
 		cell.setCellValue("Performance factor");
 		
 		i = 0;
@@ -2597,17 +2818,26 @@ public class Fiskur extends JApplet {
 			cell = row.createCell(1);
 			cell.setCellValue(t.female.name);
 			cell = row.createCell(2);
+			cell.setCellValue(t.lrm);
+			if( t.lrm < 0.03 ) {
+				cell.setCellStyle( greenstyle );
+			} else if( t.lrm < 0.06 ) {
+				cell.setCellStyle( yellowstyle );
+			} else {
+				cell.setCellStyle( redstyle );
+			}
+			cell = row.createCell(3);
 			cell.setCellValue(t.khrank);
-			if( t.khrank < 0.03 ) {
+			/*if( t.khrank < 0.03 ) {
 				cell.setCellStyle( redstyle );
 			} else if( t.khrank < 0.06 ) {
 				cell.setCellStyle( yellowstyle );
 			} else {
 				cell.setCellStyle( greenstyle );
-			}
-			cell = row.createCell(3);
-			cell.setCellValue(t.rank);
-			cell = row.createCell(4);
+			}*/
+			//cell = row.createCell(4);
+			//cell.setCellValue(t.rank);
+			cell = row.createCell(5);
 			cell.setCellValue(t.factor);
 		}
 		
@@ -2628,13 +2858,13 @@ public class Fiskur extends JApplet {
 				cell.setCellValue(t.female.name);
 			}
 			cell = row.createCell(++cl);
-			cell.setCellValue(t.khrank);
-			if( t.khrank < 0.03 ) {
-				cell.setCellStyle( redstyle );
-			} else if( t.khrank < 0.06 ) {
+			cell.setCellValue(t.lrm);
+			if( t.lrm < 0.03 ) {
+				cell.setCellStyle( greenstyle );
+			} else if( t.lrm < 0.06 ) {
 				cell.setCellStyle( yellowstyle );
 			} else {
-				cell.setCellStyle( greenstyle );
+				cell.setCellStyle( redstyle );
 			}
 		}
 		
@@ -2822,6 +3052,48 @@ public class Fiskur extends JApplet {
 				}
 			}
 			wr = ws.getRow( i++ );
+		}
+		
+		initFreqs();
+	}
+	
+	public void initFreqs() {
+		freq.clear();		
+		
+		int rm = mmatrix.length/markers.size();
+		int rf = fmatrix.length/markers.size();
+		
+		freqcount = (rm + rf)*2;
+		
+		for( int i = 0; i < markers.size()/2; i++ ) {
+			Map<Integer,Integer> fmap = new HashMap<Integer,Integer>();
+			freq.add( fmap );
+			
+			for( int r = 0; r < rm; r++ ) {
+				int v1 = mmatrix[ r*markers.size()+i*2 ];
+				int v2 = mmatrix[ r*markers.size()+i*2+1 ];
+				
+				int val = 0;
+				if( fmap.containsKey(v1) ) val = fmap.get(v1);	
+				fmap.put(v1, val+1);
+				
+				val = 0;
+				if( fmap.containsKey(v2) ) val = fmap.get(v2);	
+				fmap.put(v2, val+1);
+			}
+			
+			for( int r = 0; r < rf; r++ ) {
+				int v1 = fmatrix[ r*markers.size()+i*2 ];
+				int v2 = fmatrix[ r*markers.size()+i*2+1 ];
+				
+				int val = 0;
+				if( fmap.containsKey(v1) ) val = fmap.get(v1);	
+				fmap.put(v1, val+1);
+				
+				val = 0;
+				if( fmap.containsKey(v2) ) val = fmap.get(v2);	
+				fmap.put(v2, val+1);
+			}
 		}
 	}
 	
