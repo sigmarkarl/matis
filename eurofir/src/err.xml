@@ -1,0 +1,17 @@
+<env:Envelope xmlns:env="http://schemas.xmlsoap.org/soap/envelope/">
+<env:Body>
+<env:Fault xmlns:flt="http://www.w3.org/2003/05/soap-envelope">
+<faultcode>env:SOAP standard fault code (like e.g. env:Server)</faultcode>
+<faultstring>Some Web service error message (like e.g. Invalid message signature
+checking)</faultstring>
+<detail>
+<EuroFIRServiceFault:EuroFIRServiceFault
+xmlns:EuroFIRServiceFault="http://eurofir.webservice.namespace"
+xmlns="http://eurofir.webservice.namespace">
+<errorcode>Web service errorcode (like e.g. E2022)</errorcode>
+<reason>Some detailed error description</reason>
+</EuroFIRServiceFault:EuroFIRServiceFault>
+</detail>
+</env:Fault>
+</env:Body>
+</env:Envelope>

@@ -3,6 +3,7 @@ package org.simmi;
 import java.awt.BorderLayout;
 import java.awt.Desktop;
 import java.awt.FlowLayout;
+import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -16,10 +17,14 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
+import javax.swing.ImageIcon;
 import javax.swing.JApplet;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -30,8 +35,11 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.RowFilter;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.event.RowSorterEvent;
+import javax.swing.event.RowSorterListener;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
@@ -42,7 +50,8 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class Fasteign extends JApplet {
-	TableRowSorter<TableModel>	currentSorter;
+	MySorter	currentSorter;
+	Image		xlimg;
 	
 	static Map<String,Integer>	mmap = new HashMap<String,Integer>();
 	
@@ -223,7 +232,63 @@ public class Fasteign extends JApplet {
 		}
 	}
 	
-	public void createModels( JTable table, JTable ptable ) {
+	public class MyFilter extends RowFilter<TableModel,Integer> {
+		String			filterText;
+		int				fInd = 0;
+		Set<String> 	cropped = new HashSet<String>();
+		TableModel		leftModel;
+		
+		public MyFilter( TableModel leftModel ) {
+			super();
+			this.leftModel = leftModel;
+		}
+		
+		public boolean include( javax.swing.RowFilter.Entry<? extends TableModel, ? extends Integer> entry ) {
+			String gval = (String)leftModel.getValueAt(entry.getIdentifier(), 0);
+			String val = fInd == 0 ? gval : (String)leftModel.getValueAt(entry.getIdentifier(), 1);
+			if (filterText != null) {
+				if (val != null) {
+					boolean b = val.matches(filterText);
+					//if( b ) System.err.println( val + "  " + filterText + "  " + b );
+					return b;
+				}
+				return false;
+			} else {
+				boolean b = cropped.contains(gval);
+				if (b)
+					return false;
+			}
+			return true;
+		}
+	};
+	
+	public class MySorter extends TableRowSorter<TableModel> {
+		public MySorter( TableModel model ) {
+			super( model );
+		}
+		
+		public int convertRowIndexToModel(int index) {
+			return currentSorter.convertRowIndexToModelSuper(index);
+		}
+
+		public int convertRowIndexToView(int index) {
+			return currentSorter.convertRowIndexToViewSuper(index);
+		}
+		
+		public int convertRowIndexToModelSuper(int index) {
+			return super.convertRowIndexToModel( index );
+		}
+
+		public int convertRowIndexToViewSuper(int index) {
+			return super.convertRowIndexToView( index );
+		}
+
+		public void setRowFilter(MyFilter filter) {
+			super.setRowFilter( filter );
+		}
+	}
+	
+	public void createModels( final JTable table, final JTable ptable ) {
 		TableModel model = new TableModel() {
 			@Override
 			public void addTableModelListener(TableModelListener l) {}
@@ -290,6 +355,18 @@ public class Fasteign extends JApplet {
 			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {}
 		};
 		table.setModel( model );
+		final MySorter	rowSorter = new MySorter( model );
+		table.setRowSorter( rowSorter );
+		
+		rowSorter.addRowSorterListener( new RowSorterListener() {
+			@Override
+			public void sorterChanged(RowSorterEvent e) {
+				currentSorter = rowSorter;
+				ptable.repaint();
+			}
+		});
+		
+		currentSorter = rowSorter;
 		
 		TableModel	pmodel = new TableModel() {
 			@Override
@@ -366,6 +443,16 @@ public class Fasteign extends JApplet {
 			}
 		};
 		ptable.setModel( pmodel );
+		final MySorter	prowSorter = new MySorter( pmodel );
+		ptable.setRowSorter( prowSorter );
+
+		prowSorter.addRowSorterListener( new RowSorterListener() {
+			@Override
+			public void sorterChanged(RowSorterEvent e) {
+				currentSorter = prowSorter;
+				table.repaint();
+			}
+		});
 	}
 	
 	public void excelExport() throws IOException {
@@ -395,6 +482,16 @@ public class Fasteign extends JApplet {
 		}
 		wb.write( new FileOutputStream(f) );
 		Desktop.getDesktop().open( f );
+	}
+	
+	public Fasteign() {
+		URL url = this.getClass().getResource("/xlsx.png");
+		try {
+			xlimg = ImageIO.read(url);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	List<Ibud>	iblist = new ArrayList<Ibud>();
@@ -472,14 +569,12 @@ public class Fasteign extends JApplet {
 				}
 			}
 		});
+		excelbutton.setIcon( new ImageIcon(xlimg.getScaledInstance(24,24, Image.SCALE_SMOOTH)) );
 		botcomp.add( excelbutton );
 		
 		final JTable		table = new JTable();
 		final JTable		ptable = new JTable();
 		ptable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
-		
-		TableRowSorter<TableModel>	rowSorter = new TableRowSorter<TableModel>();
-		table.setRowSorter(sorter)
 		
 		JButton			button = new JButton( new AbstractAction("Leita") {
 			@Override
