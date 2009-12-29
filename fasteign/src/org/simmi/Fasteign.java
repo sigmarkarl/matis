@@ -2,6 +2,7 @@ package org.simmi;
 
 import java.awt.BorderLayout;
 import java.awt.Desktop;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
@@ -16,6 +17,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -38,9 +40,15 @@ import javax.swing.JTextField;
 import javax.swing.RowFilter;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.RowSorterEvent;
 import javax.swing.event.RowSorterListener;
+import javax.swing.event.TableColumnModelEvent;
+import javax.swing.event.TableColumnModelListener;
+import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
@@ -52,6 +60,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 public class Fasteign extends JApplet {
 	MySorter	currentSorter;
 	Image		xlimg;
+	JTable		medtable;
 	
 	static Map<String,Integer>	mmap = new HashMap<String,Integer>();
 	
@@ -453,6 +462,69 @@ public class Fasteign extends JApplet {
 				table.repaint();
 			}
 		});
+		
+		//medtable.tableChanged( new TableModelEvent( medtable.getModel() ) );
+		medtable.setModel( new TableModel() {
+			@Override
+			public void addTableModelListener(TableModelListener l) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public Class<?> getColumnClass(int columnIndex) {
+				return Double.class;
+			}
+
+			@Override
+			public int getColumnCount() {
+				return ptable.getColumnCount();
+			}
+
+			@Override
+			public String getColumnName(int columnIndex) {
+				return null;
+			}
+
+			@Override
+			public int getRowCount() {
+				return 2;
+			}
+
+			@Override
+			public Object getValueAt(int rowIndex, int columnIndex) {
+				TableModel	pmodel = ptable.getModel();
+				if( pmodel != null ) {
+					double 	retval = 0.0;
+					int		r = ptable.getRowCount();
+					for( int i = 0; i < r; i++ ) {
+						double val = (Double)ptable.getValueAt( i, columnIndex );
+						retval += val;
+					}
+					return retval/r;
+				}
+				
+				return -1.0;
+			}
+
+			@Override
+			public boolean isCellEditable(int rowIndex, int columnIndex) {
+				// TODO Auto-generated method stub
+				return false;
+			}
+
+			@Override
+			public void removeTableModelListener(TableModelListener l) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+				// TODO Auto-generated method stub
+				
+			}
+		});
 	}
 	
 	public void excelExport() throws IOException {
@@ -618,8 +690,56 @@ public class Fasteign extends JApplet {
 		scrollpane.setViewportView( table );
 		pricepane.setViewportView( ptable );
 		
+		ptable.getColumnModel().addColumnModelListener( new TableColumnModelListener() {
+			@Override
+			public void columnSelectionChanged(ListSelectionEvent e) {}
+			
+			@Override
+			public void columnRemoved(TableColumnModelEvent e) {}
+			
+			@Override
+			public void columnMoved(TableColumnModelEvent e) {}
+			
+			@Override
+			public void columnMarginChanged(ChangeEvent e) {
+				Enumeration<TableColumn> tcs = table.getColumnModel().getColumns();
+				int i = 0;
+				while (tcs.hasMoreElements()) {
+					TableColumn tc = tcs.nextElement();
+					topTable.getColumnModel().getColumn(i++).setPreferredWidth(tc.getPreferredWidth());
+				}
+				
+
+					public void columnMoved(TableColumnModelEvent e) {
+						topTable.moveColumn(e.getFromIndex(), e.getToIndex());
+					}
+
+					public void columnRemoved(TableColumnModelEvent e) {}
+
+					public void columnSelectionChanged(ListSelectionEvent e) {
+					}
+				});
+			}
+			
+			@Override
+			public void columnAdded(TableColumnModelEvent e) {}
+		});
+		
+		medtable = new JTable();
+		medtable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
+		JScrollPane	medscroll = new JScrollPane( medtable );
+		medtable.setTableHeader( null );
+		medscroll.setPreferredSize( new Dimension(100,45) );
+		
+		JComponent	comp = new JComponent() {
+			
+		};
+		comp.setLayout( new BorderLayout() );
+		comp.add( pricepane );
+		comp.add( medscroll, BorderLayout.SOUTH );
+		
 		splitpane.setLeftComponent( scrollpane );
-		splitpane.setRightComponent( pricepane );
+		splitpane.setRightComponent( comp );
 		
 		this.add(splitpane);
 		
