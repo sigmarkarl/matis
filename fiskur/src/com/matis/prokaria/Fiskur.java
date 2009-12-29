@@ -106,6 +106,8 @@ import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import com.matis.prokaria.FishWorker.Fish;
+
 
 public class Fiskur extends JApplet {
 	JComponent 		c;
@@ -114,22 +116,11 @@ public class Fiskur extends JApplet {
 	final Color		myyellow = new Color(200,200,100);
 	final Color		mygreen = new Color(100,200,100);
 	
-	List<String> 	markers = new ArrayList<String>();
-	List<Fish>		fishes = new ArrayList<Fish>();
-	List<Fish> 		malefish = new ArrayList<Fish>();
-	List<Fish> 		femalefish = new ArrayList<Fish>();
-	List<Float>		ffactor = new ArrayList<Float>();
-	List<Float>		mfactor = new ArrayList<Float>();
-	
 	List<Integer>	maleindices = new ArrayList<Integer>();
 	List<Integer>	femaleindices = new ArrayList<Integer>();
 	
-	int[]			matrix;
-	int[] 			mmatrix;
-	int[] 			fmatrix;
-	List<Tuple> 	tupleList;
 	//List<Tuple> unsortedTupleList;
-	List<Tuple>		tuples = new ArrayList<Tuple>();
+	List<FishWorker.Tuple>		tuples = new ArrayList<FishWorker.Tuple>();
 	
 	final Color darkGray = new Color(230, 230, 230);
 	final Color lightGray = new Color(250, 250, 250);
@@ -163,65 +154,13 @@ public class Fiskur extends JApplet {
     
     boolean			d3 = true;	
 	boolean 		showing = true;
-	
-	List<Map<Integer,Integer>>	freq = new ArrayList<Map<Integer,Integer>>();
-	int							freqcount = 0;
-	int							curInd = 1;
-	JSplitPane 					splitpane;
-
-	public static int delta(int i, int j) {
-		return (i == j) ? 1 : 0;
-	}
-	
-	public double calcAsym() {
-		int mr = malefish.size();
-		int fr = femalefish.size();
-		int cl = markers.size();
-		
-		//SysAlleleFreq freq = pop.getFreq();
-		for (int i = 0; i < fr; i++) {
-			//Fish n1 = femalefish.get(i);
-			//float  ff = ffactor.get(i);
-			for (int k = 0; k < mr; k++) {
-				//Fish n2 = malefish.get(k);
-				//float  mf = mfactor.get(k);
-				double sum = 0;
-				double sumW = 0;
-				for (int u = 0; u < cl; u+=2) {
-					int a = fmatrix[i * cl + u];
-					int b = fmatrix[i * cl + u + 1];
-					int c = mmatrix[k * cl + u];
-					int d = mmatrix[k * cl + u + 1];
-					if (a == -1 || b == -1 || c == -1 || d == -1)
-					  continue; //ignore
-			
-					// PRECOND: (x != -1 || x2 != -1) && (y != -1 || y2 != -1)
-					
-					Map<Integer,Integer>	fmap = freq.get(u);
-					
-					double pa = fmap.containsKey(a) ? fmap.get(a)/freqcount : 0.0;
-					double pb = fmap.containsKey(b) ? fmap.get(b)/freqcount : 0.0;
-					
-					double top = pa * (delta(b, c) + delta(b, d)) + pb * (delta(a, c) + delta(a, d)) - 4. * pa * pb;
-					double bot = 2. * pa * pb;
-					double w = (1. + delta(a, b)) * (pa + pb) - 4. * pa * pb;
-					if ((float)bot == 0f)
-						return 1.0/Float.MAX_VALUE;
-					sum += top / bot;
-					sumW += w / bot;
-			    }
-			    if ((float)sumW == 0f)
-			      return 1.0/Float.MAX_VALUE;
-			    
-			    double val = sum / sumW;
-			}
-		}
-	    return 0.0;
-	}
+	JSplitPane 		splitpane;
+	FishWorker		fishworker;
  
 	public Fiskur() {
 		super();
 
+		fishworker = new FishWorker();
 		try {
 			URL url = this.getClass().getResource("/smooth.png");
 			img = ImageIO.read(url);
@@ -236,32 +175,6 @@ public class Fiskur extends JApplet {
 		}
 	}
 	
-	class Fish {
-		String 	name;
-		float	weight;
-		int		loc;
-		boolean	male;
-		
-		public Fish( String name, float weight, int loc, boolean male ) {
-			this.name = name;
-			this.weight = weight;
-			this.loc = loc;
-			this.male = male;
-		}
-		
-		public boolean equals( Fish f2 ) {
-			return name.equals( f2.name );
-		}
-		
-		public boolean equals( String f2 ) {
-			return name.equals( f2 );
-		}
-		
-		public String toString() {
-			return name;
-		}
-	}
-
 	static {
 		try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
@@ -342,114 +255,6 @@ public class Fiskur extends JApplet {
 		}
 	}
 
-	public void parseData(String data, int start) {
-		String[] split = data.split("\\n");
-		String[] vals = split[0].split("\\t");
-		
-		boolean div = vals[0].contains("/");
-		
-		int r = (split.length - 1);
-		int c = (vals.length - start);
-		if( div ) c *= 2;
-
-		markers.clear();
-		for (int i = 0; i < c; i++) {
-			markers.add(vals[i + start]);
-		}
-
-		malefish.clear();
-		femalefish.clear();
-		mfactor.clear();
-		ffactor.clear();
-
-		String startstr = null;
-		for (int i = 0; i < r; i++) {
-			vals = split[i + 1].split("\\t");
-
-			String val = vals[0];
-			if( startstr == null ) startstr = val;
-			if( val.equalsIgnoreCase("female") || val.equals(startstr) ) {
-				Fish f = new Fish( vals[1], 0.0f, -1, false );
-				femalefish.add( f );
-				ffactor.add( Float.parseFloat( vals[2] ) );
-			} else {
-				Fish f = new Fish( vals[1], 0.0f, -1, true );
-				malefish.add( f );
-				mfactor.add( Float.parseFloat( vals[2] ) );
-			}
-		}
-
-		fmatrix = new int[femalefish.size() * c];
-		mmatrix = new int[malefish.size() * c];
-
-		int f = 0;
-		int m = 0;
-		
-		for( int i = 0; i < c; i++ ) {
-			freq.add( new HashMap<Integer,Integer>() );
-		}
-
-		for (int i = 0; i < r; i++) {
-			vals = split[i + 1].split("\\t");
-
-			String val = vals[0];
-			if( val.equalsIgnoreCase("female") || val.equals(startstr) ) {
-				for (int k = 0; k < c; k++) {
-					Map<Integer,Integer> fmap = freq.get(k);
-					int ival = Integer.parseInt(vals[k + start]);
-					int value = 1;
-					if( fmap.containsKey(ival) ) value = fmap.get(ival);
-						
-					fmap.put(ival, value);
-					freqcount++;
-					fmatrix[f * c + k] = ival;
-				}
-				f++;
-			} else {
-				for (int k = 0; k < c; k++) {
-					Map<Integer,Integer> fmap = freq.get(k);
-					int ival = Integer.parseInt(vals[k + start]);
-					int value = 1;
-					if( fmap.containsKey(ival) ) value = fmap.get(ival);
-						
-					fmap.put(ival, value);
-					freqcount++;
-					mmatrix[m * c + k] = ival;
-				}
-				m++;
-			}
-		}
-	}
-
-	public class Tuple implements Comparable<Fiskur.Tuple> {
-		Fish 	male;
-		Fish 	female;
-		int 	rank;
-		float	factor;
-		double	khrank;
-		double	lrm;
-
-		public Tuple(Fish f1, Fish f2, int r, float f, double khr, double lrmval) {
-			male = f2;
-			female = f1;
-			rank = r;
-			factor = f;
-			khrank = khr;
-			lrm = lrmval;
-		}
-		
-		public double current() {
-			if( curInd == 0 ) return khrank;
-			else return lrm;
-		}
-
-		@Override
-		public int compareTo(Fiskur.Tuple o) {
-			// TODO Auto-generated method stub
-			return 0;
-		}
-	};
-	
 	/*public double calc(int ix, int iy) {
 	    double sum = 0;
 	    int NL = pop.getNumLoci();
@@ -475,119 +280,6 @@ public class Fiskur extends JApplet {
 	    double dij = sum / (4. * NL);
 	    return dij;
 	  }*/
-
-	public List<Tuple> calcData() {
-		int mr = malefish.size();
-		int fr = femalefish.size();
-		int cl = markers.size();
-
-		List<Tuple> tupleList = new ArrayList<Tuple>();
-
-		double h = 0.0;
-		for( int i = 0; i < cl; i+=2 ) {
-			double sum = 0.0;
-			for( int m = 0; m < mr; m++ ) {
-				int a = mmatrix[m * cl + i];
-				int b = mmatrix[m * cl + i + 1];
-				
-				sum += (a == b) ? 0 : 1;
-			}
-			
-			for( int f = 0; f < fr; f++ ) {
-				int a = fmatrix[f * cl + i];
-				int b = fmatrix[f * cl + i + 1];
-				
-				sum += (a == b) ? 0 : 1;
-			}
-			sum /= (fr + mr);
-			
-			h += sum;
-		}
-		h /= (cl/2);
-		
-		for (int i = 0; i < fr; i++) {
-			Fish n1 = femalefish.get(i);
-			float  ff = ffactor.get(i);
-			for (int k = 0; k < mr; k++) {
-				Fish n2 = malefish.get(k);
-				float  mf = mfactor.get(k);
-				int rank = 0;
-				double sum = 0;
-				
-				double sum1 = 0.0;
-				double sumW1 = 0.0;
-				double sum2 = 0.0;
-				double sumW2 = 0.0;
-				//double val = 0.0;
-				double lrm = -1.0;
-				for (int u = 0; u < cl; u+=2) {
-					int a = fmatrix[i * cl + u];
-					int b = fmatrix[i * cl + u + 1];
-					int c = mmatrix[k * cl + u];
-					int d = mmatrix[k * cl + u + 1];
-					rank += Math.abs(a - c);
-					rank += Math.abs(b - d);
-					
-					int L = u/2;
-					Map<Integer,Integer>	fmap = freq.get( L );
-					double pa = fmap.containsKey(a) ? (double)fmap.get(a)/(double)freqcount : 0.0;
-					double pb = fmap.containsKey(b) ? (double)fmap.get(b)/(double)freqcount : 0.0;
-					double pc = fmap.containsKey(c) ? (double)fmap.get(c)/(double)freqcount : 0.0;
-					double pd = fmap.containsKey(d) ? (double)fmap.get(d)/(double)freqcount : 0.0;
-					
-					double top1 = pa * (delta(b, c) + delta(b, d)) + pb * (delta(a, c) + delta(a, d)) - 4. * pa * pb;
-					double bot1 = 2. * pa * pb;
-					double w1 = (1. + delta(a, b)) * (pa + pb) - 4. * pa * pb;
-					if ((float)bot1 == 0f) {
-						lrm = 1.0/Float.MAX_VALUE;
-						//break;
-					}
-					sum1 += top1 / bot1;
-					sumW1 += w1 / bot1;
-					
-					double top2 = pc * (delta(d, a) + delta(d, b)) + pd * (delta(c, a) + delta(c, b)) - 4. * pc * pd;
-					double bot2 = 2. * pc * pd;
-					double w2 = (1. + delta(c, d)) * (pc + pd) - 4. * pc * pd;
-					if ((float)bot2 == 0f) {
-						lrm = 1.0/Float.MAX_VALUE;
-						//break;
-					}
-					sum2 += top2 / bot2;
-					sumW2 += w2 / bot2;
-					
-					double x2 = (a == b ? 4: 2); // sum_j x_j^2
-				    double y2 = (c == d ? 4: 2); // sum_j y_j^2
-				    double xy = (a == c ? 1: 0)
-				        + (a == d ? 1: 0)
-				        + (b == c ? 1: 0)
-				        + (b == d ? 1: 0);
-				    double dist = x2 - 2. * xy + y2;
-				    sum += dist;
-				}
-				
-				if( lrm == -1.0 ) {
-					double s1 = sum1/sumW1;
-					double s2 = sum2/sumW2;
-					
-					if( s1 == Double.MAX_VALUE || s2 == Double.MAX_VALUE ) lrm = Double.MAX_VALUE;
-					else {
-						lrm = (s1 + s2)/2.0;
-					}
-				}
-				
-				double dij = sum / (2. * cl);
-				double val = 1.0 - dij/h;
-				System.err.println( i + "  " + k + "   " + dij + "  " + val );
-				tupleList.add( new Tuple(n1, n2, rank, mf+ff, val, lrm) );
-			}
-		}
-		//unsortedTupleList = tupleList;
-
-		//tupleList = new ArrayList<Tuple>( tupleList );
-		//Collections.sort(tupleList);
-
-		return tupleList;
-	}
 
 	public void start() {
 		super.start();
@@ -638,13 +330,13 @@ public class Fiskur extends JApplet {
 
 			@Override
 			public int getRowCount() {
-				return femalefish.size();
+				return fishworker.femalefish.size();
 			}
 
 			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
 				int r = matrixTable.convertRowIndexToModel(rowIndex );
-				return femalefish.get( r ).name;
+				return fishworker.femalefish.get( r ).name;
 			}
 
 			@Override
@@ -693,30 +385,30 @@ public class Fiskur extends JApplet {
 
 			@Override
 			public int getColumnCount() {
-				if (femalefish != null)
-					return femalefish.size();
+				if (fishworker.femalefish != null)
+					return fishworker.femalefish.size();
 				return 0;
 			}
 
 			@Override
 			public String getColumnName(int columnIndex) {
-				return femalefish.get(columnIndex).name;
+				return fishworker.femalefish.get(columnIndex).name;
 			}
 
 			@Override
 			public int getRowCount() {
-				if (malefish != null)
-					return malefish.size();
+				if (fishworker.malefish != null)
+					return fishworker.malefish.size();
 				return 0;
 			}
 
 			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
-				int val = columnIndex * malefish.size() + rowIndex;
+				int val = columnIndex * fishworker.malefish.size() + rowIndex;
 				//int rval = table.convertRowIndexToModel( val );
 				
-				if( val >= 0 && val < tupleList.size() ) {
-					Tuple tup = tupleList.get( val );
+				if( val >= 0 && val < fishworker.tupleList.size() ) {
+					FishWorker.Tuple tup = fishworker.tupleList.get( val );
 					return tup.current();
 				}
 				
@@ -758,29 +450,29 @@ public class Fiskur extends JApplet {
 
 			@Override
 			public int getColumnCount() {
-				if (malefish != null)
-					return malefish.size();
+				if (fishworker.malefish != null)
+					return fishworker.malefish.size();
 				return 0;
 			}
 
 			@Override
 			public String getColumnName(int columnIndex) {
-				return malefish.get(columnIndex).name;
+				return fishworker.malefish.get(columnIndex).name;
 			}
 
 			@Override
 			public int getRowCount() {
-				if (femalefish != null)
-					return femalefish.size();
+				if (fishworker.femalefish != null)
+					return fishworker.femalefish.size();
 				return 0;
 			}
 
 			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
-				int val = rowIndex * malefish.size() + columnIndex;
+				int val = rowIndex * fishworker.malefish.size() + columnIndex;
 				//int rval = table.convertRowIndexToModel( val );
-				if( val >= 0 && val < tupleList.size() ) {
-					Tuple tup = tupleList.get( val );
+				if( val >= 0 && val < fishworker.tupleList.size() ) {
+					FishWorker.Tuple tup = fishworker.tupleList.get( val );
 					return tup.current();
 				}
 				
@@ -818,29 +510,29 @@ public class Fiskur extends JApplet {
 
 			@Override
 			public int getColumnCount() {
-				if (markers != null)
-					return markers.size();
+				if (fishworker.markers != null)
+					return fishworker.markers.size();
 				return 0;
 			}
 
 			@Override
 			public String getColumnName(int columnIndex) {
-				return markers.get(columnIndex);
+				return fishworker.markers.get(columnIndex);
 			}
 
 			@Override
 			public int getRowCount() {
-				if (femalefish != null)
-					return femalefish.size();
+				if (fishworker.femalefish != null)
+					return fishworker.femalefish.size();
 				return 0;
 			}
 
 			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
-				int val = rowIndex * markers.size() + columnIndex;
+				int val = rowIndex * fishworker.markers.size() + columnIndex;
 				//int rval = table.convertRowIndexToModel( val );
-				if( val >= 0 && val < fmatrix.length ) {
-					int rval = fmatrix[ val ];
+				if( val >= 0 && val < fishworker.fmatrix.length ) {
+					int rval = fishworker.fmatrix[ val ];
 					return rval;
 				}
 				
@@ -875,29 +567,29 @@ public class Fiskur extends JApplet {
 
 			@Override
 			public int getColumnCount() {
-				if (markers != null)
-					return markers.size();
+				if (fishworker.markers != null)
+					return fishworker.markers.size();
 				return 0;
 			}
 
 			@Override
 			public String getColumnName(int columnIndex) {
-				return markers.get(columnIndex);
+				return fishworker.markers.get(columnIndex);
 			}
 
 			@Override
 			public int getRowCount() {
-				if (malefish != null)
-					return malefish.size();
+				if (fishworker.malefish != null)
+					return fishworker.malefish.size();
 				return 0;
 			}
 
 			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
-				int val = rowIndex * markers.size() + columnIndex;
+				int val = rowIndex * fishworker.markers.size() + columnIndex;
 				//int rval = table.convertRowIndexToModel( val );
-				if( val >= 0 && val < mmatrix.length ) {
-					int rval = mmatrix[ val ];
+				if( val >= 0 && val < fishworker.mmatrix.length ) {
+					int rval = fishworker.mmatrix[ val ];
 					return rval;
 				}
 				
@@ -924,58 +616,14 @@ public class Fiskur extends JApplet {
 		};
 	}
 	
-	public void kinWrite( File f ) throws IOException {
-		FileWriter	fw = new FileWriter( f );
-		fw.write( "id" );
-		fw.write( "\tgid" );
-		
-		int i = 0;
-		for( String marker : markers ) {
-			if( i % 2 == 0 ) fw.write( "\t"+marker );
-			else fw.write( "/"+marker );
-			
-			i++;
-		}
-		
-		int msize = mmatrix.length/malefish.size();
-		int count = 0;
-		for( Fish male : malefish ) {
-			fw.write( "\n"+male );
-			fw.write( "\tmale" );
-			
-			for( i = count; i < count+msize; i++ ) {
-				if( i%2 == 0 ) fw.write( "\t"+mmatrix[i] );
-				else fw.write( "/"+mmatrix[i] );
-			}
-			
-			count+=msize;
-		}
-		
-		int fsize = fmatrix.length/femalefish.size();
-		count = 0;
-		for( Fish female : femalefish ) {
-			fw.write( "\n"+female );
-			fw.write( "\tfemale" );
-			
-			for( i = count; i < count+fsize; i++ ) {
-				if( i%2 == 0 ) fw.write( "\t"+fmatrix[i] );
-				else fw.write( "/"+fmatrix[i] );
-			}
-			
-			count+=fsize;
-		}
-		
-		fw.close();
-	}
-	
 	public void kintoolExport() throws IOException {
 		JFileChooser fc = new JFileChooser();
 		if( fc.showSaveDialog( this ) == JFileChooser.APPROVE_OPTION ) {
 			File f = fc.getSelectedFile();
-			kinWrite( f );
+			fishworker.kinWrite( f );
 		} else {
 			File f = File.createTempFile("tmp", ".txt");
-			kinWrite( f );
+			fishworker.kinWrite( f );
 			Desktop.getDesktop().open( f );
 		}
 	}
@@ -992,19 +640,19 @@ public class Fiskur extends JApplet {
 		if( fc.showOpenDialog( this ) == JFileChooser.APPROVE_OPTION ) {
 			File[] ff = fc.getSelectedFiles();
 			
-			markers.clear();
-			fishes.clear();
-			malefish.clear();
-			femalefish.clear();
+			fishworker.markers.clear();
+			fishworker.fishes.clear();
+			fishworker.malefish.clear();
+			fishworker.femalefish.clear();
 			
 			if( ff.length > 1 ) {				
 				for( File f : ff ) {
 					String path = f.getAbsolutePath();
 					if( path.endsWith(".xlsx" ) ) {
-						if( malefish.size() == 0 && femalefish.size() == 0 ) {
-							wbStuffNoSex( path );
+						if( fishworker.malefish.size() == 0 && fishworker.femalefish.size() == 0 ) {
+							fishworker.wbStuffNoSex( path );
 						} else {
-							wbStuff( path );
+							fishworker.wbStuff( path );
 						}
 					} else if( path.endsWith(".xls") ) {
 						HSSFWorkbook 	workbook = new HSSFWorkbook( new FileInputStream(f) );
@@ -1062,31 +710,31 @@ public class Fiskur extends JApplet {
 								int		loc = (int)cell.getNumericCellValue();
 								
 					
-								Fish 		tmpf = null;
+								FishWorker.Fish 		tmpf = null;
 								if( sex.equalsIgnoreCase("male") ) {
-									int 		mind = findFish( fishes, name ); //fishes.indexOf( cmpf );
+									int 		mind = fishworker.findFish( name ); //fishes.indexOf( cmpf );
 									if( mind != -1 ) {
-										tmpf = fishes.get(mind);
+										tmpf = fishworker.fishes.get(mind);
 										tmpf.weight = (float)weight;
 										tmpf.loc = loc;
 										tmpf.male = true;
 									} else {
-										tmpf = new Fish( name, (float)weight, loc, true );
+										tmpf = fishworker.new Fish( name, (float)weight, loc, true );
 									}
-									malefish.add( tmpf );
-									mfactor.add( 0.0f );
+									fishworker.malefish.add( tmpf );
+									fishworker.mfactor.add( 0.0f );
 								} else if( sex.equalsIgnoreCase("female") ) {
-									int 		find = findFish( fishes, name );
+									int 		find = fishworker.findFish( name );
 									if( find != -1 ) {
-										tmpf = fishes.get(find);
+										tmpf = fishworker.fishes.get(find);
 										tmpf.weight = (float)weight;
 										tmpf.loc = loc;
 										tmpf.male = true;
 									} else {
-										tmpf = new Fish( name, (float)weight, loc, true );
+										tmpf = fishworker.new Fish( name, (float)weight, loc, true );
 									}
-									femalefish.add( tmpf );
-									ffactor.add( 0.0f );
+									fishworker.femalefish.add( tmpf );
+									fishworker.ffactor.add( 0.0f );
 								} else {
 									
 								}
@@ -1095,8 +743,8 @@ public class Fiskur extends JApplet {
 							row = sheet.getRow( ++r );	
 						}
 						
-						if( fishes.size() > 0 ) {
-							initGenotypes();
+						if( fishworker.fishes.size() > 0 ) {
+							fishworker.initGenotypes();
 						}
 					} else if( path.endsWith(".txt") ) {
 						char[]	cc = new char[1024];
@@ -1107,31 +755,31 @@ public class Fiskur extends JApplet {
 							val += new String( cc, 0, r );
 							r = fr.read( cc );
 						}
-						parseData( val, 3 );
+						fishworker.parseData( val, 3 );
 					}
 				}
 			} else {
 				File f = fc.getSelectedFile();
 				String path = f.getAbsolutePath();
 				if( path.endsWith(".xlsx" ) ) {
-					plainStuff( path );
+					fishworker.plainStuff( new FileInputStream(path) );
 				}
 			}
 			
-			tupleList = calcData();
+			fishworker.tupleList = fishworker.calcData();
 			pairRel();
 			reload();
 			
-			int m = findFish( malefish, "1" );
-			int f = findFish( femalefish, "2" );
+			int m = fishworker.findFish( fishworker.malefish, "1" );
+			int f = fishworker.findFish( fishworker.femalefish, "2" );
 			
 			System.err.println("start");
-			for( int i = 0; i < markers.size(); i++ ) {
-				System.err.print( mmatrix[m*markers.size()+i] + " " );
+			for( int i = 0; i < fishworker.markers.size(); i++ ) {
+				System.err.print( fishworker.mmatrix[m*fishworker.markers.size()+i] + " " );
 			}
 			System.err.println();
-			for( int i = 0; i < markers.size(); i++ ) {
-				System.err.print( fmatrix[f*markers.size()+i] + " " );
+			for( int i = 0; i < fishworker.markers.size(); i++ ) {
+				System.err.print( fishworker.fmatrix[f*fishworker.markers.size()+i] + " " );
 			}
 			System.err.println();
 		}
@@ -1145,12 +793,14 @@ public class Fiskur extends JApplet {
 	
 	public static void main( String[] args ) {
 		Fiskur fish = new Fiskur();
-		fish.initGui();
-		
-		JFrame frame = new JFrame("MateMeRight");
-		frame.add( fish.c );
-		frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
-		frame.setVisible( true );
+		if( args.length == 0 ) {
+			fish.initGui();
+			
+			JFrame frame = new JFrame("MateMeRight");
+			frame.add( fish.c );
+			frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+			frame.setVisible( true );
+		}
 	}
 	
 	public void init() {
@@ -1215,7 +865,7 @@ public class Fiskur extends JApplet {
 		kenheg.setAction( new AbstractAction("Konovalov&Heg (2008)") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				curInd = 0;
+				fishworker.curInd = 0;
 				
 				//JTable table = 
 				
@@ -1250,7 +900,7 @@ public class Fiskur extends JApplet {
 		maxlik.setAction( new AbstractAction("Lynch&Ritland (1999)") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				curInd = 1;
+				fishworker.curInd = 1;
 				
 				JComponent supcomp = (JComponent)Fiskur.this.splitpane.getLeftComponent();
 				for( Component comp1 : supcomp.getComponents() ) {
@@ -1376,7 +1026,7 @@ public class Fiskur extends JApplet {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				XSSFWorkbook	wb = new XSSFWorkbook( );
-				writeWorkbook(wb);
+				fishworker.writeWorkbook(wb);
 				try {
 					File			f = File.createTempFile("tmp", ".xlsx");
 					wb.write( new FileOutputStream(f) );
@@ -1453,12 +1103,12 @@ public class Fiskur extends JApplet {
 				}
 				if (obj != null) {
 					String stuff = obj.toString();
-					parseData( stuff, 3 );
-					tupleList = calcData();
+					fishworker.parseData( stuff, 3 );
+					fishworker.tupleList = fishworker.calcData();
 					
 					FloatBuffer	fdata = sd.dataBuffer;
 					fdata.rewind();
-					for( Tuple tup : tupleList ) {
+					for( FishWorker.Tuple tup : fishworker.tupleList ) {
 						fdata.put( (float)(tup.rank/1000.0) );
 					}
 					sd.loadData();
@@ -1601,8 +1251,8 @@ public class Fiskur extends JApplet {
 
 			@Override
 			public int getRowCount() {
-				if (tupleList != null) {
-					return tupleList.size();
+				if (fishworker.tupleList != null) {
+					return fishworker.tupleList.size();
 				}
 
 				return 0;
@@ -1610,8 +1260,8 @@ public class Fiskur extends JApplet {
 
 			@Override
 			public Object getValueAt(int arg0, int arg1) {
-				if (tupleList != null) {
-					Tuple t = tupleList.get(arg0);
+				if (fishworker.tupleList != null) {
+					FishWorker.Tuple t = fishworker.tupleList.get(arg0);
 					if (arg1 == 0)
 						return t.male.name;
 					if (arg1 == 1)
@@ -1691,8 +1341,8 @@ public class Fiskur extends JApplet {
 
 			@Override
 			public int getRowCount() {
-				if (malefish != null) {
-					return malefish.size();
+				if (fishworker.malefish != null) {
+					return fishworker.malefish.size();
 				}
 
 				return 0;
@@ -1700,12 +1350,12 @@ public class Fiskur extends JApplet {
 
 			@Override
 			public Object getValueAt(int arg0, int arg1) {
-				if (arg1 == 0 && arg0 < malefish.size()) {
-					return malefish.get(arg0).name;
-				} else if (arg1 == 1 && arg0 < mfactor.size() ) {
-					return mfactor.get(arg0);
-				} else if (arg1 == 2 && arg0 < malefish.size() ) {
-					return malefish.get(arg0).weight;
+				if (arg1 == 0 && arg0 < fishworker.malefish.size()) {
+					return fishworker.malefish.get(arg0).name;
+				} else if (arg1 == 1 && arg0 < fishworker.mfactor.size() ) {
+					return fishworker.mfactor.get(arg0);
+				} else if (arg1 == 2 && arg0 < fishworker.malefish.size() ) {
+					return fishworker.malefish.get(arg0).weight;
 				}
 				return null;
 			}
@@ -1803,8 +1453,8 @@ public class Fiskur extends JApplet {
 
 			@Override
 			public int getRowCount() {
-				if (femalefish != null) {
-					return femalefish.size();
+				if (fishworker.femalefish != null) {
+					return fishworker.femalefish.size();
 				}
 
 				return 0;
@@ -1812,12 +1462,12 @@ public class Fiskur extends JApplet {
 
 			@Override
 			public Object getValueAt(int arg0, int arg1) {
-				if( arg1 == 0 && arg0 < femalefish.size() ) {
-					return femalefish.get(arg0).name;
-				} else if( arg1 == 1 && arg0 < ffactor.size() ) {
-					return ffactor.get(arg0);
-				} else if( arg1 == 2 && arg0 < femalefish.size() ) {
-					return femalefish.get(arg0).weight;
+				if( arg1 == 0 && arg0 < fishworker.femalefish.size() ) {
+					return fishworker.femalefish.get(arg0).name;
+				} else if( arg1 == 1 && arg0 < fishworker.ffactor.size() ) {
+					return fishworker.ffactor.get(arg0);
+				} else if( arg1 == 2 && arg0 < fishworker.femalefish.size() ) {
+					return fishworker.femalefish.get(arg0).weight;
 				}
 				return null;
 			}
@@ -1893,7 +1543,7 @@ public class Fiskur extends JApplet {
 				if( r != -1 ) {
 					tuples.clear();
 					String str = (String)mtable.getValueAt( r, 0 );
-					for( Tuple t : tupleList ) {
+					for( FishWorker.Tuple t : fishworker.tupleList ) {
 						if( t.male.equals( str ) ) {
 							tuples.add( t );
 						}
@@ -1913,7 +1563,7 @@ public class Fiskur extends JApplet {
 				if( r != -1 ) {
 					tuples.clear();
 					String str = (String)ftable.getValueAt( r, 0 );
-					for( Tuple t : tupleList ) {
+					for( FishWorker.Tuple t : fishworker.tupleList ) {
 						if( t.female.equals( str ) ) {
 							tuples.add( t );
 						}
@@ -1935,14 +1585,14 @@ public class Fiskur extends JApplet {
 					int c = table.getSelectedColumn();
 					if( c == 0 ) {
 						String str = (String)table.getValueAt( r, c );
-						for( Tuple t : tupleList ) {
+						for( FishWorker.Tuple t : fishworker.tupleList ) {
 							if( t.male.equals( str ) ) {
 								tuples.add( t );
 							}
 						}
 					} else if( c == 1 ) {
 						String str = (String)table.getValueAt( r, c );
-						for( Tuple t : tupleList ) {
+						for( FishWorker.Tuple t : fishworker.tupleList ) {
 							if( t.female.equals( str ) ) {
 								tuples.add( t );
 							}
@@ -1958,8 +1608,8 @@ public class Fiskur extends JApplet {
 					if( tabbedPane.getTitleAt(tabbedPane.getSelectedIndex()).equals("Matrix") ) {
 						int v = table.convertRowIndexToModel(r);
 						
-						int cc = v % malefish.size();
-						int rv = v / malefish.size();
+						int cc = v % fishworker.malefish.size();
+						int rv = v / fishworker.malefish.size();
 						
 						//int v = table.convertRowIndexToView( i );
 						int rr = matrixTable.convertRowIndexToView( rv );
@@ -2195,7 +1845,7 @@ public class Fiskur extends JApplet {
 				if( row != -1 ) {
 					int r = matrixTable.convertRowIndexToModel(row);
 					int c = matrixTable.getSelectedColumn();
-					int i = r * malefish.size() + c;
+					int i = r * fishworker.malefish.size() + c;
 					
 					if( i >= 0 && i < table.getModel().getRowCount() ) {
 						int v = table.convertRowIndexToView( i );
@@ -2256,7 +1906,7 @@ public class Fiskur extends JApplet {
 
 			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
-				Tuple t = tuples.get( rowIndex );
+				FishWorker.Tuple t = tuples.get( rowIndex );
 				
 				boolean b = tuples.size() > 1 && tuples.get(0).male.equals( tuples.get(1).male );
 				if( columnIndex == 0 ) {
@@ -2629,19 +2279,19 @@ public class Fiskur extends JApplet {
 				try {
 					if( obj != null && obj instanceof File[] ) {
 						File[] ff = (File[])obj;
-						wbStuff( ff[0].getCanonicalPath() );
+						fishworker.wbStuff( ff[0].getCanonicalPath() );
 					} else {
 						obj = support.getTransferable().getTransferData(DataFlavor.stringFlavor);
 						if (obj != null) {
 							String stuff = obj.toString();
 							if( stuff.contains("file://") ) {
 								URL url = new URL( stuff );
-								wbStuff( url.getFile() );
+								fishworker.wbStuff( url.getFile() );
 							}
-							parseData( stuff, 3 );
+							fishworker.parseData( stuff, 3 );
 						}
 					}
-					tupleList = calcData();
+					fishworker.tupleList = fishworker.calcData();
 					reload();
 				} catch (UnsupportedFlavorException e) {
 					e.printStackTrace();
@@ -2668,8 +2318,8 @@ public class Fiskur extends JApplet {
 				stuff += new String( bb, 0, read );
 				read = in.read( bb );
 			}
-			parseData( stuff, 3 );
-			tupleList = calcData();
+			fishworker.parseData( stuff, 3 );
+			fishworker.tupleList = fishworker.calcData();
 			reload();
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
@@ -2677,456 +2327,6 @@ public class Fiskur extends JApplet {
 		}
 	}
 	
-	public void writeWorkbook( XSSFWorkbook wb ) {
-		XSSFSheet sheet = wb.createSheet("Fish");
-		XSSFRow row = sheet.createRow(0);
-		
-		XSSFFont	font = wb.createFont();
-		font.setBold( true );
-		
-		CellStyle boldstyle = wb.createCellStyle();
-	    boldstyle.setFont( font );
-	    
-		XSSFCell cell = row.createCell(0);
-		cell.setCellValue( "Name" );
-		cell.setCellStyle( boldstyle );
-		cell = row.createCell(1);
-		cell.setCellValue( "Gender" );
-		cell.setCellStyle( boldstyle );
-		cell = row.createCell(2);
-		cell.setCellValue( "Weight" );
-		cell.setCellStyle( boldstyle );
-		cell = row.createCell(3);
-		cell.setCellValue( "Room" );
-		cell.setCellStyle( boldstyle );
-		
-		int i = 4;
-		for( String marker : markers ) {
-			cell = row.createCell(++i);
-			cell.setCellValue( marker );
-			cell.setCellStyle( boldstyle );
-		}
-		
-		int r = 0;
-		for( Fish male : malefish ) {
-			int start = r*markers.size();
-			
-			row = sheet.createRow(++r);
-			cell = row.createCell(0);
-			cell.setCellValue( male.name );
-			cell = row.createCell(1);
-			cell.setCellValue( "male" );
-			cell = row.createCell(2);
-			cell.setCellValue( male.weight );
-			cell = row.createCell(3);
-			cell.setCellValue( male.loc );
-			
-			for( i = 0; i < markers.size(); i++ ) {
-				cell = row.createCell(i+5);
-				cell.setCellValue( mmatrix[i+start] );
-			}
-		}
-		int femr = 0;
-		for( Fish female : femalefish ) {
-			int start = (femr++)*markers.size();
-			
-			row = sheet.createRow(++r);
-			cell = row.createCell(0);
-			cell.setCellValue( female.name );
-			cell = row.createCell(1);
-			cell.setCellValue( "female" );
-			cell = row.createCell(2);
-			cell.setCellValue( female.weight );
-			cell = row.createCell(3);
-			cell.setCellValue( female.loc );
-			
-			for( i = 0; i < markers.size(); i++ ) {
-				cell = row.createCell(i+5);
-				cell.setCellValue( fmatrix[i+start] );
-			}
-		}
-		
-		sheet = wb.createSheet("Male Genotypes");
-		row = sheet.createRow(0);
-		i = 0;
-		for( String marker : markers ) {
-			cell = row.createCell(++i);
-			cell.setCellValue( marker );
-			//cell.setCellStyle( CellStyle.)
-		}
-		
-		r = 0;
-		for( Fish male : malefish ) {
-			int start = r*markers.size();
-			row = sheet.createRow(++r);
-			cell = row.createCell(0);
-			cell.setCellValue( male.toString() );
-			for( i = 0; i < markers.size(); i++ ) {
-				cell = row.createCell(i+1);
-				cell.setCellValue( mmatrix[i+start] );
-			}
-		}
-		
-		sheet = wb.createSheet("Female Genotypes");
-		row = sheet.createRow(0);
-		i = 0;
-		for( String marker : markers ) {
-			cell = row.createCell(++i);
-			cell.setCellValue( marker );
-			//cell.setCellStyle( CellStyle.)
-		}
-		
-		r = 0;
-		for( Fish female : femalefish ) {
-			int start = r*markers.size();
-			row = sheet.createRow(++r);
-			cell = row.createCell(0);
-			cell.setCellValue( female.toString() );
-			for( i = 0; i < markers.size(); i++ ) {
-				cell = row.createCell(i+1);
-				cell.setCellValue( fmatrix[i+start] );
-			}
-		}
-		
-		CellStyle greenstyle = wb.createCellStyle();
-	    greenstyle.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
-	    greenstyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
-	    
-	    CellStyle yellowstyle = wb.createCellStyle();
-	    yellowstyle.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
-	    yellowstyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
-	    
-	    CellStyle redstyle = wb.createCellStyle();
-	    redstyle.setFillForegroundColor(IndexedColors.LIGHT_ORANGE.getIndex());
-	    redstyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
-
-		
-		sheet = wb.createSheet("Pairwise relatedness");
-		row = sheet.createRow(0);
-		cell = row.createCell(0);
-		cell.setCellValue("Male");
-		cell = row.createCell(1);
-		cell.setCellValue("Female");
-		cell = row.createCell(2);
-		cell.setCellValue("LRM(1999)");
-		cell = row.createCell(3);
-		cell.setCellValue("Konolov&Heg(2008)");
-		//cell = row.createCell(4);
-		//cell.setCellValue("Simmi");
-		cell = row.createCell(5);
-		cell.setCellValue("Performance factor");
-		
-		i = 0;
-		for( Tuple t : tupleList ) {
-			row = sheet.createRow(++i);
-			cell = row.createCell(0);
-			cell.setCellValue(t.male.name);
-			cell = row.createCell(1);
-			cell.setCellValue(t.female.name);
-			cell = row.createCell(2);
-			cell.setCellValue(t.lrm);
-			if( t.lrm < 0.03 ) {
-				cell.setCellStyle( greenstyle );
-			} else if( t.lrm < 0.06 ) {
-				cell.setCellStyle( yellowstyle );
-			} else {
-				cell.setCellStyle( redstyle );
-			}
-			cell = row.createCell(3);
-			cell.setCellValue(t.khrank);
-			/*if( t.khrank < 0.03 ) {
-				cell.setCellStyle( redstyle );
-			} else if( t.khrank < 0.06 ) {
-				cell.setCellStyle( yellowstyle );
-			} else {
-				cell.setCellStyle( greenstyle );
-			}*/
-			//cell = row.createCell(4);
-			//cell.setCellValue(t.rank);
-			cell = row.createCell(5);
-			cell.setCellValue(t.factor);
-		}
-		
-		sheet = wb.createSheet("Male relatedness matrix");
-		row = sheet.createRow(0);
-		i = 0;
-		for( Fish male : malefish ) {
-			cell = row.createCell(++i);
-			cell.setCellValue(male.name);
-		}
-		i = 0;
-		int cl = 0;
-		for( Tuple t : tupleList ) {
-			if( cl % malefish.size() == 0 ) {
-				row = sheet.createRow(++i);
-				cl = 0;
-				cell = row.createCell(cl);
-				cell.setCellValue(t.female.name);
-			}
-			cell = row.createCell(++cl);
-			cell.setCellValue(t.lrm);
-			if( t.lrm < 0.03 ) {
-				cell.setCellStyle( greenstyle );
-			} else if( t.lrm < 0.06 ) {
-				cell.setCellStyle( yellowstyle );
-			} else {
-				cell.setCellStyle( redstyle );
-			}
-		}
-		
-		sheet = wb.createSheet("Female relatedness matrix");
-		row = sheet.createRow(0);
-		i = 0;
-		for( Fish female : femalefish ) {
-			cell = row.createCell(++i);
-			cell.setCellValue(female.name);
-		}
-		i = 0;
-		cl = 0;
-		for( int k = 0; k < tupleList.size(); k++ ) {
-			int rr = k/femalefish.size();
-			int cc = k%femalefish.size();
-			Tuple t = tupleList.get( cc*malefish.size() + rr );
-			if( cl % femalefish.size() == 0 ) {
-				row = sheet.createRow(++i);
-				cl = 0;
-				cell = row.createCell(cl);
-				cell.setCellValue(t.male.name);
-			}
-			cell = row.createCell(++cl);
-			cell.setCellValue(t.khrank);
-			if( t.khrank < 0.03 ) {
-				cell.setCellStyle( redstyle );
-			} else if( t.khrank < 0.06 ) {
-				cell.setCellStyle( yellowstyle );
-			} else {
-				cell.setCellStyle( greenstyle );
-			}
-		}
-	}
-	
-	public void wbStuffNoSex( String path ) throws IOException {
-		XSSFWorkbook 	wb = new XSSFWorkbook( path );
-		XSSFSheet		ws = wb.getSheetAt(0);
-		
-		fishes.clear();
-		markers.clear();
-		
-		int i = 0;
-		XSSFRow			wr = ws.getRow( i++ );
-		
-		int k = 2;
-		XSSFCell wc = wr.getCell(k++);
-		while( wc != null ) {
-			markers.add( wc.getStringCellValue() );
-			wc = wr.getCell(k++);
-		}
-		if( markers.size() % 2 == 1 ) markers.remove( markers.size()-1 );
-		
-		wr = ws.getRow( i++ );
-		while( wr != null ) {
-			Fish f = new Fish( wr.getCell(0).getStringCellValue(), 0.0f, 0, false );
-			fishes.add( f );
-			
-			wr = ws.getRow( i++ );
-		}
-		matrix = new int[fishes.size() * markers.size()];
-		i = 1;
-		wr = ws.getRow( i++ );
-		while( wr != null ) {
-			k = 2;
-			wc = wr.getCell(k++);
-			while( wc != null && k < markers.size()+2 ) {
-				matrix[(i - 2) * markers.size() + (k -2)] = (int)wc.getNumericCellValue();
-				wc = wr.getCell(k++);
-			}
-			
-			wr = ws.getRow( i++ );
-		}
-	}
-	
-	public void initGenotypes() {
-		fmatrix = new int[femalefish.size() * markers.size()];
-		mmatrix = new int[malefish.size() * markers.size()];
-		
-		Fish tmpf = new Fish( "", 0.0f, 0, false );
-		int i = 0;
-		while( i < fishes.size() ) {
-			Fish fish = fishes.get(i);
-			String name = fish.name;
-			tmpf.name = name;
-			
-			int ind =  findFish( malefish, name ); //malefish.indexOf( tmpf );
-			if( ind != -1 ) {
-				for( int k = 0; k < markers.size(); k++ ) {
-					mmatrix[ind * markers.size() + k] = matrix[i * markers.size() + k];
-				}
-			} else {
-				ind = findFish( femalefish, name );
-				if( ind != -1 ) {
-					for( int k = 0; k < markers.size(); k++ ) {
-						fmatrix[ind * markers.size() + k] = matrix[i * markers.size() + k];
-					}
-				}
-			}
-			i++;
-		}
-	}
-	
-	public void retainFish( List<Fish> list, Set<String> fishnames ) {
-		Set<Fish>	remfish = new HashSet<Fish>();
-		for( Fish f : list ) {
-			if( !fishnames.contains( f.name ) ) {
-				remfish.add( f );
-			}
-		}
-		list.removeAll( remfish );
-	}
-	
-	public int findFish( List<Fish> list, String name ) {
-		int i = 0;
-		for( Fish f : list ) {
-			if( f.name.equals(name) ) return i;	
-			i++;
-		}
-		return -1;
-	}
-	
-	public void initGenotypes( XSSFSheet ws, int i ) {
-		int oldi = i;
-		Set<String>	nameSet = new HashSet<String>();
-		XSSFRow wr = ws.getRow( i++ );
-		while( wr != null ) {
-			XSSFCell	cell =  wr.getCell(0);
-			int celltype = cell.getCellType();
-			
-			String name = null;
-			if( celltype == XSSFCell.CELL_TYPE_NUMERIC ) {
-				double val = cell.getNumericCellValue();
-				name = Integer.toString((int)val);
-			} else {
-				name = cell.getStringCellValue();
-			}
-			
-			nameSet.add( name );
-			wr = ws.getRow( i++ );
-		}
-		
-		retainFish( malefish, nameSet );
-		retainFish( femalefish, nameSet );
-		
-		fmatrix = new int[femalefish.size() * markers.size()];
-		mmatrix = new int[malefish.size() * markers.size()];
-		
-		//Fish tmpf =new Fish( "", 0.0f, 0, false );
-		
-		i = oldi;
-		wr = ws.getRow( i++ );
-		while( wr != null ) {
-			int k = 2;
-			XSSFCell	cell =  wr.getCell(0);
-			int celltype = cell.getCellType();
-			
-			String name = null;
-			if( celltype == XSSFCell.CELL_TYPE_NUMERIC ) {
-				double val = cell.getNumericCellValue();
-				name = Integer.toString((int)val);
-			} else {
-				name = cell.getStringCellValue();
-			}
-			//tmpf.name = name;
-			
-			int ind = findFish( malefish, name ); //malefish.indexOf( tmpf );
-			if( ind != -1 ) {
-				XSSFCell wc = wr.getCell(k);
-				while( wc != null && k < markers.size()+2 ) {
-					mmatrix[ind * markers.size() + (k-2)] = (int)wc.getNumericCellValue();
-					wc = wr.getCell(++k);
-				}
-			} else {
-				ind = findFish( femalefish, name );
-				if( ind != -1 ) {
-					XSSFCell wc = wr.getCell(k);
-					while( wc != null && k < markers.size()+2 ) {
-						if( wc.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) {
-							int val = (int)wc.getNumericCellValue();
-							fmatrix[ind * markers.size() + (k-2)] = val;
-						}
-						//else System.err.println( "what!! " + wc.getStringCellValue() );
-						wc = wr.getCell(++k);
-					}
-				}
-			}
-			wr = ws.getRow( i++ );
-		}
-		
-		initFreqs();
-	}
-	
-	public void initFreqs() {
-		freq.clear();		
-		
-		int rm = mmatrix.length/markers.size();
-		int rf = fmatrix.length/markers.size();
-		
-		freqcount = (rm + rf)*2;
-		
-		for( int i = 0; i < markers.size()/2; i++ ) {
-			Map<Integer,Integer> fmap = new HashMap<Integer,Integer>();
-			freq.add( fmap );
-			
-			for( int r = 0; r < rm; r++ ) {
-				int v1 = mmatrix[ r*markers.size()+i*2 ];
-				int v2 = mmatrix[ r*markers.size()+i*2+1 ];
-				
-				int val = 0;
-				if( fmap.containsKey(v1) ) val = fmap.get(v1);	
-				fmap.put(v1, val+1);
-				
-				val = 0;
-				if( fmap.containsKey(v2) ) val = fmap.get(v2);	
-				fmap.put(v2, val+1);
-			}
-			
-			for( int r = 0; r < rf; r++ ) {
-				int v1 = fmatrix[ r*markers.size()+i*2 ];
-				int v2 = fmatrix[ r*markers.size()+i*2+1 ];
-				
-				int val = 0;
-				if( fmap.containsKey(v1) ) val = fmap.get(v1);	
-				fmap.put(v1, val+1);
-				
-				val = 0;
-				if( fmap.containsKey(v2) ) val = fmap.get(v2);	
-				fmap.put(v2, val+1);
-			}
-		}
-	}
-	
-	public void wbStuff( String path ) throws IOException {
-		XSSFWorkbook 	wb = new XSSFWorkbook( path );
-		XSSFSheet		ws = wb.getSheetAt(0);
-		
-		markers.clear();
-		//malefish.clear();
-		//femalefish.clear();
-		//mfactor.clear();
-		//ffactor.clear();
-		
-		int i = 0;
-		XSSFRow			wr = ws.getRow( i++ );
-		
-		int k = 2;
-		XSSFCell wc = wr.getCell(k++);
-		while( wc != null ) {
-			markers.add( wc.getStringCellValue() );
-			wc = wr.getCell(k++);
-		}
-		if( markers.size() % 2 == 1 ) markers.remove( markers.size()-1 );
-		
-		initGenotypes( ws, i );
-	}
-
 	public void setBounds(int x, int y, int w, int h) {
 		if (c != null) {
 			c.setBounds(50, 50, w-100, h-100);
