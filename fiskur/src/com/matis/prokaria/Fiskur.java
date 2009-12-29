@@ -94,8 +94,6 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
-import kingroup_v2.kinship.KinshipREstimator;
-
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
@@ -208,12 +206,12 @@ public class Fiskur extends JApplet {
 					double bot = 2. * pa * pb;
 					double w = (1. + delta(a, b)) * (pa + pb) - 4. * pa * pb;
 					if ((float)bot == 0f)
-					  return KinshipREstimator.ERROR_VALUE;
+						return 1.0/Float.MAX_VALUE;
 					sum += top / bot;
 					sumW += w / bot;
 			    }
 			    if ((float)sumW == 0f)
-			      return KinshipREstimator.ERROR_VALUE;
+			      return 1.0/Float.MAX_VALUE;
 			    
 			    double val = sum / sumW;
 			}
@@ -541,7 +539,7 @@ public class Fiskur extends JApplet {
 					double bot1 = 2. * pa * pb;
 					double w1 = (1. + delta(a, b)) * (pa + pb) - 4. * pa * pb;
 					if ((float)bot1 == 0f) {
-						lrm = KinshipREstimator.ERROR_VALUE;
+						lrm = 1.0/Float.MAX_VALUE;
 						//break;
 					}
 					sum1 += top1 / bot1;
@@ -551,7 +549,7 @@ public class Fiskur extends JApplet {
 					double bot2 = 2. * pc * pd;
 					double w2 = (1. + delta(c, d)) * (pc + pd) - 4. * pc * pd;
 					if ((float)bot2 == 0f) {
-						lrm = KinshipREstimator.ERROR_VALUE;
+						lrm = 1.0/Float.MAX_VALUE;
 						//break;
 					}
 					sum2 += top2 / bot2;
@@ -999,116 +997,124 @@ public class Fiskur extends JApplet {
 			malefish.clear();
 			femalefish.clear();
 			
-			for( File f : ff ) {
-				String path = f.getAbsolutePath();
-				if( path.endsWith(".xlsx" ) ) {
-					if( malefish.size() == 0 && femalefish.size() == 0 ) {
-						wbStuffNoSex( path );
-					} else {
-						wbStuff( path );
-					}
-				} else if( path.endsWith(".xls") ) {
-					HSSFWorkbook 	workbook = new HSSFWorkbook( new FileInputStream(f) );
-					HSSFSheet 		sheet = workbook.getSheetAt(0);
-					
-					int r = 0;
-					HSSFRow 		row = sheet.getRow(r);
-					
-					int sexind = -1;
-					int sampind = -1;
-					int locind = -1;
-					int wind = -1;
-					int c = 0;
-					HSSFCell		cell = row.getCell(c);
-					while( cell != null ) {
-						String cellval = cell.getStringCellValue();
-						if( cellval.equalsIgnoreCase("sex") ) sexind = c;
-						else if( cellval.equalsIgnoreCase("sample") ) sampind = c;
-						else if( cellval.equalsIgnoreCase("room") ) locind = c;
-						else if( cellval.equalsIgnoreCase("weight") ) wind = c;
+			if( ff.length > 1 ) {				
+				for( File f : ff ) {
+					String path = f.getAbsolutePath();
+					if( path.endsWith(".xlsx" ) ) {
+						if( malefish.size() == 0 && femalefish.size() == 0 ) {
+							wbStuffNoSex( path );
+						} else {
+							wbStuff( path );
+						}
+					} else if( path.endsWith(".xls") ) {
+						HSSFWorkbook 	workbook = new HSSFWorkbook( new FileInputStream(f) );
+						HSSFSheet 		sheet = workbook.getSheetAt(0);
 						
-						c++;
-						cell = row.getCell(c);
-					}
-					
-					row = sheet.getRow( ++r );
-					//Fish cmpf = new Fish( "", 0.0f, 0, true );
-					while( row != null ) {
-						cell = row.getCell(sexind);
-						if( cell != null ) {
-							String 	sex = cell.getStringCellValue();
-							cell = row.getCell(sampind);
+						int r = 0;
+						HSSFRow 		row = sheet.getRow(r);
+						
+						int sexind = -1;
+						int sampind = -1;
+						int locind = -1;
+						int wind = -1;
+						int c = 0;
+						HSSFCell		cell = row.getCell(c);
+						while( cell != null ) {
+							String cellval = cell.getStringCellValue();
+							if( cellval.equalsIgnoreCase("sex") ) sexind = c;
+							else if( cellval.equalsIgnoreCase("sample") ) sampind = c;
+							else if( cellval.equalsIgnoreCase("room") ) locind = c;
+							else if( cellval.equalsIgnoreCase("weight") ) wind = c;
 							
-							String 	name = null;
-							int type = cell.getCellType();
-							if( type == HSSFCell.CELL_TYPE_NUMERIC ) {
-								name = Integer.toString( (int)cell.getNumericCellValue() );
-							} else {
-								name = cell.getStringCellValue();
-							}
-							cell = 	row.getCell(wind);
-							type = cell.getCellType();
-							double 	weight = 0.0;
-							if( type == HSSFCell.CELL_TYPE_NUMERIC ) {
-								weight = cell.getNumericCellValue();
-							} else {
-								String	val = cell.getStringCellValue();
-								try {
-									weight = Double.parseDouble(val);
-								} catch( Exception e ) {
-							
-								}
-							}
-							cell = 	row.getCell(locind);
-							int		loc = (int)cell.getNumericCellValue();
-							
-				
-							Fish 		tmpf = null;
-							if( sex.equalsIgnoreCase("male") ) {
-								int 		mind = findFish( fishes, name ); //fishes.indexOf( cmpf );
-								if( mind != -1 ) {
-									tmpf = fishes.get(mind);
-									tmpf.weight = (float)weight;
-									tmpf.loc = loc;
-									tmpf.male = true;
-								} else {
-									tmpf = new Fish( name, (float)weight, loc, true );
-								}
-								malefish.add( tmpf );
-								mfactor.add( 0.0f );
-							} else if( sex.equalsIgnoreCase("female") ) {
-								int 		find = findFish( fishes, name );
-								if( find != -1 ) {
-									tmpf = fishes.get(find);
-									tmpf.weight = (float)weight;
-									tmpf.loc = loc;
-									tmpf.male = true;
-								} else {
-									tmpf = new Fish( name, (float)weight, loc, true );
-								}
-								femalefish.add( tmpf );
-								ffactor.add( 0.0f );
-							} else {
-								
-							}
+							c++;
+							cell = row.getCell(c);
 						}
 						
-						row = sheet.getRow( ++r );	
-					}
+						row = sheet.getRow( ++r );
+						//Fish cmpf = new Fish( "", 0.0f, 0, true );
+						while( row != null ) {
+							cell = row.getCell(sexind);
+							if( cell != null ) {
+								String 	sex = cell.getStringCellValue();
+								cell = row.getCell(sampind);
+								
+								String 	name = null;
+								int type = cell.getCellType();
+								if( type == HSSFCell.CELL_TYPE_NUMERIC ) {
+									name = Integer.toString( (int)cell.getNumericCellValue() );
+								} else {
+									name = cell.getStringCellValue();
+								}
+								cell = 	row.getCell(wind);
+								type = cell.getCellType();
+								double 	weight = 0.0;
+								if( type == HSSFCell.CELL_TYPE_NUMERIC ) {
+									weight = cell.getNumericCellValue();
+								} else {
+									String	val = cell.getStringCellValue();
+									try {
+										weight = Double.parseDouble(val);
+									} catch( Exception e ) {
+								
+									}
+								}
+								cell = 	row.getCell(locind);
+								int		loc = (int)cell.getNumericCellValue();
+								
 					
-					if( fishes.size() > 0 ) {
-						initGenotypes();
+								Fish 		tmpf = null;
+								if( sex.equalsIgnoreCase("male") ) {
+									int 		mind = findFish( fishes, name ); //fishes.indexOf( cmpf );
+									if( mind != -1 ) {
+										tmpf = fishes.get(mind);
+										tmpf.weight = (float)weight;
+										tmpf.loc = loc;
+										tmpf.male = true;
+									} else {
+										tmpf = new Fish( name, (float)weight, loc, true );
+									}
+									malefish.add( tmpf );
+									mfactor.add( 0.0f );
+								} else if( sex.equalsIgnoreCase("female") ) {
+									int 		find = findFish( fishes, name );
+									if( find != -1 ) {
+										tmpf = fishes.get(find);
+										tmpf.weight = (float)weight;
+										tmpf.loc = loc;
+										tmpf.male = true;
+									} else {
+										tmpf = new Fish( name, (float)weight, loc, true );
+									}
+									femalefish.add( tmpf );
+									ffactor.add( 0.0f );
+								} else {
+									
+								}
+							}
+							
+							row = sheet.getRow( ++r );	
+						}
+						
+						if( fishes.size() > 0 ) {
+							initGenotypes();
+						}
+					} else if( path.endsWith(".txt") ) {
+						char[]	cc = new char[1024];
+						String val = "";
+						FileReader fr = new FileReader( f );
+						int r = fr.read( cc );
+						while( r > 0 ) {
+							val += new String( cc, 0, r );
+							r = fr.read( cc );
+						}
+						parseData( val, 3 );
 					}
-				} else if( path.endsWith(".txt") ) {
-					char[]	cc = new char[1024];
-					String val = "";
-					FileReader fr = new FileReader( f );
-					int r = fr.read( cc );
-					while( r > 0 ) {
-						val += new String( cc, 0, r );
-						r = fr.read( cc );
-					}
-					parseData( val, 3 );
+				}
+			} else {
+				File f = fc.getSelectedFile();
+				String path = f.getAbsolutePath();
+				if( path.endsWith(".xlsx" ) ) {
+					plainStuff( path );
 				}
 			}
 			
