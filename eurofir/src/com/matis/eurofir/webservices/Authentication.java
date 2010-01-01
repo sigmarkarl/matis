@@ -16,11 +16,11 @@ public class Authentication {
 	
 	public static void test( String sign ) throws NoSuchAlgorithmException {
 		String[]	testargs = {"simmi","joi"};
-		String		result = getSignature( testargs, sign );
+		String		result = getSignature( testargs );
 		System.err.println( result );
 	}
 	
-	public static String getSignature( String[] args, String sign ) throws NoSuchAlgorithmException {
+	public static String getSignature( String[] args ) throws NoSuchAlgorithmException {
 		Arrays.sort( args );
 		String result = secret;
 		for( String arg : args ) {
@@ -34,7 +34,7 @@ public class Authentication {
 	}
 	
 	public static void run( String[] args, String sign ) throws NoSuchAlgorithmException, IOException {
-		String result = getSignature( args, sign );
+		String result = getSignature( args );
 		if( sign.equals( result ) ) {
 			System.out.println( "success" );
 		} else {
