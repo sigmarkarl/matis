@@ -3,5 +3,6 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="/opt/sqlitejdbc/sqlitejdbc-v056.jar"/>
+	<classpathentry kind="lib" path="/usr/share/java/mysql.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

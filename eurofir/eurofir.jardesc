@@ -11,6 +11,6 @@
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
-        <javaElement handleIdentifier="=eurofir"/>
+        <javaElement handleIdentifier="=eurofir/src"/>
     </selectedElements>
 </jardesc>

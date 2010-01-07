@@ -1,6 +1,7 @@
 package org.simmi;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -20,9 +21,12 @@ public class Server2Lite {
 		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=isgem2;user=simmi;password=drsmorc.311;";
 		con = DriverManager.getConnection(connectionUrl);
 		
-		Class.forName("org.sqlite.JDBC");
-		connectionUrl = "jdbc:sqlite:isgem.db";
-		dcon = DriverManager.getConnection(connectionUrl);
+		//Class.forName("org.sqlite.JDBC");
+		//connectionUrl = "jdbc:sqlite:isgem.db";
+		
+		Class.forName("com.mysql.jdbc.Driver");
+		connectionUrl = "jdbc:mysql://localhost:3306/isgem"; //?useUnicode=yes&characterEncoding=UTF-8";
+		dcon = DriverManager.getConnection(connectionUrl, "root", "drsmorc.311");
 	}
 	
 	public void load() throws SQLException {
@@ -35,29 +39,49 @@ public class Server2Lite {
 		while( rs.next() ) {
 			String tname = rs.getString(1);
 			
-			sql = "select co.name, ty.name, ty.max_length from isgem2.sys.columns co, isgem2.sys.tables ta, isgem2.sys.types ty where ty.user_type_id=co.user_type_id and ta.object_id=co.object_id and ta.name='"+tname+"'";
-			PreparedStatement 	psub = con.prepareStatement( sql );
-			ResultSet 			rsub = psub.executeQuery();
-			
-			String val = "";
-			while( rsub.next() ) {
-				String coname = rsub.getString(1);
-				String tyname = rsub.getString(2);
-				String mlname = rsub.getString(3);
+			if( !tname.contains("sys") ) {
+				sql = "select co.name, ty.name, co.max_length from isgem2.sys.columns co, isgem2.sys.tables ta, isgem2.sys.types ty where ty.user_type_id=co.user_type_id and ta.object_id=co.object_id and ta.name='"+tname+"'";
+				PreparedStatement 	psub = con.prepareStatement( sql );
+				ResultSet 			rsub = psub.executeQuery();
 				
-				if( val.length() == 0 ) val += coname + " " + tyname;
-				else val += "," + coname + " " + tyname;
-				//exec( "create table "+tname );
+				String val = "";
+				while( rsub.next() ) {
+					String coname = rsub.getString(1);
+					String tyname = rsub.getString(2);
+					String mlname = rsub.getString(3);
+					
+					if( coname.equalsIgnoreCase("Precision") ) coname = "Prec";
+					
+					if( tyname.equals("nchar") ) {
+						int v = Integer.parseInt( mlname );
+						if( v > 255 ) tyname = "varchar";
+					}
+					else if( tyname.contains("char") && mlname.equals("-1") ) mlname = "4000";
+					else if( tyname.equals("uniqueidentifier") ) {
+						tyname = "nchar";
+						mlname = "255";
+					}
+					else if( tyname.equals("image") ) tyname = "varbinary(4000)";
+					
+					if( val.length() == 0 ) val += coname + " " + tyname;
+					else val += "," + coname + " " + tyname;
+					
+					 if( tyname.contains("char") ) val += "(" + mlname + ")";
+					 //else if( tyname.equals("uniqueidentifier") ) val += " int";
+					//exec( "create table "+tname );
+				}
+				tmap.put( tname, val );
+				sql = "create table "+tname+" ("+val+")";
+				
+				System.err.println( sql );
+				
+				PreparedStatement dps = dcon.prepareStatement( sql );
+				dps.execute();
+				dps.close();
+				
+				rsub.close();
+				psub.close();
 			}
-			tmap.put( tname, val );
-			sql = "create table "+tname+" ("+val+")";
-			
-			PreparedStatement dps = dcon.prepareStatement( sql );
-			dps.execute();
-			dps.close();
-			
-			rsub.close();
-			psub.close();
 			
 		}
 		
@@ -83,18 +107,33 @@ public class Server2Lite {
 					for( String str : split ) {
 						String[] vspl = str.split(" ");
 						String res = "";
-						if( vspl[1].contains("char") ) res += "\""+rs.getString(++i)+"\"";
-						else if( vspl[1].contains("date") ) res += "\""+rs.getDate(++i)+"\"";
+						if( vspl[1].contains("char") ) {
+							String sval = rs.getString(++i);
+							if( sval == null || sval.equals("null") ) res += "null";
+							else res += "\""+sval+"\"";
+						}
+						else if( vspl[1].contains("date") ) {
+							Date date = rs.getDate(++i);
+							if( date == null || date.toString().equalsIgnoreCase("null") ) res += "null";
+							else res += "\""+date+"\"";
+						}
 						else if( vspl[1].contains("float") ) res += rs.getFloat(++i);
 						else if( vspl[1].contains("double") ) res += rs.getDouble(++i);
+						else if( vspl[1].contains("real") ) res += rs.getDouble(++i);
 						else if( vspl[1].contains("int") ) res += rs.getInt(++i);
-						else res += "\""+rs.getString(++i)+"\"";
+						else {
+							String sval = rs.getString(++i);
+							if( sval == null || sval.equalsIgnoreCase("null") ) res += "null";
+							else res += "\""+sval+"\"";
+						}
 						
 						if( vstr.length() == 0 ) vstr += res;
 						else vstr += ","+res;
 					}
 					
 					String dsql = "insert into "+tname+" values ("+vstr+")";
+					System.err.println( dsql );
+					
 					PreparedStatement dps = dcon.prepareStatement( dsql );
 					dps.execute();
 					dps.close();
