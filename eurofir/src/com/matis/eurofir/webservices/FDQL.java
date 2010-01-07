@@ -26,6 +26,7 @@ public class FDQL extends DefaultHandler2 {
 	int		inFieldName = 0;
 	int		inCondition = 0;
 	boolean	inConditionField = false;
+	boolean	inNameConditionField = false;
 	String	conditionOperator = null;
 	int		inConditionValue = 0;
 	String	logOp = null;
@@ -37,6 +38,7 @@ public class FDQL extends DefaultHandler2 {
 	String	fromStr = "";
 	
 	String	firstLog = "";
+	String	nameCondition = "";
 	
 	String	joinFood = "fd.OriginalFoodCode = cv.OriginalFoodCode";
 	String	joinComponent = "cv.OriginalComponentCode = co.OriginalComponentCode";
@@ -46,6 +48,25 @@ public class FDQL extends DefaultHandler2 {
 	
 	Map<String,String>	tableNameMap = new HashMap<String,String>();
 	Map<String,String>	columnTableMap = new HashMap<String,String>();
+	
+	static Map<String,String[]>	fieldMap = new HashMap<String,String[]>();
+	
+	static {
+		String[]	foodAllMinimum = {"OriginalFoodCode", "FoodGroupIS1", "FoodGroupIS2", "OriginalFoodName", "EnglishFoodName"};
+		fieldMap.put( "FoodAllMinimum", foodAllMinimum );
+		String[]	componentAllMinimum = {"EuroFIRComponentIdentifier", "OriginalComponentCode", "OriginalComponentName", "EnglishComponentName", "Unit", "'W' as MatrixUnit"};
+		fieldMap.put( "ComponentAllMinimum", componentAllMinimum );
+		String[]	componentValueAllMinimum = {"DateOfAnalysis", "MethodType", "MethodIndicator", "MethodParameter", "SelectedValue", "ValueType", "N", "Minimum", "Maximum", "StandardDeviation", "QI_Eurofir", "Remarks"};
+		fieldMap.put( "ComponentValueAllMinimum", componentValueAllMinimum );
+		String[]	ecompid = {"EuroFIRComponentIdentifier"};
+		fieldMap.put( "ecompid", ecompid );
+		String[]	foodName = {"OriginalFoodName"};
+		fieldMap.put( "FoodName", foodName );
+		String[]	enFoodName = {"EnglishFoodName"};
+		fieldMap.put( "enFoodName", enFoodName );
+		String[]	isFoodName = {"OriginalFoodName"};
+		fieldMap.put( "isFoodName", isFoodName );
+	}
 	
 	public FDQL() throws IOException {
 		InputStream 	inputStream = FDQL.class.getResourceAsStream("/tables.txt");
@@ -77,7 +98,7 @@ public class FDQL extends DefaultHandler2 {
 		if( qName.equals("SelectClause") ) {
 			inSelect = true;
 			
-			selStr = "select ";
+			selStr = "SELECT ";
 		} else if( qName.equals("WhereClause") ) {
 			inWhere = true;
 			
@@ -85,7 +106,10 @@ public class FDQL extends DefaultHandler2 {
 		} else if( qName.equals("OrderByClause") ) {
 			inOrderBy = true;
 			
-			sql += " order by ";
+			sql += " ORDER BY ";
+		} else if( qName.equals("NameConditionField") ) {
+			//inNameConditionField = true;
+			nameCondition = attributes.getValue("language");
 		} else if( qName.equals("FieldName") ) {
 			inFieldName = -inFieldName+1;
 		} else if( qName.equals("Condition") ) {
@@ -117,6 +141,8 @@ public class FDQL extends DefaultHandler2 {
 			inOrderBy = false;
 		} else if( qName.equals("FieldName") ) {
 			inFieldName = -inFieldName;
+		} else if( qName.equals("NameConditionField") ) {
+			nameCondition = "";
 		} else if( qName.equals("Condition") ) {
 			inCondition = -inCondition;
 			if( conditionOperator.equals("IN") ) {
@@ -190,29 +216,50 @@ public class FDQL extends DefaultHandler2 {
 			 sql = sql.replace("null.OriginalFoodCode", "fd.OriginalFoodCode");
 			 sql = sql.replace("null.OriginalComponentCode", "co.OriginalComponentCode");
 		 }
+		 
+		 sql = sql.replaceAll("null.", "");
+	 }
+	 
+	 public String fieldAdd( String field ) {
+		 fields.add( field );
+		 String table = columnTableMap.get(field);
+		 String tname = tableNameMap.get( table );
+		 
+		 //if( tname != null && !tname.equals("null") ) 
+		 field = tname+"."+field;
+		 
+		 return field;
+	 }	 
+	
+	 public void subAdd( String field ) {
+		 if( inFieldName == 1 ) {
+			 selStr += field;
+		 } else {
+			 selStr += ","+field;
+		 }
 	 }
 	 
 	 public void characters( char[] ch, int start, int length ) {
 		 if( inSelect && inFieldName > 0 ) {
 			 String field = new String(ch,start,length).trim();
-			 fields.add( field );
-			 String table = columnTableMap.get(field);
-			 String tname = tableNameMap.get( table );
-			 
-			 field = tname+"."+field;
-			 if( inFieldName == 1 ) {
-				 selStr += field;
+			 if( fieldMap.containsKey( field ) ) {
+				 String[]	allFields = fieldMap.get( field );
+				 for( String subfield : allFields ) {
+					 subfield = fieldAdd( subfield );
+					 subAdd( subfield );
+					 inFieldName++;
+				 }
 			 } else {
-				 selStr += ","+field;
+				 field = fieldAdd( field );
+				 subAdd( field );
 			 }
 		 } else if( inWhere && inCondition > 0 ) {
 			 if( inFieldName > 0 ) {
 				 String field = new String(ch,start,length).trim();
-				 fields.add( field );
-				 String table = columnTableMap.get(field);
-				 String tname = tableNameMap.get( table );
+				 if( nameCondition.length() > 0 ) field = nameCondition + field;
+				 if( fieldMap.containsKey(field) && fieldMap.get(field).length == 1 ) field = fieldMap.get(field)[0];
 				 
-				 field = tname+"."+field;
+				 field = fieldAdd( field );
 				 
 				 if( inCondition == 1 ) firstLog = logOp+" ";
 				 else if( inCondition > 1 ) condStr += ") "+logOp+" ";
@@ -246,7 +293,9 @@ public class FDQL extends DefaultHandler2 {
 						 }
 					 } else {
 						 if( inConditionValue == 1 ) {
-							 condStr += new String(ch,start,length);
+							 String val = new String(ch,start,length);							 
+							 if( isNumeric( val ) ) condStr += val;
+							 else condStr += "'"+val+"'";
 						 }
 					 }
 				 }
@@ -256,20 +305,21 @@ public class FDQL extends DefaultHandler2 {
 		 } else if( inOrderBy ) {
 			 if( inFieldName > 0 ) {
 				 String field = new String(ch,start,length).trim();
-				 fields.add( field );
-				 String table = columnTableMap.get(field);
-				 String tname = tableNameMap.get( table );
 				 
-				 field = tname+"."+field;
-				 
-				 if( inFieldName == 1 ) {
-					 sql += field;
-				 } else {
-					 sql += "," + field;
-				 }
+				 field = fieldAdd( field );
+				 subAdd( field );
 				 
 				 if( ordDir != null ) sql += " "+ordDir;
 			 }
+		 }
+	 }
+	 
+	 public boolean isNumeric( String val ) {
+		 try {
+			 Double.parseDouble( val );
+			 return true;
+		 } catch( Exception e ) {
+			 return false;
 		 }
 	 }
 	

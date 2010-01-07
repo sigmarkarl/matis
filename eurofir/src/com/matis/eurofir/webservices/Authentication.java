@@ -6,6 +6,8 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 public class Authentication {
 	static String	apiKey = "0123456789ABCDEFGHJK";
@@ -16,17 +18,38 @@ public class Authentication {
 	
 	public static void test( String sign ) throws NoSuchAlgorithmException {
 		String[]	testargs = {"simmi","joi"};
-		String		result = getSignature( testargs );
+		String		result = getMD5Signature( testargs );
 		System.err.println( result );
 	}
 	
-	public static String getSignature( String[] args ) throws NoSuchAlgorithmException {
+	public static String getMD5Signature( String[] args ) throws NoSuchAlgorithmException {
+		return getSignature(args, "MD5");
+	}
+	
+	public static String getSHA1Signature( String[] args ) throws NoSuchAlgorithmException {
+		return getSignature(args, "SHA-1");
+	}
+	
+	public static String getEuroFIRSignature( SortedMap<String,String>	smap ) throws NoSuchAlgorithmException {
+		String result = secret;
+		for( String key : smap.keySet() ) {
+			String value = smap.get(key);
+			result += key+value;
+		}
+		MessageDigest md = MessageDigest.getInstance( "SHA-1" );
+		byte[] dig = md.digest( result.getBytes() );
+		BigInteger	big = new BigInteger( dig );
+		
+		return big.toString(16);
+	}
+	
+	public static String getSignature( String[] args, String type ) throws NoSuchAlgorithmException {
 		Arrays.sort( args );
 		String result = secret;
 		for( String arg : args ) {
 			result += arg;
 		}
-		MessageDigest md = MessageDigest.getInstance("MD5");
+		MessageDigest md = MessageDigest.getInstance( type );
 		byte[] dig = md.digest( result.getBytes() );
 		BigInteger	big = new BigInteger( dig );
 		
@@ -34,7 +57,7 @@ public class Authentication {
 	}
 	
 	public static void run( String[] args, String sign ) throws NoSuchAlgorithmException, IOException {
-		String result = getSignature( args );
+		String result = getSHA1Signature( args );
 		if( sign.equals( result ) ) {
 			System.out.println( "success" );
 		} else {
