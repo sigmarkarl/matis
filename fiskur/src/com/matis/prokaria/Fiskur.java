@@ -95,6 +95,9 @@ import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 
@@ -628,149 +631,24 @@ public class Fiskur extends JApplet {
 		fc.setMultiSelectionEnabled(true);
 		if( fc.showOpenDialog( this ) == JFileChooser.APPROVE_OPTION ) {
 			File[] ff = fc.getSelectedFiles();
+			//if( ff.length > )
+			fishworker.loadFiles( ff );
 			
-			fishworker.markers.clear();
-			fishworker.fishes.clear();
-			fishworker.malefish.clear();
-			fishworker.femalefish.clear();
-			
-			if( ff.length > 1 ) {				
-				for( File f : ff ) {
-					String path = f.getAbsolutePath();
-					if( path.endsWith(".xlsx" ) ) {
-						if( fishworker.malefish.size() == 0 && fishworker.femalefish.size() == 0 ) {
-							fishworker.wbStuffNoSex( path );
-						} else {
-							fishworker.wbStuff( path );
-						}
-					} else if( path.endsWith(".xls") ) {
-						HSSFWorkbook 	workbook = new HSSFWorkbook( new FileInputStream(f) );
-						HSSFSheet 		sheet = workbook.getSheetAt(0);
-						
-						int r = 0;
-						HSSFRow 		row = sheet.getRow(r);
-						
-						int sexind = -1;
-						int sampind = -1;
-						int locind = -1;
-						int wind = -1;
-						int c = 0;
-						HSSFCell		cell = row.getCell(c);
-						while( cell != null ) {
-							String cellval = cell.getStringCellValue();
-							if( cellval.equalsIgnoreCase("sex") ) sexind = c;
-							else if( cellval.equalsIgnoreCase("sample") ) sampind = c;
-							else if( cellval.equalsIgnoreCase("room") ) locind = c;
-							else if( cellval.equalsIgnoreCase("weight") ) wind = c;
-							
-							c++;
-							cell = row.getCell(c);
-						}
-						
-						row = sheet.getRow( ++r );
-						//Fish cmpf = new Fish( "", 0.0f, 0, true );
-						while( row != null ) {
-							cell = row.getCell(sexind);
-							if( cell != null ) {
-								String 	sex = cell.getStringCellValue();
-								cell = row.getCell(sampind);
-								
-								String 	name = null;
-								int type = cell.getCellType();
-								if( type == HSSFCell.CELL_TYPE_NUMERIC ) {
-									name = Integer.toString( (int)cell.getNumericCellValue() );
-								} else {
-									name = cell.getStringCellValue();
-								}
-								cell = 	row.getCell(wind);
-								type = cell.getCellType();
-								double 	weight = 0.0;
-								if( type == HSSFCell.CELL_TYPE_NUMERIC ) {
-									weight = cell.getNumericCellValue();
-								} else {
-									String	val = cell.getStringCellValue();
-									try {
-										weight = Double.parseDouble(val);
-									} catch( Exception e ) {
-								
-									}
-								}
-								cell = 	row.getCell(locind);
-								int		loc = (int)cell.getNumericCellValue();
-								
-					
-								FishWorker.Fish 		tmpf = null;
-								if( sex.equalsIgnoreCase("male") ) {
-									int 		mind = fishworker.findFish( name ); //fishes.indexOf( cmpf );
-									if( mind != -1 ) {
-										tmpf = fishworker.fishes.get(mind);
-										tmpf.weight = (float)weight;
-										tmpf.loc = loc;
-										tmpf.male = true;
-									} else {
-										tmpf = fishworker.new Fish( name, (float)weight, loc, true );
-									}
-									fishworker.malefish.add( tmpf );
-									fishworker.mfactor.add( 0.0f );
-								} else if( sex.equalsIgnoreCase("female") ) {
-									int 		find = fishworker.findFish( name );
-									if( find != -1 ) {
-										tmpf = fishworker.fishes.get(find);
-										tmpf.weight = (float)weight;
-										tmpf.loc = loc;
-										tmpf.male = true;
-									} else {
-										tmpf = fishworker.new Fish( name, (float)weight, loc, true );
-									}
-									fishworker.femalefish.add( tmpf );
-									fishworker.ffactor.add( 0.0f );
-								} else {
-									
-								}
-							}
-							
-							row = sheet.getRow( ++r );	
-						}
-						
-						if( fishworker.fishes.size() > 0 ) {
-							fishworker.initGenotypes();
-						}
-					} else if( path.endsWith(".txt") ) {
-						char[]	cc = new char[1024];
-						String val = "";
-						FileReader fr = new FileReader( f );
-						int r = fr.read( cc );
-						while( r > 0 ) {
-							val += new String( cc, 0, r );
-							r = fr.read( cc );
-						}
-						fishworker.parseData( val, 3 );
-					}
-				}
-			} else {
-				File f = fc.getSelectedFile();
-				String path = f.getAbsolutePath();
-				if( path.endsWith(".xlsx" ) ) {
-					fishworker.plainStuff( new FileInputStream(path) );
-				}
-			}
-			
-			fishworker.tupleList = fishworker.calcData();
 			pairRel();
 			reload();
 			
-			int m = fishworker.findFish( fishworker.malefish, "1" );
-			int f = fishworker.findFish( fishworker.femalefish, "2" );
+			/*int m = findFish( malefish, "1" );
+			int f = findFish( femalefish, "2" );
 			
 			System.err.println("start");
-			for( int i = 0; i < fishworker.markers.size(); i++ ) {
-				System.err.print( fishworker.mmatrix[m*fishworker.markers.size()+i] + " " );
+			for( int i = 0; i < markers.size(); i++ ) {
+				System.err.print( mmatrix[m*markers.size()+i] + " " );
 			}
 			System.err.println();
-			for( int i = 0; i < fishworker.markers.size(); i++ ) {
-				System.err.print( fishworker.fmatrix[f*fishworker.markers.size()+i] + " " );
+			for( int i = 0; i < markers.size(); i++ ) {
+				System.err.print( fmatrix[f*markers.size()+i] + " " );
 			}
-			System.err.println();
+			System.err.println();*/
 		}
 	}
 	
@@ -824,8 +702,8 @@ public class Fiskur extends JApplet {
 
 		this.setLayout(null);
 		this.getContentPane().setLayout(null);
-		this.setBackground(bgColor);
-		this.getContentPane().setBackground(bgColor);
+		//this.setBackground(bgColor);
+		//this.getContentPane().setBackground(bgColor);
 
 		Dimension d = new Dimension(900, 30);
 		e = new JEditorPane();
@@ -1144,7 +1022,7 @@ public class Fiskur extends JApplet {
 		c.setPreferredSize(d);
 		c.setSize(d);
 		this.add(c);
-		this.add(e);
+		//this.add(e);
 
 		/*
 		 * c = new JComponent() { public void paintComponent( Graphics g ) {
@@ -1561,6 +1439,7 @@ public class Fiskur extends JApplet {
 					
 					summaryTable.setModel( nullModel );
 					summaryTable.setModel( summaryModel );
+					
 				}
 			}
 		});
@@ -2268,14 +2147,16 @@ public class Fiskur extends JApplet {
 				try {
 					if( obj != null && obj instanceof File[] ) {
 						File[] ff = (File[])obj;
-						fishworker.wbStuff( ff[0].getCanonicalPath() );
+						XSSFWorkbook wb = new XSSFWorkbook( ff[0].getCanonicalPath() );
+						fishworker.wbStuff( wb, 0 );
 					} else {
 						obj = support.getTransferable().getTransferData(DataFlavor.stringFlavor);
 						if (obj != null) {
 							String stuff = obj.toString();
 							if( stuff.contains("file://") ) {
 								URL url = new URL( stuff );
-								fishworker.wbStuff( url.getFile() );
+								XSSFWorkbook wb = new XSSFWorkbook( url.getFile() );
+								fishworker.wbStuff( wb, 0 );
 							}
 							fishworker.parseData( stuff, 3 );
 						}
@@ -2318,10 +2199,10 @@ public class Fiskur extends JApplet {
 	
 	public void setBounds(int x, int y, int w, int h) {
 		if (c != null) {
-			c.setBounds(50, 50, w-100, h-100);
+			c.setBounds(0, 0, w, h);
 			//c.setLocation(Math.max(0, (w - c.getWidth()) / 2), Math.max(0, (h - c.getHeight()) / 2));
-			e.setLocation((w - c.getWidth()) / 2, (h + c.getHeight()) / 2);
-			e.setBounds(50, h-50, w-100, 50);
+			//e.setLocation((w - c.getWidth()) / 2, (h + c.getHeight()) / 2);
+			//e.setBounds(50, h-50, w-100, 50);
 		}
 		super.setBounds(x, y, w, h);
 	}
