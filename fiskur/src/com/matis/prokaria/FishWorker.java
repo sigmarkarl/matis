@@ -52,15 +52,13 @@ public class FishWorker {
 		Fish 	male;
 		Fish 	female;
 		int 	rank;
-		float	factor;
 		double	khrank;
 		double	lrm;
 
-		public Tuple(Fish f1, Fish f2, int r, float f, double khr, double lrmval) {
+		public Tuple(Fish f1, Fish f2, int r, double khr, double lrmval) {
 			male = f2;
 			female = f1;
 			rank = r;
-			factor = f;
 			khrank = khr;
 			lrm = lrmval;
 		}
@@ -81,12 +79,14 @@ public class FishWorker {
 		String 	name;
 		float	weight;
 		int		loc;
+		float	factor;
 		boolean	male;
 		
-		public Fish( String name, float weight, int loc, boolean male ) {
+		public Fish( String name, float weight, int loc, float factor, boolean male ) {
 			this.name = name;
 			this.weight = weight;
 			this.loc = loc;
+			this.factor = factor;
 			this.male = male;
 		}
 		
@@ -176,11 +176,11 @@ public class FishWorker {
 			String val = vals[0];
 			if( startstr == null ) startstr = val;
 			if( val.equalsIgnoreCase("female") || val.equals(startstr) ) {
-				Fish f = new Fish( vals[1], 0.0f, -1, false );
+				Fish f = new Fish( vals[1], 0.0f, -1, 0.0f, false );
 				femalefish.add( f );
 				ffactor.add( Float.parseFloat( vals[2] ) );
 			} else {
-				Fish f = new Fish( vals[1], 0.0f, -1, true );
+				Fish f = new Fish( vals[1], 0.0f, -1, 0.0f, true );
 				malefish.add( f );
 				mfactor.add( Float.parseFloat( vals[2] ) );
 			}
@@ -308,7 +308,7 @@ public class FishWorker {
 		wr = ws.getRow( i++ );
 		while( wr != null ) {
 			boolean male = wr.getCell(1).getStringCellValue().equals("male");
-			Fish f = new Fish( wr.getCell(0).getStringCellValue(), (float)wr.getCell(2).getNumericCellValue(), (int)wr.getCell(3).getNumericCellValue(), male );
+			Fish f = new Fish( wr.getCell(0).getStringCellValue(), (float)wr.getCell(2).getNumericCellValue(), (int)wr.getCell(3).getNumericCellValue(), 0.0f, male );
 			if( male ) {
 				malefish.add( f );
 				mfactor.add( 0.0f );
@@ -427,9 +427,11 @@ public class FishWorker {
 		for (int i = 0; i < fr; i++) {
 			Fish n1 = femalefish.get(i);
 			float  ff = ffactor.get(i);
+			//n1.factor = ff;
 			for (int k = 0; k < mr; k++) {
 				Fish n2 = malefish.get(k);
 				float  mf = mfactor.get(k);
+				//n2.factor = mf;
 				int rank = 0;
 				double sum = 0;
 				
@@ -498,7 +500,7 @@ public class FishWorker {
 				double dij = sum / (2. * cl);
 				double val = 1.0 - dij/h;
 				//System.err.println( i + "  " + k + "   " + dij + "  " + val );
-				tupleList.add( new Tuple(n1, n2, rank, mf+ff, val, lrm) );
+				tupleList.add( new Tuple(n1, n2, rank, val, lrm) );
 			}
 		}
 		//unsortedTupleList = tupleList;
@@ -646,7 +648,9 @@ public class FishWorker {
 		//cell = row.createCell(4);
 		//cell.setCellValue("Simmi");
 		cell = row.createCell(5);
-		cell.setCellValue("Performance factor");
+		cell.setCellValue("Male Performance factor");
+		cell = row.createCell(6);
+		cell.setCellValue("Female Performance factor");
 		
 		i = 0;
 		for( Tuple t : tupleList ) {
@@ -676,7 +680,9 @@ public class FishWorker {
 			//cell = row.createCell(4);
 			//cell.setCellValue(t.rank);
 			cell = row.createCell(5);
-			cell.setCellValue(t.factor);
+			cell.setCellValue(t.male.factor);
+			cell = row.createCell(6);
+			cell.setCellValue(t.female.factor);
 		}
 		
 		sheet = wb.createSheet("Male relatedness matrix");
@@ -756,7 +762,7 @@ public class FishWorker {
 		
 		wr = ws.getRow( i++ );
 		while( wr != null && wr.getCell(0) != null ) {
-			Fish f = new Fish( wr.getCell(0).getStringCellValue(), 0.0f, 0, false );
+			Fish f = new Fish( wr.getCell(0).getStringCellValue(), 0.0f, 0, 0.0f, false );
 			fishes.add( f );
 			
 			wr = ws.getRow( i++ );
@@ -784,7 +790,7 @@ public class FishWorker {
 		fmatrix = new int[femalefish.size() * markers.size()];
 		mmatrix = new int[malefish.size() * markers.size()];
 		
-		Fish tmpf = new Fish( "", 0.0f, 0, false );
+		Fish tmpf = new Fish( "", 0.0f, 0, 0.0f, false );
 		int i = 0;
 		while( i < fishes.size() ) {
 			Fish fish = fishes.get(i);
@@ -861,6 +867,7 @@ public class FishWorker {
 		int sampind = -1;
 		int locind = -1;
 		int wind = -1;
+		int pind = -1;
 		int c = 0;
 		XSSFCell		cell = row.getCell(c);
 		while( cell != null ) {
@@ -869,6 +876,9 @@ public class FishWorker {
 			else if( cellval.equalsIgnoreCase("sample") ) sampind = c;
 			else if( cellval.equalsIgnoreCase("room") ) locind = c;
 			else if( cellval.equalsIgnoreCase("weight") ) wind = c;
+			else if( cellval.equalsIgnoreCase("performance") ) {
+				pind = c;
+			}
 			
 			c++;
 			cell = row.getCell(c);
@@ -905,6 +915,29 @@ public class FishWorker {
 				cell = 	row.getCell(locind);
 				int		loc = (int)cell.getNumericCellValue();
 				
+				float		performance = 0.0f;
+				if( pind != -1 ) {
+					cell = 	row.getCell(pind);
+					if( cell.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) {
+						performance = (float)cell.getNumericCellValue();
+					} else if( cell.getCellType() == XSSFCell.CELL_TYPE_STRING ) {
+						String cellval = cell.getStringCellValue();
+						try {
+							float f = Float.parseFloat( cellval );
+							performance = f;
+						} catch( Exception e ) {
+							
+						}
+					} else if( cell.getCellType() == XSSFCell.CELL_TYPE_FORMULA ) {
+						String cellval = cell.getCellFormula();
+						try {
+							float f = Float.parseFloat( cellval );
+							performance = f;
+						} catch( Exception e ) {
+							
+						}
+					}
+				}
 	
 				FishWorker.Fish 		tmpf = null;
 				if( sex.equalsIgnoreCase("male") ) {
@@ -914,11 +947,12 @@ public class FishWorker {
 						tmpf.weight = (float)weight;
 						tmpf.loc = loc;
 						tmpf.male = true;
+						tmpf.factor = performance;
 					} else {
-						tmpf = new Fish( name, (float)weight, loc, true );
+						tmpf = new Fish( name, (float)weight, loc, performance, true );
 					}
 					malefish.add( tmpf );
-					mfactor.add( 0.0f );
+					mfactor.add( performance );
 				} else if( sex.equalsIgnoreCase("female") ) {
 					int 		find = findFish( name );
 					if( find != -1 ) {
@@ -926,11 +960,12 @@ public class FishWorker {
 						tmpf.weight = (float)weight;
 						tmpf.loc = loc;
 						tmpf.male = true;
+						tmpf.factor = performance;
 					} else {
-						tmpf = new Fish( name, (float)weight, loc, true );
+						tmpf = new Fish( name, (float)weight, loc, performance, true );
 					}
 					femalefish.add( tmpf );
-					ffactor.add( 0.0f );
+					ffactor.add( performance );
 				} else {
 					
 				}
@@ -1009,7 +1044,7 @@ public class FishWorker {
 						tmpf.loc = loc;
 						tmpf.male = true;
 					} else {
-						tmpf = new Fish( name, (float)weight, loc, true );
+						tmpf = new Fish( name, (float)weight, loc, 0.0f, true );
 					}
 					malefish.add( tmpf );
 					mfactor.add( 0.0f );
@@ -1021,7 +1056,7 @@ public class FishWorker {
 						tmpf.loc = loc;
 						tmpf.male = true;
 					} else {
-						tmpf = new Fish( name, (float)weight, loc, true );
+						tmpf = new Fish( name, (float)weight, loc, 0.0f, true );
 					}
 					femalefish.add( tmpf );
 					ffactor.add( 0.0f );
