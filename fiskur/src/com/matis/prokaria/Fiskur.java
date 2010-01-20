@@ -29,10 +29,8 @@ import java.awt.event.MouseMotionAdapter;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -91,13 +89,6 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
-import org.apache.poi.hssf.usermodel.HSSFCell;
-import org.apache.poi.hssf.usermodel.HSSFRow;
-import org.apache.poi.hssf.usermodel.HSSFSheet;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.xssf.usermodel.XSSFCell;
-import org.apache.poi.xssf.usermodel.XSSFRow;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 
@@ -357,6 +348,7 @@ public class Fiskur extends JApplet {
 		System.err.println( matrixTable.getRowCount() + "  " + matrixTable.getColumnCount() );
 		System.err.println( femalefish.size() + "  " + malefish.size() );*/
 		
+		splitpane.setDividerLocation( 1.0 );
 		table.revalidate();
 		table.invalidate();
 		table.repaint();
@@ -610,6 +602,8 @@ public class Fiskur extends JApplet {
 	
 	public void kintoolExport() throws IOException {
 		JFileChooser fc = new JFileChooser();
+		fc.setSelectedFile( new File("excel_export.xlsx") );
+		
 		if( fc.showSaveDialog( this ) == JFileChooser.APPROVE_OPTION ) {
 			File f = fc.getSelectedFile();
 			fishworker.kinWrite( f );
@@ -640,7 +634,7 @@ public class Fiskur extends JApplet {
 			/*int m = findFish( malefish, "1" );
 			int f = findFish( femalefish, "2" );
 			
-			System.err.println("start");
+				.println("start");
 			for( int i = 0; i < markers.size(); i++ ) {
 				System.err.print( mmatrix[m*markers.size()+i] + " " );
 			}
@@ -895,9 +889,19 @@ public class Fiskur extends JApplet {
 				XSSFWorkbook	wb = new XSSFWorkbook( );
 				fishworker.writeWorkbook(wb);
 				try {
-					File			f = File.createTempFile("tmp", ".xlsx");
-					wb.write( new FileOutputStream(f) );
-					Desktop.getDesktop().open( f );
+					JFileChooser 	fc = new JFileChooser();
+					if( fc.showSaveDialog( c ) == JFileChooser.APPROVE_OPTION ) {
+						File f = fc.getSelectedFile();
+						FileOutputStream 	fos = new FileOutputStream(f);
+						wb.write( fos );
+						fos.close();
+					} else {
+						File f = File.createTempFile("tmp", ".xlsx");
+						FileOutputStream 	fos = new FileOutputStream(f);
+						wb.write( fos );
+						fos.close();
+						Desktop.getDesktop().open( f );
+					}
 				} catch (FileNotFoundException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -1057,7 +1061,7 @@ public class Fiskur extends JApplet {
 					this.repaint();
 				} else {
 					Object obj = this.getValueAt(row, column);
-					if( column == 3 && obj instanceof Double ) {
+					if( column == 4 && obj instanceof Double ) {
 						double val = (Double)this.getValueAt(row, column);
 						if( val < 0.03 ) c.setBackground( mygreen );
 						else if( val < 0.06 ) c.setBackground( myyellow );
@@ -1090,16 +1094,18 @@ public class Fiskur extends JApplet {
 				if (arg0 < 2)
 					return String.class;
 				else if (arg0 == 2)
-					return Double.class;
+					return Float.class;
 				else if (arg0 == 3)
 					return Float.class;
+				else if (arg0 == 4)
+					return Double.class;
 
 				return Object.class;
 			}
 
 			@Override
 			public int getColumnCount() {
-				return 4;
+				return 5;
 			}
 
 			@Override
@@ -1108,10 +1114,12 @@ public class Fiskur extends JApplet {
 					return "Male";
 				else if (arg0 == 1)
 					return "Female";
-				else if (arg0 == 3)
-					return "Inbreeding value";
 				else if (arg0 == 2)
-					return "Performance factor";
+					return "Male performance factor";
+				else if (arg0 == 3)
+					return "Female performance factor";
+				else if (arg0 == 4)
+					return "Inbreeding value";
 
 				return null;
 			}
@@ -1133,10 +1141,13 @@ public class Fiskur extends JApplet {
 						return t.male.name;
 					if (arg1 == 1)
 						return t.female.name;
-					else if(arg1 == 3)
-						return t.current();
 					else if(arg1 == 2)
-						return t.factor;
+						return t.male.factor;
+					else if(arg1 == 3)
+						return t.female.factor;
+					else if(arg1 == 4)
+						return t.current();
+
 				}
 				return null;
 			}
@@ -1217,12 +1228,13 @@ public class Fiskur extends JApplet {
 
 			@Override
 			public Object getValueAt(int arg0, int arg1) {
-				if (arg1 == 0 && arg0 < fishworker.malefish.size()) {
-					return fishworker.malefish.get(arg0).name;
-				} else if (arg1 == 1 && arg0 < fishworker.mfactor.size() ) {
-					return fishworker.mfactor.get(arg0);
-				} else if (arg1 == 2 && arg0 < fishworker.malefish.size() ) {
-					return fishworker.malefish.get(arg0).weight;
+				FishWorker.Fish mfish = fishworker.malefish.get(arg0);
+				if (arg1 == 0 ) {
+					return mfish.name;
+				} else if (arg1 == 1 ) {
+					return mfish.factor;
+				} else if (arg1 == 2 ) {
+					return mfish.weight;
 				}
 				return null;
 			}
@@ -1329,12 +1341,13 @@ public class Fiskur extends JApplet {
 
 			@Override
 			public Object getValueAt(int arg0, int arg1) {
-				if( arg1 == 0 && arg0 < fishworker.femalefish.size() ) {
-					return fishworker.femalefish.get(arg0).name;
-				} else if( arg1 == 1 && arg0 < fishworker.ffactor.size() ) {
-					return fishworker.ffactor.get(arg0);
-				} else if( arg1 == 2 && arg0 < fishworker.femalefish.size() ) {
-					return fishworker.femalefish.get(arg0).weight;
+				FishWorker.Fish ffish = fishworker.femalefish.get(arg0);
+				if (arg1 == 0 ) {
+					return ffish.name;
+				} else if (arg1 == 1 ) {
+					return ffish.factor;
+				} else if (arg1 == 2 ) {
+					return ffish.weight;
 				}
 				return null;
 			}
@@ -1390,7 +1403,7 @@ public class Fiskur extends JApplet {
 				FloatBuffer	fdata = sd.dataBuffer;
 				fdata.rewind();
 				for( int i = 0; i < Math.min( fdata.limit(), table.getRowCount() ); i++ ) {
-					double val = (Double)table.getValueAt(i, 3);
+					float val = (Float)table.getValueAt(i, 3);
 					fdata.put( i, (float)((val-1.0)/2.0) );
 				}
 				sd.loadData();
@@ -1513,28 +1526,30 @@ public class Fiskur extends JApplet {
 			
 			@Override
 			public void reshape(GLAutoDrawable drawable, int y, int x, int w, int h) {
-				GL gl = drawable.getGL();
-				((Component)drawable).setMinimumSize(new Dimension(0,0));
-				
-				gl.glMatrixMode( GL.GL_PROJECTION );
-            	gl.glLoadIdentity();
-            	if( d3 ) {
-	            	if (w > h) {
-	            		double aspect = w / h;
-	            	    gl.glFrustum(-aspect, aspect, -1.0, 1.0, 1.0, 500.0);
-	            	} else {
-	            		double aspect = h / w;
-	            	    gl.glFrustum (-1.0, 1.0, -aspect, aspect, 1.0, 500.0);
-	            	}
-	        		gl.glTranslatef(0.0f,0.0f,-4.0f);
-	        		gl.glMatrixMode( GL.GL_MODELVIEW );
-            	} else {
-            		gl.glMatrixMode( GL.GL_MODELVIEW );
+				if( w > 100 && h < 100 ) {
+					GL gl = drawable.getGL();
+					((Component)drawable).setMinimumSize(new Dimension(0,0));
+					
+					gl.glMatrixMode( GL.GL_PROJECTION );
 	            	gl.glLoadIdentity();
-	    			gl.glScalef(0.025f, 0.025f, 0.025f);
-            	}
-            	
-            	sd.initMatrix( gl );
+	            	if( d3 ) {
+		            	if (w > h) {
+		            		double aspect = w / h;
+		            	    gl.glFrustum(-aspect, aspect, -1.0, 1.0, 1.0, 500.0);
+		            	} else {
+		            		double aspect = h / w;
+		            	    gl.glFrustum (-1.0, 1.0, -aspect, aspect, 1.0, 500.0);
+		            	}
+		        		gl.glTranslatef(0.0f,0.0f,-4.0f);
+		        		gl.glMatrixMode( GL.GL_MODELVIEW );
+	            	} else {
+	            		gl.glMatrixMode( GL.GL_MODELVIEW );
+		            	gl.glLoadIdentity();
+		    			gl.glScalef(0.025f, 0.025f, 0.025f);
+	            	}
+	            	
+	            	sd.initMatrix( gl );
+				}
 			}
 			
 			@Override
@@ -1781,7 +1796,10 @@ public class Fiskur extends JApplet {
 					if( b ) return t.female.name;
 					return t.male.name;
 				}
-				else if( columnIndex == 1 ) return t.factor;
+				else if( columnIndex == 1 ) {
+					if( b )return t.female.factor;
+					else return t.male.factor;
+				}
 				else if( columnIndex == 2 ) return t.current();
 				
 				return "";
@@ -1988,6 +2006,10 @@ public class Fiskur extends JApplet {
 					if( subtitle.equals("Matrix") ) {
 						tabbedPane.setSelectedIndex(0);
 					}
+					
+					if( tabbedPane.getSelectedIndex() == 0 ) {
+						splitpane.setDividerLocation(1.0);
+					}
 				} else if( title.equals("Male") ) {
 					currentSorter = mtableSorter;
 					if( subtitle.equals("Matrix") ) {
@@ -2000,6 +2022,8 @@ public class Fiskur extends JApplet {
 						mscrollpane.setViewport( genotypeScroll.getRowHeader() );
 					}
 					mtable.tableChanged( new TableModelEvent( mmodel ) );
+					
+					splitpane.setDividerLocation(0.5);
 				} else if( title.equals("Female") ) {
 					currentSorter = ftableSorter;
 					if( subtitle.equals("Matrix") ) {
@@ -2012,6 +2036,8 @@ public class Fiskur extends JApplet {
 						fscrollpane.setViewport( genotypeScroll.getRowHeader() );
 					}
 					ftable.tableChanged( new TableModelEvent( fmodel ) );
+					
+					splitpane.setDividerLocation(0.5);
 				}
 				
 				RowSorterListener rsl = new RowSorterListener() {
@@ -2061,7 +2087,9 @@ public class Fiskur extends JApplet {
 
 		splitpane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftComp, tabbedPane);
 		c.add(splitpane);
-		splitpane.setDividerLocation(300);
+		splitpane.setDividerLocation( 1000 );
+		splitpane.setDividerLocation( 1.0 );
+		splitpane.setOneTouchExpandable( true );
 
 		ActionMap map = table.getActionMap();
 		map.put(TransferHandler.getCutAction().getValue(Action.NAME),
@@ -2178,7 +2206,7 @@ public class Fiskur extends JApplet {
 		Rectangle r = this.getBounds();
 		this.setBounds( r.x, r.y, r.width, r.height );
 		
-		InputStream in = this.getClass().getResourceAsStream("/matrix.txt");
+		/*InputStream in = this.getClass().getResourceAsStream("/matrix.txt");
 		String stuff = "";
 		byte[] bb = new byte[1024];
 		int read;
@@ -2194,7 +2222,7 @@ public class Fiskur extends JApplet {
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
-		}
+		}*/
 	}
 	
 	public void setBounds(int x, int y, int w, int h) {
