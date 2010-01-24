@@ -19,6 +19,8 @@ import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CellValue;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFFont;
@@ -858,7 +860,8 @@ public class FishWorker {
 	}
 	
 	public void xssfStuff( XSSFWorkbook wb, int sheetInd ) throws FileNotFoundException, IOException {
-		XSSFSheet 		sheet = wb.getSheetAt( sheetInd );
+		FormulaEvaluator 	evaluator = wb.getCreationHelper().createFormulaEvaluator();
+		XSSFSheet 			sheet = wb.getSheetAt( sheetInd );
 		
 		int r = 0;
 		XSSFRow 		row = sheet.getRow(r);
@@ -929,12 +932,16 @@ public class FishWorker {
 							
 						}
 					} else if( cell.getCellType() == XSSFCell.CELL_TYPE_FORMULA ) {
-						String cellval = cell.getCellFormula();
-						try {
-							float f = Float.parseFloat( cellval );
-							performance = f;
-						} catch( Exception e ) {
-							
+						CellValue cv = evaluator.evaluate( cell );
+						if( cv.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) {
+							double cellval = cv.getNumberValue();
+							performance = (float)cellval;
+							/*try {
+								float f = Float.parseFloat( cellval );
+								performance = f;
+							} catch( Exception e ) {
+								
+							}*/
 						}
 					}
 				}
