@@ -32,7 +32,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
@@ -102,6 +101,10 @@ public class Fiskur extends JApplet {
 	List<Integer>	maleindices = new ArrayList<Integer>();
 	List<Integer>	femaleindices = new ArrayList<Integer>();
 	
+	TableModel		mmodel;
+	TableModel		fmodel; 
+	MySorter 		ftableSorter;
+	MySorter 		mtableSorter;
 	//List<Tuple> unsortedTupleList;
 	List<FishWorker.Tuple>		tuples = new ArrayList<FishWorker.Tuple>();
 	
@@ -110,7 +113,7 @@ public class Fiskur extends JApplet {
 	JEditorPane e;
 	JComponent subc;
 	final Color bgColor = new Color(255, 255, 200);
-	Image 			img;
+	BufferedImage	img;
 	Image 			mimg;
 	BufferedImage 	barimg;
 	BufferedImage	xlimg;
@@ -127,6 +130,7 @@ public class Fiskur extends JApplet {
 	TableModel	matrixModel;
 	TableModel	nullModel;
 	
+	JTabbedPane	sex;
 	JTabbedPane	tabbedPane;
 	SurfaceDraw	sd;
 	
@@ -288,6 +292,290 @@ public class Fiskur extends JApplet {
 			matrixTable.setModel( nullModel );
 			matrixTable.setModel( matrixModel );
 		}
+		
+		summaryModel = new TableModel() {
+			@Override
+			public void addTableModelListener(TableModelListener l) {
+			}
+
+			@Override
+			public Class<?> getColumnClass(int columnIndex) {
+				if( columnIndex == 0 ) return String.class;
+				else if( columnIndex == 1 ) return Float.class;
+				else if(columnIndex < fishworker.parameterTypes.size()+2)
+					return fishworker.parameterTypes.get( columnIndex-2 );
+				else if(columnIndex == fishworker.parameterTypes.size()+2) return Double.class;
+				
+				return String.class;
+			}
+
+			@Override
+			public int getColumnCount() {
+				return 3+fishworker.parameterNames.size();
+			}
+
+			@Override
+			public String getColumnName(int columnIndex) {
+				if( columnIndex == 0 ) return "Mate";
+				else if( columnIndex == 1 ) return "Performance factor";
+				else if( columnIndex < fishworker.parameterNames.size()+2 )
+					return fishworker.parameterNames.get( columnIndex-2 );
+				else if( columnIndex == 2+fishworker.parameterNames.size() ) return "Inbreeding Value";
+				
+				return "";
+			}
+
+			@Override
+			public int getRowCount() {
+				return tuples.size();
+			}
+
+			@Override
+			public Object getValueAt(int rowIndex, int columnIndex) {
+				FishWorker.Tuple t = tuples.get( rowIndex );
+				
+				boolean b = tuples.size() > 1 && tuples.get(0).male.equals( tuples.get(1).male );
+				if( columnIndex == 0 ) {
+					if( b ) return t.female.name;
+					return t.male.name;
+				} else if( columnIndex == 1 ) {
+					if( b )return t.female.factor;
+					else return t.male.factor;
+				} else if ( columnIndex < fishworker.parameterNames.size()+2 ) {
+					Object retobj = null;
+					if( b ) {
+						retobj = t.female.params[columnIndex-2];
+					} else {
+						retobj = t.male.params[columnIndex-2];
+					}
+					if( retobj.getClass() != fishworker.parameterTypes.get(columnIndex-2) ) {
+						return null;
+					}
+					
+					return retobj;
+					//return mfish.params[ arg1-2 ];
+				} else if( columnIndex == 2+fishworker.parameterNames.size() ) return t.current();
+				
+				return "";
+			}
+
+			@Override
+			public boolean isCellEditable(int rowIndex, int columnIndex) {
+				// TODO Auto-generated method stub
+				return false;
+			}
+
+			@Override
+			public void removeTableModelListener(TableModelListener l) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+				// TODO Auto-generated method stub
+				
+			}
+		};
+		
+		mmodel = new TableModel() {
+
+			@Override
+			public void addTableModelListener(TableModelListener arg0) {}
+
+			@Override
+			public Class<?> getColumnClass(int arg0) {
+				if (arg0 == 0)
+					return String.class;
+				else if (arg0 == 1)
+					return Float.class;
+				else if(arg0 < fishworker.parameterTypes.size()+2)
+					return fishworker.parameterTypes.get( arg0-2 );
+
+				return Object.class;
+			}
+
+			@Override
+			public int getColumnCount() {
+				return 2+fishworker.parameterNames.size();
+			}
+
+			@Override
+			public String getColumnName(int arg0) {
+				if (arg0 == 0)
+					return "Male";
+				else if (arg0 == 1)
+					return "Performance factor";
+				else if(arg0 < fishworker.parameterNames.size()+2)
+					return fishworker.parameterNames.get( arg0-2 );
+
+				return null;
+			}
+
+			@Override
+			public int getRowCount() {
+				if (fishworker.malefish != null) {
+					return fishworker.malefish.size();
+				}
+
+				return 0;
+			}
+
+			@Override
+			public Object getValueAt(int arg0, int arg1) {
+				FishWorker.Fish mfish = fishworker.malefish.get(arg0);
+				if (arg1 == 0 ) {
+					return mfish.name;
+				} else if (arg1 == 1 ) {
+					return mfish.factor;
+				} else if ( arg1 < mfish.params.length+2 ) {
+					Object retobj = mfish.params[ arg1-2 ];
+					if( retobj.getClass() != fishworker.parameterTypes.get(arg1-2) ) return null;
+					return retobj;
+				}
+				return null;
+			}
+
+			@Override
+			public boolean isCellEditable(int arg0, int arg1) {
+				return false;
+			}
+
+			@Override
+			public void removeTableModelListener(TableModelListener arg0) {}
+
+			@Override
+			public void setValueAt(Object arg0, int arg1, int arg2) {}
+		};
+		mtable.setModel( mmodel );
+		
+		mtableSorter = new MySorter("male", mmodel) {
+			public int convertRowIndexToModel(int index) {
+				return currentSorter.convertRowIndexToModelSuper("male", index);
+			}
+
+			public int convertRowIndexToView(int index) {
+				return currentSorter.convertRowIndexToViewSuper(index);
+			}
+
+			public int getViewRowCount() {
+				return currentSorter.getViewRowCountSuper();
+				//return leftTableSorter.getViewRowCount();
+			}
+		};
+		currentSorter = mtableSorter;
+		mtable.setRowSorter( mtableSorter );
+		//MyFilter filter = new MyFilter( mmodel );
+		//mtableSorter.setRowFilter( filter );
+		
+		mtableSorter.addRowSorterListener( new RowSorterListener() {
+			@Override
+			public void sorterChanged(RowSorterEvent e) {
+				currentSorter = (MySorter)e.getSource();
+				matrixTable.repaint();
+				genotypeTable.repaint();
+			}
+		});
+		
+		fmodel = new TableModel() {
+
+			@Override
+			public void addTableModelListener(TableModelListener arg0) {}
+
+			public Class<?> getColumnClass(int arg0) {
+				if (arg0 == 0)
+					return String.class;
+				else if (arg0 == 1)
+					return Float.class;
+				else if(arg0 < fishworker.parameterTypes.size()+2)
+					return fishworker.parameterTypes.get( arg0-2 );
+
+				return Object.class;
+			}
+
+			@Override
+			public int getColumnCount() {
+				return 2+fishworker.parameterNames.size();
+			}
+
+			@Override
+			public String getColumnName(int arg0) {
+				if (arg0 == 0)
+					return "Female";
+				else if (arg0 == 1)
+					return "Performance Factor";
+				else if(arg0 < fishworker.parameterNames.size()+2)
+					return fishworker.parameterNames.get( arg0-2 );
+
+				return null;
+			}
+
+			@Override
+			public int getRowCount() {
+				if (fishworker.femalefish != null) {
+					return fishworker.femalefish.size();
+				}
+
+				return 0;
+			}
+
+			@Override
+			public Object getValueAt(int arg0, int arg1) {
+				FishWorker.Fish ffish = fishworker.femalefish.get(arg0);
+				if (arg1 == 0 ) {
+					return ffish.name;
+				} else if (arg1 == 1 ) {
+					return ffish.factor;
+				} else if ( arg1 < ffish.params.length+2 ) {
+					Object retobj = ffish.params[ arg1-2 ];
+					if( retobj.getClass() != fishworker.parameterTypes.get(arg1-2) ) return null;
+					return retobj;
+				}
+				return null;
+			}
+
+			@Override
+			public boolean isCellEditable(int arg0, int arg1) {
+				return false;
+			}
+
+			@Override
+			public void removeTableModelListener(TableModelListener arg0) {}
+
+			@Override
+			public void setValueAt(Object arg0, int arg1, int arg2) {}
+
+		};
+		ftable.setModel( fmodel );
+		
+		ftableSorter = new MySorter("female",fmodel) {
+			public int convertRowIndexToModel(int index) {
+				return currentSorter.convertRowIndexToModelSuper("female", index);
+			}
+
+			public int convertRowIndexToView(int index) {
+				return currentSorter.convertRowIndexToViewSuper(index);
+				// leftTableSorter.
+			}
+
+			public int getViewRowCount() {
+				int rowcount = currentSorter.getViewRowCountSuper();
+				return rowcount;
+				//return leftTableSorter.getViewRowCount();
+			}
+		};
+		ftable.setRowSorter( ftableSorter );
+		//MyFilter nfilter = new MyFilter( fmodel );
+		//ftableSorter.setRowFilter( nfilter );
+		
+		ftableSorter.addRowSorterListener( new RowSorterListener() {
+			@Override
+			public void sorterChanged(RowSorterEvent e) {
+				currentSorter = (MySorter)e.getSource();
+				matrixTable.repaint();
+				genotypeTable.repaint();
+			}
+		});
 		
 		rowHeaderModel = new TableModel() {
 			@Override
@@ -811,12 +1099,14 @@ public class Fiskur extends JApplet {
 						RenderingHints.VALUE_INTERPOLATION_BICUBIC);
 
 				Paint p = g2.getPaint();
-				GradientPaint gp = new GradientPaint(0.0f, 0.0f, lightGray,
-						0.0f, h, darkGray);
+				GradientPaint gp = new GradientPaint(0.0f, 0.0f, lightGray, 0.0f, h, darkGray);
 				g2.setPaint(gp);
 				g2.fillRoundRect(0, 0, w, h, 24, 24);
 				g2.setPaint(p);
-				// g2.drawImage( img, 0, 0, w, h, 0, h, w, 0, this );
+				//g2.drawImage( img, 0, 0, w, h-5, 0, 0, img.getWidth(), img.getHeight(), this );
+				
+				//g2.setPaint( Color.red );
+				//g2.fillRect( 0,0,w,h );
 
 				Stroke stroke = g2.getStroke();
 				BasicStroke bs = new BasicStroke(2.0f);
@@ -832,28 +1122,58 @@ public class Fiskur extends JApplet {
 				g2.drawString(str, 50, 36);
 				
 				if( tabbedPane.getTitleAt(tabbedPane.getSelectedIndex()).equals("Summary") ) {
-					int r = table.getSelectedRow();
-					if( r != -1 ) {
-						int c = table.getSelectedColumn();
-						if( c == 0 || c == 1 ) {
+					String title = sex.getIconAt( sex.getSelectedIndex() ).toString();
+					if( title.equals("Both") ) {
+						int r = table.getSelectedRow();
+						if( r != -1 ) {
+							int c = table.getSelectedColumn();
+							if( c == 0 || c == 1 ) {
+								g2.setFont(g2.getFont().deriveFont(Font.BOLD, 12.0f));
+								str = "Best matches for ";
+								if( c == 0 ) str += "male ";
+								else if( c == 1 ) str += "female ";
+								str += "fish ";
+								String val = (String)table.getValueAt(r, c);
+								str += val;
+								int strw = g2.getFontMetrics().stringWidth( str );
+								g2.drawString( str, (this.getWidth()-strw)/2, 70 );
+							}
+						}
+					} else if( title.equals("Male") ) {
+						int r = mtable.getSelectedRow();
+						if( r != -1 ) {
 							g2.setFont(g2.getFont().deriveFont(Font.BOLD, 12.0f));
 							str = "Best matches for ";
-							if( c == 0 ) str += "male ";
-							else if( c == 1 ) str += "female ";
+							str += "male ";
 							str += "fish ";
-							String val = (String)table.getValueAt(r, c);
+							String val = (String)mtable.getValueAt(r, 0);
 							str += val;
 							int strw = g2.getFontMetrics().stringWidth( str );
 							g2.drawString( str, (this.getWidth()-strw)/2, 70 );
 						}
+					} else if( title.equals("Female") ) {
+						int r = ftable.getSelectedRow();
+						if( r != -1 ) {
+							int c = ftable.getSelectedColumn();
+							if( c == 0 || c == 1 ) {
+								g2.setFont(g2.getFont().deriveFont(Font.BOLD, 12.0f));
+								str = "Best matches for ";
+								str += "female ";
+								str += "fish ";
+								String val = (String)ftable.getValueAt(r, 0);
+								str += val;
+								int strw = g2.getFontMetrics().stringWidth( str );
+								g2.drawString( str, (this.getWidth()-strw)/2, 70 );
+							}
+						}
 					}
 				}
 				
-				g2.setFont(g2.getFont().deriveFont(Font.BOLD, 12.0f));
+				/*g2.setFont(g2.getFont().deriveFont(Font.BOLD, 12.0f));
 				str = "Drop barcode image here";
 				int strw = g2.getFontMetrics().stringWidth( str );
 				g2.drawString( str, this.getWidth()-strw-20, 26 );
-				g2.drawImage( barimg, this.getWidth()-barimg.getWidth()-20, 30, this );
+				g2.drawImage( barimg, this.getWidth()-barimg.getWidth()-20, 30, this );*/
 				
 				//g2.drawImage( xlimg, this.getWidth()-barimg.getWidth()-20, 30, this );
 			}
@@ -866,9 +1186,9 @@ public class Fiskur extends JApplet {
 				kenheg.setBounds( 400, 40, 180, 25 );
 				maxlik.setBounds( 400, 65, 180, 25 );
 				
-				importbutton.setBounds( 300, 15, 70, h-30 );
-				kgbutton.setBounds( w-330, 15, 70, h-30 );
-				xlbutton.setBounds( w-250, 15, 70, h-30 );
+				importbutton.setBounds( w-260, 15, 70, h-30 );
+				kgbutton.setBounds( w-180, 15, 70, h-30 );
+				xlbutton.setBounds( w-100, 15, 70, h-30 );
 			}
 
 			public boolean isVisible() {
@@ -939,9 +1259,9 @@ public class Fiskur extends JApplet {
 			}
 		});
 		
-		subc.add( pairrel );
-		subc.add( kenheg );
-		subc.add( maxlik );
+		//subc.add( pairrel );
+		//subc.add( kenheg );
+		//subc.add( maxlik );
 		subc.add( importbutton );
 		subc.add( xlbutton );
 		subc.add( kgbutton );
@@ -950,10 +1270,10 @@ public class Fiskur extends JApplet {
 		final JScrollPane mscrollpane = new JScrollPane();
 		final JScrollPane fscrollpane = new JScrollPane();
 		
-		mscrollpane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_NEVER );
+		/*mscrollpane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_NEVER );
 		fscrollpane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_NEVER );
 		mscrollpane.setHorizontalScrollBarPolicy( JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS );
-		fscrollpane.setHorizontalScrollBarPolicy( JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS );
+		fscrollpane.setHorizontalScrollBarPolicy( JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS );*/
 
 		JPopupMenu popup = new JPopupMenu();
 		popup.add(new AbstractAction("Paste") {
@@ -1084,10 +1404,7 @@ public class Fiskur extends JApplet {
 		table.setAutoCreateRowSorter(true);
 		TableModel model = new TableModel() {
 			@Override
-			public void addTableModelListener(TableModelListener arg0) {
-				// TODO Auto-generated method stub
-
-			}
+			public void addTableModelListener(TableModelListener arg0) {}
 
 			@Override
 			public Class<?> getColumnClass(int arg0) {
@@ -1181,112 +1498,8 @@ public class Fiskur extends JApplet {
 			}
 		};
 		mtable.setComponentPopupMenu( popup );
-		mtable.setColumnSelectionAllowed( true );
 		//mtable.setAutoCreateRowSorter(true);
-		final TableModel	mmodel = new TableModel() {
-
-			@Override
-			public void addTableModelListener(TableModelListener arg0) {}
-
-			@Override
-			public Class<?> getColumnClass(int arg0) {
-				if (arg0 == 0)
-					return String.class;
-				else if (arg0 == 1)
-					return Float.class;
-				else if (arg0 == 2)
-					return Float.class;
-
-				return Object.class;
-			}
-
-			@Override
-			public int getColumnCount() {
-				return 3;
-			}
-
-			@Override
-			public String getColumnName(int arg0) {
-				if (arg0 == 0)
-					return "Male";
-				else if (arg0 == 1)
-					return "Performance factor";
-				else if (arg0 == 2)
-					return "Weight";
-
-				return null;
-			}
-
-			@Override
-			public int getRowCount() {
-				if (fishworker.malefish != null) {
-					return fishworker.malefish.size();
-				}
-
-				return 0;
-			}
-
-			@Override
-			public Object getValueAt(int arg0, int arg1) {
-				FishWorker.Fish mfish = fishworker.malefish.get(arg0);
-				if (arg1 == 0 ) {
-					return mfish.name;
-				} else if (arg1 == 1 ) {
-					return mfish.factor;
-				} else if (arg1 == 2 ) {
-					return mfish.weight;
-				}
-				return null;
-			}
-
-			@Override
-			public boolean isCellEditable(int arg0, int arg1) {
-				// TODO Auto-generated method stub
-				return false;
-			}
-
-			@Override
-			public void removeTableModelListener(TableModelListener arg0) {
-				// TODO Auto-generated method stub
-
-			}
-
-			@Override
-			public void setValueAt(Object arg0, int arg1, int arg2) {
-				// TODO Auto-generated method stub
-
-			}
-		};
-		mtable.setModel( mmodel );
 		mscrollpane.setViewportView(mtable);
-		
-		final MySorter mtableSorter = new MySorter("male", mmodel) {
-			public int convertRowIndexToModel(int index) {
-				return currentSorter.convertRowIndexToModelSuper("male", index);
-			}
-
-			public int convertRowIndexToView(int index) {
-				return currentSorter.convertRowIndexToViewSuper(index);
-			}
-
-			public int getViewRowCount() {
-				return currentSorter.getViewRowCountSuper();
-				//return leftTableSorter.getViewRowCount();
-			}
-		};
-		currentSorter = mtableSorter;
-		mtable.setRowSorter( mtableSorter );
-		//MyFilter filter = new MyFilter( mmodel );
-		//mtableSorter.setRowFilter( filter );
-		
-		mtableSorter.addRowSorterListener( new RowSorterListener() {
-			@Override
-			public void sorterChanged(RowSorterEvent e) {
-				currentSorter = (MySorter)e.getSource();
-				matrixTable.repaint();
-				genotypeTable.repaint();
-			}
-		});
 		
 		ftable = new JTable() {
 			public void sorterChanged( RowSorterEvent re ) {
@@ -1295,106 +1508,8 @@ public class Fiskur extends JApplet {
 			}
 		};
 		ftable.setComponentPopupMenu( popup );
-		ftable.setColumnSelectionAllowed( true );
 		//ftable.setAutoCreateRowSorter(true);
-		final TableModel fmodel = new TableModel() {
-
-			@Override
-			public void addTableModelListener(TableModelListener arg0) {}
-
-			public Class<?> getColumnClass(int arg0) {
-				if (arg0 == 0)
-					return String.class;
-				else if (arg0 == 1)
-					return Float.class;
-				else if (arg0 == 2)
-					return Float.class;
-
-				return Object.class;
-			}
-
-			@Override
-			public int getColumnCount() {
-				return 3;
-			}
-
-			@Override
-			public String getColumnName(int arg0) {
-				if (arg0 == 0)
-					return "Female";
-				else if (arg0 == 1)
-					return "Performance Factor";
-				else if (arg0 == 2)
-					return "Weight";
-
-				return null;
-			}
-
-			@Override
-			public int getRowCount() {
-				if (fishworker.femalefish != null) {
-					return fishworker.femalefish.size();
-				}
-
-				return 0;
-			}
-
-			@Override
-			public Object getValueAt(int arg0, int arg1) {
-				FishWorker.Fish ffish = fishworker.femalefish.get(arg0);
-				if (arg1 == 0 ) {
-					return ffish.name;
-				} else if (arg1 == 1 ) {
-					return ffish.factor;
-				} else if (arg1 == 2 ) {
-					return ffish.weight;
-				}
-				return null;
-			}
-
-			@Override
-			public boolean isCellEditable(int arg0, int arg1) {
-				return false;
-			}
-
-			@Override
-			public void removeTableModelListener(TableModelListener arg0) {}
-
-			@Override
-			public void setValueAt(Object arg0, int arg1, int arg2) {}
-
-		};
-		ftable.setModel( fmodel );
 		fscrollpane.setViewportView( ftable );
-		
-		final MySorter ftableSorter = new MySorter("female",fmodel) {
-			public int convertRowIndexToModel(int index) {
-				return currentSorter.convertRowIndexToModelSuper("female", index);
-			}
-
-			public int convertRowIndexToView(int index) {
-				return currentSorter.convertRowIndexToViewSuper(index);
-				// leftTableSorter.
-			}
-
-			public int getViewRowCount() {
-				int rowcount = currentSorter.getViewRowCountSuper();
-				return rowcount;
-				//return leftTableSorter.getViewRowCount();
-			}
-		};
-		ftable.setRowSorter( ftableSorter );
-		//MyFilter nfilter = new MyFilter( fmodel );
-		//ftableSorter.setRowFilter( nfilter );
-		
-		ftableSorter.addRowSorterListener( new RowSorterListener() {
-			@Override
-			public void sorterChanged(RowSorterEvent e) {
-				currentSorter = (MySorter)e.getSource();
-				matrixTable.repaint();
-				genotypeTable.repaint();
-			}
-		});
 		
 		final GLCanvas matrixSurface = new GLCanvas();
 		table.getRowSorter().addRowSorterListener( new RowSorterListener() {
@@ -1428,10 +1543,12 @@ public class Fiskur extends JApplet {
 							tuples.add( t );
 						}
 					}
-					Collections.sort( tuples );
+					Collections.sort( tuples );				
 					
 					summaryTable.setModel( nullModel );
 					summaryTable.setModel( summaryModel );
+					
+					subc.repaint();
 				}
 			}
 		});
@@ -1453,6 +1570,7 @@ public class Fiskur extends JApplet {
 					summaryTable.setModel( nullModel );
 					summaryTable.setModel( summaryModel );
 					
+					subc.repaint();					
 				}
 			}
 		});
@@ -1753,77 +1871,7 @@ public class Fiskur extends JApplet {
 		//matrixRowHeader.setPreferredSize( new Dimension(100,100) );
 		//matrixScroll.setRowHeaderView( matrixRowHeader );
 		//matrixScroll.getRowHeader().setPreferredSize( new Dimension(100,100) );
-
-		summaryModel = new TableModel() {
-			@Override
-			public void addTableModelListener(TableModelListener l) {
-			}
-
-			@Override
-			public Class<?> getColumnClass(int columnIndex) {
-				if( columnIndex == 0 ) return String.class;
-				else if( columnIndex == 1 ) return Float.class;
-				else if( columnIndex == 2 ) return Double.class;
-				
-				return String.class;
-			}
-
-			@Override
-			public int getColumnCount() {
-				return 3;
-			}
-
-			@Override
-			public String getColumnName(int columnIndex) {
-				if( columnIndex == 0 ) return "Mate";
-				else if( columnIndex == 1 ) return "Performance Rank";
-				else if( columnIndex == 2 ) return "Inbreeding Value";
-				
-				return "";
-			}
-
-			@Override
-			public int getRowCount() {
-				return tuples.size();
-			}
-
-			@Override
-			public Object getValueAt(int rowIndex, int columnIndex) {
-				FishWorker.Tuple t = tuples.get( rowIndex );
-				
-				boolean b = tuples.size() > 1 && tuples.get(0).male.equals( tuples.get(1).male );
-				if( columnIndex == 0 ) {
-					if( b ) return t.female.name;
-					return t.male.name;
-				}
-				else if( columnIndex == 1 ) {
-					if( b )return t.female.factor;
-					else return t.male.factor;
-				}
-				else if( columnIndex == 2 ) return t.current();
-				
-				return "";
-			}
-
-			@Override
-			public boolean isCellEditable(int rowIndex, int columnIndex) {
-				// TODO Auto-generated method stub
-				return false;
-			}
-
-			@Override
-			public void removeTableModelListener(TableModelListener l) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-				// TODO Auto-generated method stub
-				
-			}
-			
-		};
+		
 		summaryTable = new JTable() {
 			Color origColor1 = null;
 			Color origColor2 = null;
@@ -1851,7 +1899,7 @@ public class Fiskur extends JApplet {
 					this.repaint();
 				} else {
 					Object obj = this.getValueAt(row, column);
-					if( column == 2 && obj instanceof Double ) {
+					if( column == summaryModel.getColumnCount()-1 && obj instanceof Double ) {
 						double val = (Double)this.getValueAt(row, column);
 						if( val < 0.03 ) c.setBackground( mygreen );
 						else if( val < 0.06 ) c.setBackground( myyellow );
@@ -1888,11 +1936,11 @@ public class Fiskur extends JApplet {
 		
 		tabbedPane.addTab("Summary", summaryScroll);
 		tabbedPane.addTab("Matrix", matrixScroll);
-		tabbedPane.addTab("Surface", matrixSurface);
+		//tabbedPane.addTab("Surface", matrixSurface);
 		tabbedPane.addTab("Info", infoPanel);
 		tabbedPane.addTab("Genotypes", genotypeScroll);
 		
-		final JTabbedPane	sex = new JTabbedPane( JTabbedPane.LEFT );
+		sex = new JTabbedPane( JTabbedPane.LEFT );
 		
 		sex.addTab( null, new VerticalTextIcon("Both", false), scrollpane );
 		sex.addTab( null, new VerticalTextIcon("Male", false), mscrollpane );
@@ -2021,7 +2069,7 @@ public class Fiskur extends JApplet {
 						genotypeScroll.setRowHeaderView( mtable );
 						mscrollpane.setViewport( genotypeScroll.getRowHeader() );
 					}
-					mtable.tableChanged( new TableModelEvent( mmodel ) );
+					if( mmodel != null ) mtable.tableChanged( new TableModelEvent( mmodel ) );
 					
 					splitpane.setDividerLocation(0.5);
 				} else if( title.equals("Female") ) {
@@ -2035,7 +2083,7 @@ public class Fiskur extends JApplet {
 						genotypeScroll.setRowHeaderView( ftable );
 						fscrollpane.setViewport( genotypeScroll.getRowHeader() );
 					}
-					ftable.tableChanged( new TableModelEvent( fmodel ) );
+					if( fmodel != null ) ftable.tableChanged( new TableModelEvent( fmodel ) );
 					
 					splitpane.setDividerLocation(0.5);
 				}
