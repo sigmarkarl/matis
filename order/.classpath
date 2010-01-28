@@ -3,6 +3,11 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="lib" path="/opt/sqljdbc_2.0/enu/sqljdbc4.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/poi"/>
+	<classpathentry kind="lib" path="/opt/poi-3.6/poi-3.6-20091214.jar"/>
+	<classpathentry kind="lib" path="/opt/poi-3.6/poi-ooxml-3.6-20091214.jar"/>
+	<classpathentry kind="lib" path="/opt/poi-3.6/poi-ooxml-schemas-3.6-20091214.jar"/>
+	<classpathentry kind="lib" path="/opt/poi-3.6/ooxml-lib/dom4j-1.6.1.jar"/>
+	<classpathentry kind="lib" path="/opt/poi-3.6/ooxml-lib/geronimo-stax-api_1.0_spec-1.0.jar"/>
+	<classpathentry kind="lib" path="/opt/poi-3.6/ooxml-lib/xmlbeans-2.3.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

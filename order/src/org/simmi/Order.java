@@ -133,6 +133,7 @@ public class Order extends JApplet {
 	JButton		afhenda = new JButton();
 	
 	JButton		excel = new JButton();
+	JButton		vertbut = new JButton();
 	
 	TableModel	model;
 	TableModel	pmodel;
@@ -168,6 +169,8 @@ public class Order extends JApplet {
 	Map<String,String>	pMap = new HashMap<String,String>();
 	
 	final Color bg = Color.white;//new Color( 0,0,0,0 );
+	
+	boolean	vert = true;
 	
 	public class VDialog extends JDialog {
 		JLabel	name = new JLabel("Nafn:", JLabel.RIGHT );
@@ -922,6 +925,15 @@ public class Order extends JApplet {
 			}
 		});
 		
+		vertbut.setAction( new AbstractAction("Raða töflum") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				vert = !vert;
+				c.revalidate();
+				c.repaint();
+			}
+		});
+		
 		excel.setAction( new AbstractAction("Skoða í Excel") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -1038,33 +1050,63 @@ public class Order extends JApplet {
 				String str = "Velkomin(n) "+user;
 				if( domain != null ) str += " on "+domain;
 				int strw = g.getFontMetrics().stringWidth( str );
-				g.drawString( str, (this.getWidth()-strw)/2, 20 );
-				
-				if( user != null ) {
-					Image face = getImage(user);
-					if( face != null ) g.drawImage( face, (this.getWidth()-face.getWidth(this))/2, 50, this );
+				if( !vert ) {
+					g.drawString( str, (this.getWidth()-strw)/2, 20 );
+					
+					if( user != null ) {
+						Image face = getImage(user);
+						if( face != null ) g.drawImage( face, (this.getWidth()-face.getWidth(this))/2, 50, this );
+					}
+				} else {
+					g.drawString( str, (int)(this.getWidth()*0.9-strw/2), 20 );
+					
+					if( user != null ) {
+						Image face = getImage(user);
+						if( face != null ) g.drawImage( face, (int)(this.getWidth()*0.9-face.getWidth(this)/2), 50, this );
+					}
 				}
 			}
 			
 			public void setBounds( int x, int y, int w, int h ) {
 				super.setBounds(x, y, w, h);
 				
-				vcombo.setBounds( (int)(0.5*w)-75, 260, 150, 25 );
-				stcombo.setBounds( (int)(0.5*w)-75, 290, 150, 25 );
-				
-				addbtn.setBounds( (int)(0.5*w)-75, 340, 150, 25 );
-				rembtn.setBounds( (int)(0.5*w)-75, 370, 150, 25 );
-				pantanytt.setBounds( (int)(0.5*w)-75, 400, 150, 25 );
-				
-				afgreida.setBounds( (int)(0.5*w)-75, (int)(0.6*h)+100, 150, 25 );
-				afhenda.setBounds( (int)(0.5*w)-75, (int)(0.6*h)+130, 150, 25 );
-				
-				cvorur.setBounds( (int)(0.00*w), 30, (int)(0.40*w), (int)(0.50*h) );
-				cpantanir.setBounds( (int)(0.60*w), 30, (int)(0.40*w), (int)(0.50*h) );
-				cafgreitt.setBounds( (int)(0.00*w), (int)(0.55*h), (int)(0.40*w), (int)(0.45*h) );
-				cafhent.setBounds( (int)(0.60*w), (int)(0.55*h), (int)(0.40*w), (int)(0.45*h) );
-				
-				excel.setBounds( (int)(0.5*w)-75, this.getHeight()-50, 150, 25 );
+				if( vert ) {
+					vcombo.setBounds( (int)(0.9*w)-75, 260, 150, 25 );
+					stcombo.setBounds( (int)(0.9*w)-75, 290, 150, 25 );
+					
+					addbtn.setBounds( (int)(0.9*w)-75, 340, 150, 25 );
+					rembtn.setBounds( (int)(0.9*w)-75, 370, 150, 25 );
+					pantanytt.setBounds( (int)(0.9*w)-75, 400, 150, 25 );
+					
+					afgreida.setBounds( (int)(0.9*w)-75, (int)(0.6*h)+100, 150, 25 );
+					afhenda.setBounds( (int)(0.9*w)-75, (int)(0.6*h)+130, 150, 25 );
+					
+					cvorur.setBounds( (int)(0.00*w), 0, (int)(0.80*w), (int)(0.30*h) );
+					cpantanir.setBounds( (int)(0.00*w), (int)(0.30*h), (int)(0.80*w), (int)(0.26*h) );
+					cafgreitt.setBounds( (int)(0.00*w), (int)(0.56*h), (int)(0.80*w), (int)(0.22*h) );
+					cafhent.setBounds( (int)(0.00*w), (int)(0.78*h), (int)(0.80*w), (int)(0.22*h) );
+					
+					vertbut.setBounds( (int)(0.9*w)-75, this.getHeight()-80, 150, 25 );
+					excel.setBounds( (int)(0.9*w)-75, this.getHeight()-50, 150, 25 );
+				} else {
+					vcombo.setBounds( (int)(0.5*w)-75, 260, 150, 25 );
+					stcombo.setBounds( (int)(0.5*w)-75, 290, 150, 25 );
+					
+					addbtn.setBounds( (int)(0.5*w)-75, 340, 150, 25 );
+					rembtn.setBounds( (int)(0.5*w)-75, 370, 150, 25 );
+					pantanytt.setBounds( (int)(0.5*w)-75, 400, 150, 25 );
+					
+					afgreida.setBounds( (int)(0.5*w)-75, (int)(0.6*h)+100, 150, 25 );
+					afhenda.setBounds( (int)(0.5*w)-75, (int)(0.6*h)+130, 150, 25 );
+					
+					cvorur.setBounds( (int)(0.00*w), 30, (int)(0.40*w), (int)(0.50*h) );
+					cpantanir.setBounds( (int)(0.60*w), 30, (int)(0.40*w), (int)(0.50*h) );
+					cafgreitt.setBounds( (int)(0.00*w), (int)(0.55*h), (int)(0.40*w), (int)(0.45*h) );
+					cafhent.setBounds( (int)(0.60*w), (int)(0.55*h), (int)(0.40*w), (int)(0.45*h) );
+					
+					vertbut.setBounds( (int)(0.5*w)-75, this.getHeight()-80, 150, 25 );
+					excel.setBounds( (int)(0.5*w)-75, this.getHeight()-50, 150, 25 );
+				}
 			}
 		};
 
@@ -1433,6 +1475,7 @@ public class Order extends JApplet {
 		c.add( addbtn );
 		c.add( rembtn );
 		
+		c.add( vertbut );
 		c.add( excel );
 		
 		cvorur = new JComponent() {
