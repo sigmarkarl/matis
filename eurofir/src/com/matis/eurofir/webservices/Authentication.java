@@ -5,9 +5,12 @@ import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.Signature;
 import java.util.Arrays;
 import java.util.SortedMap;
 import java.util.TreeMap;
+
+import org.apache.commons.codec.digest.DigestUtils;
 
 public class Authentication {
 	static String	apiKey = "0123456789ABCDEFGHJK";
@@ -40,7 +43,28 @@ public class Authentication {
 		byte[] dig = md.digest( result.getBytes() );
 		BigInteger	big = new BigInteger( dig );
 		
+		//Signature s = Signature.getInstance("SHA-1");
+		//s.
+		
+		/*dig = md.digest( "".getBytes() );
+		BigInteger	bi = new BigInteger( dig );
+		System.err.println( bi.toString(16) );*/
+			
 		return big.toString(16);
+	}
+	
+	public static String getEuroFIRSignatureJakarta( SortedMap<String,String>	smap ) throws NoSuchAlgorithmException {
+		String result = secret;
+		for( String key : smap.keySet() ) {
+			String value = smap.get(key);
+			result += key+value;
+		}
+		
+		String ret = DigestUtils.shaHex( result );
+		//System.err.println( result );
+		//System.err.println( DigestUtils.shaHex( "" ) );
+			
+		return ret;
 	}
 	
 	public static String getSignature( String[] args, String type ) throws NoSuchAlgorithmException {
