@@ -1659,39 +1659,61 @@ public class SortTable extends JApplet {
 					float ret = 0.0f;
 					int i = rowIndex - (stuff.size() - 2);
 					Recipe rep = recipe.recipes.get(i);
-					float tot = 0.0f;
+					//float tot = 0.0f;
 					int realColumnIndex = detail.convertIndex(columnIndex);
 					for (RecipeIngredient rip : rep.ingredients) {
+						int k = -1;
+						float div = 100.0f;
 						if (foodNameInd.containsKey(rip.stuff)) {
-							int k = foodNameInd.get(rip.stuff);
-							obj = stuff.get(k + 2);
-							if (realColumnIndex != -1) {
-								Object val = obj[realColumnIndex + 2];
-								if (val != null && val instanceof Float) {
-									float d = rip.measure;
-									if (!rip.unit.equals("g")) {
-										String ru = rip.unit;
-										int f = ru.indexOf("(");
-										int n = ru.indexOf(")");
-										if (n > f && f != -1) {
-											String subbi = ru.substring(f + 1, n);
-											if (subbi.endsWith("g"))
-												subbi = subbi.substring(0, subbi.length() - 1);
-
-											float fl = 0.0f;
-											try {
-												fl = Float.parseFloat(subbi);
-											} catch (Exception e) {
-
-											}
-											d *= fl;
-										}
-									}
-									tot += d;
-
-									float f = (((Float) val) * d) / 100.0f;
-									ret += f;
+							k = foodNameInd.get(rip.stuff);
+							//int newRowIndex = table.convertRowIndexToView( k );
+							//obj = stuff.get(k + 2);
+							//if (realColumnIndex != -1) {
+							//}
+						} else {
+							int 	ri = 0;
+							Recipe 	rp = null;
+							for( Recipe r : recipe.recipes ) {
+								if( rep != r && rip.stuff.equals( r.name + " - " + r.author ) ) {
+									rp = r;
+									break;
 								}
+								ri++;
+							}
+							if( ri < recipe.recipes.size() ) {
+								k = stuff.size()-2+ri;
+								div = rp.getWeight();
+							}
+						}
+						
+						if( k != -1 ) {
+							Object val = getValueAt( k, columnIndex ); //obj[realColumnIndex + 2];
+							if (val != null && val instanceof Float) {
+								/*float d = rip.measure;
+								if (!rip.unit.equals("g")) {
+									String ru = rip.unit;
+									int f = ru.indexOf("(");
+									int n = ru.indexOf(")");
+									if (n > f && f != -1) {
+										String subbi = ru.substring(f + 1, n);
+										if (subbi.endsWith("g"))
+											subbi = subbi.substring(0, subbi.length() - 1);
+	
+										float fl = 0.0f;
+										try {
+											fl = Float.parseFloat(subbi);
+										} catch (Exception e) {
+	
+										}
+										d *= fl;
+									}
+								}
+								tot += d;
+	
+								float f = (((Float) val) * d) / 100.0f;*/
+								
+								float f = rip.getValue( (Float)val ) / div;
+								ret += f;
 							}
 						}
 					}

@@ -575,7 +575,11 @@ public class FishWorker {
 			while( c < male.params.length+2 ) {
 				cell = row.createCell(c);
 				if( parameterTypes.get(c-2) == String.class ) cell.setCellValue( (String)male.params[c-2] );
-				else if( parameterTypes.get(c-2) == Double.class ) cell.setCellValue( (Double)male.params[c-2] );
+				else if( parameterTypes.get(c-2) == Double.class ) {
+					Object obj = male.params[c-2];
+					if( !(obj instanceof Double) ) cell.setCellValue( (String)obj );
+					else cell.setCellValue( (Double)obj );
+				}
 				c++;
 			}
 			
@@ -597,7 +601,11 @@ public class FishWorker {
 			while( c < female.params.length+2 ) {
 				cell = row.createCell(c);
 				if( parameterTypes.get(c-2) == String.class ) cell.setCellValue( (String)female.params[c-2] );
-				else if( parameterTypes.get(c-2) == Double.class ) cell.setCellValue( (Double)female.params[c-2] );
+				else if( parameterTypes.get(c-2) == Double.class ) {
+					Object obj = female.params[c-2];
+					if( !(obj instanceof Double) ) cell.setCellValue( (String)obj );
+					else cell.setCellValue( (Double)obj );
+				}
 				c++;
 			}
 			
