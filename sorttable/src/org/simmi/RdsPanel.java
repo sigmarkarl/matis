@@ -46,6 +46,7 @@ public class RdsPanel extends JSplitPane {
 		float ff = -1.0f;
 		
 		int r = table.getSelectedRow();
+		//System.err.println("erm " + colname);
 		
 		int base = 4;
 		if( r >= 0 ) {

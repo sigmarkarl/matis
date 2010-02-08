@@ -106,6 +106,59 @@ public class DetailPanel extends JSplitPane {
 		}
 	}
 	
+	public Object getVal( int rowInd, int colInd, final List<Object[]> stuff, final Map<String,Integer> foodInd, final List<Recipe> recipes ) {
+		Object[] obj = null;
+		if( rowInd < stuff.size()-2 ) {
+			obj = stuff.get(rowInd+2);
+			Object val = obj[ colInd+2 ];
+			
+			//Object val = model.getValueAt( lsel, rowIndex );
+			if( val instanceof Float ) {
+				return val;
+			}
+		} else {
+			float ret = 0.0f;
+			int i = rowInd - (stuff.size()-2);
+			Recipe rep = recipes.get(i);
+			float tot = 0.0f;
+			for (RecipeIngredient rip : rep.ingredients) {
+				int k = -1;
+				float div = 100.0f;
+				if (foodInd.containsKey(rip.stuff)) {
+					k = foodInd.get(rip.stuff);
+				} else {
+					int 	ri = 0;
+					Recipe 	rp = null;
+					for( Recipe r : recipes ) {
+						if( rep != r && rip.stuff.equals( r.name + " - " + r.author ) ) {
+							rp = r;
+							break;
+						}
+						ri++;
+					}
+					if( ri < recipes.size() ) {
+						k = stuff.size()-2+ri;
+						div = rp.getWeight();
+					}
+				}
+				
+				if( k != -1 ) {
+					//obj = stuff.get(k + 2);
+					Object val = getVal( k, colInd, stuff, foodInd, recipes ); //obj[rowIndex + 2];
+					if (val != null && val instanceof Float) {										
+						float f = rip.getValue( (Float)val ) / div;
+						ret += f;
+					}
+				}
+			}
+			
+			if( ret != 0.0f ) {
+				return ret;
+			}
+		}
+		return null;
+	}
+	
 	public DetailPanel( final RdsPanel rdsp, final String lang, final ImagePanel imgPanel, final JCompatTable table, final JCompatTable topTable, final JCompatTable leftTable, final List<Object[]> stuff, final List<String> ngroupList, final List<String> ngroupGroups, final Map<String,Integer> foodInd, final List<Recipe> recipes ) throws IOException {
 		super( JSplitPane.VERTICAL_SPLIT );
 		this.setOneTouchExpandable( true );
@@ -321,43 +374,7 @@ public class DetailPanel extends JSplitPane {
 					int rsel = leftTable.getSelectedRow();
 					if( rsel >= 0 && rsel < leftTable.getRowCount() ) {
 						int lsel = leftTable.convertRowIndexToModel( rsel );
-						
-						if( lsel < stuff.size()-2 ) {
-							Object[]		obj = stuff.get(lsel+2);
-							Object val = 	obj[ rowIndex+2 ];
-							
-							//Object val = model.getValueAt( lsel, rowIndex );
-							if( val instanceof Float ) {
-								return val;
-							}
-						} else {
-							float ret = 0.0f;
-							int i = lsel - (stuff.size()-2);
-							Recipe rep = recipes.get(i);
-							float tot = 0.0f;
-							for( RecipeIngredient rip : rep.ingredients ) {
-								if( foodInd.containsKey(rip.stuff) ) {
-									int k = foodInd.get( rip.stuff );
-									Object[] 	obj = stuff.get(k+2);
-									Object		val = obj[ rowIndex+2 ];
-									if( val != null && val instanceof Float ) {
-										float d = rip.measure;
-										if( rip.unit.equals("mg") ) d /= 1000.0f;
-										tot += d;
-										
-										float f = (((Float)val) * d) / 100.0f;
-										ret += f;
-									}
-								}
-							}
-							
-							if( ret != 0.0f ) {
-								return ret;
-								//return (ret * 100.0f) / tot;
-							}
-								
-							return null;
-						}
+						return getVal( lsel, rowIndex, stuff, foodInd, recipes );
 					}
 				} else if( columnIndex == 4 ) {
 					String efni = ngroupList.get( rowIndex );

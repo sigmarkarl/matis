@@ -258,16 +258,24 @@ public class TreeDraw extends JComponent {
 						int y2 = ny+4+h/25+(split.length-1)*bFont.getSize();
 						yaml += resnode.name + ": [" + x1 + "," + y1 + "," + x2 + "," + y2 + "]\n";
 					} else {
+						boolean b = resnode.name.length() > 2;
+						
 						g2.setColor( color );
-						g2.fillOval( x+nx-k/2, ny-k/2, k, k );
-						g2.setColor( Color.white );
-						if( resnode.name.length() > 2 ) {
+						int strw = 0;
+						if( b ) {
 							g2.setFont( lFont );
-							int strw = g2.getFontMetrics().stringWidth( resnode.name );
+							strw = g2.getFontMetrics().stringWidth( resnode.name );
+						} else{
+							g2.setFont( bFont );
+							strw = g2.getFontMetrics().stringWidth( resnode.name );
+						}
+						g2.fillRoundRect( x+nx-(5*strw)/8, ny-k/2, (5*strw)/4, k, k, k );
+						//g2.fillRoundRect(startx, starty, width, height, arcWidth, arcHeight)
+						//g2.fillOval( x+nx-k/2, ny-k/2, k, k );
+						g2.setColor( Color.white );
+						if( b ) {
 							g2.drawString(resnode.name, x+nx-strw/2, ny+8 );
 						} else {
-							g2.setFont( bFont );
-							int strw = g2.getFontMetrics().stringWidth( resnode.name );
 							g2.drawString(resnode.name, x+nx-strw/2, ny+9 );
 						}
 					}

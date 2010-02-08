@@ -111,6 +111,33 @@ public class RecipePanel extends JSplitPane {
 				if( store != null ) values = skmt.get( store );
 			}
 		}
+		
+		public float getValue( float val ) {
+			float d = this.measure;
+			if (!this.unit.equals("g")) {
+				String ru = this.unit;
+				int f = ru.indexOf("(");
+				int n = ru.indexOf(")");
+				if (n > f && f != -1) {
+					String subbi = ru.substring(f + 1, n);
+					if (subbi.endsWith("g"))
+						subbi = subbi.substring(0, subbi.length() - 1);
+
+					float fl = 0.0f;
+					try {
+						fl = Float.parseFloat(subbi);
+					} catch (Exception e) {
+
+					}
+					d *= fl;
+				}
+			}
+			//tot += d;
+
+			float f = (val * d);
+			
+			return f;
+		}
 	};
 	
 	public class Recipe {
@@ -167,6 +194,33 @@ public class RecipePanel extends JSplitPane {
 			FileWriter	fw = new FileWriter( f );
 			fw.write( str );
 			fw.close();
+		}
+		
+		public float getWeight() {
+			float w = 0.0f;
+			for( RecipeIngredient ri : ingredients ) {
+				float d = ri.measure;
+				if (!ri.unit.equals("g")) {
+					String ru = ri.unit;
+					int f = ru.indexOf("(");
+					int n = ru.indexOf(")");
+					if (n > f && f != -1) {
+						String subbi = ru.substring(f + 1, n);
+						if (subbi.endsWith("g"))
+							subbi = subbi.substring(0, subbi.length() - 1);
+
+						float fl = 0.0f;
+						try {
+							fl = Float.parseFloat(subbi);
+						} catch (Exception e) {
+
+						}
+						d *= fl;
+					}
+				}
+				w += d;
+			}
+			return w;
 		}
 	};
 	
