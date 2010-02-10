@@ -111,8 +111,8 @@ public class TreeDraw extends JComponent {
 		vStroke = new BasicStroke( h/300 );
 		hStroke = new BasicStroke( w/600 );
 		dFont = new Font("Arial", Font.BOLD, w/128);
-		lFont = new Font("Arial", Font.BOLD, w/72);
-		bFont = new Font("Arial", Font.BOLD, w/96);
+		lFont = new Font("Arial", Font.BOLD, w/96);
+		bFont = new Font("Arial", Font.BOLD, w/128);
 		oldPaint = g2.getPaint();
 		//gradientPaint = new GradientPaint();
 		
@@ -262,21 +262,35 @@ public class TreeDraw extends JComponent {
 						
 						g2.setColor( color );
 						int strw = 0;
+						String[] split = resnode.name.split( "_" );
 						if( b ) {
 							g2.setFont( lFont );
-							strw = g2.getFontMetrics().stringWidth( resnode.name );
+							for( String s : split ) {
+								strw = Math.max( strw, g2.getFontMetrics().stringWidth( s ) );
+							}
 						} else{
 							g2.setFont( bFont );
-							strw = g2.getFontMetrics().stringWidth( resnode.name );
+							for( String s : split ) {
+								strw = Math.max( strw, g2.getFontMetrics().stringWidth( s ) );
+							}
 						}
 						g2.fillRoundRect( x+nx-(5*strw)/8, ny-k/2, (5*strw)/4, k, k, k );
 						//g2.fillRoundRect(startx, starty, width, height, arcWidth, arcHeight)
 						//g2.fillOval( x+nx-k/2, ny-k/2, k, k );
 						g2.setColor( Color.white );
+						int i = 0;
 						if( b ) {
-							g2.drawString(resnode.name, x+nx-strw/2, ny+8 );
+							for( String s : split ) {
+								strw = g2.getFontMetrics().stringWidth( s );
+								g2.drawString(s, x+nx-strw/2, ny+5-8*(split.length-1)+i*16 );
+								i++;
+							}
 						} else {
-							g2.drawString(resnode.name, x+nx-strw/2, ny+9 );
+							for( String s : split ) {
+								strw = g2.getFontMetrics().stringWidth( s );
+								g2.drawString(s, x+nx-strw/2, ny+6-8*(split.length)+i*16 );
+								i++;
+							}
 						}
 					}
 				}
