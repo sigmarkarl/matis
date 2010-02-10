@@ -678,17 +678,32 @@ public class FishWorker {
 		cell.setCellValue("Female");
 		cell = row.createCell(2);
 		cell.setCellValue("LRM(1999)");
-		cell = row.createCell(3);
-		cell.setCellValue("Konolov&Heg(2008)");
+		//cell = row.createCell(3);
+		//cell.setCellValue("Konolov&Heg(2008)");
 		//cell = row.createCell(4);
 		//cell.setCellValue("Simmi");
-		cell = row.createCell(5);
+		
+		int v = 4;
+		cell = row.createCell( v++ );
 		cell.setCellValue("Male Performance factor");
-		cell = row.createCell(6);
+		int sv = v;
+		while( v < parameterNames.size()+sv ) {
+			cell = row.createCell( v );
+			cell.setCellValue( parameterNames.get(v-sv) );
+			v++;
+		}
+		v++;
+		cell = row.createCell(v++);
 		cell.setCellValue("Female Performance factor");
+		sv = v;
+		while( v < parameterNames.size()+sv ) {
+			cell = row.createCell( v );
+			cell.setCellValue( parameterNames.get(v-sv) );
+			v++;
+		}
 		
 		i = 0;
-		for( Tuple t : tupleList ) {
+		for( Tuple t : tupleList ) {			
 			row = sheet.createRow(++i);
 			cell = row.createCell(0);
 			cell.setCellValue(t.male.name);
@@ -703,8 +718,6 @@ public class FishWorker {
 			} else {
 				cell.setCellStyle( redstyle );
 			}
-			cell = row.createCell(3);
-			cell.setCellValue(t.khrank);
 			/*if( t.khrank < 0.03 ) {
 				cell.setCellStyle( redstyle );
 			} else if( t.khrank < 0.06 ) {
@@ -714,10 +727,35 @@ public class FishWorker {
 			}*/
 			//cell = row.createCell(4);
 			//cell.setCellValue(t.rank);
-			cell = row.createCell(5);
+			v = 4;
+			cell = row.createCell(v++);
 			cell.setCellValue(t.male.factor);
-			cell = row.createCell(6);
+			sv = v;
+			while( v < t.male.params.length+sv ) {
+				cell = row.createCell(v);
+				if( parameterTypes.get(v-sv) == String.class ) cell.setCellValue( (String)t.male.params[v-sv] );
+				else if( parameterTypes.get(v-sv) == Double.class ) {
+					Object obj = t.male.params[v-sv];
+					if( !(obj instanceof Double) ) cell.setCellValue( (String)obj );
+					else cell.setCellValue( (Double)obj );
+				}
+				v++;
+			}
+			
+			v++;
+			cell = row.createCell(v++);
 			cell.setCellValue(t.female.factor);
+			sv = v;
+			while( v < t.female.params.length+sv ) {
+				cell = row.createCell(v);	
+				if( parameterTypes.get(v-sv) == String.class ) cell.setCellValue( (String)t.female.params[v-sv] );
+				else if( parameterTypes.get(v-sv) == Double.class ) {
+					Object obj = t.female.params[v-sv];
+					if( !(obj instanceof Double) ) cell.setCellValue( (String)obj );
+					else cell.setCellValue( (Double)obj );
+				}
+				v++;
+			}
 		}
 		
 		sheet = wb.createSheet("Male relatedness matrix");
