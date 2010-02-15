@@ -68,12 +68,14 @@ template <typename T,typename K> void t_print( const char* format, const char* e
 
 	std::vector<int> vi;
 	simlab val = va_arg( args, simlab );
+	printf("%d %d\n", val.length, val.type );
 	long mul = 1;
 	while( val.buffer != 0 && vi.size() < 8 ) {
 		vi.push_back( val.buffer );
 		mul *= val.buffer;
 		//printf("%ld\n", val.buffer );
 		val = va_arg( args, simlab );
+		printf("%d %d\n", val.length, val.type );
 	}
 	va_end( args );
 	if( length == -1 ) mul = length;
@@ -150,8 +152,9 @@ JNIEXPORT int print( const char* format, const char* end, ... ) {
 		}
 		putchar( '\n' );
 	} else if( data.type > 0 ) {
-		if( end == NULL ) end = "\n";
-		if( data.length == -1 ) {
+		if( end == NULL ) {
+			end = "\n";
+		} else if( data.length == -1 ) {
 			if( data.type == 66 ) {
 				//PseudoBuffer<double>*	buffer = (PseudoBuffer<double>*)data.buffer;
 				//if( format[1] == 'e' ) t_print<PseudoBuffer<double>,double>( format, end, *buffer, buffer->length(), passnext );
@@ -257,7 +260,18 @@ JNIEXPORT int printdhtml( ... ) {
 }
 
 JNIEXPORT int printi( ... ) {
-	//printf( "%d\n", (int)data.length );
+	return print( "%d\t", "\n", passnext );
+}
+
+JNIEXPORT int ermo( simlab str ) {
+	char* buffer = (char*)str.buffer;
+	if( buffer != NULL ) prnt( "%s\n", buffer );
+	//else prnt( "%s\n", "jo" );
+
+	return 1;
+}
+
+JNIEXPORT int printerm( simlab erm ) {
 	return print( "%d\t", "\n", passnext );
 }
 
