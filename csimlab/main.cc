@@ -81,6 +81,12 @@ JNIEXPORT int buff() {
 	return 0;
 }
 
+JNIEXPORT int simmi() {
+	printf("in\n");
+
+	return 0;
+}
+
 JNIEXPORT int init() {
 	prnt = printf;
 	current = (long)&data;
