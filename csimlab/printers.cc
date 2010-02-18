@@ -68,14 +68,12 @@ template <typename T,typename K> void t_print( const char* format, const char* e
 
 	std::vector<int> vi;
 	simlab val = va_arg( args, simlab );
-	printf("%d %d\n", val.length, val.type );
 	long mul = 1;
 	while( val.buffer != 0 && vi.size() < 8 ) {
 		vi.push_back( val.buffer );
 		mul *= val.buffer;
 		//printf("%ld\n", val.buffer );
 		val = va_arg( args, simlab );
-		printf("%d %d\n", val.length, val.type );
 	}
 	va_end( args );
 	if( length == -1 ) mul = length;
@@ -259,7 +257,18 @@ JNIEXPORT int printdhtml( ... ) {
 	return print( "%e\t", "<br>\n", passnext );
 }
 
-JNIEXPORT int printi( ... ) {
+JNIEXPORT int printi( simlab val ) {
+	/*va_list args;
+	va_start(args, 4);
+	simlab val = va_arg( args, simlab );
+	while( val.buffer != 0 ) {
+		printf("%d %d\n", (int)val.type, (int)val.length );
+		val = va_arg( args, simlab );
+	}
+	va_end( args );*/
+	//printf("%d %d %d\n", (int)val.length, (int)val.type, (int)val.buffer );
+
+	passnext.dw = val;
 	return print( "%d\t", "\n", passnext );
 }
 
