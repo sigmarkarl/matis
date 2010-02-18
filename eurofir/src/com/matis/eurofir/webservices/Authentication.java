@@ -8,6 +8,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.Signature;
 import java.util.Arrays;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.TreeMap;
 
 import org.apache.commons.codec.digest.DigestUtils;
@@ -49,7 +50,7 @@ public class Authentication {
 		/*dig = md.digest( "".getBytes() );
 		BigInteger	bi = new BigInteger( dig );
 		System.err.println( bi.toString(16) );*/
-			
+		
 		return big.toString(16);
 	}
 	
@@ -57,6 +58,7 @@ public class Authentication {
 		String result = secret;
 		for( String key : smap.keySet() ) {
 			String value = smap.get(key);
+			value = value.replaceAll("[\\s]", "");
 			result += key+value;
 		}
 		

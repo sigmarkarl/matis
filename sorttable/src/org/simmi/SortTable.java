@@ -1853,11 +1853,12 @@ public class SortTable extends JApplet {
 			if (fp != null)
 				tabbedPane.addTab("Vinir", vinicon, fp);
 			tabbedPane.addTab("RDS", rdsicon, rdsPanel);
-			tabbedPane.addTab("Mataræði og Hreyfing", maticon, eat);
-			tabbedPane.addTab("Innkaup og kostnaður", buy);
+			tabbedPane.addTab("Máltíðir", maticon, eat);
+			//tabbedPane.addTab("Mataræði og Hreyfing", maticon, eat);
+			//tabbedPane.addTab("Innkaup og kostnaður", buy);
 
 			// tabbedPane.setEnabledAt( tabbedPane.getTabCount()-2, false );
-			tabbedPane.setEnabledAt(tabbedPane.getTabCount() - 1, false);
+			//tabbedPane.setEnabledAt(tabbedPane.getTabCount() - 1, false);
 		} else {
 			tabbedPane.addTab("Food", fodicon, rightSplitPane);
 			// tabbedPane.addTab( "Image", imgPanel );

@@ -351,14 +351,6 @@ public class GraphPanel extends JTabbedPane {
 						g2.drawString( sval, 10, this.getHeight()/25 );
 					}
 					
-					String enStr = "";
-					if( lang.equals("IS") ) {
-						enStr = "Orka (í 100g)";
-					} else {
-						enStr = "Energy (in 100g)";
-					}
-					g2.drawString( enStr, 10, (int)(this.getHeight()/13.7) );
-					
 					float alc = 0.0f;
 					float prt = 0.0f;
 					float cbh = 0.0f;
@@ -378,19 +370,30 @@ public class GraphPanel extends JTabbedPane {
 						fat = stuffYou(row, "FAT");
 						fib = stuffYou(row, "FIB");
 					}
+					double sum = alc + prt + cbh + fat + fib;
+					
+					//int rrow = leftTable.convertRowIndexToModel(row);
+					
+					String enStr = "";
+					if( lang.equals("IS") ) {
+						enStr = "Orka (í 100g)";
+					} else {
+						enStr = "Energy (in 100g)";
+					}
+					g2.drawString( enStr, 10, (int)(this.getHeight()/13.7) );
 					
 					double alco = alc*29.0;
 					double prto = prt*17.0;
 					double cbho = cbh*17.0;
 					double fato = fat*37.0;
 					double fibo = fib*8.0;
-					double f = (17.0*prt + 17.0*cbh + 37.0*fat + 29.0*alc + 8.0*fib)*100.0;
+					double f = (prto + cbho + fato + alco + fibo)*100.0;
 					
 					if( lang.equals("IS") ) {
 						if( f > 0 ) {
 							double fv = Math.round( f )/100.0;
 							//double fcal = f/4.184;
-							double fcal = alc*7.0 + prt*4.0 + cbh*4.0 + fat*9.0 + 2.0*fib; 
+							double fcal = alc*7.0 + prt*4.0 + cbh*4.0 + fat*9.0 + 2.0*fib;
 							fcal *= 100.0;
 							double fvcal = Math.round( fcal )/100.0;
 							
