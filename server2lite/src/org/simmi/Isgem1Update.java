@@ -39,6 +39,7 @@ public class Isgem1Update {
 		con.prepareCall("delete from [ISDB].[dbo].[HEIMILD]").execute();
 		con.prepareCall("delete from [ISDB].[dbo].[EFNI]").execute();
 		con.prepareCall("delete from [ISDB].[dbo].[MAELING]").execute();
+		con.prepareCall("delete from [ISDB].[dbo].[FAEDA]").execute();
 		
 		String sql = "select OriginalReferenceCode, Citation, Remarks from [Isgem2].[dbo].[Reference] order by OriginalReferenceCode";
 		PreparedStatement	ps = con.prepareStatement( sql );
