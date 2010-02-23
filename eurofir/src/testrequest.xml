@@ -1,0 +1,40 @@
+<env:Envelope xmlns:env="http://www.w3.org/2003/05/soap-envelope"
+xmlns:eur="http://eurofir.webservice.namespace">
+<env:Body>
+<eur:GetFoodInformation>
+<eur:api_userid>Simmi</eur:api_userid>
+<eur:api_permission>All</eur:api_permission>
+<eur:fdql_sentence>
+<FDQL_Sentence>
+<MetaData>
+<SchemaVersion>1.0</SchemaVersion>
+<Schema>EuroFIR_Web_Service_FDQL_Sentence_version_1_0_1.xsd</Schema>
+</MetaData>
+<SelectClause>
+<FieldName>FoodAllMinimum</FieldName>
+<FieldName>ComponentAllMinimum</FieldName>
+<FieldName>ComponentValueAllMinimum</FieldName>
+</SelectClause>
+<WhereClause>
+<Condition xsitype="T_CommonCondition" logicalOperator="AND">
+<NameConditionField language="en">
+<FieldName>FoodName</FieldName>
+</NameConditionField>
+<ConditionOperator>LIKE</ConditionOperator>
+<ConditionValue>Avocado%</ConditionValue>
+</Condition>
+<Condition xsitype="T_CommonCondition" logicalOperator="AND">
+<ClassificationConditionField searchScope="NT">
+<FieldName>ecompid</FieldName>
+</ClassificationConditionField>
+<ConditionOperator>=</ConditionOperator>
+<ConditionValue>VITC</ConditionValue>
+</Condition>
+</WhereClause>
+</FDQL_Sentence>
+</eur:fdql_sentence>
+<eur:version>1.0.1</eur:version>
+<eur:api_signature>72e063226752ec292fe9f10f1b57ffeb0978b355</eur:api_signature>
+</eur:GetFoodInformation>
+</env:Body>
+</env:Envelope>
