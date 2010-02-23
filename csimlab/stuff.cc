@@ -871,7 +871,7 @@ template <typename T, typename K, typename Q> void t_mul( T* buffer, int length,
 	}*/
 }
 
-template <typename T> void t_fibo( T* buffer, int length ) {
+template <typename T> void t_fibo( T buffer, int length ) {
 	if( length > 0 ) buffer[0] = 1;
 	if( length > 1 ) buffer[1] = 1;
 	for( int i = 2; i < length; i++ ) {
@@ -1952,16 +1952,16 @@ template <typename T> void t_flip( T* buffer, int length, int chunk ) {
 	}
 }
 
-template <typename T> void t_shift( T* buffer, int length, int chunk, int shift ) {
+template <typename T,typename K> void t_shift( T buffer, long length, long chunk, long shift ) {
 	shift %= chunk;
 	if( shift < 0 ) shift = chunk + shift;
 	int ec = _gcd( shift, chunk );
 	for( int r = 0; r < length; r+=chunk ) {
-		T* rdata = &buffer[r];
+		T rdata = &buffer[r];
 		for( int i = 0; i < ec; i++ ) {
 			int k = i;
-			T	tmp1;
-			T	tmp2 = rdata[k];
+			K	tmp1;
+			K	tmp2 = rdata[k];
 			do {
 				tmp1 = tmp2;
 				k = (k+shift)%chunk;
@@ -2011,14 +2011,14 @@ template <typename T, typename K> void t_intersect( T* buffer, int length, K* in
 	data.length = res.size();
 }
 
-template <typename T> void t_median( T* buffer, int length, int chunk ) {
+template <typename T,typename K> void t_median( T buffer, int length, int chunk ) {
 	for( int i = 0; i < length/*-chunk*/; i++ ) {
 		for( int k = i+1; k < i+chunk; k++ ) {
 			buffer[i] += buffer[k%length];
 		}
 		buffer[i] /= chunk;
 	}
-	t_shift( buffer, length, length, chunk/2 );
+	t_shift<T,K>( buffer, length, length, chunk/2 );
 }
 
 template <typename T> void t_mean( T* buffer, int length, int chunk, int size ) {
@@ -4010,6 +4010,7 @@ JNIEXPORT int ffunc( simlab func, simlab wh ) {
 JNIEXPORT int dfunc( simlab func, simlab wh ) {
 	double (*dfunc)(double);
 	dfunc = (double (*)(double))func.buffer;
+	printf( "%d %d %d\n", (int)wh.buffer, (int)wh.type, (int)wh.length );
 	if( wh.type == 0 ) {
 		if( data.type == 66 ) t_dfunc( (double*)data.buffer, data.length, dfunc, (int*)NULL, 0 );
 		else if( data.type == 34 ) t_dfunc( (float*)data.buffer, data.length, dfunc, (int*)NULL, 0 );
@@ -4119,11 +4120,11 @@ JNIEXPORT int sine( simlab wh ) {
 	func.length = 0;
 
 	if( data.type == 34 ) {
-		func.buffer = (long)sin;
-		dfunc( func, wh );
-	} else {
 		func.buffer = (long)sinf;
 		ffunc( func, wh );
+	} else {
+		func.buffer = (long)sin;
+		dfunc( func, wh );
 	}
 	return 1;
 }
@@ -5336,40 +5337,39 @@ JNIEXPORT int histeq( simlab hist, simlab chunk, simlab min, simlab max ) {
 	return 1;
 }
 
-JNIEXPORT int median( int chunk ) {
-	simlab* data = (simlab*)current;
-	if( data->type == 66 ) t_median( (double*)data->buffer, data->length, chunk );
-	if( data->type == 32 ) t_median( (int*)data->buffer, data->length, chunk );
-	return current;
+JNIEXPORT int median( simlab chunk ) {
+	if( data.type == 66 ) t_median<double*,double>( (double*)data.buffer, data.length, chunk.buffer );
+	else if( data.type == 32 ) t_median<int*,int>( (int*)data.buffer, data.length, chunk.buffer );
+
+	return 1;
 }
 
 JNIEXPORT int shift( simlab val, simlab chunk ) {
 	//printf( "n %d %d\n", val.buffer, chunk.buffer );
 	if( chunk.buffer == 0 ) chunk.buffer = data.length;
 	if( val.length == 0 ) {
-		if( data.type == 66 ) t_shift( (double*)data.buffer, data.length, chunk.buffer, val.buffer );
-		else if( data.type == 34 ) t_shift( (float*)data.buffer, data.length, chunk.buffer, val.buffer );
-		else if( data.type == 33 ) t_shift( (unsigned int*)data.buffer, data.length, chunk.buffer, val.buffer );
-		else if( data.type == 32 ) t_shift( (int*)data.buffer, data.length, chunk.buffer, val.buffer );
-		else if( data.type == 8 ) t_shift( (char*)data.buffer, data.length, chunk.buffer, val.buffer );
+		if( data.type == 66 ) t_shift<double*,double>( (double*)data.buffer, data.length, chunk.buffer, val.buffer );
+		else if( data.type == 34 ) t_shift<float*,float>( (float*)data.buffer, data.length, chunk.buffer, val.buffer );
+		else if( data.type == 33 ) t_shift<unsigned int*,unsigned int>( (unsigned int*)data.buffer, data.length, chunk.buffer, val.buffer );
+		else if( data.type == 32 ) t_shift<int*,int>( (int*)data.buffer, data.length, chunk.buffer, val.buffer );
+		else if( data.type == 8 ) t_shift<char*,char>( (char*)data.buffer, data.length, chunk.buffer, val.buffer );
 	} else {
-		if( data.type == 66 ) t_shift( (double*)data.buffer, data.length, chunk.buffer, *(int*)val.buffer );
-		else if( data.type == 34 ) t_shift( (float*)data.buffer, data.length, chunk.buffer, *(int*)val.buffer );
-		else if( data.type == 33 ) t_shift( (unsigned int*)data.buffer, data.length, chunk.buffer, *(int*)val.buffer );
-		else if( data.type == 32 ) t_shift( (int*)data.buffer, data.length, chunk.buffer, *(int*)val.buffer );
-		else if( data.type == 8 ) t_shift( (char*)data.buffer, data.length, chunk.buffer, *(int*)val.buffer );
+		if( data.type == 66 ) t_shift<double*,double>( (double*)data.buffer, data.length, chunk.buffer, *(int*)val.buffer );
+		else if( data.type == 34 ) t_shift<float*,float>( (float*)data.buffer, data.length, chunk.buffer, *(int*)val.buffer );
+		else if( data.type == 33 ) t_shift<unsigned int*,unsigned int>( (unsigned int*)data.buffer, data.length, chunk.buffer, *(int*)val.buffer );
+		else if( data.type == 32 ) t_shift<int*,int>( (int*)data.buffer, data.length, chunk.buffer, *(int*)val.buffer );
+		else if( data.type == 8 ) t_shift<char*,char>( (char*)data.buffer, data.length, chunk.buffer, *(int*)val.buffer );
 	}
 	return 2;
 }
 
-JNIEXPORT int gcd( simlab* check ) {
-	simlab* data = (simlab*)current;
-	if( data->type == 66 ) {
-		if( check->type == 66 ) t_gcd( (double*)data->buffer, data->length, (double*)check->buffer, check->length );
-		else if( check->type == 32 ) t_gcd( (double*)data->buffer, data->length, (int*)check->buffer, check->length );
-	} else if( data->type == 32 ) {
-		if( check->type == 66 ) t_gcd( (int*)data->buffer, data->length, (double*)check->buffer, check->length );
-		else if( check->type == 32 ) t_gcd( (int*)data->buffer, data->length, (int*)check->buffer, check->length );
+JNIEXPORT int gcd( simlab check ) {
+	if( data.type == 66 ) {
+		if( check.type == 66 ) t_gcd( (double*)data.buffer, data.length, (double*)check.buffer, check.length );
+		else if( check.type == 32 ) t_gcd( (double*)data.buffer, data.length, (int*)check.buffer, check.length );
+	} else if( data.type == 32 ) {
+		if( check.type == 66 ) t_gcd( (int*)data.buffer, data.length, (double*)check.buffer, check.length );
+		else if( check.type == 32 ) t_gcd( (int*)data.buffer, data.length, (int*)check.buffer, check.length );
 	}
 	return current;
 }
@@ -5384,21 +5384,21 @@ JNIEXPORT int factor() {
 }
 
 JNIEXPORT int prim() {
-	simlab* data  = (simlab*)current;
-	if( data->type == 66 ) t_prim( (double*)data->buffer, data->length );
-	else if( data->type == 34 ) t_prim( (float*)data->buffer, data->length );
-	else if( data->type == 33 ) t_prim( (unsigned int*)data->buffer, data->length );
-	else if( data->type == 32 ) t_prim( (int*)data->buffer, data->length );
-	return current;
+	if( data.type == 66 ) t_prim( (double*)data.buffer, data.length );
+	else if( data.type == 34 ) t_prim( (float*)data.buffer, data.length );
+	else if( data.type == 33 ) t_prim( (unsigned int*)data.buffer, data.length );
+	else if( data.type == 32 ) t_prim( (int*)data.buffer, data.length );
+
+	return 0;
 }
 
 JNIEXPORT int fibo() {
-	simlab* data = (simlab*)current;
-	if( data->type == 66 ) t_fibo( (double*)data->buffer, data->length );
-	if( data->type == 34 ) t_fibo( (float*)data->buffer, data->length );
-	if( data->type == 33 ) t_fibo( (unsigned int*)data->buffer, data->length );
-	if( data->type == 32 ) t_fibo( (int*)data->buffer, data->length );
-	return current;
+	if( data.type == 66 ) t_fibo( (double*)data.buffer, data.length );
+	else if( data.type == 34 ) t_fibo( (float*)data.buffer, data.length );
+	else if( data.type == 33 ) t_fibo( (unsigned int*)data.buffer, data.length );
+	else if( data.type == 32 ) t_fibo( (int*)data.buffer, data.length );
+
+	return 0;
 }
 
 /*int check( char* buffer, int k, int len ) {
