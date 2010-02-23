@@ -22,7 +22,7 @@ public class Ws {
 		String xar = Integer.toString( toDay.get( Calendar.YEAR ) );
 		String xman = Integer.toString( toDay.get( Calendar.MONTH )+1 );
 		String xdag = Integer.toString( toDay.get( Calendar.DAY_OF_MONTH ) );
-		String xtoday = xar + "-" + xman + "-" + xdag;
+		String xtoday = xar + "-" + (xman.length() == 1 ? "0"+xman : xman) + "-" + xdag;
 		
 		p.println("<EuroFIRFoodDataTransportPackage name=\"EuroFIR Food Transport Package Markup Language\" version=\"1.3\" versiondate=\"2008-04-25\" sentdate=\""+xtoday+"\" service=\"0\">");
 		p.println("<StandardVocabularies>");
@@ -56,7 +56,7 @@ public class Ws {
         p.println("<Remarks></Remarks>");
         p.println("</SenderInformation>");
 
-        p.println("<Content datasetcreated=\"2008-07-03\" language=\"IS\" acquisitiontype=\"F\" domaintype=\"\" compilationtype=\"\">");
+        p.println("<Content datasetcreated=\"2008-07-03\" language=\"is\" acquisitiontype=\"F\">");
         p.println("<ContentName>The Icelandic Food Composition Database</ContentName>");
         p.println("<ShortContentName>IS ISGEM 2008</ShortContentName>");
         p.println("<ResponsibleBody>Matí­s</ResponsibleBody>");
@@ -73,17 +73,24 @@ public class Ws {
 	}
 	
 	public static void body( Connection conn, String sql, PrintStream p ) {
+		p.println("<Foods>");
+		food( conn, sql, p );
+		p.println("</Foods>");
+	}
+	
+	public static void food( Connection conn, String sql, PrintStream p ) {
 		try {			
 			PreparedStatement 	ps = conn.prepareStatement(sql);
 			ResultSet 			rs = ps.executeQuery();
 			String				oldname = "";
 			boolean				hascomponents = true;
+			boolean				hasreferences = true;
 			while( rs.next() ) {
 				String name = rs.getString("OriginalFoodCode");
 				boolean sameold = oldname.equals(name);
-				oldname = name;
 				
 				if( !sameold ) {
+					if( !oldname.equals("") ) p.println("</Food>");
 					p.println("<Food>");
 	                p.println("<FoodDescription>");
 	                p.println("<FoodIdentifiers>");
@@ -130,7 +137,8 @@ public class Ws {
 					String engcpnm = rs.getString("EnglishComponentName");
 					String unit = rs.getString("Unit");
 					String matrixUnit = rs.getString("MatrixUnit");
-					String dateAnalysed = rs.getString("DateOfAnalysis");
+					String acquisitionType = rs.getString("AcquisitionType");
+					String dateGenerated = rs.getString("DateOfGeneration");
 					String methodType = rs.getString("MethodType");
 					String methodIndicator = rs.getString("MethodIndicator");
 					String methodParameter = rs.getString("MethodParameter");
@@ -152,7 +160,7 @@ public class Ws {
 					
 					unit = nullStr(unit) ? "" : unit;
 					matrixUnit = nullStr(matrixUnit) ? "" : matrixUnit;
-					dateAnalysed = nullStr(dateAnalysed) ? "" : dateAnalysed;
+					dateGenerated = nullStr(dateGenerated) ? "" : dateGenerated;
 					methodType = nullStr(methodType) ? "" : methodType;
 					methodIndicator = nullStr(methodIndicator) ? "" : methodIndicator;
 					methodParameter = nullStr(methodParameter) ? "" : methodParameter;
@@ -160,30 +168,18 @@ public class Ws {
 					if( selectedValue.startsWith("<") ) selectedValue = "less than "+selectedValue.substring(1);
 					
 	                p.println("<ComponentIdentifiers>");
-	                p.println("<ComponentIdentifier system=\"ecompid\">");
-	                p.println(eurocd);
-	                p.println("</ComponentIdentifier>");
-	                
-	                p.println("<ComponentIdentifier system=\"origcpcd\">");
-	                p.println(origcd);
-	                p.println("</ComponentIdentifier>");
-	                
-	                p.println("<ComponentIdentifier system=\"origcpnm\">");
-	                p.println(origcpnm);
-	                p.println("</ComponentIdentifier>");
-	                
-	                p.println("<ComponentIdentifier system=\"engcpnam\">");
-	                p.println(engcpnm);
-	                p.println("</ComponentIdentifier>");
+	                p.println("<ComponentIdentifier system=\"ecompid\">"+eurocd+"</ComponentIdentifier>");	                
+	                p.println("<ComponentIdentifier system=\"origcpcd\">"+origcd+"</ComponentIdentifier>");	                
+	                p.println("<ComponentIdentifier system=\"origcpnm\">"+origcpnm+"</ComponentIdentifier>");
+	                p.println("<ComponentIdentifier system=\"engcpnam\">"+engcpnm+"</ComponentIdentifier>");
 	                p.println("</ComponentIdentifiers>");
 	                
 	                p.println("<Values>");
-	                p.println("<Value unit=\""+unit+"\" matrixunit=\""+matrixUnit+"\" dateanalysed=\""+dateAnalysed+"\" methodtype=\""+methodType+"\" methodidentifier=\""+methodIndicator+"\" methodparameter=\""+methodParameter+"\">");
-	                
+	                p.println("<Value unit=\""+unit+"\" matrixunit=\""+matrixUnit+"\" dategenerated=\""+dateGenerated+"\" methodtype=\""+methodType+"\" methodindicator=\""+methodIndicator+"\" methodparameter=\""+methodParameter+"\">");
 	                valueType = nullStr(valueType) ? "" : valueType;
-	                p.println("<SelectedValue valuetype=\""+valueType+"\">");
-	                p.println( selectedValue.trim() );
-	                p.println("</SelectedValue>");
+	                String selVal = selectedValue.trim();
+	                if( selVal.endsWith(",") ) selVal = selVal.substring(0, selVal.length()-1);
+	                p.println("<SelectedValue valuetype=\""+valueType+"\" acquisitionType=\""+acquisitionType+"\">"+selVal+"</SelectedValue>");
 	                
 	                minimum = nullStr(minimum) ? "<Minimum/>" : "<Minimum>"+minimum+"</Minimum>";
 	                p.println(minimum);
@@ -191,7 +187,7 @@ public class Ws {
 	                p.println(maximum);
 	                standardDeviation = nullStr(standardDeviation) ? "<StandardDeviation/>" : "<StandardDeviation>"+standardDeviation+"</StandardDeviation>";
 	                p.println(standardDeviation);
-	                numberOfAnalyses = nullStr(numberOfAnalyses) ? "<NoOfAnalyses/>" : "<NoOfAnalyses>"+numberOfAnalyses+"</NoOfAnalyses>";
+	                numberOfAnalyses = nullStr(numberOfAnalyses) ? "<NumberOfAnalyticalPortions/>" : "<NumberOfAnalyticalPortions>"+numberOfAnalyses+"</NumberOfAnalyticalPortions>";
 	                p.println(numberOfAnalyses);
 	                qualityIndex = nullStr(qualityIndex) ? "<QualityIndex/>" : "<QualityIndex>"+qualityIndex+"</QualityIndex>";
 	                p.println( qualityIndex );
@@ -200,21 +196,26 @@ public class Ws {
 	                //p.println("<QualityIndex>"+qualityIndex+"</QualityIndex>");
 	                //p.println("<Remarks>"+remarks+"</Remarks>");
 	
-	                p.println("<References>");
-	                p.println("<ValueReference publicationtype=\"\" acquisitiontype=\"\" link=\"\">");
-	                p.println("</ValueReference>");
-	                p.println("<MethodReference publicationtype=\"\" acquisitiontype=\"\" link=\"\">");
-	                p.println("</MethodReference>");
-	                p.println("</References>");
+	                if( hasreferences ) {
+	                	String referenceType = rs.getString("ReferenceType");
+	                	String rAcquisitionType = rs.getString("rAcquisitionType");
+	                	String link = rs.getString("WWW");
+	                	String citation = rs.getString("Citation");
+	                	
+		                p.println("<References>");
+		                p.println("<ValueReference referencetype=\""+referenceType+"\" acquisitiontype=\""+rAcquisitionType+"\" link=\""+(link==null?"":link)+"\">"+citation+"</ValueReference>");
+		                p.println("<MethodReference referencetype=\""+referenceType+"\" acquisitiontype=\""+rAcquisitionType+"\" link=\"\"></MethodReference>");
+		                p.println("</References>");
+	                }
 	                
 	                p.println("</Value>");
 	                p.println("</Values>");
 	                p.println("</Component>");
 	                p.println("</Components>");
 				}
-    			
-                if( !sameold ) p.println("</Food>");
+				oldname = name;
 			}
+			if( !oldname.equals("") ) p.println("</Food>");
 			
 			rs.close();
 			ps.close();
