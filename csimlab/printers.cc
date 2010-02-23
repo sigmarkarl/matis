@@ -257,18 +257,20 @@ JNIEXPORT int printdhtml( ... ) {
 	return print( "%e\t", "<br>\n", passnext );
 }
 
-JNIEXPORT int printi( simlab val ) {
+JNIEXPORT int printi( simlab sl ) {
 	/*va_list args;
-	va_start(args, 4);
+	va_start(args, sl);
 	simlab val = va_arg( args, simlab );
 	while( val.buffer != 0 ) {
-		printf("%d %d\n", (int)val.type, (int)val.length );
+		printf("ermi %d %d\n", (int)val.type, (int)val.length );
 		val = va_arg( args, simlab );
 	}
-	va_end( args );*/
-	//printf("%d %d %d\n", (int)val.length, (int)val.type, (int)val.buffer );
+	va_end( args );
+	//printf("%d %d %d\n", (int)val.length, (int)val.type, (int)val.buffer );*/
 
-	passnext.dw = val;
+	printf( "%d %d %d\n", (int)sl.buffer, (int)sl.type, (int)sl.length );
+	printf( "%d %d %d\n", (int)data.buffer, (int)data.type, (int)data.length );
+	passnext.dw = sl;
 	return print( "%d\t", "\n", passnext );
 }
 

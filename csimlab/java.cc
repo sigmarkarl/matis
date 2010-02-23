@@ -17,6 +17,10 @@ JNIEXPORT long getaddress() {
 	return data.buffer;
 }
 
+JNIEXPORT long getpointer( void* ptr ) {
+	return (long)ptr;
+}
+
 JNIEXPORT void* stuff2() {
 	return (void*)data.buffer;
 }
