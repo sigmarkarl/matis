@@ -91,6 +91,7 @@ public class Server2Lite {
 		String[]	ss = {"0001", "0002", "0003", "0004", "0005", "0006", "0008", "0009", "0010", "0011", "0012", "0013", "0014", "0016", "0017", "0020", "0021", "0023", "0024", "0029", "0031", "0032", "0033", "0034", "0035", "0036", "0037", "0038", "0039", "0040", "0041", "0044", "0137", "0138"};
 		final Set<String>	sset = new HashSet<String>( Arrays.asList(ss) );
 		
+		int k = 0;
 		for( String tname : tmap.keySet() ) {
 			sql = "select * from isgem2.dbo."+tname;
 			ps = con.prepareStatement( sql );
@@ -110,7 +111,10 @@ public class Server2Lite {
 						if( vspl[1].contains("char") ) {
 							String sval = rs.getString(++i);
 							if( sval == null || sval.equals("null") ) res += "null";
-							else res += "\""+sval+"\"";
+							else {
+								sval = sval.replace("\"", "\\\"");
+								res += "\""+sval+"\"";
+							}
 						}
 						else if( vspl[1].contains("date") ) {
 							Date date = rs.getDate(++i);
@@ -124,7 +128,10 @@ public class Server2Lite {
 						else {
 							String sval = rs.getString(++i);
 							if( sval == null || sval.equalsIgnoreCase("null") ) res += "null";
-							else res += "\""+sval+"\"";
+							else {
+								sval = sval.replace("\"", "\\\"");
+								res += "\""+sval+"\"";
+							}
 						}
 						
 						if( vstr.length() == 0 ) vstr += res;
@@ -132,7 +139,7 @@ public class Server2Lite {
 					}
 					
 					String dsql = "insert into "+tname+" values ("+vstr+")";
-					System.err.println( dsql );
+					if( k++ % 100 == 0 ) System.err.println( dsql );
 					
 					PreparedStatement dps = dcon.prepareStatement( dsql );
 					dps.execute();

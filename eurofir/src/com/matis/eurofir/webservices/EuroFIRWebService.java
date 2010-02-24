@@ -24,6 +24,7 @@ public class EuroFIRWebService {
 	static String				cdataStr = "<![CDATA[";
 	static String				cstopStr = "]]>";
 	static String				passi = "jP4dj4";
+	//static String				passi = "drsmorc.311";
 	
 	public static void parse( String val ) throws SecurityException, NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchAlgorithmException {
 		//String envbody = "<env:Body>";
@@ -176,7 +177,7 @@ public class EuroFIRWebService {
 		ostream.println("<Foods>");
 		for( String id : ids ) {
 			String lastCon = "fd.OriginalFoodCode = '"+id+"'";
-			String sql = "SELECT cv.OriginalFoodCode,fd.FoodGroupIS1,fd.FoodGroupIS2,fd.OriginalFoodName,fd.EnglishFoodName,co.EuroFIRComponentIdentifier,cv.OriginalComponentCode,co.OriginalComponentName,co.EnglishComponentName,cv.Unit,'W' as MatrixUnit,cv.AcquisitionType,cv.DateOfGeneration,cv.MethodType,cv.MethodIndicator,cv.MethodParameter,cv.SelectedValue,cv.ValueType,cv.N,cv.Minimum,cv.Maximum,cv.StandardDeviation,cv.QI_Eurofir,cv.Remarks,rf.Citation,rf.ReferenceType,rf.AcquisitionType as rAcquisitionType,rf.WWW from Food fd, ComponentValue cv, Component co, Reference rf where fd.OriginalFoodCode = cv.OriginalFoodCode AND co.OriginalComponentCode = cv.OriginalComponentCode AND rf.ReferenceID = cv.ValueReferenceFK AND "+lastCon;
+			String sql = "SELECT cv.OriginalFoodCode,fd.LangualCodes,fd.FoodGroupIS1,fd.FoodGroupIS2,fd.OriginalFoodName,fd.EnglishFoodName,co.EuroFIRComponentIdentifier,cv.OriginalComponentCode,co.OriginalComponentName,co.EnglishComponentName,cv.Unit,'W' as MatrixUnit,cv.AcquisitionType,cv.DateOfGeneration,cv.MethodType,cv.MethodIndicator,cv.MethodParameter,cv.SelectedValue,cv.ValueType,cv.N,cv.Minimum,cv.Maximum,cv.StandardDeviation,cv.QI_Eurofir,cv.Remarks,rf.Citation,rf.ReferenceType,rf.AcquisitionType as rAcquisitionType,rf.WWW from Food fd, ComponentValue cv, Component co, Reference rf where fd.OriginalFoodCode = cv.OriginalFoodCode AND co.OriginalComponentCode = cv.OriginalComponentCode AND rf.ReferenceID = cv.ValueReferenceFK AND "+lastCon;
 			Ws.food( conn, sql, ostream );
 		}
 		ostream.println("</Foods>");
