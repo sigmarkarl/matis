@@ -68,6 +68,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.JViewport;
 import javax.swing.KeyStroke;
 import javax.swing.RowFilter;
 import javax.swing.SwingConstants;
@@ -1949,7 +1950,11 @@ public class Fiskur extends JApplet {
 		//sex.addTab("Male", mscrollpane );
 		//sex.addTab("Female", fscrollpane );
 		
-		tabbedPane.addChangeListener( new ChangeListener() {	
+		final JViewport	oldmvp = mscrollpane.getViewport();
+		final JViewport	oldfvp = fscrollpane.getViewport();
+		
+		tabbedPane.addChangeListener( new ChangeListener() {
+			
 			@Override
 			public void stateChanged(ChangeEvent e) {
 				int selind = tabbedPane.getSelectedIndex();
@@ -2002,18 +2007,18 @@ public class Fiskur extends JApplet {
 						sex.setSelectedIndex(1);
 					} else {
 						if( v == 1 ) {
-							genotypeTable.setModel( femaleGenotypes() );
+							genotypeTable.setModel( maleGenotypes() );
 							genotypeScroll.setRowHeaderView( mtable );
 							mscrollpane.setViewport( genotypeScroll.getRowHeader() );
 							mscrollpane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_NEVER );
 						} else {
-							genotypeTable.setModel( maleGenotypes() );
+							genotypeTable.setModel( femaleGenotypes() );
 							genotypeScroll.setRowHeaderView( ftable );
 							fscrollpane.setViewport( genotypeScroll.getRowHeader() );
-							mscrollpane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_NEVER );
+							fscrollpane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_NEVER );
 						}
 						
-						MySorter sorter = new MySorter( "genotype", matrixTable.getModel() ) {
+						MySorter sorter = new MySorter( "genotype", genotypeTable.getModel() ) {
 							public int convertRowIndexToModel(int index) {
 								return currentSorter.convertRowIndexToModelSuper("genotype",index);
 							}
@@ -2033,10 +2038,42 @@ public class Fiskur extends JApplet {
 							}
 						};
 						sorter.addRowSorterListener( rsl );
+						
+						genotypeScroll.repaint();
 					}
 				} else if( seltit.equals("Summary") ) {
 					mscrollpane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_ALWAYS );
 					fscrollpane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_ALWAYS );
+					
+					/*System.err.println( "m " + mscrollpane.getViewport().getView() );
+					System.err.println( "f " + fscrollpane.getViewport().getView() );
+					System.err.println( "s " + scrollpane.getViewport().getView() );*/
+					
+					int v = sex.getSelectedIndex();
+					String title = sex.getIconAt(v).toString();
+					
+					if( title.equals("Male") ) {
+						currentSorter = mtableSorter;
+						if( oldmvp != null ) {
+							mscrollpane.setViewport( oldmvp );
+							mscrollpane.setViewportView( mtable );
+							fscrollpane.setViewport( oldfvp );
+							fscrollpane.setViewportView( ftable );
+						}
+						if( mmodel != null ) mtable.tableChanged( new TableModelEvent( mmodel ) );
+						splitpane.setDividerLocation(0.5);
+					} else if( title.equals("Female") ) {
+						currentSorter = ftableSorter;
+						//fscrollpane.setViewport( genotypeScroll.getRowHeader() );
+						if( oldfvp != null ) {
+							mscrollpane.setViewport( oldmvp );
+							mscrollpane.setViewportView( mtable );
+							fscrollpane.setViewport( oldfvp );
+							fscrollpane.setViewportView( ftable );
+						}
+						if( fmodel != null ) ftable.tableChanged( new TableModelEvent( fmodel ) );
+						splitpane.setDividerLocation(0.5);
+					}
 				}
 				
 			}
@@ -2065,9 +2102,15 @@ public class Fiskur extends JApplet {
 						matrixScroll.setRowHeaderView( mtable );
 						mscrollpane.setViewport( matrixScroll.getRowHeader() );
 					} else if( subtitle.equals("Genotypes") ) {
-						genotypeTable.setModel( maleGenotypes() );					
+						//oldmvp = mscrollpane.getViewport();
+						//oldfvp = fscrollpane.getViewport();
+						genotypeTable.setModel( maleGenotypes() );
 						genotypeScroll.setRowHeaderView( mtable );
 						mscrollpane.setViewport( genotypeScroll.getRowHeader() );
+						
+						fscrollpane.setViewport( oldfvp );
+						fscrollpane.setViewportView( ftable );
+						mscrollpane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_NEVER );
 					}
 					if( mmodel != null ) mtable.tableChanged( new TableModelEvent( mmodel ) );
 					
@@ -2079,9 +2122,15 @@ public class Fiskur extends JApplet {
 						matrixScroll.setRowHeaderView( ftable );
 						fscrollpane.setViewport( matrixScroll.getRowHeader() );
 					} else if( subtitle.equals("Genotypes") ) {
+						//oldmvp = mscrollpane.getViewport();
+						//oldfvp = fscrollpane.getViewport();
 						genotypeTable.setModel( femaleGenotypes() );					
 						genotypeScroll.setRowHeaderView( ftable );
 						fscrollpane.setViewport( genotypeScroll.getRowHeader() );
+						
+						mscrollpane.setViewport( oldmvp );
+						mscrollpane.setViewportView( mtable );
+						fscrollpane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_NEVER );
 					}
 					if( fmodel != null ) ftable.tableChanged( new TableModelEvent( fmodel ) );
 					

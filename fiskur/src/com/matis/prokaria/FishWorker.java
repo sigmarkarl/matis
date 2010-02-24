@@ -548,13 +548,16 @@ public class FishWorker {
 		cell.setCellValue( "Gender" );
 		cell.setCellStyle( boldstyle );
 		cell = row.createCell(2);
-		cell.setCellValue( "Weight" );
-		cell.setCellStyle( boldstyle );
-		cell = row.createCell(3);
-		cell.setCellValue( "Room" );
+		cell.setCellValue( "Performance" );
 		cell.setCellStyle( boldstyle );
 		
-		int i = 4;
+		int i = 3;
+		for( String pname : parameterNames ) {
+			cell = row.createCell(i++);
+			cell.setCellValue( pname );
+			cell.setCellStyle( boldstyle );
+		}
+		
 		for( String marker : markers ) {
 			cell = row.createCell(++i);
 			cell.setCellValue( marker );
@@ -570,13 +573,15 @@ public class FishWorker {
 			cell.setCellValue( male.name );
 			cell = row.createCell(1);
 			cell.setCellValue( "male" );
+			cell = row.createCell(2);
+			cell.setCellValue( male.factor );
 			
-			int c = 2;
-			while( c < male.params.length+2 ) {
+			int c = 3;
+			while( c < male.params.length+3 ) {
 				cell = row.createCell(c);
-				if( parameterTypes.get(c-2) == String.class ) cell.setCellValue( (String)male.params[c-2] );
-				else if( parameterTypes.get(c-2) == Double.class ) {
-					Object obj = male.params[c-2];
+				if( parameterTypes.get(c-3) == String.class ) cell.setCellValue( (String)male.params[c-3] );
+				else if( parameterTypes.get(c-3) == Double.class ) {
+					Object obj = male.params[c-3];
 					if( !(obj instanceof Double) ) cell.setCellValue( (String)obj );
 					else cell.setCellValue( (Double)obj );
 				}
@@ -584,7 +589,7 @@ public class FishWorker {
 			}
 			
 			for( i = 0; i < markers.size(); i++ ) {
-				cell = row.createCell(i+3+parameterNames.size());
+				cell = row.createCell(i+4+parameterNames.size());
 				cell.setCellValue( mmatrix[i+start] );
 			}
 		}
@@ -597,12 +602,15 @@ public class FishWorker {
 			cell.setCellValue( female.name );
 			cell = row.createCell(1);
 			cell.setCellValue( "female" );
-			int c = 2;
-			while( c < female.params.length+2 ) {
+			cell = row.createCell(2);
+			cell.setCellValue( female.factor );
+			
+			int c = 3;
+			while( c < female.params.length+3 ) {
 				cell = row.createCell(c);
-				if( parameterTypes.get(c-2) == String.class ) cell.setCellValue( (String)female.params[c-2] );
-				else if( parameterTypes.get(c-2) == Double.class ) {
-					Object obj = female.params[c-2];
+				if( parameterTypes.get(c-3) == String.class ) cell.setCellValue( (String)female.params[c-3] );
+				else if( parameterTypes.get(c-3) == Double.class ) {
+					Object obj = female.params[c-3];
 					if( !(obj instanceof Double) ) cell.setCellValue( (String)obj );
 					else cell.setCellValue( (Double)obj );
 				}
@@ -610,7 +618,7 @@ public class FishWorker {
 			}
 			
 			for( i = 0; i < markers.size(); i++ ) {
-				cell = row.createCell(i+3+parameterNames.size());
+				cell = row.createCell(i+4+parameterNames.size());
 				cell.setCellValue( fmatrix[i+start] );
 			}
 		}
@@ -794,6 +802,23 @@ public class FishWorker {
 		}
 		i = 0;
 		cl = 0;
+		/*for( Tuple t : tupleList ) {
+			if( cl % malefish.size() == 0 ) {
+				row = sheet.createRow(++i);
+				cl = 0;
+				cell = row.createCell(cl);
+				cell.setCellValue(t.female.name);
+			}
+			cell = row.createCell(++cl);
+			cell.setCellValue(t.lrm);
+			if( t.lrm < 0.03 ) {
+				cell.setCellStyle( greenstyle );
+			} else if( t.lrm < 0.06 ) {
+				cell.setCellStyle( yellowstyle );
+			} else {
+				cell.setCellStyle( redstyle );
+			}
+		}*/
 		for( int k = 0; k < tupleList.size(); k++ ) {
 			int rr = k/femalefish.size();
 			int cc = k%femalefish.size();
@@ -805,13 +830,13 @@ public class FishWorker {
 				cell.setCellValue(t.male.name);
 			}
 			cell = row.createCell(++cl);
-			cell.setCellValue(t.khrank);
-			if( t.khrank < 0.03 ) {
-				cell.setCellStyle( redstyle );
-			} else if( t.khrank < 0.06 ) {
+			cell.setCellValue(t.lrm);
+			if( t.lrm < 0.03 ) {
+				cell.setCellStyle( greenstyle );
+			} else if( t.lrm < 0.06 ) {
 				cell.setCellStyle( yellowstyle );
 			} else {
-				cell.setCellStyle( greenstyle );
+				cell.setCellStyle( redstyle );
 			}
 		}
 	}
@@ -970,7 +995,7 @@ public class FishWorker {
 				
 				String 	name = null;
 				int type = cell.getCellType();
-				if( type == HSSFCell.CELL_TYPE_NUMERIC ) {
+				if( type == XSSFCell.CELL_TYPE_NUMERIC ) {
 					name = Integer.toString( (int)cell.getNumericCellValue() );
 				} else {
 					name = cell.getStringCellValue();
@@ -1186,6 +1211,8 @@ public class FishWorker {
 		fishes.clear();
 		malefish.clear();
 		femalefish.clear();
+		parameterNames.clear();
+		parameterTypes.clear();
 		
 		if( ff.length > 1 ) {				
 			for( File f : ff ) {
@@ -1244,7 +1271,7 @@ public class FishWorker {
 					xssfStuff( wb, 1 );
 					wbStuff( wb, 0 );
 				}
-			}	
+			}
 		} else {
 			plainStuff( wb );
 		}
@@ -1255,13 +1282,24 @@ public class FishWorker {
 	
 	public void initGenotypes( XSSFSheet ws, int i ) {
 		int oldi = i;
+		int u = 0;
+		XSSFRow 	wr = ws.getRow( 0 );
+		XSSFCell 	cell = wr.getCell( u );
+		while( cell != null && !cell.getStringCellValue().equalsIgnoreCase("sample") ) {
+			u++;
+			cell = wr.getCell( u ); 
+		}
+		
 		Set<String>	nameSet = new HashSet<String>();
-		XSSFRow wr = ws.getRow( i++ );
+		wr = ws.getRow( i++ );
 		while( wr != null ) {
-			String name = getName( wr, 0 );
+			String name = getName( wr, u );
 			if( name != null ) nameSet.add( name );
-			name = getName( wr, 1 );
+			
+			/*name = getName( wr, 1 );
 			if( name != null ) nameSet.add( name );
+			name = getName( wr, 2 );
+			if( name != null ) nameSet.add( name );*/
 			
 			wr = ws.getRow( i++ );
 		}
@@ -1282,27 +1320,39 @@ public class FishWorker {
 		
 		//Fish tmpf =new Fish( "", 0.0f, 0, false );
 		
-		int u = -1;
 		i = oldi;
 		wr = ws.getRow( i++ );
 		while( wr != null ) {
 			int k = 2;
+			int kstart = 0;
+			XSSFCell wc = wr.getCell(k);
+			while( wc != null && wc.getCellType() == XSSFCell.CELL_TYPE_STRING && wc.getStringCellValue().length() > 0 ) {
+				k++;
+				wc = wr.getCell(k);
+			}
+			if( wc == null ) {
+				kstart = k+1;
+			} else if( wc.getCellType() != XSSFCell.CELL_TYPE_STRING ) {
+				kstart = k;
+			} else if( wc.getStringCellValue().length() == 0 ) {
+				kstart = k+1;
+			}
 			
-			String name = null;
+			/*String name = null;
 			if( u == -1 ) {
 				name = getName( wr, 0 );
 				if( nameSet.contains( name ) ) u = 0;
-				else u = 1;
-			}
+				else u = 2;
+			}*/
 			
-			name = getName( wr, u );
+			String name = getName( wr, u );
 			
 			//tmpf.name = name;
 			
 			int ind = findFish( malefish, name ); //malefish.indexOf( tmpf );
 			if( ind != -1 ) {
-				XSSFCell wc = wr.getCell(k);
-				while( k < markers.size()+2 ) {
+				wc = wr.getCell(k);
+				while( k < markers.size()+kstart ) {
 					if( wc != null ) {
 						int val = -1;
 						if( wc.getCellType() != XSSFCell.CELL_TYPE_NUMERIC ) {
@@ -1311,21 +1361,21 @@ public class FishWorker {
 						}
 						else val = (int)wc.getNumericCellValue();
 						
-						mmatrix[ind * markers.size() + (k-2)] = val;
+						mmatrix[ind * markers.size() + (k-kstart)] = val;
 					}
 					wc = wr.getCell(++k);
 				}
 			} else {
 				ind = findFish( femalefish, name );
 				if( ind != -1 ) {
-					XSSFCell wc = wr.getCell(k);
-					while( k < markers.size()+2 ) {
+					wc = wr.getCell(k);
+					while( k < markers.size()+kstart ) {
 						if( wc != null ) {
 							int val = -1;
 							if( wc.getCellType() != XSSFCell.CELL_TYPE_NUMERIC ) val = wc.getStringCellValue().hashCode();
 							else val = (int)wc.getNumericCellValue();
 							
-							fmatrix[ind * markers.size() + (k-2)] = val;
+							fmatrix[ind * markers.size() + (k-kstart)] = val;
 							//else System.err.println( "what!! " + wc.getStringCellValue() );
 						}
 						wc = wr.getCell(++k);
@@ -1352,6 +1402,11 @@ public class FishWorker {
 		
 		int k = 2;
 		XSSFCell wc = wr.getCell(k++);
+		while( wc != null && wc.getCellType() == XSSFCell.CELL_TYPE_STRING && wc.getStringCellValue().length() > 0 && k < 6 ) {
+			wc = wr.getCell(k++);
+		}
+		if( k == 5 ) k = 2;
+		wc = wr.getCell(k++);
 		while( wc != null && wc.getStringCellValue().length() > 0 ) {
 			markers.add( wc.getStringCellValue() );
 			wc = wr.getCell(k++);

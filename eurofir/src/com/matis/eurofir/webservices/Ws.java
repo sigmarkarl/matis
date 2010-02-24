@@ -45,7 +45,7 @@ public class Ws {
         p.println("<Sender>Ólafur Reykdal</Sender>");
         p.println("<OrganisationName>Matís</OrganisationName>");
         p.println("<SuperOrganisationName></SuperOrganisationName>");
-        p.println("<PostalAddress>Skúlagata 4, 101 Reykjavik</PostalAddress>");
+        p.println("<PostalAddress>Vínlandsleið 12, 113 Reykjavík</PostalAddress>");
         p.println("<Country>IS</Country>");
         p.println("<Telephone>+354 422 5000</Telephone>");
         p.println("<Fax>+354 422 5001</Fax>");
@@ -87,6 +87,7 @@ public class Ws {
 			boolean				hasreferences = true;
 			while( rs.next() ) {
 				String name = rs.getString("OriginalFoodCode");
+				String langual = rs.getString("LangualCodes");
 				boolean sameold = oldname.equals(name);
 				
 				if( !sameold ) {
@@ -97,6 +98,14 @@ public class Ws {
 	                p.println("<FoodIdentifier system=\"origfdcd\">");
 	                p.println("<Identifier>"+name+"</Identifier>");
 	                p.println("</FoodIdentifier>");
+	                if( langual != null && langual.length() > 0 ) {
+		                p.println("<FoodIdentifier system=\"LanguaL\">");
+		                String[] split = langual.split("[ ]+");
+		                for( String lang : split ) {
+		                	p.println("<Identifier>"+lang+"</Identifier>");
+		                }
+		                p.println("</FoodIdentifier>");
+	                }
 	                p.println("</FoodIdentifiers>");
 	                
 	                try {
@@ -179,7 +188,7 @@ public class Ws {
 	                valueType = nullStr(valueType) ? "" : valueType;
 	                String selVal = selectedValue.trim();
 	                if( selVal.endsWith(",") ) selVal = selVal.substring(0, selVal.length()-1);
-	                p.println("<SelectedValue valuetype=\""+valueType+"\" acquisitionType=\""+acquisitionType+"\">"+selVal+"</SelectedValue>");
+	                p.println("<SelectedValue valuetype=\""+valueType+"\" acquisitionType=\""+(acquisitionType==null?"":acquisitionType)+"\">"+selVal+"</SelectedValue>");
 	                
 	                minimum = nullStr(minimum) ? "<Minimum/>" : "<Minimum>"+minimum+"</Minimum>";
 	                p.println(minimum);
@@ -203,7 +212,7 @@ public class Ws {
 	                	String citation = rs.getString("Citation");
 	                	
 		                p.println("<References>");
-		                p.println("<ValueReference referencetype=\""+referenceType+"\" acquisitiontype=\""+rAcquisitionType+"\" link=\""+(link==null?"":link)+"\">"+citation+"</ValueReference>");
+		                p.println("<ValueReference referencetype=\""+referenceType+"\" acquisitiontype=\""+rAcquisitionType+"\" link=\""+(link==null?"":link)+"\">"+citation.replace('&', 'o')+"</ValueReference>");
 		                p.println("<MethodReference referencetype=\""+referenceType+"\" acquisitiontype=\""+rAcquisitionType+"\" link=\"\"></MethodReference>");
 		                p.println("</References>");
 	                }
