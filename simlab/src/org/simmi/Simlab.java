@@ -99,6 +99,7 @@ public class Simlab implements ScriptEngineFactory {
 	public native int div( simlab.ByValue val );
 	public native int mod( simlab.ByValue val );
 	public native int set( simlab.ByValue val );
+	public native int poly( simlab.ByValue val, simlab.ByValue pw );
 	
 	public native int trans( simlab.ByValue val, simlab.ByValue val2 );
 	
@@ -120,9 +121,9 @@ public class Simlab implements ScriptEngineFactory {
 	
 	boolean where = false;
 	
-	public int jwelcome() {
-		//System.err.println( "Welcome to JSimlab 2.0" );
-		//Native.
+	public int bb() {
+		DoubleBuffer	db = bb.asDoubleBuffer();
+		System.err.println( bb.limit() + "  " + db.get(1) );
 		
 		return 0;
 	}
@@ -454,10 +455,11 @@ public class Simlab implements ScriptEngineFactory {
 	}
 	
 	public void str( final String s ) {
-		byte[]		bb = s.getBytes();
-		ByteBuffer	buffer = ByteBuffer.allocateDirect( bb.length );
-		buffer.put( bb );
-		jcrnt( buffer, 8, bb.length );
+		byte[]		buffer = s.getBytes();
+		bb = ByteBuffer.allocateDirect( buffer.length );
+		bset.add( bb );
+		bb.put( buffer );
+		jcrnt( bb, 8, buffer.length );
 	}
 	
 	public void write( final String s ) {
@@ -478,6 +480,10 @@ public class Simlab implements ScriptEngineFactory {
 		}
 	}
 	
+	public void current( final simlab.ByValue sl ) {
+		data = sl;
+	}
+	
 	public void store( simlab.ByValue ps ) {
 		String name = new Pointer( ps.buffer ).getString(0);
 		datalib.put(name, data);
@@ -491,6 +497,7 @@ public class Simlab implements ScriptEngineFactory {
 		data = ps;
 	}
 	
+	public static String endStr = " ,)\n";
 	public void cmd( simlab.ByValue sl ) {		
 		String s = new Pointer( sl.buffer ).getString(0);
 		StringTokenizer	st = new StringTokenizer(s);
@@ -502,7 +509,7 @@ public class Simlab implements ScriptEngineFactory {
 				//List<Class<?>>	clist = new ArrayList<Class<?>>();
 				List<simlab.ByValue>	olist = new ArrayList<simlab.ByValue>();
 				while( st.hasMoreTokens() ) {
-					String str = st.nextToken(" ,)\n");
+					String str = st.nextToken(endStr);
 					if( str.startsWith("\"") ) {
 						//clist.add( str.getClass() );
 						String 	val = str.substring(1, str.length()-1);
@@ -516,6 +523,37 @@ public class Simlab implements ScriptEngineFactory {
 						
 						//LongByReference lbr = new Longbyre
 						simlab.ByValue	nsl = new simlab.ByValue( bytes.length, BYTELEN, pval );
+						olist.add( nsl );
+					} else if( str.startsWith("[") ) {
+						List<Double>	d_vec = new ArrayList<Double>();
+						
+						float	fval;
+						String 	val = str.substring(1);
+						fval = Float.parseFloat(val); //sscanf( result+1, "%e", &fval );
+						d_vec.add( (double)fval );
+						
+						str = st.nextToken( endStr );
+						int len = str.length();
+						while( str.charAt( len-1 ) != ']' ) {
+							//sscanf( result, "%e", &fval );
+							val = str.substring(1);
+							fval = Float.parseFloat( val );
+							d_vec.add( (double)fval );
+							str = st.nextToken(endStr);
+							len = str.length();
+						}
+						val = str.substring(0, str.length()-1);
+						fval = Float.parseFloat( val ); //sscanf( result, "%e]", &fval );
+						d_vec.add( (double)fval );
+						
+						bb = ByteBuffer.allocateDirect( 8*d_vec.size() );
+						bset.add( bb );
+						DoubleBuffer dd = bb.asDoubleBuffer();
+						for( double d : d_vec ) {
+							dd.put(d);
+						}
+						long lptr = getpointer( Native.getDirectBufferPointer(bb) );
+						simlab.ByValue	nsl = new simlab.ByValue( d_vec.size(), DOUBLELEN, lptr );
 						olist.add( nsl );
 					} else if( str.contains(".") ) {
 						double 	d = Double.parseDouble(str);
@@ -577,7 +615,7 @@ public class Simlab implements ScriptEngineFactory {
 				//Object[] args = new Object[] { olist.toArray( new simlab.ByValue[ olist.size() ] ) };
 				//if( where ) data = getdata();
 				//where = false;
-				
+				System.err.println( "dd " + data.length + "  " + data.type );
 					crnt( data );
 					if( olist.size() == 0 ) { 
 						m.invoke( Simlab.this );
@@ -658,7 +696,8 @@ public class Simlab implements ScriptEngineFactory {
 		long lenval = len.buffer;
 		int bytelen = bytelength( data.type, lenval );
 		
-		ByteBuffer bb = ByteBuffer.allocateDirect( bytelen );
+		bb = ByteBuffer.allocateDirect( bytelen );
+		bset.add( bb );
 		//NativeLongByReference nat = new NativeLongByReference();
 		//nat.setPointer( Native.getDirectBufferPointer( bb ) );
 		
