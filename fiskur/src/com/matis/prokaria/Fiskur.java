@@ -1116,7 +1116,7 @@ public class Fiskur extends JApplet {
 				g2.drawRoundRect(0, 0, w - 1, h - 1, 24, 24);
 				g2.setStroke(stroke);
 
-				String str = "MateMeRight";
+				String str = "MateMeRight(R)";
 				g2.drawImage(mimg, 15, 15, 30, 30, this);
 				g2.setFont(g2.getFont().deriveFont(Font.BOLD, 16.0f));
 				g2.setColor(Color.gray);

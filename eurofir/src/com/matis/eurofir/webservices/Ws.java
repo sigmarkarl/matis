@@ -17,7 +17,7 @@ public class Ws {
 		return val == null || val.equals("null");
 	}
 	
-	public static void header( PrintStream p ) {		
+	public static void header( PrintStream p ) {
 		Calendar toDay = Calendar.getInstance();
 		String xar = Integer.toString( toDay.get( Calendar.YEAR ) );
 		String xman = Integer.toString( toDay.get( Calendar.MONTH )+1 );
@@ -169,7 +169,7 @@ public class Ws {
 					
 					unit = nullStr(unit) ? "" : unit;
 					matrixUnit = nullStr(matrixUnit) ? "" : matrixUnit;
-					dateGenerated = nullStr(dateGenerated) ? "" : dateGenerated;
+					dateGenerated = nullStr(dateGenerated) ? "" : dateGenerated.substring(0, 10);
 					methodType = nullStr(methodType) ? "" : methodType;
 					methodIndicator = nullStr(methodIndicator) ? "" : methodIndicator;
 					methodParameter = nullStr(methodParameter) ? "" : methodParameter;
@@ -188,11 +188,12 @@ public class Ws {
 	                valueType = nullStr(valueType) ? "" : valueType;
 	                String selVal = selectedValue.trim();
 	                if( selVal.endsWith(",") ) selVal = selVal.substring(0, selVal.length()-1);
+	                selVal = selVal.replace(',', '.');
 	                p.println("<SelectedValue valuetype=\""+valueType+"\" acquisitionType=\""+(acquisitionType==null?"":acquisitionType)+"\">"+selVal+"</SelectedValue>");
 	                
-	                minimum = nullStr(minimum) ? "<Minimum/>" : "<Minimum>"+minimum+"</Minimum>";
+	                minimum = nullStr(minimum) ? "<Minimum/>" : "<Minimum>"+minimum.replace(',', '.')+"</Minimum>";
 	                p.println(minimum);
-	                maximum = nullStr(maximum) ? "<Maximum/>" : "<Maximum>"+maximum+"</Maximum>";
+	                maximum = nullStr(maximum) ? "<Maximum/>" : "<Maximum>"+maximum.replace(',', '.')+"</Maximum>";
 	                p.println(maximum);
 	                standardDeviation = nullStr(standardDeviation) ? "<StandardDeviation/>" : "<StandardDeviation>"+standardDeviation+"</StandardDeviation>";
 	                p.println(standardDeviation);
@@ -200,7 +201,7 @@ public class Ws {
 	                p.println(numberOfAnalyses);
 	                qualityIndex = nullStr(qualityIndex) ? "<QualityIndex/>" : "<QualityIndex>"+qualityIndex+"</QualityIndex>";
 	                p.println( qualityIndex );
-	                remarks = nullStr(remarks) ? "<Remarks/>" : "<Remarks>"+numberOfAnalyses+"</Remarks>";
+	                remarks = nullStr(remarks) ? "<Remarks/>" : "<Remarks>"+remarks+"</Remarks>";
 	                p.println(remarks);
 	                //p.println("<QualityIndex>"+qualityIndex+"</QualityIndex>");
 	                //p.println("<Remarks>"+remarks+"</Remarks>");
@@ -212,8 +213,8 @@ public class Ws {
 	                	String citation = rs.getString("Citation");
 	                	
 		                p.println("<References>");
-		                p.println("<ValueReference referencetype=\""+referenceType+"\" acquisitiontype=\""+rAcquisitionType+"\" link=\""+(link==null?"":link)+"\">"+citation.replace('&', 'o')+"</ValueReference>");
-		                p.println("<MethodReference referencetype=\""+referenceType+"\" acquisitiontype=\""+rAcquisitionType+"\" link=\"\"></MethodReference>");
+		                p.println("<ValueReference referencetype=\""+referenceType+"\" acquisitiontype=\""+rAcquisitionType+"\""+((link==null||link.length()==0)?">":" link=\""+link+"\">")+citation.replace('&', 'o')+"</ValueReference>");
+		                p.println("<MethodReference referencetype=\""+referenceType+"\" acquisitiontype=\""+rAcquisitionType+"\""+((link==null||link.length()==0)?" />":" link=\""+link+"\" />"));
 		                p.println("</References>");
 	                }
 	                
