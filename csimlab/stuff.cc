@@ -3949,11 +3949,10 @@ JNIEXPORT int sum( simlab l_chunk, simlab l_size ) {
 	return current;
 }
 
-JNIEXPORT int poly( simlab pl ) {
+JNIEXPORT int poly( simlab pl, simlab pw ) {
 	if( data.type == 66 ) {
 		if( pl.type == 66 ) t_poly( (double*)data.buffer, data.length, (double*)pl.buffer, pl.length );
 		else if( pl.type == 32 ) {
-			printf( "%d\n", pl.length );
 			t_poly( (double*)data.buffer, data.length, (int*)pl.buffer, pl.length );
 		}
 	} else if( data.type == 32 ) {
