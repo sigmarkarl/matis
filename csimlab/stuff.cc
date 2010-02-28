@@ -5595,7 +5595,9 @@ JNIEXPORT isimlab erm() {
 JNIEXPORT int crnt( simlab newdata ) {
 	data = newdata;
 
-	return current;
+	//printf("%d %d\n",(int)data.length,(int)data.type);
+
+	return 1;
 }
 
 #ifdef JAVA

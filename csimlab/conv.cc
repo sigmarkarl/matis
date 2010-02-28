@@ -18,6 +18,9 @@
 #endif
 #endif
 
+#define  mx(a, b)  ((a) > (b) ? (a) :  (b))
+#define  mn(a, b)  ((a) < (b) ? (a) :  (b))
+
 JNIEXPORT int zero();
 extern simlab 	data;
 extern c_const<int>		iconst;
@@ -43,9 +46,47 @@ template <typename T,typename K> T* t_convolve( T* buffer, int length, K* c_buff
 	}
 }
 
+template <typename T,typename K> void t_filt( T* buffer, int length, int chunk, K* c_buffer, int c_length, int c_chunk ) {
+	/*int retchunk = (chunk+c_chunk-1);
+	int retlen = retchunk*(length/chunk);
+	T* ret = new T[ retlen ];
+	data.buffer = (long)ret;
+	data.length = retlen;
+	zero();*/
+	//int r = 0;
+	for( int i = 0; i < length; i+=chunk ) {
+		int w = i/chunk;
+		for( int k = i+chunk-1; k >= i; k-- ) {
+			buffer[k] = buffer[k]*c_buffer[(w*c_chunk)%c_length];
+			for( int t = k+1; t < k+mn(k-i,c_chunk); t++ ) {
+				buffer[k] += (T)(buffer[k+k-t]*c_buffer[(w*c_chunk+(t-k))%c_length]);
+			}
+		}
+	}
+}
+
+template <typename T,typename K> void t_ifilt( T* buffer, int length, int chunk, K* c_buffer, int c_length, int c_chunk ) {
+	/*int retchunk = (chunk+c_chunk-1);
+	int retlen = retchunk*(length/chunk);
+	T* ret = new T[ retlen ];
+	data.buffer = (long)ret;
+	data.length = retlen;
+	zero();*/
+	//int r = 0;
+	for( int i = 0; i < length; i+=chunk ) {
+		int w = i/chunk;
+		for( int k = i; k < i+chunk; k++ ) {
+			for( int t = k+mn(k-i,c_chunk)-1; t > k; t-- ) {
+				buffer[k] -= (T)(buffer[k+k-t]*c_buffer[(w*c_chunk+(t-k))%c_length]);
+			}
+			buffer[k] = buffer[k]/c_buffer[(w*c_chunk)%c_length];
+		}
+	}
+}
+
 template <typename T,typename K> void t_conv( T* buffer, int length, int chunk, K* c_buffer, int c_length, int c_chunk ) {
 	int retchunk = (chunk+c_chunk-1);
-	int retlen = retchunk*(length/chunk);
+	int retlen = (retchunk*length)/chunk;
 	T* ret = new T[ retlen ];
 	data.buffer = (long)ret;
 	data.length = retlen;
@@ -63,7 +104,7 @@ template <typename T,typename K> void t_conv( T* buffer, int length, int chunk, 
 
 template <typename T,typename K> void t_deconv( T* buffer, int length, int chunk, K* c_buffer, int c_length, int c_chunk ) {
 	int retchunk = chunk-c_chunk+1;
-	int retlen = retchunk*(length/chunk);
+	int retlen = (retchunk*length)/chunk;
 	T* ret = new T[ retlen ];
 	data.buffer = (long)ret;
 	data.length = retlen;
@@ -206,6 +247,51 @@ JNIEXPORT int deconv( simlab convee, simlab chnk, simlab c_chnk ) {
 		if( convee.type == 66 ) t_deconv( (unsigned char*)data.buffer, data.length, chunk, (double*)convee.buffer, convee.length, c_chunk );
 		else if( convee.type == 32 ) t_deconv( (unsigned char*)data.buffer, data.length, chunk, (int*)convee.buffer, convee.length, c_chunk );
 		else if( convee.type == 8 ) t_deconv( (unsigned char*)data.buffer, data.length, chunk, (unsigned char*)convee.buffer, convee.length, c_chunk );
+	}
+	return 3;
+}
+
+JNIEXPORT int filter( simlab convee, simlab chnk, simlab c_chnk ) {
+	if( chnk.buffer == 0 ) chnk.buffer = data.length;
+	if( c_chnk.buffer == 0 ) c_chnk.buffer = convee.length;
+	int chunk = chnk.buffer;
+	int c_chunk = c_chnk.buffer;
+	if( data.type == 66 ) {
+		if( convee.type == 66 ) t_filt( (double*)data.buffer, data.length, chunk, (double*)convee.buffer, convee.length, c_chunk );
+		//(chunk+c_chunk-1)*(data.length/chunk) )
+		else if( convee.type == 32 ) t_filt( (double*)data.buffer, data.length, chunk, (int*)convee.buffer, convee.length, c_chunk );
+		else if( convee.type == 8 ) t_filt( (double*)data.buffer, data.length, chunk, (unsigned char*)convee.buffer, convee.length, c_chunk );
+	} else if( data.type == 32 ) {
+		if( convee.type == 66 ) t_filt( (int*)data.buffer, data.length, chunk, (double*)convee.buffer, convee.length, c_chunk );
+		else if( convee.type == 32 ) t_filt( (int*)data.buffer, data.length, chunk, (int*)convee.buffer, convee.length, c_chunk );
+		else if( convee.type == 8 ) t_filt( (int*)data.buffer, data.length, chunk, (unsigned char*)convee.buffer, convee.length, c_chunk );
+	} else if( data.type == 8 ) {
+		if( convee.type == 66 ) t_filt( (unsigned char*)data.buffer, data.length, chunk, (double*)convee.buffer, convee.length, c_chunk );
+		else if( convee.type == 32 ) t_filt( (unsigned char*)data.buffer, data.length, chunk, (int*)convee.buffer, convee.length, c_chunk );
+		else if( convee.type == 8 ) t_filt( (unsigned char*)data.buffer, data.length, chunk, (unsigned char*)convee.buffer, convee.length, c_chunk );
+	}
+	return 3;
+}
+
+JNIEXPORT int ifilter( simlab convee, simlab chnk, simlab c_chnk ) {
+	if( chnk.buffer == 0 ) chnk.buffer = data.length;
+	if( c_chnk.buffer == 0 ) c_chnk.buffer = convee.length;
+	int chunk = chnk.buffer;
+	int c_chunk = c_chnk.buffer;
+	if( data.type == 66 ) {
+		if( convee.type == 66 ) {
+			t_ifilt( (double*)data.buffer, data.length, chunk, (double*)convee.buffer, convee.length, c_chunk );
+		}
+		else if( convee.type == 32 ) t_ifilt( (double*)data.buffer, data.length, chunk, (int*)convee.buffer, convee.length, c_chunk );
+		else if( convee.type == 8 ) t_ifilt( (double*)data.buffer, data.length, chunk, (unsigned char*)convee.buffer, convee.length, c_chunk );
+	} else if( data.type == 32 ) {
+		if( convee.type == 66 ) t_ifilt( (int*)data.buffer, data.length, chunk, (double*)convee.buffer, convee.length, c_chunk );
+		else if( convee.type == 32 ) t_ifilt( (int*)data.buffer, data.length, chunk, (int*)convee.buffer, convee.length, c_chunk );
+		else if( convee.type == 8 ) t_ifilt( (int*)data.buffer, data.length, chunk, (unsigned char*)convee.buffer, convee.length, c_chunk );
+	} else if( data.type == 8 ) {
+		if( convee.type == 66 ) t_ifilt( (unsigned char*)data.buffer, data.length, chunk, (double*)convee.buffer, convee.length, c_chunk );
+		else if( convee.type == 32 ) t_ifilt( (unsigned char*)data.buffer, data.length, chunk, (int*)convee.buffer, convee.length, c_chunk );
+		else if( convee.type == 8 ) t_ifilt( (unsigned char*)data.buffer, data.length, chunk, (unsigned char*)convee.buffer, convee.length, c_chunk );
 	}
 	return 3;
 }
