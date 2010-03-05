@@ -15,7 +15,9 @@ import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.AccessController;
 import java.security.MessageDigest;
+import java.security.PrivilegedAction;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -360,7 +362,6 @@ public class FriendsPanel extends JScrollPane {
 				fw.write( xml );
 				fw.close();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		} else {
@@ -391,17 +392,14 @@ public class FriendsPanel extends JScrollPane {
 	}
 	
 	char[]	cbuf = new char[50000];
-	public FriendsPanel( String sessionKey, String currentUser ) {
+	public FriendsPanel( final String sessionKey, final String currentUser ) {
 		nullmodel = new TableModel() {
 			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
 				// TODO Auto-generated method stub
 				
 			}
 			
-			public void removeTableModelListener(TableModelListener l) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void removeTableModelListener(TableModelListener l) {}
 			
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
 				// TODO Auto-generated method stub
@@ -543,7 +541,7 @@ public class FriendsPanel extends JScrollPane {
 			}
 		};
 		popup.add( action );
-		action = new AbstractAction("Viðsnúa Vali") {
+		action = new AbstractAction("Viðsnúa vali") {
 			public void actionPerformed(ActionEvent e) {
 				int[] rows = table.getSelectedRows();
 				table.selectAll();
@@ -568,10 +566,28 @@ public class FriendsPanel extends JScrollPane {
 				}
 			}
 		});
+		popup.addSeparator();
+		popup.add( new AbstractAction("Uppfæra vinalista") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				FriendsPanel.this.createFriendsModel(sessionKey, currentUser);
+			}
+		});
 		
 		table.setComponentPopupMenu( popup );
 		
 		this.setViewportView( table );
+	}
+	
+	public void updateFriends( final String sessionKey, final String currentUser ) {
+		this.nullModel();
+		AccessController.doPrivileged(new PrivilegedAction<Object>() {
+			public Object run() {
+				FriendsPanel.this.createFriendsModel(sessionKey, currentUser);
+				return null;
+			}
+		});
+		this.updateModel();
 	}
 	
 	public void nullModel() {

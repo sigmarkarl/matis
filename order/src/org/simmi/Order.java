@@ -56,6 +56,7 @@ import javax.swing.JLabel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
+import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
@@ -142,6 +143,7 @@ public class Order extends JApplet {
 	
 	TableModel	nullmodel;
 	JComponent	c;
+	JComponent	cb;
 	JComponent	cvorur;
 	JComponent	cpantanir;
 	JComponent	cafgreitt;
@@ -257,7 +259,8 @@ public class Order extends JApplet {
 	}
 	
 	public class Pontun {
-		Boolean		e_Mikilvægt;
+		Boolean		_Mikilvægt;
+		String		Byrgir;
 		Integer		_Númer;
 		String		Nafn;
 		String		Pantað_Af;
@@ -267,11 +270,12 @@ public class Order extends JApplet {
 		Date		_Afhent;
 		String		_Lýsing;
 		String		e_Verknúmer;
-		String		e_Staðsetning;
+		String		e_Svið;
 		Integer		e_Verð;
 		
-		public Pontun( boolean urgent, int ordno, String name, String user, int quant, Date orddate, Date purdate, Date recdate, String description, String vn, String st, int price ) {
-			this.e_Mikilvægt = urgent;
+		public Pontun( boolean urgent, String byrgir, int ordno, String name, String user, int quant, Date orddate, Date purdate, Date recdate, String description, String vn, String st, int price ) {
+			this._Mikilvægt = urgent;
+			this.Byrgir = byrgir;
 			this._Númer = ordno;
 			this.Nafn = name;
 			this.Pantað_Af = user;
@@ -287,9 +291,9 @@ public class Order extends JApplet {
 			}
 			
 			if( st == null ) {
-				this.e_Staðsetning = "";
+				this.e_Svið = "";
 			} else {
-				this.e_Staðsetning = st;
+				this.e_Svið = st;
 			}
 			this.e_Verð = price;
 		}
@@ -374,13 +378,10 @@ public class Order extends JApplet {
 						}
 					}
 				} catch (IllegalArgumentException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				} catch (SecurityException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				} catch (IllegalAccessException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				return ret;
@@ -391,7 +392,7 @@ public class Order extends JApplet {
 				Field[] ff = cls.getDeclaredFields();
 				Field 	f = ff[columnIndex];
 				//System.err.println( ff.length + "  " + columnIndex + "  " + f.getName() );
-				return f.getName().startsWith("e_") && this.getValueAt(rowIndex, 3).equals(user);
+				return f.getName().startsWith("e_") && (this.getValueAt(rowIndex, 3).equals(user) || user.equals("ragnar") || user.equals("sigmar") );
 			}
 
 			@Override
@@ -415,7 +416,7 @@ public class Order extends JApplet {
 	}
 	
 	public void loadPnt() throws SQLException {		
-		String sql = "select [ordno], [name], [user], [quant], [orddate], [purdate], [urgent], [description], [jobid], [location], [recdate], [price] from [order].[dbo].[Pontun]";// where [user] = '"+user+"'";
+		String sql = "select [ordno], [name], [user], [quant], [orddate], [purdate], [urgent], [description], [jobid], [location], [recdate], [price], [byrgir] from [order].[dbo].[Pontun]";// where [user] = '"+user+"'";
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
 		ResultSet 			rs = ps.executeQuery();
@@ -426,7 +427,7 @@ public class Order extends JApplet {
 			int		price = rs.getInt(12);
 			String 	puser = rs.getString(3);
 			String	pname = rs.getString(2);
-			Pontun pnt = new Pontun( rs.getBoolean(7), rs.getInt(1), pname, puser, rs.getInt(4), rs.getDate(5), afgdate, afhdate, rs.getString(8), rs.getString(9), rs.getString(10), price );
+			Pontun pnt = new Pontun( rs.getBoolean(7), rs.getString(13), rs.getInt(1), pname, puser, rs.getInt(4), rs.getDate(5), afgdate, afhdate, rs.getString(8), rs.getString(9), rs.getString(10), price );
 			if( afgdate == null && afhdate == null ) pntlist.add( pnt );
 			else if( afhdate == null ) afglist.add( pnt ); 
 			else afhlist.add( pnt );
@@ -509,12 +510,12 @@ public class Order extends JApplet {
 	
 	public void updateorder( Pontun order ) throws SQLException {
 		//String ord = ordno+",'"+name+"','"+user+"',"+quant+",GetDate(),null,0,null";
-		String sql = "update [order].[dbo].[Pontun] set [quant] = "+order.e_Magn+", [Description] = '"+order._Lýsing+"', [Location] = '"+order.e_Staðsetning+"', [jobid] = '"+order.e_Verknúmer+"' where [ordno] = "+order._Númer;
+		String sql = "update [order].[dbo].[Pontun] set [quant] = "+order.e_Magn+", [Description] = '"+order._Lýsing+"', [Location] = '"+order.e_Svið+"', [jobid] = '"+order.e_Verknúmer+"', [price] = "+order.e_Verð+" where [ordno] = "+order._Númer;
 		
 		if( order._Afhent != null ) {
-			sql = "update [order].[dbo].[Pontun] set [recdate] = GetDate(), [quant] = "+order.e_Magn+", [Description] = '"+order._Lýsing+"', [Location] = '"+order.e_Staðsetning+"', [jobid] = '"+order.e_Verknúmer+"' where [ordno] = "+order._Númer;
+			sql = "update [order].[dbo].[Pontun] set [recdate] = GetDate(), [quant] = "+order.e_Magn+", [Description] = '"+order._Lýsing+"', [Location] = '"+order.e_Svið+"', [jobid] = '"+order.e_Verknúmer+"', [price] = "+order.e_Verð+" where [ordno] = "+order._Númer;
 		} else if( order._Afgreitt != null ) {
-			sql = "update [order].[dbo].[Pontun] set [purdate] = GetDate(), [quant] = "+order.e_Magn+", [Description] = '"+order._Lýsing+"', [Location] = '"+order.e_Staðsetning+"', [jobid] = '"+order.e_Verknúmer+"' where [ordno] = "+order._Númer;
+			sql = "update [order].[dbo].[Pontun] set [purdate] = GetDate(), [quant] = "+order.e_Magn+", [Description] = '"+order._Lýsing+"', [Location] = '"+order.e_Svið+"', [jobid] = '"+order.e_Verknúmer+"', [price] = "+order.e_Verð+" where [ordno] = "+order._Númer;
 		}
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
@@ -539,16 +540,16 @@ public class Order extends JApplet {
 		ps.close();
 	}
 	
-	public void order( String name, int quant, String verknr, String location ) throws SQLException {
+	public void order( String name, String byrgir, int quant, String verknr, String location ) throws SQLException {
 		ordno++;
-		String ord = ordno+",'"+name+"','"+user+"',"+quant+",GetDate(),null,0,null,'"+verknr.substring(0, 10)+"','"+location+"',null,0";
+		String ord = ordno+",'"+name+"','"+user+"',"+quant+",GetDate(),null,0,null,'"+verknr.substring(0, 10)+"','"+location+"',null,0,'"+byrgir+"'";
 		String sql = "insert into [order].[dbo].[Pontun] values ("+ord+")";
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
 		boolean				b = ps.execute();
 		
 		if( !b ) {
-			pntlist.add( new Pontun( false, ordno, name, user, quant, new Date( System.currentTimeMillis() ), null, null, "", verknr, location, 0 ) );
+			pntlist.add( new Pontun( false, byrgir, ordno, name, user, quant, new Date( System.currentTimeMillis() ), null, null, "", verknr, location, 0 ) );
 		}
 		
 		ps.close();
@@ -585,20 +586,23 @@ public class Order extends JApplet {
 		for( int r : rr ) {
 			int 	rval = ptable.convertRowIndexToModel( r );
 			if( rval != -1 ) {
-				int			ordno = (Integer)pmodel.getValueAt(rval, 1);
-				String 		username = (String)ptable.getValueAt(r, 2);
-				
-				if( username.equals(user) ) {
-					try {
-						if( !disorder( ordno ) ) {
-							for( Pontun p : pntlist ) {
-								if( p._Númer == ordno ) {
-									remset.add( p );
+				Object		ordobj = pmodel.getValueAt(rval, 2);
+				if( ordobj != null ) {
+					int			ordno = (Integer)ordobj;
+					String 		username = (String)ptable.getValueAt(r, 2);
+					
+					if( username.equals(user) ) {
+						try {
+							if( !disorder( ordno ) ) {
+								for( Pontun p : pntlist ) {
+									if( p._Númer == ordno ) {
+										remset.add( p );
+									}
 								}
 							}
+						} catch (SQLException e1) {
+							e1.printStackTrace();
 						}
-					} catch (SQLException e1) {
-						e1.printStackTrace();
 					}
 				}
 			}
@@ -623,7 +627,7 @@ public class Order extends JApplet {
 		ps.close();
 	}
 	
-	private void panta(String name) {
+	private void panta(String name, String byrgir) {
 		int 		quant = 1;
 		Pontun 		tpnt = null;
 		for( Pontun pnt : pntlist ) {
@@ -637,7 +641,7 @@ public class Order extends JApplet {
 			if( tpnt != null ) {
 				updateorder( tpnt, tpnt.e_Magn+1 );
 			} else {
-				order( name, quant, (String)vcombo.getSelectedItem(), (String)stcombo.getSelectedItem() );
+				order( name, byrgir, quant, (String)vcombo.getSelectedItem(), (String)stcombo.getSelectedItem() );
 			}
 		} catch (SQLException e1) {
 			// TODO Auto-generated catch block
@@ -654,14 +658,13 @@ public class Order extends JApplet {
 				
 				Pontun pnt = afglist.get(r);
 				
-				if( pnt.Pantað_Af.equals(user) ) {
+				if( pnt.Pantað_Af.equals(user) || user.equals("ragnar") || user.equals("sigmar") ) {
 					pnt._Afhent = new Date( System.currentTimeMillis() );
 					pnts.add( pnt );
 					
 					try {
 						updateorder( pnt );
 					} catch (SQLException e1) {
-						// TODO Auto-generated catch block
 						e1.printStackTrace();
 					}
 				}
@@ -720,8 +723,9 @@ public class Order extends JApplet {
 		int[] rr = table.getSelectedRows();
 		for( int r : rr ) { 
 			String		name = (String)table.getValueAt(r, 0);
+			String		byrgir = (String)table.getValueAt(r, 2);
 			//String		name = (String)table.getValueAt(r, 0);					
-			panta(name);
+			panta(name,byrgir);
 		}
 		ptable.tableChanged( new TableModelEvent( pmodel ) );
 	}
@@ -861,23 +865,31 @@ public class Order extends JApplet {
 			
 			con.close();
 		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
-		stcombo.addItem("Borgartún");
-		stcombo.addItem("Skúlagata");
-		stcombo.addItem("Gylfaflöt");
+		stcombo.addItem("Erfðir og eldi");
+		stcombo.addItem("Mælingar og miðlun");
 		
+		boolean valid = false;
 		try {
-			//String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=order;integratedSecurity=true;";
-			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=order;user=simmi;password=drsmorc.311;";
+			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=order;integratedSecurity=true;";
+			//String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=order;user=simmi;password=drsmorc.311;";
 			con = DriverManager.getConnection(connectionUrl);
+			valid = con.isValid(2);
 		} catch (SQLException e) {
 			e.printStackTrace();
+		}
+		
+		if( !valid ) {
+			try {
+				String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=order;user=simmi;password=drsmorc.311;";
+				con = DriverManager.getConnection(connectionUrl);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
 		}
 		
 		nullmodel = new TableModel() {
@@ -915,7 +927,7 @@ public class Order extends JApplet {
 				try {
 					Vara v = newItem();
 					if( v != null ) {
-						panta( v.Nafn );
+						panta( v.Nafn, v.Byrgir );
 						ptable.tableChanged( new TableModelEvent( pmodel ) );
 						table.tableChanged( new TableModelEvent( model ) );
 					}
@@ -954,7 +966,6 @@ public class Order extends JApplet {
 					workbook.write( new FileOutputStream( xlsxFile ) );
 					Desktop.getDesktop().open( xlsxFile );
 				} catch (IOException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 			}
@@ -1037,6 +1048,41 @@ public class Order extends JApplet {
 			e.printStackTrace();
 		}
 		
+		cb = new JComponent() {
+			public void setBounds( int x, int y, int w, int h ) {
+				super.setBounds(x, y, w, h);
+				
+				if( vert ) {
+					afhenda.setBounds( (int)(0.9*w)-75, (int)(0.5*h), 150, 25 );
+					
+					if( cb.isAncestorOf( cafgreitt ) ) cafgreitt.setBounds( (int)(0.00*w), (int)(0.0*h), (int)(0.80*w), (int)(0.5*h)-5 );
+					if( cb.isAncestorOf( cafhent ) ) cafhent.setBounds( (int)(0.00*w), (int)(0.5*h)+5, (int)(0.80*w), (int)(0.5*h) );
+					
+					//vertbut.setBounds( (int)(0.9*w)-75, this.getHeight()-80, 150, 25 );
+					//excel.setBounds( (int)(0.9*w)-75, this.getHeight()-50, 150, 25 );
+				} else {
+					//vcombo.setBounds( (int)(0.5*w)-75, 260, 150, 25 );
+					//stcombo.setBounds( (int)(0.5*w)-75, 290, 150, 25 );
+					
+					//addbtn.setBounds( (int)(0.5*w)-75, 340, 150, 25 );
+					//rembtn.setBounds( (int)(0.5*w)-75, 370, 150, 25 );
+					//pantanytt.setBounds( (int)(0.5*w)-75, 400, 150, 25 );
+					
+					//afgreida.setBounds( (int)(0.5*w)-75, (int)(0.6*h)+100, 150, 25 );
+					afhenda.setBounds( (int)(0.5*w)-75, (int)(0.5*h), 150, 25 );
+					
+					//cvorur.setBounds( (int)(0.00*w), 30, (int)(0.40*w), (int)(0.50*h) );
+					//cpantanir.setBounds( (int)(0.60*w), 30, (int)(0.40*w), (int)(0.50*h) );
+					if( cb.isAncestorOf( cafgreitt ) ) cafgreitt.setBounds( (int)(0.00*w), (int)(0.0*h), (int)(0.40*w), (int)(1.0*h) );
+					if( cb.isAncestorOf( cafhent ) ) cafhent.setBounds( (int)(0.60*w), (int)(0.0*h), (int)(0.40*w), (int)(1.0*h) );
+					
+					//vertbut.setBounds( (int)(0.5*w)-75, this.getHeight()-80, 150, 25 );
+					//excel.setBounds( (int)(0.5*w)-75, this.getHeight()-50, 150, 25 );
+				}
+			}
+		};
+		cb.setLayout( null );
+		
 		c = new JComponent() {
 			public void paintComponent( Graphics g ) {
 				super.paintComponent(g);
@@ -1079,12 +1125,12 @@ public class Order extends JApplet {
 					pantanytt.setBounds( (int)(0.9*w)-75, 400, 150, 25 );
 					
 					afgreida.setBounds( (int)(0.9*w)-75, (int)(0.6*h)+100, 150, 25 );
-					afhenda.setBounds( (int)(0.9*w)-75, (int)(0.6*h)+130, 150, 25 );
+					//afhenda.setBounds( (int)(0.9*w)-75, (int)(0.6*h)+130, 150, 25 );
 					
-					cvorur.setBounds( (int)(0.00*w), 0, (int)(0.80*w), (int)(0.30*h) );
-					cpantanir.setBounds( (int)(0.00*w), (int)(0.30*h), (int)(0.80*w), (int)(0.26*h) );
-					cafgreitt.setBounds( (int)(0.00*w), (int)(0.56*h), (int)(0.80*w), (int)(0.22*h) );
-					cafhent.setBounds( (int)(0.00*w), (int)(0.78*h), (int)(0.80*w), (int)(0.22*h) );
+					if( c.isAncestorOf( cvorur ) ) cvorur.setBounds( (int)(0.00*w), 0, (int)(0.80*w), (int)(0.50*h) );
+					if( c.isAncestorOf( cpantanir ) ) cpantanir.setBounds( (int)(0.00*w), (int)(0.50*h), (int)(0.80*w), (int)(0.5*h) );
+					//cafgreitt.setBounds( (int)(0.00*w), (int)(0.56*h), (int)(0.80*w), (int)(0.22*h) );
+					//cafhent.setBounds( (int)(0.00*w), (int)(0.78*h), (int)(0.80*w), (int)(0.22*h) );
 					
 					vertbut.setBounds( (int)(0.9*w)-75, this.getHeight()-80, 150, 25 );
 					excel.setBounds( (int)(0.9*w)-75, this.getHeight()-50, 150, 25 );
@@ -1097,12 +1143,12 @@ public class Order extends JApplet {
 					pantanytt.setBounds( (int)(0.5*w)-75, 400, 150, 25 );
 					
 					afgreida.setBounds( (int)(0.5*w)-75, (int)(0.6*h)+100, 150, 25 );
-					afhenda.setBounds( (int)(0.5*w)-75, (int)(0.6*h)+130, 150, 25 );
+					//afhenda.setBounds( (int)(0.5*w)-75, (int)(0.5*h), 150, 25 );
 					
-					cvorur.setBounds( (int)(0.00*w), 30, (int)(0.40*w), (int)(0.50*h) );
-					cpantanir.setBounds( (int)(0.60*w), 30, (int)(0.40*w), (int)(0.50*h) );
-					cafgreitt.setBounds( (int)(0.00*w), (int)(0.55*h), (int)(0.40*w), (int)(0.45*h) );
-					cafhent.setBounds( (int)(0.60*w), (int)(0.55*h), (int)(0.40*w), (int)(0.45*h) );
+					if( c.isAncestorOf( cvorur ) ) cvorur.setBounds( (int)(0.00*w), 30, (int)(0.40*w), (int)(1.0*h) );
+					if( c.isAncestorOf( cpantanir ) ) cpantanir.setBounds( (int)(0.60*w), 30, (int)(0.40*w), (int)(0.95*h) );
+					//cafgreitt.setBounds( (int)(0.00*w), (int)(0.55*h), (int)(0.40*w), (int)(0.45*h) );
+					//cafhent.setBounds( (int)(0.60*w), (int)(0.55*h), (int)(0.40*w), (int)(0.45*h) );
 					
 					vertbut.setBounds( (int)(0.5*w)-75, this.getHeight()-80, 150, 25 );
 					excel.setBounds( (int)(0.5*w)-75, this.getHeight()-50, 150, 25 );
@@ -1257,10 +1303,31 @@ public class Order extends JApplet {
 			modelRowMap.put( (String)model.getValueAt(r, 0), r );
 		}
 		
+		rtable.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
+			public void valueChanged(ListSelectionEvent e) {
+				if( currentEdited ) {
+					try {
+						updateorder(currentSel);
+					} catch (SQLException e1) {
+						e1.printStackTrace();
+					}
+					currentEdited = false;
+				}
+				
+				int r = rtable.getSelectedRow();
+				if( r != -1 ) {					
+					int mr = rtable.convertRowIndexToModel(r);
+					Pontun pnt = afhlist.get(mr);
+					currentSel = pnt;
+				}
+			}
+		});
+		
 		ptable.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
 			//String oldname = "";
 			
 			public void valueChanged(ListSelectionEvent e) {
+				int r = ptable.getSelectedRow();
 				if( currentSel != null && !currentSel.equals(ed.getText()) ) {
 					if( !ed.getText().equals(currentSel._Lýsing) ) currentEdited = true;
 					
@@ -1276,8 +1343,7 @@ public class Order extends JApplet {
 					}
 				}
 				
-				int r = ptable.getSelectedRow();
-				if( r != -1 ) {
+				if( r != -1 ) {					
 					int mr = ptable.convertRowIndexToModel(r);
 					Pontun pnt = pntlist.get(mr);
 					currentSel = pnt;
@@ -1305,6 +1371,9 @@ public class Order extends JApplet {
 						}
 					}
 					
+					image = getImage( name );
+					cpantanir.repaint();
+					
 					/*if( !name.equals( oldname ) ) {
 						ll
 						oldname = name;
@@ -1325,25 +1394,38 @@ public class Order extends JApplet {
 			}
 		});
 		
-		ptable.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
+		/*ptable.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
 			@Override
 			public void valueChanged(ListSelectionEvent e) {
 				int r = ptable.getSelectedRow();
 				if( r != -1 ) {
 					String pantAri = (String)ptable.getValueAt( r, 2 );
 					image = getImage( pantAri );
-					c.repaint();
+					cpantanir.repaint();
 				}
 			}
-		});
+		});*/
 		
 		atable.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
 			@Override
 			public void valueChanged(ListSelectionEvent e) {
+				if( currentEdited ) {
+					try {
+						updateorder(currentSel);
+					} catch (SQLException e1) {
+						e1.printStackTrace();
+					}
+					currentEdited = false;
+				}
+				
 				int r = atable.getSelectedRow();
 				if( r != -1 ) {
-					String name = (String)atable.getValueAt(r, 1);
-					if( user.equals(name) ) {
+					int mr = rtable.convertRowIndexToModel(r);
+					Pontun pnt = afglist.get(mr);
+					currentSel = pnt;
+					
+					String name = (String)atable.getValueAt(r, 2);
+					if( user.equals(name) || user.equals("ragnar") || user.equals("sigmar") ) {
 						afhenda.setEnabled( true );
 					} else {
 						afhenda.setEnabled( false );
@@ -1452,16 +1534,20 @@ public class Order extends JApplet {
 		JComboBox	v2combo = new JComboBox( vcombo.getModel() );
 		DefaultCellEditor dce = new DefaultCellEditor( v2combo );
 		ptable.getColumnModel().getColumn(5).setCellEditor( dce );
-		
 		dce.addCellEditorListener( cel );
 		
 		JComboBox	st2combo = new JComboBox( stcombo.getModel() );
 		dce = new DefaultCellEditor( st2combo );
 		ptable.getColumnModel().getColumn(6).setCellEditor( dce );
-		
 		dce.addCellEditorListener( cel );
 		
 		ptable.getDefaultEditor( String.class ).addCellEditorListener( cel );
+		ptable.getDefaultEditor( Integer.class ).addCellEditorListener( cel );
+		
+		atable.getDefaultEditor( String.class ).addCellEditorListener( cel );
+		atable.getDefaultEditor( Integer.class ).addCellEditorListener( cel );
+		rtable.getDefaultEditor( String.class ).addCellEditorListener( cel );
+		rtable.getDefaultEditor( Integer.class ).addCellEditorListener( cel );
 		
 		//ylabel.setBorder( BorderFactory.createLineBorder( Color.red ) );
 		
@@ -1469,7 +1555,7 @@ public class Order extends JApplet {
 		c.add( stcombo );
 		
 		c.add( afgreida );
-		c.add( afhenda );
+		cb.add( afhenda );
 		c.add( pantanytt );
 		
 		c.add( addbtn );
@@ -1479,6 +1565,15 @@ public class Order extends JApplet {
 		c.add( excel );
 		
 		cvorur = new JComponent() {
+			/*public void paintComponent( Graphics g ) {
+				super.paintComponent(g);
+				
+				g.setColor( Color.red );
+				g.fillRect(0, 0, this.getWidth(), this.getHeight());
+				
+				System.err.println( this.getWidth() + "  " + this.getHeight() );
+			}*/
+			
 			public void setBounds( int x, int y, int w, int h ) {
 				super.setBounds(x, y, w, h);
 				
@@ -1542,7 +1637,7 @@ public class Order extends JApplet {
 		};
 		cafgreitt.add( ascrollpane );
 		cafgreitt.add( afgreitt );
-		c.add( cafgreitt );
+		cb.add( cafgreitt );
 		
 		cafhent = new JComponent() {
 			public void setBounds( int x, int y, int w, int h ) {
@@ -1554,10 +1649,19 @@ public class Order extends JApplet {
 		};
 		cafhent.add( rscrollpane );
 		cafhent.add( afhent );
-		c.add( cafhent );
+		cb.add( cafhent );
+		
+		JSplitPane	splitpane = new JSplitPane( JSplitPane.VERTICAL_SPLIT );
+		splitpane.setOneTouchExpandable( true );
+		splitpane.setTopComponent( c );
+		splitpane.setBottomComponent( cb );
+		//splitpane.setDividerLocation(0.0);
+		splitpane.setDividerLocation(1200);
+		//splitpane.setDividerLocation(1);
+		//splitpane.setDividerSize(1200);
 		
 		final JTabbedPane tpane = new JTabbedPane();
-		tpane.addTab("Allt", c);
+		tpane.addTab("Allt", splitpane);
 		tpane.addTab("Vörur", null);
 		tpane.addTab("Pantanir", null);
 		tpane.addTab("Afgreitt", null);
@@ -1582,34 +1686,44 @@ public class Order extends JApplet {
 					if( tpane.indexOfComponent(cafgreitt) > 0 ) {
 						tpane.remove( cafgreitt );
 						tpane.insertTab("Afgreitt",null,null,null,3);
-						c.add( cafgreitt );
+						cb.add( cafgreitt );
 					} 
 					if( tpane.indexOfComponent(cafhent) > 0 ) {
 						tpane.remove( cafhent );
 						tpane.insertTab("Afhent",null,null,null,4);
-						c.add( cafhent );
+						cb.add( cafhent );
 					}
 				} else if( i == 1 ) {
 					c.remove( cvorur );
-					tpane.setComponentAt(1, cvorur);
+					tpane.setComponentAt(1, cvorur );
+					/*tpane.setComponentAt(1, new JComponent() {
+						public void paintComponent( Graphics g ) {
+							super.paintComponent( g );
+							g.setColor( Color.red );
+							g.fillRect(0, 0, this.getWidth(), this.getHeight());
+						}
+					});*/
+					//tpane.getcom
+					//cvorur.revalidate();
+					//cvorur.repaint();
 				} else if( i == 2 ) {
 					c.remove( cpantanir );
 					tpane.setComponentAt(2, cpantanir);
 				} else if( i == 3 ) {
-					c.remove( cafgreitt );
+					cb.remove( cafgreitt );
 					tpane.setComponentAt(3, cafgreitt);
 				} else if( i == 4 ) {
-					c.remove( cafhent );
+					cb.remove( cafhent );
 					tpane.setComponentAt(4, cafhent);
 				}
-				
 			}
 		});
 		
 		this.add( tpane );
 	}
 	
-	final Image getImage( String name ) {
+	Set<String>	facesTrying = new HashSet<String>();
+	final Image getImage( final String name ) {
 		String nm = name.split(" ")[0].toLowerCase();
 		if( faces.containsKey( name ) ) {
 			return faces.get(name);
@@ -1637,54 +1751,65 @@ public class Order extends JApplet {
 				
 				if( bo ) {
 					int ind = person.indexOf('"');
-					String link = person.substring(0, ind);
-					try {
-						URL url = new URL( "http://www.matis.is/um-matis-ohf/"+link );
-						InputStream stream = url.openStream();
-						
-						String ret = "";
-						int r = stream.read(bb);
-						while( r > 0 ) {
-							ret += new String( bb, 0, r );
-							r = stream.read(bb);
-						}
-						stream.close();
-						
-						int i = ret.indexOf("<img src=\"");
-						if( i >= 0 ) {
-							i += 10;
-							int e = ret.indexOf("\"", i);
-							String urlstr = "http://www.matis.is"+ret.substring(i, e);
-							//urlstr = URLEncoder.encode( urlstr, "UTF-8" );
-							urlstr = urlstr.replace(" ", "%20");
-							
-							url = new URL( urlstr );
-							Image image = ImageIO.read( url );
-							
-							faces.put(name, image);
-							
-							return image;
-						}
-						
-						/*String[] ss = ret.split("<div class=\"boxbody\">");
-						for( int i = 1; i < 2; i++ ) {
-							String s = ss[i];
-							ind = s.indexOf("></ul>");
-							String sub = "<html>"+s.substring(0, ind)+"></ul>";
-							sub = sub.replace("</div>", "");
-							sub = sub.replace("<img src=\"","<img src=\"http://www.matis.is");
-							sub = sub.replace("Sigmar St","Sigmar%20St");
-							sub += "</html>";
-							
-							ed.setEditable( false );
-							ed.setContentType("text/html");
-							ed.setText( sub );
-						}*/
-						//ed.setPage( url );
-					} catch (MalformedURLException e1) {
-						e1.printStackTrace();
-					} catch (IOException e2) {
-						e2.printStackTrace();
+					final String link = person.substring(0, ind);
+					
+					if( !facesTrying.contains( name ) ) {
+						facesTrying.add( name );
+						new Thread() {
+							public void run() {
+								try {
+									URL url = new URL( "http://www.matis.is/um-matis-ohf/"+link );
+									InputStream stream = url.openStream();
+									
+									String ret = "";
+									int r = stream.read(bb);
+									while( r > 0 ) {
+										ret += new String( bb, 0, r );
+										r = stream.read(bb);
+									}
+									stream.close();
+									
+									int i = ret.indexOf("<img src=\"");
+									if( i >= 0 ) {
+										i += 10;
+										int e = ret.indexOf("\"", i);
+										String urlstr = "http://www.matis.is"+ret.substring(i, e);
+										//urlstr = URLEncoder.encode( urlstr, "UTF-8" );
+										urlstr = urlstr.replace(" ", "%20");
+										
+										url = new URL( urlstr );
+										Image image = ImageIO.read( url );
+										
+										faces.put(name, image);
+										Order.this.image = image;
+										
+										//return image;
+										cpantanir.repaint();
+										facesTrying.remove( name );
+									}
+									
+									/*String[] ss = ret.split("<div class=\"boxbody\">");
+									for( int i = 1; i < 2; i++ ) {
+										String s = ss[i];
+										ind = s.indexOf("></ul>");
+										String sub = "<html>"+s.substring(0, ind)+"></ul>";
+										sub = sub.replace("</div>", "");
+										sub = sub.replace("<img src=\"","<img src=\"http://www.matis.is");
+										sub = sub.replace("Sigmar St","Sigmar%20St");
+										sub += "</html>";
+										
+										ed.setEditable( false );
+										ed.setContentType("text/html");
+										ed.setText( sub );
+									}*/
+									//ed.setPage( url );
+								} catch (MalformedURLException e1) {
+									e1.printStackTrace();
+								} catch (IOException e2) {
+									e2.printStackTrace();
+								}
+							}
+						}.start();
 					}
 				}
 			}

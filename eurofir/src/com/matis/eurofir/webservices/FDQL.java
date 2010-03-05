@@ -42,7 +42,8 @@ public class FDQL extends DefaultHandler2 {
 	
 	String	joinFood = "fd.OriginalFoodCode = cv.OriginalFoodCode";
 	String	joinComponent = "cv.OriginalComponentCode = co.OriginalComponentCode";
-	String	joinAll = joinFood + " AND " + joinComponent;
+	String	joinReference = "cv.ValueReferenceFK = rf.ReferenceID";
+	String	joinAll = joinFood + " AND " + joinComponent + " AND " + joinReference;
 	
 	Set<String>	fields = new HashSet<String>();
 	
@@ -52,11 +53,11 @@ public class FDQL extends DefaultHandler2 {
 	static Map<String,String[]>	fieldMap = new HashMap<String,String[]>();
 	
 	static {
-		String[]	foodAllMinimum = {"OriginalFoodCode", "FoodGroupIS1", "FoodGroupIS2", "OriginalFoodName", "EnglishFoodName"};
+		String[]	foodAllMinimum = {"OriginalFoodCode", "FoodGroupIS1", "FoodGroupIS2", "OriginalFoodName", "EnglishFoodName", "LangualCodes", "AcquisitionType"};
 		fieldMap.put( "FoodAllMinimum", foodAllMinimum );
 		String[]	componentAllMinimum = {"EuroFIRComponentIdentifier", "OriginalComponentCode", "OriginalComponentName", "EnglishComponentName", "Unit", "'W' as MatrixUnit"};
 		fieldMap.put( "ComponentAllMinimum", componentAllMinimum );
-		String[]	componentValueAllMinimum = {"DateOfAnalysis", "MethodType", "MethodIndicator", "MethodParameter", "SelectedValue", "ValueType", "N", "Minimum", "Maximum", "StandardDeviation", "QI_Eurofir", "Remarks"};
+		String[]	componentValueAllMinimum = {"DateOfGeneration", "MethodType", "MethodIndicator", "MethodParameter", "SelectedValue", "ValueType", "N", "Minimum", "Maximum", "StandardDeviation", "QI_Eurofir", "Remarks", "Citation", "ReferenceType", "rAcquisitionType", "WWW"};
 		fieldMap.put( "ComponentValueAllMinimum", componentValueAllMinimum );
 		String[]	ecompid = {"EuroFIRComponentIdentifier"};
 		fieldMap.put( "ecompid", ecompid );
@@ -97,7 +98,6 @@ public class FDQL extends DefaultHandler2 {
 	public void startElement (String uri, String localName, String qName, Attributes attributes) throws SAXException {		
 		if( qName.equals("SelectClause") ) {
 			inSelect = true;
-			
 			selStr = "SELECT ";
 		} else if( qName.equals("WhereClause") ) {
 			inWhere = true;
@@ -105,7 +105,6 @@ public class FDQL extends DefaultHandler2 {
 			//sql += " where ";
 		} else if( qName.equals("OrderByClause") ) {
 			inOrderBy = true;
-			
 			sql += " ORDER BY ";
 		} else if( qName.equals("NameConditionField") ) {
 			//inNameConditionField = true;
@@ -114,9 +113,7 @@ public class FDQL extends DefaultHandler2 {
 			inFieldName = -inFieldName+1;
 		} else if( qName.equals("Condition") ) {
 			inCondition = -inCondition+1;
-			
 			logOp = attributes.getValue("logicalOperator");
-			//System.err.println(logOp);
 		} else if( qName.contains("ConditionField") ) {
 			inConditionField = true;
 		} else if( qName.equals("ConditionOperator") ) {
@@ -188,8 +185,8 @@ public class FDQL extends DefaultHandler2 {
 			 boolean co = allTables.contains("Component");
 			 boolean cv = allTables.contains("ComponentValue");
 			 if( fd && co ) {
-				 fromStr += "Food fd, ComponentValue cv, Component co";
-				 joinStr += "fd.OriginalFoodCode = cv.OriginalFoodCode AND co.OriginalComponentCode = cv.OriginalComponentCode ";
+				 fromStr += "Food fd, ComponentValue cv, Component co, Reference rf";
+				 joinStr += "fd.OriginalFoodCode = cv.OriginalFoodCode AND co.OriginalComponentCode = cv.OriginalComponentCode AND cv.ValueReferenceFK = rf.ReferenceID ";
 			 } else if( fd ) {
 				 if( cv ) {
 					 fromStr += "Food fd, ComponentValue cv";
@@ -212,6 +209,11 @@ public class FDQL extends DefaultHandler2 {
 		 if( allTables.contains("ComponentValue") ) {
 			 sql = sql.replace("null.OriginalFoodCode", "cv.OriginalFoodCode");
 			 sql = sql.replace("null.OriginalComponentCode", "cv.OriginalComponentCode");
+			 //sql = sql.replace("null.OriginalReferenceCode", "rf.OriginalReferenceCode");
+			 sql = sql.replace("null.Citation", "rf.Citation");
+			 sql = sql.replace("null.ReferenceType", "rf.ReferenceType");
+			 sql = sql.replace("null.rAcquisitionType", "rf.AcquisitionType as rAcquisitionType");
+			 sql = sql.replace("null.WWW", "rf.WWW");
 		 } else {
 			 sql = sql.replace("null.OriginalFoodCode", "fd.OriginalFoodCode");
 			 sql = sql.replace("null.OriginalComponentCode", "co.OriginalComponentCode");

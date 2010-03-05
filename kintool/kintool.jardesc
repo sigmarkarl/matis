@@ -11,8 +11,6 @@
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
-        <javaElement handleIdentifier="=poi/src\/ooxml\/java"/>
         <javaElement handleIdentifier="=kintool/src"/>
-        <javaElement handleIdentifier="=poi/src\/java"/>
     </selectedElements>
 </jardesc>
