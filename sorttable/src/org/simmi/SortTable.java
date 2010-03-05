@@ -1937,14 +1937,7 @@ public class SortTable extends JApplet {
 	public String updateFriends(final String sessionKey, final String currentUser) {
 		System.err.println("try friends update");
 		if (friendsPanel != null) {
-			friendsPanel.nullModel();
-			AccessController.doPrivileged(new PrivilegedAction<Object>() {
-				public Object run() {
-					friendsPanel.createFriendsModel(sessionKey, currentUser);
-					return null;
-				}
-			});
-			friendsPanel.updateModel();
+			friendsPanel.updateFriends( sessionKey, currentUser );
 		}
 		return "";
 	}

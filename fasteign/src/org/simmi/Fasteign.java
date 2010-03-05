@@ -46,7 +46,6 @@ import javax.swing.event.RowSorterEvent;
 import javax.swing.event.RowSorterListener;
 import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableColumnModelListener;
-import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
@@ -82,7 +81,7 @@ public class Fasteign extends JApplet {
 		mmap.put("febrúar", 2);
 		mmap.put("mars", 3);
 		mmap.put("apríl", 4);
-		mmap.put("naí", 5);
+		mmap.put("maí", 5);
 		mmap.put("júní", 6);
 		mmap.put("júlí", 7);
 		mmap.put("ágúst", 8);
@@ -223,7 +222,7 @@ public class Fasteign extends JApplet {
 			while( true ) {
 				if( !stuff( urlstr.replace("offset", "offset="+i) ) ) break;
 				i += 25;
-				break;
+				//break;
 			}
 			
 			for( Ibud ib : iblist ) {
@@ -706,19 +705,18 @@ public class Fasteign extends JApplet {
 				int i = 0;
 				while (tcs.hasMoreElements()) {
 					TableColumn tc = tcs.nextElement();
-					topTable.getColumnModel().getColumn(i++).setPreferredWidth(tc.getPreferredWidth());
+					//topTable.getColumnModel().getColumn(i++).setPreferredWidth(tc.getPreferredWidth());
 				}
 				
 
-					public void columnMoved(TableColumnModelEvent e) {
+					/*public void columnMoved(TableColumnModelEvent e) {
 						topTable.moveColumn(e.getFromIndex(), e.getToIndex());
 					}
 
 					public void columnRemoved(TableColumnModelEvent e) {}
 
 					public void columnSelectionChanged(ListSelectionEvent e) {
-					}
-				});
+					}*/
 			}
 			
 			@Override

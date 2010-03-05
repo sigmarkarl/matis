@@ -260,7 +260,6 @@ public class Parentage extends JApplet {
 		while( b_row.getCell(cellcount) != null ) cellcount++;
 		//markercount -= 2;
 		cellcount = 37;
-		System.err.println( cellcount );
 		
 		Set<XSSFRow>	set = new HashSet<XSSFRow>();
 		List<XSSFRow>	mlist = new ArrayList<XSSFRow>();
