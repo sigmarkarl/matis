@@ -3,14 +3,19 @@ package org.simmi;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Desktop;
+import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Window;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
@@ -21,12 +26,18 @@ import java.util.List;
 import java.util.Set;
 
 import javax.imageio.ImageIO;
+import javax.swing.AbstractAction;
 import javax.swing.JApplet;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JProgressBar;
 import javax.swing.JSpinner;
+import javax.swing.JToolBar;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.TransferHandler;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -41,8 +52,8 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 public class Parentage extends JApplet {
 	BufferedImage	xlsImg;
 	JComponent		xlsComp;
-	XSSFWorkbook	workbook;
-	int				villur = 0;
+	//XSSFWorkbook	workbook;
+	static int		villur = 0;
 	
 	public Parentage() {
 		super();
@@ -50,7 +61,6 @@ public class Parentage extends JApplet {
 		try {
 			xlsImg = ImageIO.read(this.getClass().getResource("/xlsx.png"));
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -73,22 +83,60 @@ public class Parentage extends JApplet {
 			e.printStackTrace();
 		}
 		
+		Window window = SwingUtilities.windowForComponent(this);
+		if (window instanceof JFrame) {
+			JFrame frame = (JFrame)window;
+			if (!frame.isResizable()) frame.setResizable(true);
+		}
+		
+		final JProgressBar progressbar = new JProgressBar();
+		JToolBar	toolbar = new JToolBar() {
+			
+		};
+		//toolbar.setLayout( new BorderLayout() );
+		AbstractAction action = new AbstractAction("Open") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JFileChooser	filechooser = new JFileChooser();
+				if( filechooser.showOpenDialog( Parentage.this ) == JFileChooser.APPROVE_OPTION ) {
+					File f = filechooser.getSelectedFile();
+					try {
+						load( f.getCanonicalPath(), progressbar );
+						/*JFileChooser fc = new JFileChooser( f.getParentFile() );
+						if( fc.showSaveDialog( Parentage.this.xlsComp ) == JFileChooser.APPROVE_OPTION ) {
+							f = fc.getSelectedFile();
+							workbook.write( new FileOutputStream( f ) );
+						} else {
+							f = File.createTempFile("tmp", ".xlsx");
+							workbook.write( new FileOutputStream( f ) );
+							Desktop.getDesktop().open( f );
+						}*/
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+				}
+			}
+		};
+		toolbar.add( action );
+		
 		this.getContentPane().setBackground( Color.white );
 		xlsComp = new JComponent() {
 			@Override
 			public void paintComponent(Graphics g) {
 				super.paintComponent(g);
-				g.drawImage(xlsImg, 0, 0, this);
+				g.drawImage(xlsImg, (this.getWidth()-xlsImg.getWidth())/2, (this.getHeight()-xlsImg.getHeight())/2, this);
 			}
 		};
 		
 		JComponent c = new JComponent() {
 			public void setBounds(int x, int y, int w, int h) {
 				super.setBounds(x, y, w, h);
-				xlsComp.setBounds( (this.getWidth() - xlsImg.getWidth() ) / 2, (this.getHeight() - xlsImg.getHeight()) / 2, xlsImg.getWidth(), xlsImg.getHeight());
+				if( xlsImg != null ) xlsComp.setBounds( (this.getWidth() - xlsImg.getWidth() ) / 2, (this.getHeight() - xlsImg.getHeight()) / 2, xlsImg.getWidth(), xlsImg.getHeight());
 			}
 		};
+		c.setLayout( new BorderLayout() );
 		c.add( xlsComp );
+		//c.add( progressbar, BorderLayout.SOUTH );
 		
 		JComponent v = new JComponent() {};
 		v.setLayout( new BorderLayout() );
@@ -99,12 +147,15 @@ public class Parentage extends JApplet {
 				villur = (Integer)spinner.getValue();
 			}
 		});
-		JLabel		label = new JLabel( "Villur: " );
-		v.add( spinner );
-		v.add( label, BorderLayout.WEST );
+		JLabel		label = new JLabel( "Villur: ", SwingConstants.RIGHT );
+		v.add( spinner, BorderLayout.EAST );
+		v.add( label );
+		v.setPreferredSize( new Dimension(100,25) );
+		toolbar.add( v );
 		this.setLayout( new BorderLayout() );
 		this.add( c );
-		this.add( v, BorderLayout.SOUTH );
+		this.add( progressbar, BorderLayout.SOUTH );
+		this.add( toolbar, BorderLayout.NORTH );
 		
 		TransferHandler th = new TransferHandler() {
 			@Override
@@ -173,7 +224,7 @@ public class Parentage extends JApplet {
 					if (obj != null && obj instanceof List) {
 						List<File>	l = (List<File>)obj;
 						File f = l.get(0);
-						load( f.getCanonicalPath() );
+						load( f.getCanonicalPath(), progressbar );
 						
 						int i = 0;
 						File nf = File.createTempFile("tmp", ".xlsx");
@@ -182,8 +233,11 @@ public class Parentage extends JApplet {
 							i++;
 							nf = new File( System.getProperty("user.home"), "tmp"+i+".xlsx" );
 						}*/
-						workbook.write( new FileOutputStream( nf ) );
-						Desktop.getDesktop().open( nf );
+						
+						/*
+						//workbook.write( new FileOutputStream( nf ) );
+						//Desktop.getDesktop().open( nf );
+						 */
 						
 						//JFileChooser fc = new JFileChooser( System.getProperty("user.home") );
 						/*if( fc.showSaveDialog( Report.this.xlsComp ) == JFileChooser.APPROVE_OPTION ) {
@@ -200,9 +254,9 @@ public class Parentage extends JApplet {
 									//URLDecoder.decode( f, "UTF-8" )
 									
 									villur = 0;
-									load( f.getCanonicalPath() );
+									load( f.getCanonicalPath(), progressbar );
 									villur = 1;
-									load( f.getCanonicalPath() );
+									load( f.getCanonicalPath(), progressbar );
 									//villur = 2;
 									//load( f.getCanonicalPath() );
 									
@@ -216,7 +270,7 @@ public class Parentage extends JApplet {
 									//workbook.write( new FileOutputStream( nf ) );
 								}
 							}
-						} else {
+						}/* else {
 							//char[] cc = new char[256];
 							//Reader r = DataFlavor.getTextPlainUnicodeFlavor().getReaderForText(support.getTransferable());
 							//int read = r.read(cc);
@@ -227,14 +281,14 @@ public class Parentage extends JApplet {
 									URL url = new URL(stuff);
 									File f = new File( URLDecoder.decode( url.getFile(), "UTF-8" ) );
 									//URLDecoder.decode( f, "UTF-8" )
-									load( f.getCanonicalPath() );
+									load( f.getCanonicalPath(), progressbar );
 									JFileChooser fc = new JFileChooser( f.getParentFile() );
 									if( fc.showSaveDialog( Parentage.this.xlsComp ) == JFileChooser.APPROVE_OPTION ) {
 										workbook.write( new FileOutputStream( fc.getSelectedFile() ) );
 									}
 								}
 							}
-						}
+						}*/
 					}
 				} catch (UnsupportedFlavorException e) {
 					e.printStackTrace();
@@ -248,30 +302,62 @@ public class Parentage extends JApplet {
 		xlsComp.setTransferHandler(th);
 	}
 	
-	public void load( String filename ) throws IOException {
-		workbook = new XSSFWorkbook( filename );
-		XSSFSheet		m_sheet = workbook.getSheet("Mæður");
-		XSSFSheet		f_sheet = workbook.getSheet("Feður");
-		XSSFSheet		b_sheet = workbook.getSheet("Afkvæmi");
-		XSSFSheet		p_sheet = workbook.createSheet("Foreldrar");
+	public static XSSFWorkbook subload( InputStream inputStream, JProgressBar pbar ) throws IOException {
+		if( pbar != null ) {
+			pbar.setString("Opening excel file ...");
+			pbar.setStringPainted( true );
+			pbar.setIndeterminate( true );
+			pbar.setValue(0);
+		}
+		XSSFWorkbook workbook = new XSSFWorkbook( inputStream );
+		final XSSFSheet		m_sheet = workbook.getSheet("Mæður");
+		final XSSFSheet		f_sheet = workbook.getSheet("Feður");
+		final XSSFSheet		b_sheet = workbook.getSheet("Afkvæmi");
+		final XSSFSheet		p_sheet = workbook.createSheet("Foreldrar");
 		
+		final Set<XSSFRow>	set = new HashSet<XSSFRow>();
+		final List<XSSFRow>	mlist = new ArrayList<XSSFRow>();
+		final List<XSSFRow>	flist = new ArrayList<XSSFRow>();
+		
+		int 		counter = 1;
 		int			cellcount = 0;
-		XSSFRow 	b_row = b_sheet.getRow(0);
+		XSSFRow b_row = b_sheet.getRow(counter++);
+		while( b_row != null ) {
+			b_row = b_sheet.getRow(counter++);
+			int cnum = 0;
+			XSSFCell	b_cell = b_row.getCell(cnum);
+			while( b_cell != null && b_cell.getCellType() == XSSFCell.CELL_TYPE_STRING && b_cell.getStringCellValue().length() > 0 ) {
+				cnum++;
+				b_cell = b_row.getCell(cnum);
+			}
+			if( cnum > cellcount ) cellcount = cnum;
+			
+			if( cnum < 1 ) break;
+		}
+		
+		if( pbar != null ) {
+			pbar.setIndeterminate( false );
+			pbar.setMinimum(0);
+			pbar.setMaximum(counter);
+			pbar.setValue(0);
+		}
+
+		/*XSSFRow 	b_row = b_sheet.getRow(0);
 		while( b_row.getCell(cellcount) != null ) cellcount++;
 		//markercount -= 2;
-		cellcount = 37;
-		
-		Set<XSSFRow>	set = new HashSet<XSSFRow>();
-		List<XSSFRow>	mlist = new ArrayList<XSSFRow>();
-		List<XSSFRow>	flist = new ArrayList<XSSFRow>();
+		cellcount = 37;*/
 		
 		int rr = 0;
 		XSSFRow rrow = p_sheet.createRow(rr++);
-		
 		int br = 1;
 		b_row = b_sheet.getRow(br++);		
 		while( b_row != null ) {
 			if( b_row.getCell(0) != null && b_row.getCell(0).getStringCellValue().length() > 0 ) {
+				if( pbar != null ) {
+					pbar.setValue( br );
+					pbar.setString( Integer.toString(br) );
+				}
+				
 				String bname = b_row.getCell(0).getStringCellValue();
 				System.err.println( bname );
 				XSSFCell rcell = rrow.createCell( 0 );
@@ -486,22 +572,38 @@ public class Parentage extends JApplet {
 			b_row = b_sheet.getRow(br++);
 		}
 		
-		JFileChooser jfc = new JFileChooser();
-		if( jfc.showSaveDialog( this ) == JFileChooser.APPROVE_OPTION ) {
-			File f = jfc.getSelectedFile();
-			FileOutputStream fos = new FileOutputStream(f);
-			workbook.write( fos );
-			fos.close();
-			
-			//Desktop.getDesktop().open( f );
-		} else {
-			File f = File.createTempFile("tmp", ".xlsx");
-			FileOutputStream fos = new FileOutputStream(f);
-			workbook.write( fos );
-			fos.close();
-		
-			Desktop.getDesktop().open( f );
+		if( pbar != null ) {
+			pbar.setValue( counter );
+			pbar.setString( Integer.toString(counter) );
 		}
+		
+		return workbook;
+	}
+	
+	public void load( final String filename, final JProgressBar	pbar ) {
+		new Thread() {
+			public void run() {
+				try {
+					XSSFWorkbook workbook = subload( new FileInputStream( filename ), pbar );
+					JFileChooser jfc = new JFileChooser();
+					if( jfc.showSaveDialog( Parentage.this ) == JFileChooser.APPROVE_OPTION ) {
+						File f = jfc.getSelectedFile();
+						FileOutputStream fos = new FileOutputStream(f);
+						workbook.write( fos );
+						fos.close();
+						//Desktop.getDesktop().open( f );
+					} else {
+						File f = File.createTempFile("tmp", ".xlsx");
+						FileOutputStream fos = new FileOutputStream(f);
+						workbook.write( fos );
+						fos.close();
+						Desktop.getDesktop().open( f );
+					}
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+		}.start();
 	}
 	
 	/*int fr = 1;					
@@ -557,9 +659,9 @@ public class Parentage extends JApplet {
 	
 	public static void main( String[] args ) {
 		try {
-			new Parentage().load( "/home/sigmar/Desktop/hestar.xlsx" );
+			XSSFWorkbook workbook = Parentage.subload( System.in, null );
+			workbook.write( System.out );
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

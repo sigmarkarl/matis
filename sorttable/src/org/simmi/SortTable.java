@@ -25,8 +25,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1806,7 +1804,7 @@ public class SortTable extends JApplet {
 			}
 		});
 
-		graph = new GraphPanel(rdsPanel, lang, new JCompatTable[] { table, leftTable, topTable }, topModel);
+		graph = new GraphPanel(rdsPanel, recipe, stuff.size(), lang, new JCompatTable[] { table, leftTable, topTable }, topModel);
 
 		ImageIcon fodicon = null;
 		ImageIcon helicon = null;
