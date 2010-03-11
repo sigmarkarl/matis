@@ -1,6 +1,7 @@
 package org.simmi;
 
 import java.awt.Color;
+import java.awt.Desktop;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
@@ -14,6 +15,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.AccessController;
 import java.security.MessageDigest;
@@ -44,8 +47,8 @@ import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableModel;
 
-import org.netbeans.saas.CompatResponse;
 import org.netbeans.saas.RestConnection;
+import org.netbeans.saas.RestResponse;
 
 public class FriendsPanel extends JScrollPane {
 	private final String apiKey = "d8993947d6a37b4bf754d2a578025c31";
@@ -63,8 +66,105 @@ public class FriendsPanel extends JScrollPane {
 	TableModel	model;
 	TableModel	nullmodel;
 	
+	String		sessionKey;
+	
 	public String sign(String[][] params) throws IOException {
         return sign( secret, params);
+    }
+	
+	private String getToken() throws IOException {
+        String token = null;
+        String method = "facebook.auth.createToken";
+        String v = "1.0";
+        
+        String sig = sign(secret,
+                new String[][]{
+                    {"method", method},
+                    {"api_key", apiKey},
+                    {"v", v}
+                });
+
+        RestConnection conn = new RestConnection(
+                "http://api.facebook.com/restserver.php",
+                new String[][]{
+                    {"method", method},
+                    {"api_key", apiKey},
+                    {"sig", sig},
+                    {"v", v}
+                });
+        String result = conn.get().getDataAsString();
+
+        try {
+            token = result.substring(result.indexOf("<auth_createToken_response"),
+                    result.indexOf("</auth_createToken_response>"));
+            token = token.substring(token.indexOf(">") + 1);
+        } catch (Exception ex) {
+            throw new IOException("Failed to get session token: " + result);
+        }
+
+        String loginUrl = "http://www.facebook.com/login.php?api_key=" +
+                apiKey + "&v=" + v + "&auth_token=" + token;
+
+        try {
+			Desktop.getDesktop().browse( new URI( loginUrl ) );
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+		}
+        /*if (JOptionPane.showInputDialog(null,
+                "Please log into your Facebook account using the following URL to authorize this application and click OK after you are done:",
+                "Facebook Authorization Dialog",
+                JOptionPane.INFORMATION_MESSAGE,
+                null,
+                null,
+                loginUrl) == null) {
+            throw new IOException("Authorizatoin declined");
+        }*/
+		if( JOptionPane.showConfirmDialog(FriendsPanel.this, "Vinsamlegast skráðu þig inná Facebook", "Facebook innskráning", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION ) return token;
+
+        return null;
+    }
+	
+	public void login() throws IOException {
+        if (sessionKey == null) {
+            String token = getToken();
+
+            if( token != null ) {
+	            String method = "facebook.auth.getSession";
+	            String v = "1.0";
+	
+	            String sig = sign(secret,
+	                    new String[][]{
+	                        {"method", method},
+	                        {"v", v},
+	                        {"api_key", apiKey},
+	                        {"auth_token", token}
+	                    });
+	
+	            RestConnection conn = new RestConnection(
+	                    "http://api.facebook.com/restserver.php",
+	                    new String[][]{
+	                        {"method", method},
+	                        {"api_key", apiKey},
+	                        {"sig", sig},
+	                        {"v", v},
+	                        {"auth_token", token}
+	                    });
+	
+	            String result = conn.get().getDataAsString();
+	
+	            try {
+	                sessionKey = result.substring(result.indexOf("<session_key>") + 13,
+	                    result.indexOf("</session_key>"));
+	
+	                currentUserId = result.substring(result.indexOf("<uid>") + 5,
+	                        result.indexOf("</uid>"));
+	                /*sessionSecret = result.substring(result.indexOf("<secret>") + 8,
+	                    result.indexOf("</secret>"));*/
+	            } catch (Exception ex) {
+	                throw new IOException("Failed to get session key and secret: " + result);
+	            }
+            }
+        }
     }
 	
 	private static String sign(String secret, String[][] params) throws IOException{
@@ -151,7 +251,7 @@ public class FriendsPanel extends JScrollPane {
         String method = "facebook.users.getInfo";
         String callId = String.valueOf(System.currentTimeMillis());
         String sig;
-        CompatResponse rr = null;
+        RestResponse rr = null;
 		try {
 			sig = sign( new String[][]{{"api_key", apiKey}, {"session_key", sessionKey}, {"call_id", callId}, {"v", v},  {"uids", uids}, {"fields", fields}, {"format", format}, {"method", method}});
 			String[][] pathParams = new String[][]{};
@@ -182,7 +282,7 @@ public class FriendsPanel extends JScrollPane {
         
         if( sessionKey != null && currentUser != null ) {
 	        String sig;
-	        CompatResponse rr = null;
+	        RestResponse rr = null;
 			try {
 				sig = sign( new String[][]{{"api_key", apiKey}, {"session_key", sessionKey}, {"call_id", callId}, {"v", version}, {"format", format}, {"flid", flid}, {"method", method}});
 				String[][] pathParams = new String[][]{};
@@ -372,7 +472,7 @@ public class FriendsPanel extends JScrollPane {
 				if( f.exists() ) {
 					try {
 						FileInputStream	fis = new FileInputStream( f );
-						InputStreamReader	isr = new InputStreamReader( fis, "ISO-8859-15" );
+						InputStreamReader	isr = new InputStreamReader( fis );
 						int r = isr.read( cbuf );
 						if( r > 0 ) {
 							xml = new String( cbuf, 0, r );
@@ -392,7 +492,9 @@ public class FriendsPanel extends JScrollPane {
 	}
 	
 	char[]	cbuf = new char[50000];
-	public FriendsPanel( final String sessionKey, final String currentUser ) {
+	public FriendsPanel( String sessionKey0, final String currentUser ) {
+		this.sessionKey = sessionKey0;
+		
 		nullmodel = new TableModel() {
 			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
 				// TODO Auto-generated method stub
@@ -570,11 +672,16 @@ public class FriendsPanel extends JScrollPane {
 		popup.add( new AbstractAction("Uppfæra vinalista") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				FriendsPanel.this.createFriendsModel(sessionKey, currentUser);
+				try {
+					login();
+					FriendsPanel.this.createFriendsModel(FriendsPanel.this.sessionKey, FriendsPanel.this.currentUserId);
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
 			}
 		});
-		
 		table.setComponentPopupMenu( popup );
+		this.setComponentPopupMenu( popup );
 		
 		this.setViewportView( table );
 	}

@@ -12,12 +12,19 @@ import java.awt.dnd.DropTargetDragEvent;
 import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.awt.dnd.DropTargetListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.GregorianCalendar;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.TooManyListenersException;
 
 import javax.management.timer.Timer;
@@ -31,6 +38,7 @@ import javax.swing.JViewport;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableColumnModelListener;
 import javax.swing.event.TableModelListener;
@@ -42,12 +50,55 @@ import javax.swing.table.TableModel;
 import org.jdesktop.swingx.JXDatePicker;
 
 public class HabitsPanel extends JComponent {
-	int 						min = 0;
-	final Color 				paleGreen = new Color( 20,230,60,96 ); 
-	List<List<String>>			eatList = new ArrayList<List<String>>();
-	JSplitPane					splitpane;
-	JToolBar					toolbar;
-	JXDatePicker				datepicker;
+	int 							min = 0;
+	final Color 					paleGreen = new Color( 20,230,60,96 ); 
+	Map<String,Week>				eatList = new HashMap<String,Week>();
+	JSplitPane						splitpane;
+	JToolBar						toolbar;
+	JXDatePicker					datepicker;
+	Calendar						cal;
+	
+	Week							currentWeekObj;
+	int								currentWeek;
+	int								currentYear;
+	
+	JTable							timelineDataTable;
+	boolean							sel = false;
+	
+	class Week {
+		String[]	d = new String[7];
+		
+		public Week() {
+			for( int i = 0; i < d.length; i++ ) {
+				d[i] = "";
+			}
+		}
+		
+		public int getMin() {
+			int ret = 0;
+			for( String s : d ) {
+				ret = Math.max( s.length() == 0 ? 0 : s.split("\t").length, ret ); 
+			}
+			
+			return ret;
+		}
+	};
+	
+	public long getCurrentTime() {
+		Date date = datepicker.getDate();
+		long time = System.currentTimeMillis();
+		if( date != null ) time = date.getTime();
+		
+		return time;
+	}
+	
+	public String getCurrentCardName() {
+		long time = getCurrentTime();
+		cal.setTimeInMillis( time );
+		int woy = cal.get( Calendar.WEEK_OF_YEAR );
+		int yer = cal.get( Calendar.YEAR );
+		return woy+"_"+yer;
+	}
 	
 	public HabitsPanel( String lang ) {
 		super();
@@ -66,37 +117,78 @@ public class HabitsPanel extends JComponent {
 		
 		JTabbedPane timelineTabPane = new JTabbedPane( JTabbedPane.RIGHT );
 		final JTable		timelineTable = new JTable() {
+			public void setRowSelectionInterval(int r1, int r2) {
+				sel = true;
+				super.setRowSelectionInterval(r1, r2);
+			}
+
+			public void setColumnSelectionInterval(int c1, int c2) {
+				sel = true;
+				super.setColumnSelectionInterval(c1, c2);
+			}
+
+			public void addRowSelectionInterval(int r1, int r2) {
+				sel = true;
+				super.addRowSelectionInterval(r1, r2);
+			}
+
+			public void addColumnSelectionInterval(int c1, int c2) {
+				sel = true;
+				super.addColumnSelectionInterval(c1, c2);
+			}
+
 			public Component prepareRenderer( TableCellRenderer renderer, int row, int column ) {
 				Component c = super.prepareRenderer( renderer, row, column );
 				//Color bc = c.getBackground();
-				Object val = this.getValueAt(0, column);
-				if( val.equals("Sat") || val.equals("Sun") ) {
+				/*Object val = this.getValueAt(0, column);
+				if( val.equals("Sunnudagur") || val.equals("Laugardagur") ) {
 					c.setBackground( paleGreen );
 				} else if( this.getSelectedRow() != row ) {
 					c.setBackground( Color.white );
 				} else {
 					c.setBackground( this.getSelectionBackground() );
-				}
+				}*/
 				return c;
 			}
 		};
 		
-		final JTable		timelineDataTable = new JTable() {
+		timelineDataTable = new JTable() {
+			public void setRowSelectionInterval(int r1, int r2) {
+				sel = false;
+				super.setRowSelectionInterval(r1, r2);
+			}
+
+			public void setColumnSelectionInterval(int c1, int c2) {
+				sel = false;
+				super.setColumnSelectionInterval(c1, c2);
+			}
+
+			public void addRowSelectionInterval(int r1, int r2) {
+				sel = false;
+				super.addRowSelectionInterval(r1, r2);
+			}
+
+			public void addColumnSelectionInterval(int c1, int c2) {
+				sel = false;
+				super.addColumnSelectionInterval(c1, c2);
+			}
+			
 			@Override
 			public Component prepareRenderer( TableCellRenderer renderer, int row, int column ) {
 				Component c = super.prepareRenderer( renderer, row, column );
 				//Color bc = c.getBackground();
-				Object val = timelineTable.getValueAt(0, column);
+				/*Object val = timelineTable.getValueAt(0, column);
 				if( val.equals("Sat") || val.equals("Sun") ) {
 					c.setBackground( paleGreen );
 				} else if( this.getSelectedRow() != row ) {
 					c.setBackground( Color.white );
 				} else {
 					c.setBackground( this.getSelectionBackground() );
-				}
+				}*/
 				return c;
 			}
 		};
+		timelineDataTable.setColumnSelectionAllowed( true );
 		final JScrollPane timelineDataScroll = new JScrollPane( timelineDataTable );
 		
 		timelineDataTable.getColumnModel().addColumnModelListener( new TableColumnModelListener() {
@@ -148,8 +240,8 @@ public class HabitsPanel extends JComponent {
 		};
 		spec.setView( topComp );
 		
-		timelineDataScroll.setVerticalScrollBarPolicy( ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS );
-		timelineDataScroll.setHorizontalScrollBarPolicy( ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS );
+		timelineDataScroll.setVerticalScrollBarPolicy( ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED );
+		timelineDataScroll.setHorizontalScrollBarPolicy( ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER );
 		
 		timelineDataScroll.setColumnHeader( spec );
 		
@@ -175,11 +267,10 @@ public class HabitsPanel extends JComponent {
 		}
 		
 		Calendar now = Calendar.getInstance();
-		final Calendar cal = new GregorianCalendar();
+		cal = new GregorianCalendar();
 		cal.set( Calendar.YEAR, now.get( Calendar.YEAR ) );
 		cal.set( Calendar.MONTH, 0 );
 		cal.set( Calendar.DAY_OF_MONTH, 1 );
-		final long time = cal.getTimeInMillis();
 		
 		//Date d = new Date(Date.);
 		TableModel	timelineModel = new TableModel() {
@@ -193,11 +284,12 @@ public class HabitsPanel extends JComponent {
 
 			public int getColumnCount() {
 				// TODO Auto-generated method stub
-				return 365;
+				return 7;
 			}
 
 			public String getColumnName(int arg0) {
-				cal.setTimeInMillis( time+arg0*Timer.ONE_DAY );
+				final long time = getCurrentTime();
+				cal.setTimeInMillis( time );
 				return cal.get( Calendar.WEEK_OF_YEAR ) + "";
 			}
 
@@ -206,9 +298,39 @@ public class HabitsPanel extends JComponent {
 			}
 
 			public Object getValueAt(int arg0, int arg1) {
-				cal.setTimeInMillis( time+arg1*Timer.ONE_DAY );
-				String str = CompatUtilities.getDateString( cal, arg0 == 1 );
-				return str;
+				if( arg0 == 0 ) {
+					if( arg1 == 0 ) return "Sunnudagur";
+					else if( arg1 == 1 ) return "Mánudagur";
+					else if( arg1 == 2 ) return "Þriðjudagur";
+					else if( arg1 == 3 ) return "Miðvikudagur";
+					else if( arg1 == 4 ) return "Fimmtudagur";
+					else if( arg1 == 5 ) return "Föstudagur";
+					else if( arg1 == 6 ) return "Laugardagur";
+				} else {					
+					final long time = getCurrentTime();
+					cal.setTimeInMillis( time );
+					int weekday = cal.get( Calendar.DAY_OF_WEEK )-1;
+					int val = (arg1-weekday);
+					cal.setTimeInMillis( time+val*Timer.ONE_DAY );
+					int mday = cal.get( Calendar.DAY_OF_MONTH );
+					int mnum = cal.get( Calendar.MONTH );
+					
+					if( mnum == 0 ) return mday + ". Janúar";
+					else if( mnum == 1 ) return mday + ". Febrúar";
+					else if( mnum == 2 ) return mday + ". Mars";
+					else if( mnum == 3 ) return mday + ". Apríl";
+					else if( mnum == 4 ) return mday + ". Maí";
+					else if( mnum == 5 ) return mday + ". Júní";
+					else if( mnum == 6 ) return mday + ". Júlí";
+					else if( mnum == 7 ) return mday + ". Ágúst";
+					else if( mnum == 8 ) return mday + ". September";
+					else if( mnum == 9 ) return mday + ". Október";
+					else if( mnum == 10 ) return mday + ". Nóvember";
+					else if( mnum == 11 ) return mday + ". Desember";
+				}
+				//cal.setTimeInMillis( time+arg1*Timer.ONE_DAY );
+				//String str = CompatUtilities.getDateString( cal, arg0 == 1 );
+				return "";
 			}
 
 			public boolean isCellEditable(int arg0, int arg1) {
@@ -221,57 +343,58 @@ public class HabitsPanel extends JComponent {
 		};
 		timelineTable.setModel( timelineModel );
 		timelineTable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
+		timelineTable.setRowSelectionAllowed( false );
+		timelineTable.setColumnSelectionAllowed( true );
 		
-		for( int i = 0; i < 365; i++ ) {
-			eatList.add(null);
-		}
-		
-		TableModel	timelineDataModel = new TableModel() {
-			public void addTableModelListener(TableModelListener l) {}
-
-			public Class<?> getColumnClass(int columnIndex) {
-				return String.class;
-			}
-
-			public int getColumnCount() {
-				return 365;
-			}
-
-			public String getColumnName(int arg0) {
-				cal.setTimeInMillis( time+arg0*Timer.ONE_DAY );
-				return cal.get( Calendar.WEEK_OF_YEAR ) + "";
-			}
-
-			public int getRowCount() {
-				// TODO Auto-generated method stub
-				return min;
-			}
-
-			public Object getValueAt(int rowIndex, int columnIndex) {
-				List<String> dayList = eatList.get(columnIndex);
-				if( dayList != null && rowIndex < dayList.size() ) {
-					return dayList.get(rowIndex);
+		timelineTable.getColumnModel().getSelectionModel().addListSelectionListener( new ListSelectionListener() {
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				boolean ss = sel;
+				sel = false;
+				if (!ss) {
+					int rc = timelineDataTable.getRowCount();
+					if( rc > 0 ) timelineDataTable.setRowSelectionInterval(0, rc-1);
+					
+					int selcol = timelineTable.getSelectedColumn();
+					timelineDataTable.setColumnSelectionInterval(selcol, selcol);
+					
+					int[] selcols = timelineTable.getSelectedColumns();
+					for( int i : selcols ) {
+						timelineDataTable.addColumnSelectionInterval( i, i );
+					}
+					sel = false;
 				}
-				return null;
 			}
+		});
+		timelineDataTable.getColumnModel().getSelectionModel().addListSelectionListener( new ListSelectionListener() {
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				boolean ss = sel;
+				sel = true;
+				if (ss) {
+					int selcol = timelineDataTable.getSelectedColumn();
+					if( selcol >= 0 && selcol < timelineTable.getColumnCount() ) {
+						timelineTable.setColumnSelectionInterval(selcol, selcol);
+						
+						int[] selcols = timelineDataTable.getSelectedColumns();
+						for( int i : selcols ) {
+							timelineTable.addColumnSelectionInterval( i, i );
+						}
+						sel = true;
+					}
+				}
+			}
+		});
+		
+		timelineDataTable.setRowHeight( 25 );
+		
+		try {
+			load();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
 
-			public boolean isCellEditable(int rowIndex, int columnIndex) {
-				// TODO Auto-generated method stub
-				return false;
-			}
-
-			public void removeTableModelListener(TableModelListener l) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-				// TODO Auto-generated method stub
-				
-			}
-		};
-		timelineDataTable.setModel( timelineDataModel );
-		timelineDataTable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
+		//timelineDataTable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
 		
 		try {
 			dropTarget.addDropTargetListener( new DropTargetListener(){
@@ -281,14 +404,16 @@ public class HabitsPanel extends JComponent {
 				}
 			
 				public void drop(DropTargetDropEvent dtde) {
+					String tstr = getCurrentCardName();
+					
 					Point loc = dtde.getLocation();
 					Point offset = timelineDataScroll.getViewport().getViewPosition();
 					Point p = new Point( offset.x + loc.x, offset.y + loc.y );
 					int c = timelineDataTable.columnAtPoint( p );
-					List<String> list = eatList.get(c);
+					Week list = eatList.get( tstr );
 					if( list == null ) {
-						list = new ArrayList<String>();
-						eatList.set( c, list );
+						list = new Week();
+						eatList.put( tstr, list );
 					}
 					String val;
 					try {
@@ -297,20 +422,24 @@ public class HabitsPanel extends JComponent {
 							String[] spl = val.split("\n");
 							for( String str : spl ) {
 								String[] subspl = str.split("\t");
-								if( subspl.length > 1 ) list.add( subspl[1] );
+								if( subspl.length >= 1 ) {
+									if( list.d[c].length() == 0 ) list.d[c] += subspl[0];
+									else list.d[c] += "\t" + subspl[0];
+								}
 							}
-						}
-						if( list.size() > min ) {
-							min = list.size();
+							
+							timelineDataTable.revalidate();
+							timelineDataTable.repaint();
+							save( tstr );
 						}
 						
-						timelineDataTable.revalidate();
-						timelineDataTable.repaint();
+						int minsplit = list.d[c].split("\t").length;
+						if( minsplit > min ) {
+							min = minsplit;
+						}
 					} catch (UnsupportedFlavorException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}
@@ -331,7 +460,6 @@ public class HabitsPanel extends JComponent {
 				}
 			});
 		} catch (TooManyListenersException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -342,7 +470,112 @@ public class HabitsPanel extends JComponent {
 		};
 		JScrollPane timelineDrawScroll = new JScrollPane( drawer );
 		
+		datepicker.addPropertyChangeListener( new PropertyChangeListener() {
+			@Override
+			public void propertyChange(PropertyChangeEvent evt) {
+				try {
+					load();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		});
+		
 		splitpane.setTopComponent( timelineTabPane );
 		splitpane.setBottomComponent( timelineDrawScroll );
+	}
+	
+	public void setCurrentWeek( final Week w ) {
+		min = w.getMin();
+		TableModel timelineDataModel = new TableModel() {
+			public void addTableModelListener(TableModelListener l) {}
+
+			public Class<?> getColumnClass(int columnIndex) {
+				return String.class;
+			}
+
+			public int getColumnCount() {
+				return 7;
+			}
+
+			public String getColumnName(int arg0) {
+				final long time = getCurrentTime();
+				cal.setTimeInMillis( time );
+				return cal.get( Calendar.WEEK_OF_YEAR ) + "";
+			}
+
+			public int getRowCount() {
+				return min;
+			}
+
+			public Object getValueAt(int rowIndex, int columnIndex) {
+				if( w != null ) {
+					String[] split = w.d[columnIndex].split("\t");
+					if( rowIndex < split.length ) {
+						return split[rowIndex];
+					}
+				}
+				return null;
+			}
+
+			public boolean isCellEditable(int rowIndex, int columnIndex) {
+				return false;
+			}
+
+			public void removeTableModelListener(TableModelListener l) {}
+			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {}
+		};
+		System.err.println(min);
+		timelineDataTable.setModel( timelineDataModel );
+	}
+	
+	public void load() throws IOException {
+		String tstr = getCurrentCardName();
+		min = 0;
+		Week w = null;
+		if( eatList.containsKey( tstr ) ) {
+			w = eatList.get( tstr );
+		} else {
+			w = new Week();
+			File f = new File( System.getProperty("user.home"), ".isgem" );
+			f = new File( f, "weeks" );
+			if( f.exists() ) {
+				f = new File( f, tstr );
+				if( f.exists() ) {
+					FileReader		fr = new FileReader( f );
+					BufferedReader	br = new BufferedReader( fr );
+					
+					int i = 0;
+					String line = br.readLine();
+					while( line != null ) {
+						w.d[i++] += line;
+						line = br.readLine();
+					}
+				}
+			}
+			eatList.put( tstr, w );
+		}
+		setCurrentWeek( w );
+	}
+	
+	public void save( String name ) throws IOException {
+		File f = new File( System.getProperty("user.home"), ".isgem" );
+		f = new File( f, "weeks" );
+		if( !f.exists() ) f.mkdirs();
+		
+		f = new File( f, name );
+		FileWriter	fw = new FileWriter( f );
+		for( int c = 0; c < timelineDataTable.getColumnCount(); c++ ) {
+			for( int r = 0; r < timelineDataTable.getRowCount(); r++ ) {
+				Object val = timelineDataTable.getValueAt(r, c);
+				if( val != null ) {
+					if( r != 0 ) fw.write( "\t" + val.toString() );
+					else fw.write( val.toString() );
+				}
+			}
+			fw.write("\n");
+		}
+		fw.close();
 	}
 }

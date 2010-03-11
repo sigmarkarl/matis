@@ -801,12 +801,7 @@ public class Ljoslota extends JApplet {
 		}
 	}	
 	
-	public static void main( String[] args ) {
-		try {
-			new Parentage().load( "/home/sigmar/Desktop/hestar.xlsx" );
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	public static void main( String[] args ) {		
+		new Parentage().load( "/home/sigmar/Desktop/hestar.xlsx" ,null );
 	}
 }

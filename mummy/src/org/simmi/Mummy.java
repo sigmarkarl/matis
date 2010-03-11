@@ -54,7 +54,11 @@ public class Mummy extends JApplet {
 		
 		String 		name;
 		ByteBuffer	bb;
-		int		offset;
+		int			offset;
+		
+		public int getLength() {
+			return bb.limit();
+		}
 		
 		@Override
 		public int compareTo(Sequence o) {
@@ -70,23 +74,30 @@ public class Mummy extends JApplet {
 		final String	g = "G";
 		final String	t = "T";
 		Dimension		prefsize;
+		Sequence		refseq;
 		
-		public SequencePane( final JTable seqtable, final List<Sequence> seqlist ) {
+		public SequencePane( final JTable seqtable, final List<Sequence> seqlist, Sequence refseq ) {
 			super();
 			
+			this.refseq = refseq;
 			//this.setBackground( Color.white );
 			this.sequencelist = seqlist;
 			this.seqtable = seqtable;
-			int size = 0;
-			for( Sequence seq : sequencelist ) {
-				int end = seq.bb.limit() + seq.offset;
-				if( end > size ) size = end;
-			}
+			int size = getLength();
 			int seqtabHeight = 16;
 			if( seqtable != null ) seqtable.getHeight();
 			prefsize = new Dimension( 10*size, seqtabHeight );
 			setSize( prefsize );
 			setPreferredSize( prefsize );
+		}
+		
+		public int getLength() {
+			int size = 0;
+			for( Sequence seq : sequencelist ) {
+				int end = seq.bb.limit() + seq.offset;
+				if( end > size ) size = end;
+			}
+			return size;
 		}
 		
 		public Dimension getPreferredSize() {
@@ -103,7 +114,7 @@ public class Mummy extends JApplet {
 			Rectangle clip = g.getClipBounds();
 			
 			if( seqtable != null ) {
-				Sequence seq0 = sequencelist.get(0);			
+				Sequence seq0 = refseq;//sequencelist.get(0);			
 				int rh = seqtable.getRowHeight();
 				for( int y = 0; y < seqtable.getRowCount(); y++ ) {
 					if( seqtable.isRowSelected(y) ) {
@@ -117,7 +128,10 @@ public class Mummy extends JApplet {
 					for( int x = Math.max( seq.offset, clip.x/10 ); x < Math.min( seq.offset+seq.bb.limit(), (clip.x+clip.width)/10 ); x++ ) {
 						byte b = seq.bb.get( x - seq.offset );
 						byte bc = 0;
-						if( x - seq0.offset < seq0.bb.limit() ) bc = seq0.bb.get( x - seq0.offset );
+						int xval = x - seq0.offset;
+						if( xval < seq0.bb.limit() && xval >= 0 ) {
+							bc = seq0.bb.get( xval );
+						}
 						if( b != bc ) {
 							g.setColor( Color.red );
 						} else {
@@ -153,37 +167,87 @@ public class Mummy extends JApplet {
 		JTable			table;
 		SequencePane	pane;
 		Color			color = new Color( 150,150,150,150 );
+		long			clength;
+		int				oldw = 0;
+		List<int[]>	redlist = new ArrayList<int[]>();
 		
-		public Overview( JTable	table, SequencePane	pane ) {
+		public Overview( JTable	table, SequencePane	pane, long clength ) {
 			this.table = table;
 			this.pane = pane;
+			this.clength = clength;
+		}
+		
+		private void updateMismatch( int w ) {
+			if( oldw != w ) {
+				redlist.clear();
+				List<Sequence>	lseq = pane.sequencelist;
+				Sequence		rseq = pane.refseq;
+				for( int i = 0; i < lseq.size(); i++ ) {
+					Sequence seq = lseq.get(i);
+					long x1 = ( (long)seq.offset * w ) / clength;
+					long x2 = ( ((long)seq.offset + seq.bb.limit()) * w ) / clength;
+					
+					int[] bb = new int[(int)(x2-x1)/32+1];
+					for( long x = x1+1; x < x2; x++ ) {
+						int s1 = (int)( (x*clength) / w );
+						int s2 = (int)( ((x+1)*clength) / w );
+						
+						boolean set = false;
+						for( int k = s1; k < s2; k++ ) {
+							if( rseq.bb.get(k) != seq.bb.get(k-seq.offset) ) set = true;
+						}
+						int xd32 = (int)(x-x1)/32;
+						int xm32 = (int)(x-x1)%32;
+						if( set ) bb[xd32] = bb[xd32]|(1<<xm32);
+						else bb[xd32] = ~(~bb[xd32]|(1<<xm32));
+					}
+					redlist.add( bb );
+				}
+				
+				oldw = w;
+			}
+		}
+		
+		public void setBounds( int x, int y, int w, int h ) {
+			super.setBounds(x, y, w, h );
+			
+			updateMismatch( w );
 		}
 		
 		public void paintComponent( Graphics g ) {
 			super.paintComponent(g);
 			
-			int w = this.getWidth();
+			long w = (long)this.getWidth();
 			
 			List<Sequence>	lseq = pane.sequencelist;
 			g.setColor( Color.green.darker() );
-			long conslen = lseq.get(0).bb.limit();
+			//long conslen = lseq.get(0).bb.limit();
 			
+			Sequence rseq = pane.refseq;
 			for( int y = 0; y < table.getRowCount(); y++ ) {
 				int i = table.convertRowIndexToModel( y );
 				Sequence seq = lseq.get(i);
-				int x1 = (int)( ( (long)seq.offset * w ) / conslen );
-				int x2 = (int)( ( ((long)seq.offset + seq.bb.limit()) * w ) / conslen );
+				int x1 = (int)( ( (long)seq.offset * w ) / clength );
+				int x2 = (int)( ( ((long)seq.offset + seq.bb.limit()) * w ) / clength );
 				
 				int y2 = 2*y;
-				g.drawLine(x1, y2, x2, y2);
-				g.drawLine(x1, y2+1, x2, y2+1);
+				int[] val = redlist.get(i);
+				for( int x = x1; x < x2; x++ ) {
+					int xd32 = (x-x1)/32;
+					int xm32 = (x-x1)%32;
+					
+					if( ( val[xd32]&(1<<xm32) ) != 0 ) g.setColor( Color.red );
+					else g.setColor( Color.green );
+					g.drawLine(x, y2, x+1, y2);
+					g.drawLine(x, y2+1, x+1, y2+1);
+				}
 			}
 			
 			Rectangle r = pane.getVisibleRect();
 			g.setColor( color );
 			
 			int px = (int)( ((long)r.x*w)/(long)pane.getWidth() );
-			int pw = Math.max( 1, (int)( ((long)r.width*w)/(long)pane.getWidth() ) );
+			int pw = Math.max( 2, (int)( ((long)r.width*w)/(long)pane.getWidth() ) );
 			g.fillRect( px, 0, pw, this.getHeight() );
 		}
 	}
@@ -193,7 +257,7 @@ public class Mummy extends JApplet {
 		scrollpane.setBackground( Color.white );
 		scrollpane.getViewport().setBackground( Color.white );
 		
-		JTable		lefttable = new JTable();
+		final JTable		lefttable = new JTable();
 		JScrollPane	leftpane = new JScrollPane();
 		leftpane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_NEVER );
 		
@@ -207,8 +271,8 @@ public class Mummy extends JApplet {
 		final List<Sequence> lseq1 = load( "/home/sigmar/fass/wholeHB27.fas", null );
 		final List<Sequence> lseq2 = load( "/home/sigmar/fass/Strain346AllContigs.fas", "/home/sigmar/fass/out" );
 		//lseq1.addAll( lseq2 );
-		seqpane = new SequencePane( lefttable, lseq2 );
-		topseq = new SequencePane( null, lseq1 );
+		seqpane = new SequencePane( lefttable, lseq2, lseq1.get(0) );
+		topseq = new SequencePane( null, lseq1, null );
 		
 		scrollpane.setViewportView( seqpane );
 		scrollpane.setColumnHeaderView( topseq );
@@ -238,12 +302,12 @@ public class Mummy extends JApplet {
 
 			@Override
 			public int getRowCount() {
-				return lseq1.size();
+				return lseq2.size();
 			}
 
 			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
-				Sequence seq = lseq1.get(rowIndex);
+				Sequence seq = lseq2.get(rowIndex);
 				if( columnIndex == 0 ) return seq.name;
 				else if( columnIndex == 1 ) return seq.offset;
 				
@@ -272,11 +336,17 @@ public class Mummy extends JApplet {
 		lefttable.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
 			@Override
 			public void valueChanged(ListSelectionEvent e) {
+				int r = lefttable.getSelectedRow();
+				if( r >= 0 ) {
+					Rectangle visrect = seqpane.getVisibleRect();
+					visrect.x = 10*(Integer)lefttable.getValueAt(r, 1);
+					seqpane.scrollRectToVisible( visrect );
+				}
 				seqpane.repaint();
 			}
 		});
 		
-		ov = new Overview( lefttable, seqpane );
+		ov = new Overview( lefttable, seqpane, lseq1.get(0).getLength() );
 		//ov.setPreferredSize( new Dimension(500, 300) );
 		splitpane.setTopComponent( subsplit );
 		/*JComponent c = new JComponent() {};
