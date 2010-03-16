@@ -302,6 +302,15 @@ public class Parentage extends JApplet {
 		xlsComp.setTransferHandler(th);
 	}
 	
+	public static String cellVal( XSSFCell cell ) {
+		if( cell == null ) return null;
+		else if( cell.getCellType() == XSSFCell.CELL_TYPE_STRING ) {
+			return cell.getStringCellValue().length() == 0 ? null : cell.getStringCellValue();
+		} else if( cell.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) return Double.toString( cell.getNumericCellValue() );
+		
+		return null;
+	}
+	
 	public static XSSFWorkbook subload( InputStream inputStream, JProgressBar pbar ) throws IOException {
 		if( pbar != null ) {
 			pbar.setString("Opening excel file ...");
@@ -310,30 +319,40 @@ public class Parentage extends JApplet {
 			pbar.setValue(0);
 		}
 		XSSFWorkbook workbook = new XSSFWorkbook( inputStream );
-		final XSSFSheet		m_sheet = workbook.getSheet("Mæður");
-		final XSSFSheet		f_sheet = workbook.getSheet("Feður");
-		final XSSFSheet		b_sheet = workbook.getSheet("Afkvæmi");
-		final XSSFSheet		p_sheet = workbook.createSheet("Foreldrar");
+		XSSFSheet		m_sheet = workbook.getSheet("Mæður");
+		if( m_sheet == null ) m_sheet = workbook.getSheetAt( 0 );
+		XSSFSheet		f_sheet = workbook.getSheet("Feður");
+		if( f_sheet == null ) f_sheet = workbook.getSheetAt( 1 );
+		XSSFSheet		b_sheet = workbook.getSheet("Afkvæmi");
+		if( b_sheet == null ) b_sheet = workbook.getSheetAt( 2 );
+		XSSFSheet		p_sheet = workbook.createSheet("Foreldrar");
 		
 		final Set<XSSFRow>	set = new HashSet<XSSFRow>();
 		final List<XSSFRow>	mlist = new ArrayList<XSSFRow>();
 		final List<XSSFRow>	flist = new ArrayList<XSSFRow>();
 		
-		int 		counter = 1;
-		int			cellcount = 0;
+		int 		counter = 0;
 		XSSFRow b_row = b_sheet.getRow(counter++);
+		int			cellcount = 0;
+		XSSFCell	b_cell = b_row.getCell(cellcount++);
+		while( b_cell != null && (b_cell.getCellType() != XSSFCell.CELL_TYPE_STRING || b_cell.getStringCellValue().length() > 0) ) {
+			b_cell = b_row.getCell(cellcount++);
+		}
+		cellcount = cellcount - 1;
+		b_row = b_sheet.getRow(counter++);
 		while( b_row != null ) {
-			b_row = b_sheet.getRow(counter++);
 			int cnum = 0;
-			XSSFCell	b_cell = b_row.getCell(cnum);
-			while( b_cell != null && b_cell.getCellType() == XSSFCell.CELL_TYPE_STRING && b_cell.getStringCellValue().length() > 0 ) {
+			b_cell = b_row.getCell(cnum);
+			while( b_cell != null && (b_cell.getCellType() != XSSFCell.CELL_TYPE_STRING || b_cell.getStringCellValue().length() > 0) ) {
 				cnum++;
 				b_cell = b_row.getCell(cnum);
 			}
-			if( cnum > cellcount ) cellcount = cnum;
-			
+			//if( cnum > cellcount ) cellcount = cnum;
 			if( cnum < 1 ) break;
+			
+			b_row = b_sheet.getRow(counter++);
 		}
+		counter = counter - 2;
 		
 		if( pbar != null ) {
 			pbar.setIndeterminate( false );
@@ -383,10 +402,30 @@ public class Parentage extends JApplet {
 							boolean nb = m_a1 == null || m_a2 == null || b_a1 == null || b_a2 == null;
 							
 							if( !nb ) {
-								String ba1 = b_a1.getStringCellValue();
+								String ba1;
+								if( b_a1.getCellType() == XSSFCell.CELL_TYPE_STRING ) ba1 = b_a1.getStringCellValue();
+								else if( b_a1.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) ba1 = Double.toString( b_a1.getNumericCellValue() );
+								else ba1 = "";
+								
+								String ba2;
+								if( b_a2.getCellType() == XSSFCell.CELL_TYPE_STRING ) ba2 = b_a2.getStringCellValue();
+								else if( b_a2.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) ba2 = Double.toString( b_a2.getNumericCellValue() );
+								else ba2 = "";
+								
+								String ma1;
+								if( m_a1.getCellType() == XSSFCell.CELL_TYPE_STRING ) ma1 = m_a1.getStringCellValue();
+								else if( m_a1.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) ma1 = Double.toString( m_a1.getNumericCellValue() );
+								else ma1 = "";
+
+								String ma2;
+								if( m_a2.getCellType() == XSSFCell.CELL_TYPE_STRING ) ma2 = m_a2.getStringCellValue();
+								else if( m_a2.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) ma2 = Double.toString( m_a2.getNumericCellValue() );
+								else ma2 = "";
+								
+								/*String ba1 = b_a1.getStringCellValue();
 								String ba2 = b_a2.getStringCellValue();
 								String ma1 = m_a1.getStringCellValue();
-								String ma2 = m_a2.getStringCellValue();
+								String ma2 = m_a2.getStringCellValue();*/
 							
 								boolean mb = ma1.equals("") || ma2.equals("") || ba1.equals("") || ba2.equals("");
 								boolean db = ma1.equals( ba1 ) || ma1.equals( ba2 ) || ma2.equals( ba1 ) || ma2.equals( ba2 );
@@ -431,10 +470,30 @@ public class Parentage extends JApplet {
 							boolean nb = f_a1 == null || f_a2 == null || b_a1 == null || b_a2 == null;
 							
 							if( !nb ) {
-								String ba1 = b_a1.getStringCellValue();
+								String ba1;
+								if( b_a1.getCellType() == XSSFCell.CELL_TYPE_STRING ) ba1 = b_a1.getStringCellValue();
+								else if( b_a1.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) ba1 = Double.toString( b_a1.getNumericCellValue() );
+								else ba1 = "";
+								
+								String ba2;
+								if( b_a2.getCellType() == XSSFCell.CELL_TYPE_STRING ) ba2 = b_a2.getStringCellValue();
+								else if( b_a2.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) ba2 = Double.toString( b_a2.getNumericCellValue() );
+								else ba2 = "";
+								
+								String fa1;
+								if( f_a1.getCellType() == XSSFCell.CELL_TYPE_STRING ) fa1 = f_a1.getStringCellValue();
+								else if( f_a1.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) fa1 = Double.toString( f_a1.getNumericCellValue() );
+								else fa1 = "";
+
+								String fa2;
+								if( f_a2.getCellType() == XSSFCell.CELL_TYPE_STRING ) fa2 = f_a2.getStringCellValue();
+								else if( f_a2.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) fa2 = Double.toString( f_a2.getNumericCellValue() );
+								else fa2 = "";
+								
+								/*String ba1 = b_a1.getStringCellValue();
 								String ba2 = b_a2.getStringCellValue();
 								String fa1 = f_a1.getStringCellValue();
-								String fa2 = f_a2.getStringCellValue();
+								String fa2 = f_a2.getStringCellValue();*/
 							
 								boolean mb = fa1.equals("") || fa2.equals("") || ba1.equals("") || ba2.equals("");
 								boolean db = fa1.equals( ba1 ) || fa1.equals( ba2 ) || fa2.equals( ba1 ) || fa2.equals( ba2 );
@@ -475,12 +534,19 @@ public class Parentage extends JApplet {
 							XSSFCell	f_a1 = frow.getCell(c);
 							XSSFCell	f_a2 = frow.getCell(c+1);
 							
-							String ba1 = b_a1 == null || b_a1.getStringCellValue().length() == 0 ? null : b_a1.getStringCellValue();
+							String ba1 = cellVal( b_a1 );
+							String ba2 = cellVal( b_a2 );
+							String ma1 = cellVal( m_a1 );
+							String ma2 = cellVal( m_a2 );
+							String fa1 = cellVal( f_a1 );
+							String fa2 = cellVal( f_a2 );
+							
+							/*String ba1 = b_a1 == null || b_a1.getStringCellValue().length() == 0 ? null : b_a1.getStringCellValue();
 							String ba2 = b_a2 == null || b_a2.getStringCellValue().length() == 0 ? null : b_a2.getStringCellValue();
 							String ma1 = m_a1 == null || m_a1.getStringCellValue().length() == 0 ? null : m_a1.getStringCellValue();
 							String ma2 = m_a2 == null || m_a2.getStringCellValue().length() == 0 ? null : m_a2.getStringCellValue();
 							String fa1 = f_a1 == null || f_a1.getStringCellValue().length() == 0 ? null : f_a1.getStringCellValue();
-							String fa2 = f_a2 == null || f_a2.getStringCellValue().length() == 0 ? null : f_a2.getStringCellValue();
+							String fa2 = f_a2 == null || f_a2.getStringCellValue().length() == 0 ? null : f_a2.getStringCellValue();*/
 							
 							boolean nb = ma1 == null || ma2 == null || fa1 == null || fa2 == null || ba1 == null || ba2 == null;
 							if( nb ) {

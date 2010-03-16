@@ -89,6 +89,7 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 
@@ -167,16 +168,12 @@ public class Fiskur extends JApplet {
 		try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (UnsupportedLookAndFeelException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -274,16 +271,12 @@ public class Fiskur extends JApplet {
 		try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (UnsupportedLookAndFeelException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -909,7 +902,7 @@ public class Fiskur extends JApplet {
 		RMtrxOutbredKonHeg kh = new RMtrxOutbredKonHeg(pop);*/
 	}
  	
-	public void importStuff() throws IOException {
+	public void importStuff() throws IOException, InvalidFormatException {
 		JFileChooser	fc = new JFileChooser();
 		fc.setMultiSelectionEnabled(true);
 		if( fc.showOpenDialog( this ) == JFileChooser.APPROVE_OPTION ) {
@@ -1254,8 +1247,9 @@ public class Fiskur extends JApplet {
 				try {
 					importStuff();
 				} catch (IOException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
+				} catch (InvalidFormatException e2) {
+					e2.printStackTrace();
 				}
 			}
 		});
@@ -1284,13 +1278,10 @@ public class Fiskur extends JApplet {
 				try {
 					obj = Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
 				} catch (HeadlessException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				} catch (UnsupportedFlavorException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				} catch (IOException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 				if (obj != null) {

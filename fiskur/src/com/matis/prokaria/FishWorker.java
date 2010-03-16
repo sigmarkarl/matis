@@ -18,12 +18,18 @@ import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellValue;
+import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.xssf.usermodel.XSSFCell;
-import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -375,6 +381,94 @@ public class FishWorker {
 		initFreqs();
 	}
 	
+	public void plainOldStuff( Workbook wb ) throws IOException {
+		Sheet		ws = wb.getSheetAt(0);
+		
+		int i = 0;
+		Row			wr = ws.getRow( i++ );
+		
+		int start = 0;
+		Cell wc = wr.getCell(start);
+		while( wc != null && wc.getStringCellValue() != null && wc.getStringCellValue().length() > 0 ) {
+			start++;
+			wc = wr.getCell(start);
+		}
+		
+		int k = start+1;
+		wc = wr.getCell( k );
+		while( wc != null && wc.getStringCellValue() != null && wc.getStringCellValue().length() > 0 ) {
+			markers.add( wc.getStringCellValue() );
+			wc = wr.getCell( ++k );
+		}
+		
+		wr = ws.getRow( i++ );
+		while( wr != null ) {
+			boolean male = wr.getCell(1).getStringCellValue().equals("male");
+			
+			List<Object>	oList = new ArrayList<Object>();
+			int u = 2;
+			Cell cell = wr.getCell(u++);
+			while( cell != null && (cell.getCellType() != XSSFCell.CELL_TYPE_STRING || cell.getStringCellValue().length() > 0) ) {
+				int celltype = cell.getCellType();
+				if( celltype == XSSFCell.CELL_TYPE_STRING ) {
+					oList.add( cell.getStringCellValue() );
+				} else if( celltype == XSSFCell.CELL_TYPE_NUMERIC ) {
+					oList.add( cell.getNumericCellValue() );
+				} else if( celltype == XSSFCell.CELL_TYPE_FORMULA ) {
+					
+				}
+				cell = wr.getCell(u++);
+			}
+			//(float)wr.getCell(2).getNumericCellValue();
+			//(int)wr.getCell(3).getNumericCellValue();
+			
+			Fish f = new Fish( wr.getCell(0).getStringCellValue(), oList.toArray( new Object[0] ), 0.0f, male );
+			if( male ) {
+				malefish.add( f );
+				mfactor.add( 0.0f );
+			}
+			else {
+				femalefish.add( f );
+				ffactor.add( 0.0f );
+			}
+			wr = ws.getRow( i++ );
+		}
+		
+		fmatrix = new int[femalefish.size() * markers.size()];
+		mmatrix = new int[malefish.size() * markers.size()];
+		
+		int f = 0;
+		int m = 0;
+		
+		i = 1;
+		wr = ws.getRow( i++ );
+		while( wr != null ) {
+			boolean male = wr.getCell(1).getStringCellValue().equals("male");
+			if( male ) {
+				k = 0;
+				wc = wr.getCell(start+k+1);
+				while( k < markers.size() ) {
+					mmatrix[m * markers.size() + k] = (int)wc.getNumericCellValue();
+					k++;
+					wc = wr.getCell(start+k+1);
+				}
+				m++;
+			} else {
+				k = 0;
+				wc = wr.getCell(start+k+1);
+				while( k < markers.size() ) {
+					fmatrix[f * markers.size() + k] = (int)wc.getNumericCellValue();
+					k++;
+					wc = wr.getCell(start+k+1);
+				}
+				f++;
+			}
+			wr = ws.getRow( i++ );
+		}
+		
+		initFreqs();
+	}
+	
 	public void initFreqs() {
 		freq.clear();		
 		
@@ -531,17 +625,18 @@ public class FishWorker {
 		return tupleList;
 	}
 	
-	public void writeWorkbook( XSSFWorkbook wb ) {
-		XSSFSheet sheet = wb.createSheet("Fish");
-		XSSFRow row = sheet.createRow(0);
+	public void writeWorkbook( Workbook wb ) {
+		Sheet sheet = wb.createSheet("Fish");
+		Row row = sheet.createRow(0);
 		
-		XSSFFont	font = wb.createFont();
-		font.setBold( true );
+		Font	font = wb.createFont();
+		//font.setBold( true );
+		font.setBoldweight((short)2);
 		
 		CellStyle boldstyle = wb.createCellStyle();
 	    boldstyle.setFont( font );
 	    
-		XSSFCell cell = row.createCell(0);
+		Cell cell = row.createCell(0);
 		cell.setCellValue( "Name" );
 		cell.setCellStyle( boldstyle );
 		cell = row.createCell(1);
@@ -922,8 +1017,8 @@ public class FishWorker {
 		list.removeAll( remfish );
 	}
 	
-	public String getName( XSSFRow wr, int cellInd ) {
-		XSSFCell	cell =  wr.getCell( cellInd );
+	public String getName( Row wr, int cellInd ) {
+		Cell	cell =  wr.getCell( cellInd );
 		int celltype = cell.getCellType();
 		
 		String name = null;
@@ -935,6 +1030,24 @@ public class FishWorker {
 		}
 		
 		return name;
+	}
+	
+	public boolean summaryOldCheck( Workbook wb, int sheetInd ) {
+		Sheet 		sheet = wb.getSheetAt( sheetInd );
+		Row			row = sheet.getRow(0);
+		
+		boolean b = false;
+		int i = 0;
+		Cell 		cell = row.getCell(i++);
+		while( cell != null ) {
+			if( cell.getStringCellValue().equalsIgnoreCase("sex") ) {
+				b = true;
+				break;
+			}
+			cell = row.getCell(i++);
+		}
+		
+		return b;
 	}
 	
 	public boolean summaryCheck( XSSFWorkbook wb, int sheetInd ) {
@@ -967,6 +1080,156 @@ public class FishWorker {
 		int pind = -1;
 		int c = 0;
 		XSSFCell		cell = row.getCell(c);
+		while( cell != null && cell.getCellType() != XSSFCell.CELL_TYPE_BLANK && (cell.getCellType() != XSSFCell.CELL_TYPE_STRING || cell.getStringCellValue().length() > 0) ) {
+			String cellval = cell.getStringCellValue();
+			if( cellval.equalsIgnoreCase("sex") ) sexind = c;
+			else if( cellval.equalsIgnoreCase("sample") ) sampind = c;
+			else if( cellval.equalsIgnoreCase("performance") ) {
+				pind = c;
+			}
+			
+			if( pind > 0 && c > pind ) {
+				parameterNames.add( cellval );
+				parameterTypes.add( String.class );
+			}
+			
+			c++;
+			cell = row.getCell(c);
+		}
+		
+		row = sheet.getRow( ++r );
+		//Fish cmpf = new Fish( "", 0.0f, 0, true );
+		List<Object>	objList = new ArrayList<Object>();
+		while( row != null ) {
+			cell = row.getCell(sexind);
+			if( cell != null ) {
+				String 	sex = cell.getStringCellValue();
+				cell = row.getCell(sampind);
+				
+				String 	name = null;
+				int type = cell.getCellType();
+				if( type == XSSFCell.CELL_TYPE_NUMERIC ) {
+					name = Integer.toString( (int)cell.getNumericCellValue() );
+				} else {
+					name = cell.getStringCellValue();
+				}
+				
+				int 	k = pind+1;
+				cell = row.getCell( k );
+				while( cell != null && cell.getCellType() != XSSFCell.CELL_TYPE_BLANK && (cell.getCellType() != XSSFCell.CELL_TYPE_STRING || cell.getStringCellValue().length() > 0) ) {
+					type = cell.getCellType();
+					if( type == XSSFCell.CELL_TYPE_STRING ) {
+						objList.add( cell.getStringCellValue() );
+						parameterTypes.set( k-pind-1, String.class );
+					} else if( type == XSSFCell.CELL_TYPE_NUMERIC ) {
+						objList.add( cell.getNumericCellValue() );
+						parameterTypes.set( k-pind-1, Double.class );
+					}
+					k++;
+					cell = 	row.getCell( k );
+				}
+				
+				/*cell = 	row.getCell(wind);
+				type = cell.getCellType();
+				double 	weight = 0.0;
+				if( type == HSSFCell.CELL_TYPE_NUMERIC ) {
+					weight = cell.getNumericCellValue();
+				} else {
+					String	val = cell.getStringCellValue();
+					try {
+						weight = Double.parseDouble(val);
+					} catch( Exception e ) {
+				
+					}
+				}
+				cell = 	row.getCell(locind);
+				int		loc = (int)cell.getNumericCellValue();*/
+				
+				float		performance = 0.0f;
+				if( pind != -1 ) {
+					cell = 	row.getCell(pind);
+					if( cell.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) {
+						performance = (float)cell.getNumericCellValue();
+					} else if( cell.getCellType() == XSSFCell.CELL_TYPE_STRING ) {
+						String cellval = cell.getStringCellValue();
+						try {
+							float f = Float.parseFloat( cellval );
+							performance = f;
+						} catch( Exception e ) {
+							
+						}
+					} else if( cell.getCellType() == XSSFCell.CELL_TYPE_FORMULA ) {
+						CellValue cv = evaluator.evaluate( cell );
+						if( cv.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ) {
+							double cellval = cv.getNumberValue();
+							performance = (float)cellval;
+							/*try {
+								float f = Float.parseFloat( cellval );
+								performance = f;
+							} catch( Exception e ) {
+								
+							}*/
+						}
+					}
+				}
+	
+				FishWorker.Fish 		tmpf = null;
+				Object[] 				objArr = objList.toArray( new Object[0] );
+				if( sex.equalsIgnoreCase("male") ) {
+					int 		mind = findFish( name ); //fishes.indexOf( cmpf );
+					if( mind != -1 ) {
+						tmpf = fishes.get(mind);
+						tmpf.params = objArr;
+						//tmpf.weight = (float)weight;
+						//tmpf.loc = loc;
+						tmpf.male = true;
+						tmpf.factor = performance;
+					} else {
+						tmpf = new Fish( name, objArr, performance, true );
+					}
+					malefish.add( tmpf );
+					mfactor.add( performance );
+				} else if( sex.equalsIgnoreCase("female") ) {
+					int 		find = findFish( name );
+					if( find != -1 ) {
+						tmpf = fishes.get(find);
+						tmpf.params = objArr;
+						//tmpf.weight = (float)weight;
+						//tmpf.loc = loc;
+						tmpf.male = true;
+						tmpf.factor = performance;
+					} else {
+						tmpf = new Fish( name, objArr, performance, true );
+					}
+					femalefish.add( tmpf );
+					ffactor.add( performance );
+				} else {
+					
+				}
+				
+				objList.clear();
+			}
+			
+			row = sheet.getRow( ++r );	
+		}
+		
+		if( fishes.size() > 0 ) {
+			initGenotypes();
+		}
+	}
+	
+	public void oldStuff( Workbook wb, int sheetInd ) throws FileNotFoundException, IOException {
+		FormulaEvaluator 	evaluator = wb.getCreationHelper().createFormulaEvaluator();
+		Sheet 			sheet = wb.getSheetAt( sheetInd );
+		
+		int r = 0;
+		Row 		row = sheet.getRow(r);
+		
+		int sexind = -1;
+		int sampind = -1;
+		int pind = -1;
+		int c = 0;
+		Cell		cell = row.getCell(c);
 		while( cell != null && cell.getCellType() != XSSFCell.CELL_TYPE_BLANK && (cell.getCellType() != XSSFCell.CELL_TYPE_STRING || cell.getStringCellValue().length() > 0) ) {
 			String cellval = cell.getStringCellValue();
 			if( cellval.equalsIgnoreCase("sex") ) sexind = c;
@@ -1206,7 +1469,7 @@ public class FishWorker {
 		}
 	}
 	
-	public void loadFiles( File[] ff ) throws IOException {
+	public void loadFiles( File[] ff ) throws IOException, InvalidFormatException {
 		markers.clear();
 		fishes.clear();
 		malefish.clear();
@@ -1250,10 +1513,33 @@ public class FishWorker {
 		} else {
 			File f = ff[0];
 			String path = f.getAbsolutePath();
-			if( path.endsWith(".xlsx" ) ) {
-				loadSingleStream( new FileInputStream( f ) );
-			}
+			loadOldSingleStream( new FileInputStream( f ) );
 		}
+	}
+	
+	public Workbook loadOldSingleStream( InputStream stream ) throws FileNotFoundException, IOException, InvalidFormatException {
+		Workbook wb = WorkbookFactory.create( stream );
+		//HSSFWorkbook wb = new HSSFWorkbook( stream );
+		
+		if( wb.getNumberOfSheets() > 1 ) {
+			boolean b = summaryOldCheck( wb, 0 );
+		
+			if( b ) {
+				oldStuff( wb, 0 );
+				wbOldStuff( wb, 1 );
+			} else {
+				b = summaryOldCheck( wb, 1 );
+				if( b ) {
+					oldStuff( wb, 1 );
+					wbOldStuff( wb, 0 );
+				}
+			}
+		} else {
+			plainOldStuff( wb );
+		}
+		tupleList = calcData();
+		
+		return wb;
 	}
 	
 	public XSSFWorkbook loadSingleStream( InputStream stream ) throws FileNotFoundException, IOException {
@@ -1388,6 +1674,114 @@ public class FishWorker {
 		initFreqs();
 	}
 	
+	public void initOldGenotypes( Sheet ws, int i ) {
+		int oldi = i;
+		int u = 0;
+		Row 	wr = ws.getRow( 0 );
+		Cell 	cell = wr.getCell( u );
+		while( cell != null && !cell.getStringCellValue().equalsIgnoreCase("sample") ) {
+			u++;
+			cell = wr.getCell( u ); 
+		}
+		
+		Set<String>	nameSet = new HashSet<String>();
+		wr = ws.getRow( i++ );
+		while( wr != null ) {
+			String name = getName( wr, u );
+			if( name != null ) nameSet.add( name );
+			
+			/*name = getName( wr, 1 );
+			if( name != null ) nameSet.add( name );
+			name = getName( wr, 2 );
+			if( name != null ) nameSet.add( name );*/
+			
+			wr = ws.getRow( i++ );
+		}
+		
+		retainFish( malefish, nameSet );
+		retainFish( femalefish, nameSet );
+		
+		nameSet.clear();
+		for( Fish f : malefish ) {
+			nameSet.add( f.name );
+		}
+		for( Fish f : femalefish ) {
+			nameSet.add( f.name );
+		}
+		
+		fmatrix = new int[femalefish.size() * markers.size()];
+		mmatrix = new int[malefish.size() * markers.size()];
+		
+		//Fish tmpf =new Fish( "", 0.0f, 0, false );
+		
+		i = oldi;
+		wr = ws.getRow( i++ );
+		while( wr != null ) {
+			int k = 2;
+			int kstart = 0;
+			Cell wc = wr.getCell(k);
+			while( wc != null && wc.getCellType() == XSSFCell.CELL_TYPE_STRING && wc.getStringCellValue().length() > 0 ) {
+				k++;
+				wc = wr.getCell(k);
+			}
+			if( wc == null ) {
+				kstart = k+1;
+			} else if( wc.getCellType() != XSSFCell.CELL_TYPE_STRING ) {
+				kstart = k;
+			} else if( wc.getStringCellValue().length() == 0 ) {
+				kstart = k+1;
+			}
+			
+			/*String name = null;
+			if( u == -1 ) {
+				name = getName( wr, 0 );
+				if( nameSet.contains( name ) ) u = 0;
+				else u = 2;
+			}*/
+			
+			String name = getName( wr, u );
+			
+			//tmpf.name = name;
+			
+			int ind = findFish( malefish, name ); //malefish.indexOf( tmpf );
+			if( ind != -1 ) {
+				wc = wr.getCell(k);
+				while( k < markers.size()+kstart ) {
+					if( wc != null ) {
+						int val = -1;
+						if( wc.getCellType() != XSSFCell.CELL_TYPE_NUMERIC ) {
+							//System.err.println( wc.getStringCellValue() );
+							val = wc.getStringCellValue().hashCode();
+						}
+						else val = (int)wc.getNumericCellValue();
+						
+						mmatrix[ind * markers.size() + (k-kstart)] = val;
+					}
+					wc = wr.getCell(++k);
+				}
+			} else {
+				ind = findFish( femalefish, name );
+				if( ind != -1 ) {
+					wc = wr.getCell(k);
+					while( k < markers.size()+kstart ) {
+						if( wc != null ) {
+							int val = -1;
+							if( wc.getCellType() != XSSFCell.CELL_TYPE_NUMERIC ) val = wc.getStringCellValue().hashCode();
+							else val = (int)wc.getNumericCellValue();
+							
+							fmatrix[ind * markers.size() + (k-kstart)] = val;
+							//else System.err.println( "what!! " + wc.getStringCellValue() );
+						}
+						wc = wr.getCell(++k);
+					}
+				}
+			}
+			wr = ws.getRow( i++ );
+		}
+		
+		initFreqs();
+	}
+	
 	public void wbStuff( XSSFWorkbook wb, int sheetInd ) throws IOException {
 		XSSFSheet		ws = wb.getSheetAt( sheetInd );
 		
@@ -1416,6 +1810,34 @@ public class FishWorker {
 		initGenotypes( ws, i );
 	}
 	
+	public void wbOldStuff( Workbook wb, int sheetInd ) throws IOException {
+		Sheet		ws = wb.getSheetAt( sheetInd );
+		
+		markers.clear();
+		//malefish.clear();
+		//femalefish.clear();
+		//mfactor.clear();
+		//ffactor.clear();
+		
+		int i = 0;
+		Row			wr = ws.getRow( i++ );
+		
+		int k = 2;
+		Cell wc = wr.getCell(k++);
+		while( wc != null && wc.getCellType() == XSSFCell.CELL_TYPE_STRING && wc.getStringCellValue().length() > 0 && k < 6 ) {
+			wc = wr.getCell(k++);
+		}
+		if( k == 5 ) k = 2;
+		wc = wr.getCell(k++);
+		while( wc != null && wc.getStringCellValue().length() > 0 ) {
+			markers.add( wc.getStringCellValue() );
+			wc = wr.getCell(k++);
+		}
+		if( markers.size() % 2 == 1 ) markers.remove( markers.size()-1 );
+		
+		initOldGenotypes( ws, i );
+	}
+	
 	/**
 	 * @param args
 	 */
@@ -1425,11 +1847,18 @@ public class FishWorker {
 		} else {
 			FishWorker fish = new FishWorker();
 			try {
-				fish.loadSingleStream( System.in );
-				XSSFWorkbook wb = new XSSFWorkbook();
+				Workbook wb;
+				if( fish.loadOldSingleStream( System.in ) instanceof HSSFWorkbook ) {
+					wb = new HSSFWorkbook();
+				} else {
+					wb = new XSSFWorkbook();
+				}
+				
 				fish.writeWorkbook(wb);
 				wb.write( System.out );
 			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (InvalidFormatException e) {
 				e.printStackTrace();
 			}
 		}
