@@ -799,7 +799,7 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 		popup.add( new AbstractAction("Load sample data") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				InputStream is = this.getClass().getResourceAsStream("/Greining2_new2.xlsx");
+				InputStream is = this.getClass().getResourceAsStream("/Greining2.xlsx");
 				try {
 					excelLoad( is );
 				} catch (IOException e1) {

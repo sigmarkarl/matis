@@ -7,6 +7,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.event.ActionEvent;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,12 +19,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.swing.AbstractAction;
 import javax.swing.JApplet;
 import javax.swing.JComponent;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
+import javax.swing.JToolBar;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.event.ListSelectionEvent;
@@ -39,11 +44,24 @@ public class Mummy extends JApplet {
 	 */
 	private static final long serialVersionUID = 1L;
 	JSplitPane		splitpane = new JSplitPane( JSplitPane.VERTICAL_SPLIT );
+	JToolBar		toolbar = new JToolBar();
+	JComponent c = new JComponent() {
+		
+	};
 	SequencePane	seqpane;
 	SequencePane	topseq;
 	Overview		ov;
 	
 	public Mummy() {}
+	
+	class FindDialog extends JDialog {
+		JTextArea	textarea = new JTextArea();
+		
+		public FindDialog() {
+			JScrollPane	scrollpane = new JScrollPane( textarea );
+			this.add( scrollpane );
+		}
+	};
 	
 	class Sequence implements Comparable<Sequence> {
 		public Sequence( String name, ByteBuffer bb, int offset ) {
@@ -346,6 +364,15 @@ public class Mummy extends JApplet {
 			}
 		});
 		
+		final FindDialog	fd = new FindDialog();
+		AbstractAction action = new AbstractAction("Find") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				fd.setVisible( true );
+			}
+		};
+		toolbar.add( action );
+		
 		ov = new Overview( lefttable, seqpane, lseq1.get(0).getLength() );
 		//ov.setPreferredSize( new Dimension(500, 300) );
 		splitpane.setTopComponent( subsplit );
@@ -353,6 +380,10 @@ public class Mummy extends JApplet {
 		c.setLayout( new BorderLayout() );
 		c.add( ov );*/
 		splitpane.setBottomComponent( ov );
+		
+		c.setLayout( new BorderLayout() );
+		c.add( this.splitpane );
+		c.add( this.toolbar, BorderLayout.NORTH );
 	}
 	
 	public List<Sequence> load( String fname, String foffset ) throws IOException {
@@ -475,7 +506,7 @@ public class Mummy extends JApplet {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		this.add( this.splitpane );
+		this.add( c );
 	}
 	
 	/**
@@ -503,7 +534,7 @@ public class Mummy extends JApplet {
 			frame.getContentPane().setLayout( new BorderLayout() );
 			frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
 			frame.setSize(800, 600);
-			frame.add( mummy.splitpane );
+			frame.add( mummy.c );
 			mummy.initGui();
 			frame.setVisible( true );
 		} catch (IOException e) {
