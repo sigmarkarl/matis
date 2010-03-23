@@ -7,6 +7,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import com.sun.jmx.remote.util.OrderClassLoaders;
 
 public class Ws {
 	public static void main( String[] args ) {
@@ -85,13 +91,27 @@ public class Ws {
 			String				oldname = "";
 			boolean				hascomponents = true;
 			boolean				hasreferences = true;
+			
+			Map<String,Float>	energyMap = new HashMap<String,Float>();
+			Set<String>			energySet = new HashSet<String>();
+			
+			energySet.add( "PROT" );
+			energySet.add( "FAT" );
+			energySet.add( "ALC" );
+			energySet.add( "CHOT" );
+			energySet.add( "FIBT" );
+			
 			while( rs.next() ) {
 				String name = rs.getString("OriginalFoodCode");
 				String langual = rs.getString("LangualCodes");
 				boolean sameold = oldname.equals(name);
 				
 				if( !sameold ) {
-					if( !oldname.equals("") ) p.println("</Food>");
+					energyMap.clear();
+					if( !oldname.equals("") ) {
+						p.println("</Components>");
+						p.println("</Food>");
+					}
 					p.println("<Food>");
 	                p.println("<FoodDescription>");
 	                p.println("<FoodIdentifiers>");
@@ -136,10 +156,12 @@ public class Ws {
 	                
 	                p.println("<Remarks></Remarks>");
 	                p.println("</FoodDescription>");
+	                
+	                if( hascomponents ) p.println("<Components>");
 				}
                 
 				if( hascomponents ) {
-	                p.println("<Components>");
+	                //p.println("<Components>");
 	                String eurocd = rs.getString("EuroFIRComponentIdentifier");
 					String origcd = rs.getString("OriginalComponentCode");
 					String origcpnm = rs.getString("OriginalComponentName");
@@ -191,6 +213,14 @@ public class Ws {
 	                selVal = selVal.replace(',', '.');
 	                p.println("<SelectedValue valuetype=\""+valueType+"\" acquisitionType=\""+(acquisitionType==null?"":acquisitionType)+"\">"+selVal+"</SelectedValue>");
 	                
+	                float fVal = 0;
+	                try {
+	                	fVal = Float.parseFloat(selVal);
+	                } catch( Exception e ) {
+	                	
+	                }
+	                if( energySet.contains(eurocd) ) energyMap.put(eurocd, fVal);
+	                
 	                minimum = nullStr(minimum) ? "<Minimum/>" : "<Minimum>"+minimum.replace(',', '.')+"</Minimum>";
 	                p.println(minimum);
 	                maximum = nullStr(maximum) ? "<Maximum/>" : "<Maximum>"+maximum.replace(',', '.')+"</Maximum>";
@@ -221,17 +251,81 @@ public class Ws {
 	                p.println("</Value>");
 	                p.println("</Values>");
 	                p.println("</Component>");
-	                p.println("</Components>");
+	                
+	                if( energyMap.size() == 5 ) {
+	                	float kcalVal = energyMap.get("PROT")*4 + energyMap.get("FAT")*9 + energyMap.get("CHOT")*4 + energyMap.get("FIBT")*2 + energyMap.get("ALC")*7;
+	                	float kjVal = energyMap.get("PROT")*17 + energyMap.get("FAT")*37 + energyMap.get("CHOT")*17 + energyMap.get("FIBT")*8 + energyMap.get("ALC")*29;
+	                	energyCalc( p, Float.toString(kcalVal), "kcal" );
+	                	energyCalc( p, Float.toString(kjVal), "kJ" );
+	                	energyMap.clear();
+	                }
 				}
 				oldname = name;
 			}
-			if( !oldname.equals("") ) p.println("</Food>");
+			if( !oldname.equals("") ) {
+				p.println("</Components>");
+				p.println("</Food>");
+			}
 			
 			rs.close();
 			ps.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static void energyCalc( PrintStream p, String selVal, String unit ) {
+		p.println("<Component>");
+		
+		String eurocd = "ENRGC";
+		String origcd = "";
+		if( unit.equals("kJ") ) origcd = "201";
+		else origcd = "202";
+		String origcpnm = "Orka";
+		String engcpnm = "Energy";
+		
+		String matrixUnit = "W";
+		String dateGenerated = "";
+		String methodType = "T";
+		String methodIndicator = "MI0110";
+		String methodParameter = "";
+		
+        p.println("<ComponentIdentifiers>");
+        p.println("<ComponentIdentifier system=\"ecompid\">"+eurocd+"</ComponentIdentifier>");	                
+        p.println("<ComponentIdentifier system=\"origcpcd\">"+origcd+"</ComponentIdentifier>");	                
+        p.println("<ComponentIdentifier system=\"origcpnm\">"+origcpnm+"</ComponentIdentifier>");
+        p.println("<ComponentIdentifier system=\"engcpnam\">"+engcpnm+"</ComponentIdentifier>");
+        p.println("</ComponentIdentifiers>");
+        
+        p.println("<Values>");
+        p.println("<Value unit=\""+unit+"\" matrixunit=\""+matrixUnit+"\" dategenerated=\""+dateGenerated+"\" methodtype=\""+methodType+"\" methodindicator=\""+methodIndicator+"\" methodparameter=\""+methodParameter+"\">");
+        String valueType = "BE";
+        String acquisitionType = null;
+        p.println("<SelectedValue valuetype=\""+valueType+"\" acquisitionType=\""+(acquisitionType==null?"":acquisitionType)+"\">"+selVal+"</SelectedValue>");
+        
+        p.println("<Minimum/>");
+        p.println("<Maximum/>");
+        p.println("<StandardDeviation/>");
+        p.println("<NumberOfAnalyticalPortions/>");
+        p.println( "<QualityIndex/>" );
+        p.println( "<Remarks/>" );
+        //p.println("<QualityIndex>"+qualityIndex+"</QualityIndex>");
+
+        /*if( hasreferences ) {
+        	String referenceType = rs.getString("ReferenceType");
+        	String rAcquisitionType = rs.getString("rAcquisitionType");
+        	String link = rs.getString("WWW");
+        	String citation = rs.getString("Citation");
+        	
+            p.println("<References>");
+            p.println("<ValueReference referencetype=\""+referenceType+"\" acquisitiontype=\""+rAcquisitionType+"\""+((link==null||link.length()==0)?">":" link=\""+link+"\">")+citation.replace('&', 'o')+"</ValueReference>");
+            p.println("<MethodReference referencetype=\""+referenceType+"\" acquisitiontype=\""+rAcquisitionType+"\""+((link==null||link.length()==0)?" />":" link=\""+link+"\" />"));
+            p.println("</References>");
+        }*/
+        
+        p.println("</Value>");
+        p.println("</Values>");
+        p.println("</Component>");
 	}
 	
 	public void FoodXML( String fnr ) {  
