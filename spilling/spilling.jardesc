@@ -11,6 +11,7 @@
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
-        <javaElement handleIdentifier="=spilling/src"/>
+        <javaElement handleIdentifier="=spilling/src&lt;org.simmi"/>
+        <file path="/spilling/src/Greining2.xlsx"/>
     </selectedElements>
 </jardesc>
