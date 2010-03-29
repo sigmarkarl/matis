@@ -83,20 +83,101 @@ public class Mummy extends JApplet {
 		}
 	}
 	
+	class Coff {
+		public Coff( int bestMatchIndex, List<Offset> loffset ) {
+			this.bestMatchIndex = bestMatchIndex;
+			this.loffset = loffset;
+		}
+		
+		public int size() {
+			return loffset.size();
+		}
+		
+		public void add( Offset o ) {
+			loffset.add( o );
+		}
+		
+		public Offset getBestOffset() {
+			if( bestMatchIndex < loffset.size() ) return loffset.get( bestMatchIndex );
+			
+			return null;
+		}
+		
+		int				bestMatchIndex;
+		List<Offset>	loffset;
+	}
+	
 	class Sequence implements Comparable<Sequence> {
-		public Sequence( String name, ByteBuffer bb, int offset, int coff, List<Offset> offsetList ) {
+		public Sequence( String name, ByteBuffer bb, int offset, Map<String,Coff> offsetMap ) {
+			/*if( offsetList == null ) offsetList = new ArrayList<Offset>();
+			if( offsetList.size() == 0 ) {
+				offsetList.add( new Offset(0,0,0) );
+			}*/
+			
 			this.name = name;
 			this.bb = bb;
 			this.offset = offset;
-			this.offsetList = offsetList;
-			this.coff = coff;
+			this.offsetMap = offsetMap;
 		}
 		
-		String 			name;
-		ByteBuffer		bb;
-		int				offset;
-		List<Offset>	offsetList;
-		int				coff;
+		String 						name;
+		ByteBuffer					bb;
+		int							offset;
+		Map<String,Coff>			offsetMap;
+		
+		public int getAlignStart( String name ) {
+			Coff coff = offsetMap.get( name );
+			return coff.loffset.get(coff.bestMatchIndex).a;
+		}
+		
+		public int getAlignStop( String name ) {
+			int i = getLastAlignIndex( name );
+			List<Offset>	offsetList = offsetMap.get( name ).loffset;
+			return offsetList.get(i).a;
+		}
+		
+		public int getFirstAlignIndex( String name ) {
+			return offsetMap.get( name ).bestMatchIndex;
+		}
+		
+		public int getLastAlignIndex( String name ) {
+			Coff 			coff = offsetMap.get( name );
+			int 			i = coff.bestMatchIndex;
+			List<Offset>	offsetList = coff.loffset;
+			Offset 			lastoffset = offsetList.get( i++ );
+			if( i < offsetList.size() ) {
+				Offset offset = offsetList.get( i++ );
+				int adiff = offset.a - lastoffset.a;
+				int bdiff = offset.b - lastoffset.b;
+				while( i < offsetList.size() && bdiff > 0 && bdiff > adiff-500 && bdiff < adiff+500 ) {
+					lastoffset = offset;
+					offset = offsetList.get( i++ );
+					
+					adiff = offset.a - lastoffset.a;
+					bdiff = offset.b - lastoffset.b;
+				}
+				return i-2;
+			}
+			
+			return i-1;
+		}
+		
+		public int getDerivedLength( String name ) {
+			return getDerivedStop( name ) - getDerivedStart( name );
+		}
+		
+		public int getDerivedStop( String name ) {		
+			int i = getLastAlignIndex( name );
+			List<Offset>	offsetList = offsetMap.get( name ).loffset;
+			Offset o = offsetList.get(i);
+			return o.a + bb.limit() - o.b;
+		}
+		
+		public int getDerivedStart( String name ) {
+			Coff coff = offsetMap.get( name );
+			Offset offset = coff.loffset.get( coff.bestMatchIndex );
+			return offset.a - offset.b;
+		}
 		
 		public int getLength() {
 			return bb.limit();
@@ -211,36 +292,104 @@ public class Mummy extends JApplet {
 						g.fillRect(clip.x, y*rh, clip.width, rh);
 					}
 					int i = seqtable.convertRowIndexToModel(y);
-					//System.err.println( i + "  " + y );
-					//seqtable.row
 					Sequence seq = sequencelist.get(i);
 					
 					//if( mx < seq.offset+seq.bb.limit() ) mx = seq.offset+seq.bb.limit();
 					
-					int xstart = Math.max( seq.offset, clip.x/10 );
-					int xstop = Math.min( seq.offset+seq.bb.limit(), (clip.x+clip.width)/10 );
-					//System.err.println( xstop );
-					if( xstop > mx ) mx = xstop;
-					for( int x = xstart; x < xstop; x++ ) {
-						byte b = seq.bb.get( x - seq.offset );
-						byte bc = 0;
-						int xval = x - seq0.offset;
-						if( xval < seq0.bb.limit() && xval >= 0 ) {
-							bc = seq0.bb.get( xval );
-						}
-						if( b != bc ) {
-							g.setColor( Color.red );
-						} else {
-							g.setColor( Color.black );
-						}
+					if( seq.offsetMap != null ) {
+						int alignIndStart = seq.getFirstAlignIndex( seq0.name );
+						int alignIndStop = seq.getLastAlignIndex( seq0.name );
 						
-						if( x > 1868719 ) System.err.println("e "+x);
+						int alignStart = seq.getAlignStart( seq0.name );
+						int alignStop = seq.getAlignStop( seq0.name );
 						
-						if( b == 'a' || b == 'A' ) g.drawString(this.a, x*10, (y+offval)*rh);
-						else if( b == 'c' || b == 'C' ) g.drawString(this.c, x*10, (y+offval)*rh);
-						else if( b == 'g' || b == 'G' ) g.drawString(this.g, x*10, (y+offval)*rh);
-						else if( b == 't' || b == 'T' ) g.drawString(this.t, x*10, (y+offval)*rh);
-						else g.drawString("N", x*10, (y+offval)*rh);
+						int seqstart = seq.getDerivedStart( seq0.name );
+						int seqstop = seq.getDerivedStop( seq0.name );
+						
+						int xstart = Math.max( seqstart, clip.x/10 );
+						int xstop = Math.min( seqstop, (clip.x+clip.width)/10 );
+						//System.err.println( xstop );
+						if( xstop > mx ) mx = xstop;
+						
+						//Offset los = null;
+						Offset os = null;
+						Offset nos = null;
+						int dist = 0;
+						for( int x = xstart; x < xstop; x++ ) {
+							if( x < alignStart ) {
+								g.setColor( Color.blue );
+								g.drawLine(x*10, (y+offval)*rh, (x+1)*10, (y+offval)*rh);
+								g.drawLine(x*10, (y+offval-1)*rh, (x+1)*10, (y+offval-1)*rh);
+								//g.drawString("M", x*10, (y+offval)*rh);
+							} else if( x > alignStop ) {
+								g.setColor( Color.green );
+								g.drawLine(x*10, (y+offval)*rh, (x+1)*10, (y+offval)*rh);
+								g.drawLine(x*10, (y+offval-1)*rh, (x+1)*10, (y+offval-1)*rh);
+								//g.drawString("M", x*10, (y+offval)*rh);
+							} else {
+								List<Offset>	offsetList = seq.offsetMap.get( seq0.name ).loffset;
+								int f = alignIndStart;
+								while( f < alignIndStop-1 && offsetList.get(f+1).a < x ) f++;
+								
+								if( os != offsetList.get(f) ) {
+									if( nos != null && os != null ) {
+										dist = (nos.b - os.b) - (nos.a - os.a);
+										System.err.println( dist );
+									}
+									os = offsetList.get(f);
+								}
+								if( f+1 < offsetList.size() ) {
+									nos = offsetList.get(f+1);
+								}
+								//Offset nos = null;
+								
+								int bind = x - os.a + os.b;
+								
+								if( bind >= 0 && bind < seq.bb.limit() && (nos == null || x - os.a <= nos.b - os.b ) ) {					
+									byte b = seq.bb.get( bind );
+									byte bc = 0;
+									int xval = x - seq0.offset;
+									if( xval < seq0.bb.limit() && xval >= 0 ) {
+										bc = seq0.bb.get( xval );
+									}
+									if( b != bc ) {
+										g.setColor( Color.red );
+									} else {
+										g.setColor( Color.black );
+									}
+									
+									if( b == 'a' || b == 'A' ) g.drawString(this.a, x*10, (y+offval)*rh-3);
+									else if( b == 'c' || b == 'C' ) g.drawString(this.c, x*10, (y+offval)*rh-3);
+									else if( b == 'g' || b == 'G' ) g.drawString(this.g, x*10, (y+offval)*rh-3);
+									else if( b == 't' || b == 'T' ) g.drawString(this.t, x*10, (y+offval)*rh-3);
+									else g.drawString("N", x*10, (y+offval)*rh-3);
+									
+									if( x == os.a ) {
+										g.drawLine(x*10-1, (y+offval-1)*rh-3, x*10-1, (y+offval)*rh+3);
+										g.drawLine((x+1)*10-1, (y+offval)*rh+3, (x+1)*10+3, (y+offval)*rh+3);
+									} else if( x == nos.a ) {
+										g.drawLine((x+1)*10-1, (y+offval-1)*rh-3, (x+1)*10-1, (y+offval)*rh+3);
+										g.drawLine((x+1)*10-1, (y+offval-1)*rh-3, (x+1)*10-5, (y+offval-1)*rh-3);
+									}
+								} else {
+									g.setColor( Color.black );
+									g.drawString("-", x*10, (y+offval)*rh-3);
+								}
+								
+								if(nos == null || nos.a - os.a < nos.b - os.b ) {
+									g.setColor( Color.black );
+									g.drawLine(x*10, (y+offval)*rh, (x+1)*10, (y+offval)*rh);
+									g.drawLine(x*10, (y+offval-1)*rh, (x+1)*10, (y+offval-1)*rh);
+								}
+								
+								if( dist > 0 ) {
+									g.setColor( Color.black );
+									g.drawLine(x*10+2, (y+offval-1)*rh+2, (x+1)*10-2, (y+offval-1)*rh+2);
+									g.drawLine(x*10+2, (y+offval)*rh-2, (x+1)*10-2, (y+offval)*rh-2);
+									dist--;
+								}
+							}
+						}
 					}
 				}
 			} else {
@@ -268,7 +417,7 @@ public class Mummy extends JApplet {
 		Color			color = new Color( 150,150,150,150 );
 		long			clength;
 		long			oldw = 0;
-		List<int[]>	redlist = new ArrayList<int[]>();
+		List<int[]>		redlist = new ArrayList<int[]>();
 		
 		public Overview( JTable	table, SequencePane	pane, long clength ) {
 			this.table = table;
@@ -283,27 +432,32 @@ public class Mummy extends JApplet {
 				Sequence		rseq = pane.refseq;
 				for( int i = 0; i < lseq.size(); i++ ) {
 					Sequence seq = lseq.get(i);
-					long x1 = ( (long)seq.offset * w ) / clength;
-					long x2 = ( ((long)seq.offset + seq.bb.limit()) * w ) / clength;
 					
-					int[] bb = new int[(int)(x2-x1)/32+1];
-					for( long x = x1+1; x < x2; x++ ) {
-						int s1 = (int)( (x*clength) / w );
-						int s2 = (int)( ((x+1)*clength) / w );
+					if( seq.offsetMap != null ) {
+						int seqstart = seq.getDerivedStart( rseq.name );
+						int seqstop = seq.getDerivedStop( rseq.name );
+						long x1 = ( (long)seqstart * w ) / clength;
+						long x2 = ( ((long)seqstop) * w ) / clength;
 						
-						boolean set = false;
-						for( int k = s1; k < s2; k++ ) {
-							int ind = k-seq.offset;
-							if( ind < 0 || ind >= seq.bb.limit() ) continue;// System.err.println( "ind " + ind );
-							if( k < 0 || k >= rseq.bb.limit() ) continue; //System.err.println( "rind " + k );
-							if( rseq.bb.get(k) != seq.bb.get(ind) ) set = true;
+						int[] bb = new int[(int)(x2-x1)/32+1];
+						for( long x = x1+1; x < x2; x++ ) {
+							int s1 = (int)( (x*clength) / w );
+							int s2 = (int)( ((x+1)*clength) / w );
+							
+							boolean set = false;
+							for( int k = s1; k < s2; k++ ) {
+								int ind = k-seq.offset;
+								if( ind < 0 || ind >= seq.bb.limit() ) continue;// System.err.println( "ind " + ind );
+								if( k < 0 || k >= rseq.bb.limit() ) continue; //System.err.println( "rind " + k );
+								if( rseq.bb.get(k) != seq.bb.get(ind) ) set = true;
+							}
+							int xd32 = (int)(x-x1)/32;
+							int xm32 = (int)(x-x1)%32;
+							if( set ) bb[xd32] = bb[xd32]|(1<<xm32);
+							else bb[xd32] = ~(~bb[xd32]|(1<<xm32));
 						}
-						int xd32 = (int)(x-x1)/32;
-						int xm32 = (int)(x-x1)%32;
-						if( set ) bb[xd32] = bb[xd32]|(1<<xm32);
-						else bb[xd32] = ~(~bb[xd32]|(1<<xm32));
+						redlist.add( bb );
 					}
-					redlist.add( bb );
 				}
 				
 				oldw = w;
@@ -332,25 +486,28 @@ public class Mummy extends JApplet {
 				int i = table.convertRowIndexToModel( y );
 				Sequence seq = lseq.get(i);
 				
-				int seqend = seq.offset + seq.bb.limit();
-				int x1 = (int)( ( (long)seq.offset * w ) / clength );
-				int x2 = (int)( ( ((long)seqend) * w ) / clength );
-				
-				int y2 = 2*y;
-				
-				//if(x2>mx) mx = x2;
-				//if(seqend>mx2) mx2 = seqend;
-				//if( y == table.getRowCount()-1 ) System.err.println("erm "+x2 + "   " + (seq.offset+seq.bb.limit()) + "  " + clength + "  " + rseq.bb.limit());
-				
-				int[] val = redlist.get(i);
-				for( int x = x1; x < x2; x++ ) {
-					int xd32 = (x-x1)/32;
-					int xm32 = (x-x1)%32;
+				if( seq.offsetMap != null ) {
+					int seqstart = seq.getDerivedStart( rseq.name );
+					int seqstop = seq.getDerivedStop( rseq.name );
+					int x1 = (int)( ( (long)seqstart * w ) / clength );
+					int x2 = (int)( ( ((long)seqstop) * w ) / clength );
 					
-					if( ( val[xd32]&(1<<xm32) ) != 0 ) g.setColor( Color.red );
-					else g.setColor( Color.green );
-					g.drawLine(x, y2, x+1, y2);
-					g.drawLine(x, y2+1, x+1, y2+1);
+					int y2 = 2*y;
+					
+					//if(x2>mx) mx = x2;
+					//if(seqend>mx2) mx2 = seqend;
+					//if( y == table.getRowCount()-1 ) System.err.println("erm "+x2 + "   " + (seq.offset+seq.bb.limit()) + "  " + clength + "  " + rseq.bb.limit());
+					
+					int[] val = redlist.get(i);
+					for( int x = x1; x < x2; x++ ) {
+						int xd32 = (x-x1)/32;
+						int xm32 = (x-x1)%32;
+						
+						if( ( val[xd32]&(1<<xm32) ) != 0 ) g.setColor( Color.red );
+						else g.setColor( Color.green );
+						g.drawLine(x, y2, x+1, y2);
+						g.drawLine(x, y2+1, x+1, y2+1);
+					}
 				}
 			}
 			
@@ -363,7 +520,7 @@ public class Mummy extends JApplet {
 		}
 	}
 	
-	public void initGui() throws IOException {		
+	public void initGui() throws IOException {
 		JScrollPane	scrollpane = new JScrollPane();
 		scrollpane.setBackground( Color.white );
 		scrollpane.getViewport().setBackground( Color.white );
@@ -379,12 +536,18 @@ public class Mummy extends JApplet {
 		subsplit.setLeftComponent( leftpane );
 		
 		//final List<Sequence> bbl = load( "/home/sigmar/fass/wholeHB27.fas", null );
-		final List<Sequence> lseq1 = load( "/home/sigmar/fass/wholeHB27.fas", null );
-		final List<Sequence> lseq2 = load( "/home/sigmar/fass/Strain346AllContigs.fas", "/home/sigmar/fass/out" );
+		//final List<Sequence> lseq1 = load( "/home/sigmar/fass/wholeHB27.fas", null );
+		//final List<Sequence> lseq2 = load( "/home/sigmar/fass/Strain346AllContigs.fas", "/home/sigmar/fass/out" );
+		
+		final List<Sequence> lseq2 = load( "/home/sigmar/fass/assembly1/454LargeContigs.fna", "/home/sigmar/fass/assembly2/454LargeContigs.fna", "/home/sigmar/fass/a12", "/home/sigmar/fass/a21" );
+		
 		//lseq1.addAll( lseq2 );
-		seqpane = new SequencePane( lefttable, lseq2, lseq1.get(0) );
-		topseq = new SequencePane( null, lseq1, null, true );
+		seqpane = new SequencePane( lefttable, lseq2, lseq2.get(0) );
+		topseq = new SequencePane( null, lseq2, null, true );
 		topseq.setShowGrid( true );
+		
+		scrollpane.getVerticalScrollBar().setBlockIncrement( seqpane.getUnitHeight() );
+		scrollpane.getHorizontalScrollBar().setBlockIncrement(10);
 		
 		scrollpane.setViewportView( seqpane );
 		scrollpane.setColumnHeaderView( topseq );
@@ -467,7 +630,7 @@ public class Mummy extends JApplet {
 		};
 		toolbar.add( action );
 		
-		ov = new Overview( lefttable, seqpane, lseq1.get(0).getLength() );
+		ov = new Overview( lefttable, seqpane, lseq2.get(0).getLength() );
 		ov.addMouseListener( new MouseAdapter() {
 			public void mousePressed( MouseEvent e ) {
 				int x = (int)(  ((long)seqpane.getWidth() * (long)e.getX()) / (long)ov.getWidth()  );
@@ -478,16 +641,133 @@ public class Mummy extends JApplet {
 				seqpane.scrollRectToVisible( vr );
 			}
 		});
-		//ov.setPreferredSize( new Dimension(500, 300) );
 		splitpane.setTopComponent( subsplit );
-		/*JComponent c = new JComponent() {};
-		c.setLayout( new BorderLayout() );
-		c.add( ov );*/
 		splitpane.setBottomComponent( ov );
 		
 		c.setLayout( new BorderLayout() );
 		c.add( this.splitpane );
 		c.add( this.toolbar, BorderLayout.NORTH );
+	}
+	
+	public Map<String,Map<String,Coff>> offsetRead( String filename, String prefix, String subprefix ) throws IOException {
+		Map<String,Map<String,Coff>>	offsetMap = new HashMap<String,Map<String,Coff>>();
+		Map<String,Coff>				suboffsetMap = null;
+		Coff							offsetList = null;//new ArrayList<Offset>();
+		if( filename != null ) {
+			File f = new File( filename );
+			FileReader			fr = new FileReader( f );
+			BufferedReader 		br = new BufferedReader( fr );
+			
+			String current = "";
+			String line = br.readLine();
+			while( line != null ) {
+				if( line.startsWith(">") ) {
+					if( current.length() > 0 ) offsetMap.put( prefix+current, suboffsetMap );
+					current = line.substring(1).trim();
+					suboffsetMap = new HashMap<String,Coff>();
+					//offsetList = new ArrayList<Offset>();
+				} else if( current.length() > 0 ) {
+					String[] split = line.trim().split("[ \t]+");
+					if( split[0].length() > 1 ) {
+						String sv = split[0];
+						int lv = Integer.parseInt(split[1]);
+						int ls = Integer.parseInt(split[2]);
+						int ll = Integer.parseInt(split[3]);
+						
+						if( suboffsetMap.containsKey(sv) ) {
+							offsetList = suboffsetMap.get( sv );
+						} else {
+							offsetList = new Coff( 0, new ArrayList<Offset>() );
+							suboffsetMap.put( subprefix+sv, offsetList );
+						}
+						
+						offsetList.loffset.add( new Offset(lv,ls,ll) );
+					}
+				}
+				
+				line = br.readLine();
+			}
+			if( current.length() > 0 ) offsetMap.put( current, suboffsetMap );
+			
+			br.close();
+			fr.close();
+		}
+		
+		return offsetMap;
+	}
+	
+	public List<Sequence> load( String fname1, String fname2, String foffset1, String foffset2 ) throws IOException {
+		File 			f = new File( fname1 );
+		ByteBuffer 		bb = ByteBuffer.allocate( (int)f.length() );
+		FileInputStream fis = new FileInputStream( f );
+		int 			r1 = fis.read( bb.array() );
+		fis.close();
+		
+		List<Sequence>	lseq1 = fetchSeq( bb, "l1_" );
+		
+		f = new File( fname2 );
+		bb = ByteBuffer.allocate( (int)f.length() );
+		fis = new FileInputStream( f );
+		int 			r2 = fis.read( bb.array() );
+		fis.close();
+		
+		List<Sequence>	lseq2 = fetchSeq( bb, "l2_" );
+		
+		Map<String,Map<String,Coff>>	offsetMap2 = offsetRead( foffset1, "l2_", "l1_" );
+		Map<String,Map<String,Coff>>	offsetMap1 = offsetRead( foffset2, "l1_", "l2_" );
+		
+		Coff 	off = null;
+		for( Sequence seq : lseq1 ) {
+			if( offsetMap1.containsKey(seq.name) ) {
+				seq.offsetMap = offsetMap1.get(seq.name);
+				for( String s : seq.offsetMap.keySet() ) {
+					off = seq.offsetMap.get(s);
+					Collections.sort( off.loffset );
+					off.bestMatchIndex = checkLongestCons( off.loffset );
+					if( off.bestMatchIndex < off.size() ) {
+						Offset toff = off.getBestOffset();
+						int loff = toff.a - toff.b;
+						seq.offset = loff; // = new Sequence( seq.name, tb, loff, coff, off );
+						
+						if( off.size() == 0 ) off.add( new Offset(0,0,0) );
+						/*seq.offsetMap = new HashMap<String,Coff>();
+						Coff coff = new Coff( bestMatchIndex, off );
+						seq.offsetMap.put("cons", coff);*/
+					}
+				}
+			} else {
+				System.err.println( "not existing " + seq.name );
+			}
+		}
+		
+		for( Sequence seq : lseq2 ) {
+			if( offsetMap2.containsKey(seq.name) ) {
+				seq.offsetMap = offsetMap1.get(seq.name);
+				for( String s : seq.offsetMap.keySet() ) {
+					off = seq.offsetMap.get(s);
+					Collections.sort( off.loffset );
+					off.bestMatchIndex = checkLongestCons( off.loffset );
+					if( off.bestMatchIndex < off.size() ) {
+						Offset toff = off.getBestOffset();
+						int loff = toff.a - toff.b;
+						seq.offset = loff;
+						if( off.size() == 0 ) off.add( new Offset(0,0,0) );
+					}
+				}
+			}
+		}
+		
+		for( Sequence seq1 : lseq1 ) {
+			for( String s : seq1.offsetMap.keySet() ) {
+				Coff	loffset1 = seq1.offsetMap.get( s );
+				seq1.getDerivedLength( s );
+				//int v = checkLongestCons( loffset1 );
+			}
+		}
+		
+		lseq1.addAll( lseq2 );
+		
+		return lseq1;
 	}
 	
 	public List<Sequence> load( String fname, String foffset ) throws IOException {
@@ -530,7 +810,47 @@ public class Mummy extends JApplet {
 			if( current.length() > 0 ) offsetMap.put( current, offsetList );
 		}
 		
-		List<Sequence>	lseq = new ArrayList<Sequence>();
+		List<Sequence>	lseq = fetchSeq( bb, "" );
+		
+		List<Offset> 	off = null;
+		for( Sequence seq : lseq ) {
+			if( offsetMap.containsKey(seq.name) ) {
+				off = offsetMap.get(seq.name);
+				Collections.sort( off );
+				int bestMatchIndex = checkLongestCons( off );
+				if( bestMatchIndex < off.size() ) {
+					Offset toff = off.get( bestMatchIndex );
+					int loff = toff.a - toff.b;
+					seq.offset = loff; // = new Sequence( seq.name, tb, loff, coff, off );
+					if( off.size() == 0 ) off.add( new Offset(0,0,0) );
+					seq.offsetMap = new HashMap<String,Coff>(); 
+					
+					Coff coff = new Coff( bestMatchIndex, off );
+					seq.offsetMap.put("cons", coff);
+				}
+			}
+		}
+		
+		//Collections.sort( lseq );
+		
+		/*int c = 0;
+		for( i = 0; i < bb.limit(); i++ ) {
+			byte b = bb.get(i);
+			c++;
+			if( b == '\n' ) break;
+		}
+		i++;
+		for( ; i < bb.limit(); i++ ) {
+			byte b = bb.get(i);
+			if( b == '\n' ) c++;
+			else bb.put( i-c, b );
+		}*/
+		
+		return lseq;
+	}
+	
+	public List<Sequence> fetchSeq( ByteBuffer bb, String prefix ) {
+		List<Sequence>	retseq = new ArrayList<Sequence>();
 		
 		int i = 0;
 		int start = 0;
@@ -559,20 +879,8 @@ public class Mummy extends JApplet {
 						}
 					}
 					
-					List<Offset> 	off = null;
-					Sequence		seq = null;
-					if( offsetMap.containsKey(name) ) {
-						off = offsetMap.get(name);
-						Collections.sort( off );
-						int coff = checkLongestCons( off );
-						if( coff < off.size() ) {
-							Offset toff = off.get(coff);
-							int loff = toff.a - toff.b;
-							seq = new Sequence( name, tb, loff, coff, off );
-						}
-					}
-					if( seq == null ) seq = new Sequence( name, tb, 0, -1, off );
-					lseq.add( seq );
+					Sequence seq = new Sequence( prefix+name, tb, 0, null );
+					retseq.add( seq );
 				}
 				while( bb.get(i++) != '\n' );
 				start = i;
@@ -595,39 +903,12 @@ public class Mummy extends JApplet {
 					else tb.put( ind, bt );
 				}
 			}
-			
-			List<Offset> 	off = null;
-			Sequence		seq = null;
-			if( offsetMap.containsKey(name) ) {
-				off = offsetMap.get(name);
-				Collections.sort( off );
-				int coff = checkLongestCons( off );
-				if( coff < off.size() ) {
-					Offset toff = off.get(coff);
-					int loff = toff.a - toff.b;
-					seq = new Sequence( name, tb, loff, coff, off );
-				}
-			}
-			if( seq == null ) seq = new Sequence( name, tb, 0, -1, off );
-			lseq.add( seq );
+		
+			Sequence seq = new Sequence( prefix+name, tb, 0, null );
+			retseq.add( seq );
 		}
 		
-		//Collections.sort( lseq );
-		
-		/*int c = 0;
-		for( i = 0; i < bb.limit(); i++ ) {
-			byte b = bb.get(i);
-			c++;
-			if( b == '\n' ) break;
-		}
-		i++;
-		for( ; i < bb.limit(); i++ ) {
-			byte b = bb.get(i);
-			if( b == '\n' ) c++;
-			else bb.put( i-c, b );
-		}*/
-		
-		return lseq;
+		return retseq;
 	}
 	
 	public int checkLongestCons( List<Offset>	offlist ) {
@@ -638,9 +919,20 @@ public class Mummy extends JApplet {
 			int subret = 0;
 			int lastcount = 0;
 			int prev = 0;
+			int	aprev = 0;
 			int i = 0;
+			int maxind = 0;
+			int maxval = 0;
 			for( Offset off : offlist ) {
-				if( off.b > prev ) {
+				int adiff = off.b - prev;
+				int bdiff = off.a - aprev;
+				
+				if( off.c > maxval ) {
+					maxval = off.c;
+					maxind = i;
+				}
+				
+				if( bdiff > 0 && bdiff > adiff-500 && bdiff < adiff+500 ) {
 					count++;
 				} else {
 					if( count > lastcount ) {
@@ -653,7 +945,12 @@ public class Mummy extends JApplet {
 				}
 				
 				prev = off.b;
+				aprev = off.a;
 				i++;
+			}
+			
+			if( lastcount <= 1 ) {
+				ret = maxind;
 			}
 		}
 		

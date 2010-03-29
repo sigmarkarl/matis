@@ -1,6 +1,7 @@
 package org.simmi;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Rectangle;
@@ -28,7 +29,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -55,6 +55,7 @@ import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
+import javax.swing.JTable;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.HyperlinkEvent;
@@ -64,6 +65,7 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
 
 public class RecipePanel extends JSplitPane {
@@ -77,10 +79,11 @@ public class RecipePanel extends JSplitPane {
 	char[]				cbuf = new char[2048];
 	
 	public class RecipeIngredient {
-		String	stuff;
-		float	measure;
-		String	unit;
+		String				stuff;
+		float				measure;
+		String				unit;
 		Map<String,String>	values;
+		JComboBox			cellEdit;
 		
 		public RecipeIngredient( String stuff, float measure, String unit ) {
 			this.stuff = stuff;
@@ -110,6 +113,17 @@ public class RecipePanel extends JSplitPane {
 				
 				if( store != null ) values = skmt.get( store );
 			}
+			
+			cellEdit = new JComboBox();
+			
+			cellEdit.addItem("g");
+			if( values != null ) {
+				for( String str : values.keySet() ) {
+					cellEdit.addItem( str + " ("+values.get(str)+")" );
+				}
+			}
+			
+			cellEdit.setSelectedItem( unit );
 		}
 		
 		public float getValue( float val ) {
@@ -120,8 +134,9 @@ public class RecipePanel extends JSplitPane {
 				int n = ru.indexOf(")");
 				if (n > f && f != -1) {
 					String subbi = ru.substring(f + 1, n);
-					if (subbi.endsWith("g"))
+					if( subbi.endsWith("g") ) {
 						subbi = subbi.substring(0, subbi.length() - 1);
+					}
 
 					float fl = 0.0f;
 					try {
@@ -150,6 +165,14 @@ public class RecipePanel extends JSplitPane {
 		public Recipe( String name, String group, String author ) {
 			this.name = name;
 			this.group = group;
+			this.author = author;
+			
+			ingredients = new ArrayList<RecipeIngredient>();
+		}
+		
+		public Recipe( String author ) {
+			this.name = "Velja nafn";
+			this.group = "Velja hóp";
 			this.author = author;
 			
 			ingredients = new ArrayList<RecipeIngredient>();
@@ -481,7 +504,7 @@ public class RecipePanel extends JSplitPane {
 		
 		AbstractAction nu = new AbstractAction("Nýja uppskrift") {
 			public void actionPerformed(ActionEvent e) {
-				recipes.add( new Recipe("Velja nafn", "Velja hóp", fp.currentUser) );
+				recipes.add( new Recipe(fp.currentUser) );
 				recipeTable.revalidate();
 				recipeTable.repaint();
 				
@@ -646,11 +669,12 @@ public class RecipePanel extends JSplitPane {
 						ri.measure = (Float)arg0;
 					} else if( arg0 != null ) {
 						ri.unit = arg0.toString();
+						
+						ri.cellEdit.setSelectedItem( ri.unit );
 					}
 					try {
 						rep.save();
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}
@@ -767,6 +791,7 @@ public class RecipePanel extends JSplitPane {
 		};
 		popup.add( du );
 		
+		recipeDetailTable.setRowHeight( 20 );
 		recipeDetailTable.addKeyListener( new KeyListener() {
 			public void keyTyped(KeyEvent e) {
 				
@@ -845,7 +870,25 @@ public class RecipePanel extends JSplitPane {
 			@Override
 			public void editingCanceled(ChangeEvent e) {}
 		});*/
+		
+		TableCellRenderer renderer = new TableCellRenderer() {
+			@Override
+			public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+				int rr = recipeTable.getSelectedRow();
+				if( rr != -1 ) {
+					int rrr = recipeTable.convertRowIndexToModel( rr );
+					Recipe r = recipes.get( rrr );
+					
+					rr = recipeDetailTable.convertRowIndexToModel( row );
+					RecipeIngredient rip = r.ingredients.get( rr );
+					return rip.cellEdit;
+				}
+				return null;
+			}
+		};
+		
 		recipeDetailTable.setDefaultEditor( String.class, cellEditor );
+		//recipeDetailTable.setDefaultRenderer( String.class, renderer );
 		//recipeDetailTable.setce
 		
 		final JEditorPane	recipeInfo = new JEditorPane();
@@ -858,16 +901,12 @@ public class RecipePanel extends JSplitPane {
 					try {
 						currentRecipe.save();
 					} catch (IOException e1) {
-						// TODO Auto-generated catch block
 						e1.printStackTrace();
 					}
 				}
 			}
 
-			public void focusGained(FocusEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void focusGained(FocusEvent e) {}
 		});
 		
 		recipeInfo.addHyperlinkListener( new HyperlinkListener() {
@@ -950,13 +989,17 @@ public class RecipePanel extends JSplitPane {
 						table.scrollRectToVisible( visRect );
 					}
 					
-					RecipeIngredient rip = currentRecipe.ingredients.get(ri);
 					clearCombo = r;
 					skmtCombo.removeAllItems();
-					if( rip.values != null ) {
-						for( String str : rip.values.keySet() ) {
-							skmtCombo.addItem( str + " ("+rip.values.get(str)+")" );
+					if( currentRecipe != null && currentRecipe.ingredients != null ) {
+						RecipeIngredient rip = currentRecipe.ingredients.get(ri);
+						if( rip.values != null ) {
+							for( String str : rip.values.keySet() ) {
+								skmtCombo.addItem( str + " ("+rip.values.get(str)+")" );
+							}
 						}
+					} else {
+						System.err.println("somethingsomething null");
 					}
 					skmtCombo.addItem("g");
 				}
@@ -967,6 +1010,7 @@ public class RecipePanel extends JSplitPane {
 		JScrollPane recipeDetailScroll = new JScrollPane( recipeDetailTable );
 		recipeDetailTable.setModel( recipeDetailModel );
 		recipeDetailTable.setDropMode2( DropMode.INSERT_ROWS );
+		recipeDetailTable.getColumn("Eining").setCellRenderer( renderer );
 		DropTarget dropTarget = new DropTarget() {
 			public boolean isActive() {
 				return true;
@@ -1010,38 +1054,41 @@ public class RecipePanel extends JSplitPane {
 						obj = dtde.getTransferable().getTransferData( DataFlavor.stringFlavor );
 						if( obj != null ) {
 							int r = recipeTable.getSelectedRow();
+							Recipe rep = null;
 							if( r >= 0 && r < recipes.size() ) {
-								Recipe rep = recipes.get(r);
-								
+								rep = recipes.get(r);								
 								rep.destroy();
+							} else {
+								rep = new Recipe( fp.currentUser );
+								recipes.add( rep );
 								
-								String[] lines = obj.toString().split("\\n");
-								for( String line : lines ) {
-									String[] vals = line.split("\\t");
-									rep.ingredients.add( new RecipeIngredient( vals[0], 100, "g" ) );
-								}
-								recipeDetailTable.revalidate();
-								recipeDetailTable.repaint();
-								
-								rep.save();
+								int ri = recipes.size()-1;
+								recipeTable.tableChanged( new TableModelEvent( recipeTable.getModel() ) );
+								theTable.tableChanged( new TableModelEvent( theTable.getModel() ) );
+								theLeftTable.tableChanged( new TableModelEvent( theLeftTable.getModel() ) );
+								recipeTable.setRowSelectionInterval(ri, ri);
 							}
+								
+							String[] lines = obj.toString().split("\\n");
+							for( String line : lines ) {
+								String[] vals = line.split("\\t");
+								rep.ingredients.add( new RecipeIngredient( vals[0], 100, "g" ) );
+							}
+							recipeDetailTable.revalidate();
+							recipeDetailTable.repaint();
+							
+							rep.save();
 						}
 					} catch (UnsupportedFlavorException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}
 
-				public void dropActionChanged(DropTargetDragEvent dtde) {
-					
-				}
-				
+				public void dropActionChanged(DropTargetDragEvent dtde) {}
 			});
 		} catch (TooManyListenersException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 		
