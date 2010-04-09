@@ -35,14 +35,14 @@ public class GraphPanel extends JTabbedPane {
 	boolean			hringur = false;
 	
 	JCompatTable	table, leftTable, topTable;
-	TableModel	topModel;
+	TableModel		topModel;
 	
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 8830688610876166912L;
 
-	public float stuffYou( String whr ) {
+	public double stuffYou( String whr ) {
 		int r = leftTable.getSelectedRow();
 		if( r >= 0 && r < leftTable.getRowCount() ) {
 			//r = leftTable.convertRowIndexToModel(r);
@@ -51,10 +51,10 @@ public class GraphPanel extends JTabbedPane {
 		return -1.0f;
 	}
 	
-	public float stuffYou( int row, String whr ) {
-		float f = -1.0f;
+	public double stuffYou( int row, String whr ) {
+		double f = -1.0;
 		
-		TableColumn	tc = null;
+		/*TableColumn	tc = null;
 		try {
 			tc = table.getColumn(whr);
 		} catch( Exception e ) {
@@ -62,15 +62,16 @@ public class GraphPanel extends JTabbedPane {
 		}
 		
 		if( tc != null ) {
-			int col = tc.getModelIndex();
-		/*String val = (String)topModel.getValueAt(0, col);
+			int col = tc.getModelIndex();*/
+		int col = 0;
+		String val = (String)topModel.getValueAt(0, col);
 		while( !(val != null && val.contains(whr)) ) {
 			col++;
 			if( col < topModel.getColumnCount() ) {
 				val = (String)topModel.getValueAt(0, col);
 			} else break;
 		}
-		if( col < model.getColumnCount() ) {*/
+		if( col < table.getModel().getColumnCount() ) {
 			Float ff = (Float)table.getValueAt(row, col);
 			if( ff != null ) f = ff;
 		} else {
@@ -118,26 +119,43 @@ public class GraphPanel extends JTabbedPane {
 						g2.drawString( sval, 10, this.getHeight()/25 );
 					}
 					
+					float	wgh = 100.0f;
+					int rrow = leftTable.convertRowIndexToModel(row);
+					if( rrow >= stuffsize - 2 ) {
+						int i = rrow - (stuffsize-2);
+						Recipe rep = rpsPanel.recipes.get(i);
+						wgh = rep.getWeight();
+					}
+					
+					ps.flush();
+					baos.reset();
+					ps.printf( "%.1f %s", wgh, "g" );
+					String wghstr = baos.toString();
+					
 					String enStr = "";
 					if( lang.equals("IS") ) {
-						enStr = "Orka (í 100g)";
+						enStr = "Orka (í "+wghstr+")";
 					} else {
-						enStr = "Energy (in 100g)";
+						enStr = "Energy (in "+wghstr+")";
 					}
 					g2.drawString( enStr, 10, (int)(this.getHeight()/13.7) );
 							
-					float alc = 0.0f;
-					float prt = 0.0f;
-					float cbh = 0.0f;
-					float fat = 0.0f;
-					float fib = 0.0f;
+					double alc = 0.0;
+					double prt = 0.0;
+					double cbh = 0.0;
+					double fat = 0.0;
+					double fib = 0.0;
+					double enc = 0.0;
+					double enj = 0.0;
 					
 					if( lang.equals("IS") ) {
 						alc = stuffYou(row, "Alkóhól");
-						prt = stuffYou(row, "Prótein, alls");
-						cbh = stuffYou(row, "Kolvetni, alls");
-						fat = stuffYou(row, "Fita, alls");
+						prt = stuffYou(row, "Prótein");
+						cbh = stuffYou(row, "Kolvetni");
+						fat = stuffYou(row, "Fita");
 						fib = stuffYou(row, "Trefjaefni");
+						enj = stuffYou(row, "Orka J");
+						enc = stuffYou(row, "Orka cal");
 					} else {
 						alc = stuffYou(row, "ALC");
 						prt = stuffYou(row, "PROCNT");
@@ -151,13 +169,14 @@ public class GraphPanel extends JTabbedPane {
 					double cbho = cbh*17.0;
 					double fato = fat*37.0;
 					double fibo = fib*8.0;
-					double f = (alco + prto + cbho + fato + fibo)*100.0;
+					double f = enj; //(alco + prto + cbho + fato + fibo)*100.0;
+					f *= 100.0;
 					
 					if( lang.equals("IS") ) {
 						if( f > 0 ) {
 							double fv = Math.round( f )/100.0;
 							
-							double fcal = alc*7.0 + prt*4.0 + cbh*4.0 + fat*9.0 + 2.0*fib; 
+							double fcal = enc;//alc*7.0 + prt*4.0 + cbh*4.0 + fat*9.0 + 2.0*fib; 
 							fcal *= 100.0;
 							//double fcal = f/4.184;
 							double fvcal = Math.round( fcal )/100.0;
@@ -176,7 +195,7 @@ public class GraphPanel extends JTabbedPane {
 							g2.drawString(kjStr, 15+strw, this.getHeight()/9 );
 						}
 					} else {
-						float ff = stuffYou( row, "ENERC_KJ" );
+						double ff = stuffYou( row, "ENERC_KJ" );
 						if( ff > 0 ) {
 							g2.drawString(ff+" kJ", 10, this.getHeight()/10 );
 						}
@@ -187,7 +206,7 @@ public class GraphPanel extends JTabbedPane {
 						}
 					}
 					
-					float total = alc + prt + cbh + fat + fib;
+					double total = alc + prt + cbh + fat + fib;
 					
 					if( total > 0 ) {
 						String title = GraphPanel.this.getTitleAt( GraphPanel.this.getSelectedIndex() );
@@ -353,18 +372,22 @@ public class GraphPanel extends JTabbedPane {
 						g2.drawString( sval, 10, this.getHeight()/25 );
 					}
 					
-					float alc = 0.0f;
-					float prt = 0.0f;
-					float cbh = 0.0f;
-					float fat = 0.0f;
-					float fib = 0.0f;
+					double alc = 0.0;
+					double prt = 0.0;
+					double cbh = 0.0;
+					double fat = 0.0;
+					double fib = 0.0;
+					double enj = 0.0;
+					double enc = 0.0;
 					
 					if( lang.equals("IS") ) {
 						alc = stuffYou(row, "Alkóhól");
-						prt = stuffYou(row, "Prótein, alls");
-						cbh = stuffYou(row, "Kolvetni, alls");
-						fat = stuffYou(row, "Fita, alls");
+						prt = stuffYou(row, "Prótein");
+						cbh = stuffYou(row, "Kolvetni");
+						fat = stuffYou(row, "Fita");
 						fib = stuffYou(row, "Trefjaefni");
+						enj = stuffYou(row, "Orka J");
+						enc = stuffYou(row, "Orka cal");
 					} else {
 						alc = stuffYou(row, "ALC");
 						prt = stuffYou(row, "PROCNT");
@@ -374,7 +397,7 @@ public class GraphPanel extends JTabbedPane {
 					}
 					double sum = alc + prt + cbh + fat + fib;
 					
-					double	wgh = 100.0;
+					double	wgh = 100.0f;
 					int rrow = leftTable.convertRowIndexToModel(row);
 					//int stuffsize = leftTable.getModel().getRowCount();
 					if( rrow >= stuffsize - 2 ) {
@@ -383,11 +406,16 @@ public class GraphPanel extends JTabbedPane {
 						wgh = rep.getWeight();
 					}
 					
+					ps.flush();
+					baos.reset();
+					ps.printf( "%.1f %s", wgh, "g" );
+					String wghstr = baos.toString();
+					
 					String enStr = "";
 					if( lang.equals("IS") ) {
-						enStr = "Orka (í "+wgh+"g)";
+						enStr = "Orka (í "+wghstr+")";
 					} else {
-						enStr = "Energy (in "+wgh+"g)";
+						enStr = "Energy (in "+wghstr+")";
 					}
 					g2.drawString( enStr, 10, (int)(this.getHeight()/13.7) );
 					
@@ -396,13 +424,14 @@ public class GraphPanel extends JTabbedPane {
 					double cbho = cbh*17.0;
 					double fato = fat*37.0;
 					double fibo = fib*8.0;
-					double f = (prto + cbho + fato + alco + fibo)*100.0;
+					double f = enj; //(prto + cbho + fato + alco + fibo)*100.0;
+					f *= 100.0;
 					
 					if( lang.equals("IS") ) {
 						if( f > 0 ) {
 							double fv = Math.round( f )/100.0;
 							//double fcal = f/4.184;
-							double fcal = alc*7.0 + prt*4.0 + cbh*4.0 + fat*9.0 + 2.0*fib;
+							double fcal = enc; //alc*7.0 + prt*4.0 + cbh*4.0 + fat*9.0 + 2.0*fib;
 							fcal *= 100.0;
 							double fvcal = Math.round( fcal )/100.0;
 							
@@ -420,7 +449,7 @@ public class GraphPanel extends JTabbedPane {
 							g2.drawString(kjStr, 15+strw, this.getHeight()/9 );
 						}
 					} else {
-						float ff = stuffYou( row, "ENERC_KJ" );
+						double ff = stuffYou( row, "ENERC_KJ" );
 						if( ff > 0 ) {
 							g2.drawString(ff+" kJ", 10, this.getHeight()/10 );
 						}
@@ -431,7 +460,7 @@ public class GraphPanel extends JTabbedPane {
 						}
 					}
 					
-					float total = alc + prt + cbh + fat + fib;
+					double total = alc + prt + cbh + fat + fib;
 					
 					if( total > 0 ) {
 						int w = this.getWidth();
@@ -680,7 +709,7 @@ public class GraphPanel extends JTabbedPane {
 		String[] comb;
 		String[] cnames;
 		if( lang.equals("IS") ) {
-			comb = new String[] {"Alkóhól", "Prótein, alls", "Kolvetni, alls", "Fita, alls", "Trefjaefni", "Steinefni, alls", "Vatn"};
+			comb = new String[] {"Alkóhól", "Prótein", "Kolvetni", "Fita", "Trefjaefni", "Steinefni", "Vatn"};
 			cnames = new String[] {"Alkóhól", "Prótein", "Kolvetni", "Fita", "Trefjaefni", "Steinefni", "Vatn"};
 		} else {
 			comb = new String[] {"Alcohol, ethyl", "Protein", "Carbohydrate, by difference", "Total lipid (fat)", "Dietary fiber", "Ash", "Water"};

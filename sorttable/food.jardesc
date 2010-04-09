@@ -11,17 +11,18 @@
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
+        <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{LinkedSplitPane.java"/>
         <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{RecipePanel.java"/>
         <file path="/sorttable/src/thsGroups.txt"/>
         <file path="/sorttable/src/smooth.png"/>
         <file path="/sorttable/src/matis.png"/>
         <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{DetailPanel.java"/>
-        <file path="/sorttable/src/skmt.txt"/>
         <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{VitaminPanel.java"/>
+        <file path="/sorttable/src/skmt.txt"/>
         <file path="/sorttable/src/du.png"/>
         <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{HabitsPanel.java"/>
-        <file path="/sorttable/src/rds.png"/>
         <file path="/sorttable/src/eu.png"/>
+        <file path="/sorttable/src/rds.png"/>
         <file path="/sorttable/src/food.png"/>
         <file path="/sorttable/src/org/simmi/rds.txt"/>
         <file path="/sorttable/src/sams.png"/>
@@ -34,8 +35,8 @@
         <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{Intro.java"/>
         <file path="/sorttable/src/vinir.png"/>
         <file path="/sorttable/src/Food.txt"/>
-        <file path="/sorttable/src/rdsage.txt"/>
         <file path="/sorttable/src/mat.png"/>
+        <file path="/sorttable/src/rdsage.txt"/>
         <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{SkifuGraph.java"/>
         <file path="/sorttable/src/Component.txt"/>
         <javaElement handleIdentifier="=sorttable/src&lt;org.simmi{SortTable.java"/>

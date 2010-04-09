@@ -117,13 +117,13 @@ public class DetailPanel extends JSplitPane {
 				return val;
 			}
 		} else {
-			float ret = 0.0f;
+			double ret = 0.0f;
 			int i = rowInd - (stuff.size()-2);
 			Recipe rep = recipes.get(i);
-			float tot = 0.0f;
+			double tot = 0.0f;
 			for (RecipeIngredient rip : rep.ingredients) {
 				int k = -1;
-				float div = 100.0f;
+				double div = 100.0f;
 				if (foodInd.containsKey(rip.stuff)) {
 					k = foodInd.get(rip.stuff);
 				} else {
@@ -146,14 +146,14 @@ public class DetailPanel extends JSplitPane {
 					//obj = stuff.get(k + 2);
 					Object val = getVal( k, colInd, stuff, foodInd, recipes ); //obj[rowIndex + 2];
 					if (val != null && val instanceof Float) {										
-						float f = rip.getValue( (Float)val ) / div;
+						double f = rip.getValue( (Float)val ) / div;
 						ret += f;
 					}
 				}
 			}
 			
-			if( ret != 0.0f ) {
-				return ret;
+			if( ret != 0.0 ) {
+				return (float)ret;
 			}
 		}
 		return null;
@@ -343,7 +343,7 @@ public class DetailPanel extends JSplitPane {
 					String ind = ngroupGroups.get( rowIndex );
 					if( ind.equals("1") ) {
 						String colVal = ngroupList.get( rowIndex );
-						if( colVal.equals("Fita, alls") || colVal.equals("Prótein, alls") || colVal.equals("Kolvetni, alls") || colVal.equals("Alkóhól") ) {
+						if( colVal.startsWith("Orka") || colVal.equals("Fita") || colVal.equals("Prótein") || colVal.equals("Kolvetni") || colVal.equals("Alkóhól") ) {
 							return "Orkuefni";
 						}
 					}
@@ -374,11 +374,18 @@ public class DetailPanel extends JSplitPane {
 					int rsel = leftTable.getSelectedRow();
 					if( rsel >= 0 && rsel < leftTable.getRowCount() ) {
 						int lsel = leftTable.convertRowIndexToModel( rsel );
-						return getVal( lsel, rowIndex, stuff, foodInd, recipes );
+						Object obj = getVal( lsel, rowIndex, stuff, foodInd, recipes );
+						if( obj != null && obj instanceof Float ) {
+							float ff = (Float)obj;
+							
+							ff = (float)( Math.floor( (double)ff*10 )/10.0 );
+							
+							return ff;
+						}
 					}
 				} else if( columnIndex == 4 ) {
 					String efni = ngroupList.get( rowIndex );
-					if( efni.equals("Fita, alls") ) {
+					if( efni.equals("Fita") ) {
 						String 	val = rdsp.getRds( "Orka - kcal" );
 						int		kcal = 0;
 						try {
@@ -390,7 +397,7 @@ public class DetailPanel extends JSplitPane {
 						double	d = kj*0.3;
 						double	g = d / 37.0;
 						return (float)(Math.floor(10.0*g)/10.0);
-					} else if( efni.equals("Prótein, alls") ) {
+					} else if( efni.equals("Prótein") ) {
 						String 	val = rdsp.getRds( "Orka - kcal" );
 						int		kcal = 0;
 						try {
@@ -402,7 +409,7 @@ public class DetailPanel extends JSplitPane {
 						double	d = kj*0.15;
 						double	g = d / 17.0;
 						return (float)(Math.floor(10.0*g)/10.0);
-					} else if( efni.equals("Kolvetni, alls") ) {
+					} else if( efni.equals("Kolvetni") ) {
 						String 	val = rdsp.getRds( "Orka - kcal" );
 						int		kcal = 0;
 						try {
@@ -468,10 +475,7 @@ public class DetailPanel extends JSplitPane {
 				return false;
 			}
 	
-			public void removeTableModelListener(TableModelListener l) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void removeTableModelListener(TableModelListener l) {}
 	
 			public void setValueAt(Object value, int rowIndex, int columnIndex) {
 				if( columnIndex == 5 ) showColumn.set( rowIndex, (Boolean)value );

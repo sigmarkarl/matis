@@ -82,17 +82,18 @@ public class SkifuGraph extends JComponent {
 		float f = 0.0f;
 		
 		//System.err.println(whr);
-		int col = table.getColumn(whr).getModelIndex(); //getValueAt(0, col);
-		/*while( !(val != null && val.equals(whr)) && col < topTable.getColumnCount()-1 ) {
+		int col = 0;
+		Object val = topTable.getModel().getValueAt(0, col); //getValueAt(0, col);
+		while( !(val != null && val.equals(whr)) && col < topTable.getColumnCount()-1 ) {
 			col++;
-			val = topTable.getValueAt(0, col);
+			val = topTable.getModel().getValueAt(0, col);
 		}
-		if( col < table.getColumnCount()-1 ) {*/
-		Float ff = (Float)table.getValueAt(row, col);
-		if( ff != null ) {
-			f = ff;
+		if( col < table.getColumnCount()-1 ) {
+			Float ff = (Float)table.getValueAt(row, col);
+			if( ff != null ) {
+				f = ff;
+			}
 		}
-		//}
 		
 		return f;
 	}

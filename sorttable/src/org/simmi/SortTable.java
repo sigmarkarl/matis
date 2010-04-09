@@ -245,10 +245,20 @@ public class SortTable extends JApplet {
 					return s1[0].compareTo(s2[0]);
 				}
 			});
-
+			
+			ngroupMap.put( "0200", i++ );
+			ngroupList.add( "Orka cal" );
+			ngroupGroups.add( "1" );
+			nutList[0].add( "Energy" );
+			nutList[1].add( "kJ" );
+			ngroupMap.put( "0201", i++ );
+			ngroupList.add( "Orka J" );
+			ngroupGroups.add( "1" );
+			nutList[0].add( "Energy" );
+			nutList[1].add( "kcal" );
 			for (String[] vals : idList) {
 				ngroupMap.put(vals[0], i++);
-				ngroupList.add(vals[1]);
+				ngroupList.add( vals[1].replace(", alls", "") );
 				ngroupGroups.add(vals[2]);
 				nutList[0].add(vals[3]);
 				nutList[1].add(vals[4]);
@@ -388,6 +398,46 @@ public class SortTable extends JApplet {
 								}
 								line = br.readLine();
 							}
+						}
+						
+						int poffset = ngroupMap.get("0001");
+						int foffset = ngroupMap.get("0002");
+						int koffset = ngroupMap.get("0010");
+						int aoffset = ngroupMap.get("0014");
+						int toffset = ngroupMap.get("0013");
+						for( int i = 2; i < result.size(); i++ ) {
+							Object[] objs = result.get(i);
+							float jres = 0.0f;
+							float calres = 0.0f;
+							if( objs[2 + aoffset] != null ) {
+								Float f = (Float)objs[2+aoffset];
+								jres += 29.0f*f;
+								calres += 7.0f*f;
+							}
+							if( objs[2 + poffset] != null ) {
+								Float f = (Float)objs[2+poffset];
+								jres += 17.0f*f;
+								calres += 4.0f*f;
+							}
+							if( objs[2 + koffset] != null ) {
+								Float f = (Float)objs[2+koffset];
+								jres += 17.0f*f;
+								calres += 4.0f*f;
+							}
+							if( objs[2 + foffset] != null ) {
+								Float f = (Float)objs[2+foffset];
+								jres += 37.0f*f;
+								calres += 9.0f*f;
+							}
+							if( objs[2 + toffset] != null ) {
+								Float f = (Float)objs[2+toffset];
+								jres += 8.0*f;
+								calres += 2.0f*f;
+							}
+							
+							//System.err.println( objs[0] + "  " + jres + "  " + calres );
+							objs[2] = jres;
+							objs[3] = calres;
 						}
 
 						System.err.println("issgem loaded");
@@ -1394,9 +1444,9 @@ public class SortTable extends JApplet {
 			}
 
 			public Object getValueAt(int rowIndex, int columnIndex) {
-				Object[] obj = stuff.get(rowIndex + 1);
+				//Object[] obj = stuff.get(rowIndex);
 				int realColumnIndex = detail.convertIndex(columnIndex);
-				return obj[realColumnIndex + 2];
+				return ngroupList.get(realColumnIndex); //obj[realColumnIndex + 2];
 			}
 
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
@@ -1578,8 +1628,11 @@ public class SortTable extends JApplet {
 
 			public String getColumnName(int columnIndex) {
 				int realColumnIndex = detail.convertIndex(columnIndex);
-				if (realColumnIndex != -1)
-					return ngroupList.get(realColumnIndex);
+				if (realColumnIndex != -1) {
+					Object[] obj = stuff.get(1);
+					return (String)obj[2+realColumnIndex];
+					//return ngroupList.get(realColumnIndex);
+				}
 				return null;
 			}
 
@@ -1791,7 +1844,7 @@ public class SortTable extends JApplet {
 			tabbedPane.addTab("Uppskriftir", uppicon, recipe);
 			if (fp != null)
 				tabbedPane.addTab("Vinir", vinicon, fp);
-			tabbedPane.addTab("RDS", rdsicon, rdsPanel);
+			//tabbedPane.addTab("RDS", rdsicon, rdsPanel);
 			tabbedPane.addTab("Máltíðir", maticon, eat);
 			//tabbedPane.addTab("Mataræði og Hreyfing", maticon, eat);
 			//tabbedPane.addTab("Innkaup og kostnaður", buy);
@@ -1806,7 +1859,7 @@ public class SortTable extends JApplet {
 			tabbedPane.addTab("Recipes", uppicon, recipe);
 			if (fp != null)
 				tabbedPane.addTab("Friends", vinicon, fp);
-			tabbedPane.addTab("Rds", rdsicon, rdsPanel);
+			//tabbedPane.addTab("Rds", rdsicon, rdsPanel);
 			tabbedPane.addTab("Eating and training", maticon, eat);
 			tabbedPane.addTab("Cost of buying", buy);
 
