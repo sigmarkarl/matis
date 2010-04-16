@@ -336,15 +336,15 @@ public class Order extends JApplet {
 	
 	public class Vara {
 		String  e_Nafn;
-		String	Framleiðandi;
-		String	Birgi;
+		String	e_Framleiðandi;
+		String	e_Birgi;
 		String	e_Cat;
 		String	_User;
 		
 		public Vara( String name, String prdc, String selr, String cat, String user ) {
 			this.e_Nafn = name;
-			this.Framleiðandi = prdc;
-			this.Birgi = selr;
+			this.e_Framleiðandi = prdc;
+			this.e_Birgi = selr;
 			this.e_Cat = cat;
 			this._User = user;
 		}
@@ -549,7 +549,7 @@ public class Order extends JApplet {
 	}*/
 	
 	public boolean updateVara( Vara v ) throws SQLException {
-		String sql = "update [order].[dbo].[Vara] set [cat] = '"+v.e_Cat+"' where [name] = '"+v.e_Nafn+"' and [framl] = '"+v.Framleiðandi+"'";
+		String sql = "update [order].[dbo].[Vara] set [cat] = '"+v.e_Cat+"' where [name] = '"+v.e_Nafn+"' and [framl] = '"+v.e_Framleiðandi+"'";
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
 		boolean				b = ps.execute();
@@ -1107,7 +1107,7 @@ public class Order extends JApplet {
 				try {
 					Vara v = newItem();
 					if( v != null ) {
-						panta( v.e_Nafn, v.Birgi, v.e_Cat );
+						panta( v.e_Nafn, v.e_Birgi, v.e_Cat );
 						ptable.tableChanged( new TableModelEvent( pmodel ) );
 						table.tableChanged( new TableModelEvent( model ) );
 					}
@@ -1488,6 +1488,20 @@ public class Order extends JApplet {
 		rtable.setModel( rmodel );
 		ktable.setAutoCreateRowSorter( true );
 		ktable.setModel( kmodel );
+		
+		JComboBox	veditcombo = new JComboBox();
+		veditcombo.setEditable( true );
+		for( String citem : comboOptions ) {
+			veditcombo.addItem( citem );
+		}
+		table.getColumn("Framleiðandi").setCellEditor( new DefaultCellEditor( veditcombo ) );
+		
+		JComboBox	beditcombo = new JComboBox();
+		beditcombo.setEditable( true );
+		for( String citem : pcomboOptions ) {
+			beditcombo.addItem( citem );
+		}
+		table.getColumn("Birgi").setCellEditor( new DefaultCellEditor( beditcombo ) );
 		
 		if( myVars.size() > 0 ) {
 			ycombo.setSelectedItem("Mínar vörur");
@@ -2096,7 +2110,7 @@ public class Order extends JApplet {
 		Vara v = queryVara();
 		
 		if( v != null ) {
-			String ord = "'"+v.e_Nafn+"','"+v.Framleiðandi+"','"+v.Birgi+"','"+v.e_Cat+"','"+v._User+"'";
+			String ord = "'"+v.e_Nafn+"','"+v.e_Framleiðandi+"','"+v.e_Birgi+"','"+v.e_Cat+"','"+v._User+"'";
 			String sql = "insert into [order].[dbo].[Vara] values ("+ord+")";
 			
 			PreparedStatement 	ps = con.prepareStatement(sql);
@@ -2109,21 +2123,21 @@ public class Order extends JApplet {
 				String str = null;
 				for( i = 0; i < combo.getItemCount(); i++ ) {
 					str = (String)combo.getItemAt(i);
-					if( str.compareTo(v.Framleiðandi) >= 0 ) break;
+					if( str.compareTo(v.e_Framleiðandi) >= 0 ) break;
 				}
 					
-				if( !str.equals(v.Framleiðandi) ) {
-					combo.insertItemAt(v.Framleiðandi, i);
+				if( !str.equals(v.e_Framleiðandi) ) {
+					combo.insertItemAt(v.e_Framleiðandi, i);
 				}
 				
 				str =null;
 				for( i = 0; i < pcombo.getItemCount(); i++ ) {
 					str = (String)pcombo.getItemAt(i);
-					if( str.compareTo(v.Birgi) >= 0 ) break;
+					if( str.compareTo(v.e_Birgi) >= 0 ) break;
 				}
 				
-				if( !str.equals(v.Birgi) ) {
-					pcombo.insertItemAt(v.Birgi, i);
+				if( !str.equals(v.e_Birgi) ) {
+					pcombo.insertItemAt(v.e_Birgi, i);
 				}
 				
 				int mr = model.getRowCount()-1;
