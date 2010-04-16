@@ -819,7 +819,8 @@ public class Mummy extends JApplet {
 		//final List<Sequence> lseq1 = load( "/home/sigmar/fass/wholeHB27.fas", null );
 		//final List<Sequence> lseq2 = load( "/home/sigmar/fass/Strain346AllContigs.fas", "/home/sigmar/fass/out" );
 		
-		final List<Sequence> lseq2 = load( "/home/sigmar/fass/assembly1/454LargeContigs.fna", "/home/sigmar/fass/assembly2/454LargeContigs.fna", "/home/sigmar/fass/a12", "/home/sigmar/fass/a21" );
+		//final List<Sequence> lseq2 = load( "/home/sigmar/fass/assembly1/454LargeContigs.fna", "/home/sigmar/fass/assembly2/454LargeContigs.fna", "/home/sigmar/fass/a12", "/home/sigmar/fass/a21" );
+		final List<Sequence> lseq2 = load( "/home/sigmar/fass/assembly2/454LargeContigs.fna", "/home/sigmar/fass/assembly3/454LargeContigs.fna", "/home/sigmar/fass/a23", "/home/sigmar/fass/a32" );
 		
 		//lseq1.addAll( lseq2 );
 		seqpane = new SequencePane( lefttable, lseq2, null );

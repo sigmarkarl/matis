@@ -106,7 +106,11 @@ public class DetailPanel extends JSplitPane {
 		}
 	}
 	
-	public Object getVal( int rowInd, int colInd, final List<Object[]> stuff, final Map<String,Integer> foodInd, final List<Recipe> recipes ) {
+	public static Float getVal( int rowInd, int colInd, final List<Object[]> stuff, final Map<String,Integer> foodInd, final List<Recipe> recipes ) {
+		return getVal(rowInd, colInd, stuff, foodInd, recipes, true);
+	}
+	
+	public static Float getVal( int rowInd, int colInd, final List<Object[]> stuff, final Map<String,Integer> foodInd, final List<Recipe> recipes, boolean perHundredg ) {
 		Object[] obj = null;
 		if( rowInd < stuff.size()-2 ) {
 			obj = stuff.get(rowInd+2);
@@ -114,46 +118,59 @@ public class DetailPanel extends JSplitPane {
 			
 			//Object val = model.getValueAt( lsel, rowIndex );
 			if( val instanceof Float ) {
-				return val;
+				return (Float)val;
 			}
 		} else {
 			double ret = 0.0f;
 			int i = rowInd - (stuff.size()-2);
-			Recipe rep = recipes.get(i);
-			double tot = 0.0f;
-			for (RecipeIngredient rip : rep.ingredients) {
-				int k = -1;
-				double div = 100.0f;
-				if (foodInd.containsKey(rip.stuff)) {
-					k = foodInd.get(rip.stuff);
-				} else {
-					int 	ri = 0;
-					Recipe 	rp = null;
-					for( Recipe r : recipes ) {
-						if( rep != r && rip.stuff.equals( r.name + " - " + r.author ) ) {
-							rp = r;
-							break;
+			if( i < recipes.size() ) {
+				Recipe rep = recipes.get(i);
+				double tot = 0.0f;
+				for (RecipeIngredient rip : rep.ingredients) {
+					int k = -1;
+					double div = 100.0f;
+					if (foodInd.containsKey(rip.stuff)) {
+						k = foodInd.get(rip.stuff);
+					} else {
+						int 	ri = 0;
+						Recipe 	rp = null;
+						for( Recipe r : recipes ) {
+							String rname = r.name + " - " + r.author;
+							if( rep != r && rip.stuff.equals( rname ) ) {
+								rp = r;
+								break;
+							}
+							ri++;
 						}
-						ri++;
+						if( ri < recipes.size() ) {
+							k = stuff.size()-2+ri;
+							//if( perHundredg ) 
+								div = rp.getWeight();
+						}
 					}
-					if( ri < recipes.size() ) {
-						k = stuff.size()-2+ri;
-						div = rp.getWeight();
+					
+					if( k != -1 ) {
+						//obj = stuff.get(k + 2);
+						Object val = getVal( k, colInd, stuff, foodInd, recipes ); //obj[rowIndex + 2];
+						if (val != null && val instanceof Float) {										
+							double f;
+							//if( perHundredg ) 
+							f = rip.getValue( (Float)val ) / div;
+							//else f = (Float)val;
+							ret += f;
+						}
 					}
 				}
 				
-				if( k != -1 ) {
-					//obj = stuff.get(k + 2);
-					Object val = getVal( k, colInd, stuff, foodInd, recipes ); //obj[rowIndex + 2];
-					if (val != null && val instanceof Float) {										
-						double f = rip.getValue( (Float)val ) / div;
-						ret += f;
+				if( ret != 0.0 ) {
+					if( perHundredg ) {
+						return (float)ret;
+					} else {
+						return (float)( (ret * 100.0) / rep.getWeight() );
 					}
 				}
-			}
-			
-			if( ret != 0.0 ) {
-				return (float)ret;
+			} else {
+				System.err.println( "outofbounds" );
 			}
 		}
 		return null;

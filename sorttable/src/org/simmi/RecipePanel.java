@@ -74,9 +74,40 @@ public class RecipePanel extends JSplitPane {
 	Map<String,Integer>	foodInd;
 	FriendsPanel		fp;
 	Map<String,Map<String,String>> skmt = new HashMap<String,Map<String,String>>();
+	Set<String>			allskmt = new HashSet<String>();
 	JComboBox 			skmtCombo;
 	int					clearCombo = -1;
 	char[]				cbuf = new char[2048];
+	
+	public static Map<String,String>	getUnitVal( String stuff, Map<String,Map<String,String>> skmt ) {
+		Map<String,String>	values = null;
+		
+		if( skmt.containsKey( stuff.toLowerCase() ) ) {
+			values = skmt.get( stuff.toLowerCase() );
+		} else {
+			String store = null;
+			int max = 0;
+			
+			List<String> pars = Arrays.asList( stuff.toLowerCase().split("[, ]+") );
+			for( String str : skmt.keySet() ) {
+				List<String> vals = Arrays.asList( str.split("[, ]+") );
+				
+				int count = 0;
+				for( String a : pars ) {
+					if( vals.contains(a) ) count++;
+				}
+				
+				if( count > max ) {
+					max = count;
+					store = str;
+				}
+			}
+			
+			if( store != null ) values = skmt.get( store );
+		}
+		
+		return values;
+	}
 	
 	public class RecipeIngredient {
 		String				stuff;
@@ -90,29 +121,7 @@ public class RecipePanel extends JSplitPane {
 			this.measure = measure;
 			this.unit = unit;
 			
-			if( skmt.containsKey( stuff.toLowerCase() ) ) {
-				values = skmt.get( stuff.toLowerCase() );
-			} else {
-				String store = null;
-				int max = 0;
-				
-				List<String> pars = Arrays.asList( stuff.toLowerCase().split("[, ]+") );
-				for( String str : skmt.keySet() ) {
-					List<String> vals = Arrays.asList( str.split("[, ]+") );
-					
-					int count = 0;
-					for( String a : pars ) {
-						if( vals.contains(a) ) count++;
-					}
-					
-					if( count > max ) {
-						max = count;
-						store = str;
-					}
-				}
-				
-				if( store != null ) values = skmt.get( store );
-			}
+			values = getUnitVal( stuff, skmt );
 			
 			cellEdit = new JComboBox();
 			
@@ -263,6 +272,8 @@ public class RecipePanel extends JSplitPane {
 						String val = aspl[1];
 						if( !str.equals(subspl[subspl.length-1]) ) val+="g";
 						var.put(aspl[0], val);
+						
+						allskmt.add( aspl[0] + " ("+val+")" );
 					}
 				}
 				skmt.put(split[0].toLowerCase(), var);
@@ -476,7 +487,6 @@ public class RecipePanel extends JSplitPane {
 				try {
 					fillSkmt();
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -780,10 +790,8 @@ public class RecipePanel extends JSplitPane {
 							JOptionPane.showMessageDialog(RecipePanel.this, "Vinir hafa fengið uppskriftir");
 						} else JOptionPane.showMessageDialog(RecipePanel.this, "Engar uppskriftir valdar");
 					} catch (MalformedURLException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				} else 	JOptionPane.showMessageDialog(RecipePanel.this, "Engir vinir valdir");
@@ -1001,6 +1009,9 @@ public class RecipePanel extends JSplitPane {
 					} else {
 						System.err.println("somethingsomething null");
 					}
+					skmtCombo.addItem("g");
+				} else {
+					skmtCombo.removeAllItems();
 					skmtCombo.addItem("g");
 				}
 			}

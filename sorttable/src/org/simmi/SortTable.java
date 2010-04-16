@@ -109,11 +109,11 @@ public class SortTable extends JApplet {
 	MySorter leftTableSorter;
 	MySorter currentSorter;
 
-	static List<Object[]> stuff = null;
+	static List<Object[]> 				stuff = null;
 	// List<Object[]> header;
-	static Map<String, Integer> ngroupMap;
-	static List<String> ngroupList;
-	static List<String> ngroupGroups;
+	static Map<String, Integer> 		ngroupMap;
+	static List<String> 				ngroupList;
+	static List<String> 				ngroupGroups;
 
 	private static Map<String, Integer> foodInd = new HashMap<String, Integer>();
 	private static Map<String, Integer> foodNameInd = new HashMap<String, Integer>();
@@ -594,7 +594,6 @@ public class SortTable extends JApplet {
 						foodNameInd.put((String) oo[0], i++);
 				}
 			} catch (IOException e) {
-				// TODO Auto-generated catch bloc
 				e.printStackTrace();
 			}
 		}
@@ -899,7 +898,6 @@ public class SortTable extends JApplet {
 		topTable.setRowSelectionAllowed(false);
 		topTable.setColumnSelectionAllowed(true);
 		topTable.getColumnModel().getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-
 			public void valueChanged(ListSelectionEvent e) {
 				boolean ss = sel;
 				sel = false;
@@ -1290,13 +1288,12 @@ public class SortTable extends JApplet {
 		leftSplitPane.setOneTouchExpandable(true);
 		leftSplitPane.setDividerLocation(50);
 
-		HabitsPanel eat = new HabitsPanel(lang);
 		try {
 			recipe = new RecipePanel(fp, lang, table, leftTable, foodNameInd);
 		} catch (IOException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
+		HabitsPanel eat = new HabitsPanel(lang, stuff, recipe.recipes, foodNameInd, recipe.allskmt, recipe.skmt);
 		CostPanel buy = new CostPanel();
 
 		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftSplitPane, tabbedPane);
@@ -2101,7 +2098,7 @@ public class SortTable extends JApplet {
 	}
 
 	public void sortByColumn(String str) {
-		DefaultRowSorter sorter = ((DefaultRowSorter) table.getRowSorter());
+		DefaultRowSorter sorter = ((DefaultRowSorter)table.getRowSorter());
 		List<RowSorter.SortKey> sortKeys = new ArrayList<RowSorter.SortKey>();
 		int c = 0;
 		System.err.println(str);

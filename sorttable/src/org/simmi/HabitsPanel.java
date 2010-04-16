@@ -14,8 +14,11 @@ import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.awt.dnd.DropTargetListener;
 import java.awt.event.ActionEvent;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
@@ -26,8 +29,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.EventObject;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,13 +43,16 @@ import java.util.TooManyListenersException;
 
 import javax.management.timer.Timer;
 import javax.swing.AbstractAction;
+import javax.swing.AbstractCellEditor;
 import javax.swing.DefaultCellEditor;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JLabel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.JToolBar;
 import javax.swing.JViewport;
 import javax.swing.ScrollPaneConstants;
@@ -63,6 +71,7 @@ import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
 import org.jdesktop.swingx.JXDatePicker;
+import org.simmi.RecipePanel.Recipe;
 
 public class HabitsPanel extends JComponent {
 	int 							min = 0;
@@ -71,6 +80,7 @@ public class HabitsPanel extends JComponent {
 	//JSplitPane						splitpane;
 	JToolBar						toolbar;
 	JXDatePicker					datepicker;
+	JLabel							englabel;
 	Calendar						cal;
 	LinkedSplitPane					lsplitPane;
 	JSplitPane						tsplitPane;
@@ -84,6 +94,9 @@ public class HabitsPanel extends JComponent {
 	JTable							timelineDataTable;
 	JTable							colHeaderTable;
 	boolean							sel = false;
+	
+	Set<String>						allskmt;
+	Map<String,Map<String,String>>	skmt;
 	
 	class Week {
 		String[]	d = new String[8];
@@ -120,17 +133,310 @@ public class HabitsPanel extends JComponent {
 		return woy+"_"+yer;
 	}
 	
-	public HabitsPanel( String lang ) {
+	class RenderComponent extends JComponent {
+		JLabel		label = new JLabel();
+		JTextField	field = new JTextField();
+		
+		int size = 250;
+		JComboBox	combo = new JComboBox() {
+			private boolean layingOut = false;
+
+			public void doLayout() {
+				try {
+					layingOut = true;
+					super.doLayout();
+				} finally {
+					layingOut = false;
+				}
+			}
+
+			public Dimension getSize() {
+				Dimension sz = super.getSize();
+				if (!layingOut) {
+					sz.width = Math.max(sz.width, size);
+				}
+				return sz;
+			}
+		};
+		boolean		selected = false;
+		boolean		grayed = false;
+		Color		selbg = Color.blue;
+		Color		gray = new Color(240,240,240);
+		//Dimension d = new Dimension(100,50);
+		
+		public RenderComponent() {
+			super();
+			this.setLayout( null );
+			
+			field.setHorizontalAlignment( JTextField.RIGHT );
+			combo.addItem("g");
+			
+			//System.err.println(c);
+			//this.setPreferredSize( d );
+			//this.setSize( d );
+			this.add( label );
+			this.add( field );
+			this.add( combo );
+		}
+		
+		public void addComboItems( Collection<String> items ) {
+			combo.removeAllItems();
+			combo.addItem("g");
+			if( items != null ) {
+				for( String item : items ) {
+					combo.addItem( item );
+				}
+			}
+		}
+		
+		public void paintComponent( Graphics g ) {
+			super.paintComponent( g );
+			if( selected ) {
+				g.setColor( selbg );
+				g.fillRect(0, 0, this.getWidth(), this.getHeight());
+			} else if( grayed ) {
+				g.setColor( gray );
+				g.fillRect(0, 0, this.getWidth(), this.getHeight());
+			}
+			//size = Math.max(20, this.getPreferredSize().width);
+		}
+		
+		public void setBounds( int x, int y, int w, int h ) {
+			super.setBounds(x, y, w, h);
+			label.setBounds(0, 0, w, h/2);
+			field.setBounds(0, h/2, w/3, h/2);
+			combo.setBounds(w/3, h/2, (2*w)/3, h/2);
+		}
+	};
+	
+	class MyEditor extends AbstractCellEditor implements TableCellEditor {
+		RenderComponent	rc = new RenderComponent();
+		int r, c;
+		Map<String,Map<String,String>>	skmt;
+		
+		public MyEditor( Map<String,Map<String,String>> skmt ) {
+			this.skmt = skmt;
+			rc.combo.addItemListener( new ItemListener() {
+				@Override
+				public void itemStateChanged(ItemEvent e) {
+					Object selitem = rc.combo.getSelectedItem();
+					if( selitem != null ) {
+						if( rc.combo.getSelectedItem().equals("g") ) {
+							rc.field.setText("100");
+						} else {
+							rc.field.setText("1");
+						}
+					}
+				}
+			});
+		}
+		
+		@Override
+		public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+			r = row;
+			c = column;
+			
+			rc.selected = isSelected;
+			rc.selbg = table.getSelectionBackground();
+			if( isSelected ) {
+				rc.label.setForeground( Color.white );
+			} else {
+				rc.label.setForeground( Color.black );
+			}
+			
+			if( value != null ) {
+				String[] split = ((String)value).split("\\|");
+				
+				Map<String,String>	val = RecipePanel.getUnitVal(split[0], skmt);
+				if( val != null ) {
+					Set<String>	allskmt = new HashSet<String>();
+					for( String key : val.keySet() ) {
+						allskmt.add( key + " (" + val.get(key) + ")" );
+					}
+					rc.addComboItems( allskmt );
+				} else {
+					rc.addComboItems( null );
+				}
+				
+				rc.label.setText( split[0] );
+				if( split.length > 1 ) {
+					rc.field.setText( split[1] );
+					rc.combo.setSelectedItem( split[2] );
+				} else {
+					rc.field.setText("");
+					rc.combo.setSelectedItem("");	
+				}
+			} else {
+				rc.label.setText("");
+				rc.field.setText("");
+				rc.combo.setSelectedItem("");
+			}
+			return rc;
+		}
+
+		/*@Override
+		public void addCellEditorListener(CellEditorListener l) {}
+
+		@Override
+		public void cancelCellEditing() {}*/
+
+		@Override
+		public Object getCellEditorValue() {
+			return rc.label.getText() + "|" + rc.field.getText() + "|" + rc.combo.getSelectedItem();
+		}
+
+		@Override
+		public boolean isCellEditable(EventObject anEvent) {
+			if (anEvent instanceof MouseEvent) { 
+				return ((MouseEvent)anEvent).getClickCount() >= 2;
+			}
+			return true;
+		}
+
+		/*@Override
+		public void removeCellEditorListener(CellEditorListener l) {}*/
+
+		public boolean shouldSelectCell(EventObject anEvent) {
+			return true;
+		}
+
+		/*@Override
+		public boolean stopCellEditing() {
+			timelineDataModel.setValueAt( getCellEditorValue(), r, c );
+			
+			return true;
+		}*/
+	};
+	
+	private double updateEng( Float fval, String[] split ) {
+		double d = (double)fval;
+		String ru = split[2];
+		float  me = 0.0f;
+		
+		try {
+			me = Float.parseFloat( split[1] );
+		} catch( Exception ep ) {
+			
+		}
+		
+		int f = ru.indexOf("(");
+		int n = ru.indexOf(")");
+		if (n > f && f != -1) {
+			String subbi = ru.substring(f + 1, n).trim();
+			if( subbi.endsWith("g") ) {
+				subbi = subbi.substring(0, subbi.length() - 1);
+			}
+
+			float fl = 0.0f;
+			try {
+				fl = Float.parseFloat(subbi);
+			} catch (Exception ep) {
+
+			}
+			d *= (me*fl)/100.0;
+		} else {
+			d *= me/100.0;
+		}
+		//float f = (val * d);
+		
+		return d;
+		
+		/*Float fvalc = (Float)DetailPanel.getVal(i, 1, stuff, foodInd, recipes, false);
+		if( fvalc != null ) {
+			double d = (double)fvalc;
+			String ru = split[2];
+			float  me = 0.0f;
+			
+			try {
+				me = Float.parseFloat( split[1] );
+			} catch( Exception ep ) {
+				
+			}
+			
+			int f = ru.indexOf("(");
+			int n = ru.indexOf(")");
+			if (n > f && f != -1) {
+				String subbi = ru.substring(f + 1, n);
+				if( subbi.endsWith("g") ) {
+					subbi = subbi.substring(0, subbi.length() - 1);
+				}
+
+				float fl = 0.0f;
+				try {
+					fl = Float.parseFloat(subbi);
+				} catch (Exception ep) {
+
+				}
+				d *= (me*fl)/100.0f;
+			}
+			//float f = (val * d);
+			
+			totalc += d;
+		}*/
+	}
+	
+	public void updateEngLabel( List<Object[]> stuff, Map<String,Integer> foodInd, List<Recipe> recipes ) {
+		double total = 0.0f;
+		double totalc = 0.0f;
+		for( int c : timelineDataTable.getSelectedColumns() ) {
+			for( int r : timelineDataTable.getSelectedRows() ) {
+				Object val = timelineDataTable.getValueAt(r, c);
+				
+				if( val != null ) {
+					String[] split = ((String)val).split("\\|");
+					Integer ii = foodInd.get( split[0] );
+					
+					int i;
+					if( ii == null ) {
+						i = stuff.size()-2;
+						for( Recipe rep : recipes ) {
+							if( split[0].equals( rep.name + " - " + rep.author ) ) break;
+							i++;
+						}
+					} else {
+						i = ii;
+					}
+					
+					if( i < stuff.size()+recipes.size()-2 ) {
+						Float fval = (Float)DetailPanel.getVal(i, 0, stuff, foodInd, recipes, false);
+						if( fval != null ) {
+							total += updateEng( fval, split );
+						}
+						
+						Float fvalc = (Float)DetailPanel.getVal(i, 1, stuff, foodInd, recipes, false);
+						if( fvalc != null ) {
+							totalc += updateEng( fvalc, split );
+						}
+					}
+				}
+			}
+		}
+		englabel.setText( "Orka í vali: " + Math.round( total*10.0 )/10.0 + " kJ / " + Math.round( totalc*10.0 )/10.0 + " kcal" );
+	}
+	
+	public HabitsPanel( String lang, final List<Object[]>	stuff, final List<Recipe>	recipes, final Map<String,Integer>	foodInd, Set<String> allskmt, Map<String,Map<String,String>> skmt ) {
 		super();
 		
+		this.allskmt = allskmt;
+		this.skmt = skmt;
+		
+		final Dimension prefSize = new Dimension(100,25);
 		malCombo = new JComboBox();
+		malCombo.setPreferredSize( prefSize );
+		malCombo.setMinimumSize( prefSize );
 		malCombo.addItem("Morgunmatur");
+		malCombo.addItem("Millimáltíð1");
 		malCombo.addItem("Hádegismatur");
-		malCombo.addItem("Kaffi");
+		malCombo.addItem("Millimáltíð2");
 		malCombo.addItem("Kvöldmatur");
-		malCombo.addItem("Nætursnarl");
+		malCombo.addItem("Millimáltíð3");
 		
 		datepicker = new JXDatePicker();
+		englabel = new JLabel( "Orka í vali: " );
+		
+		Dimension d = new Dimension( 300, 25 );
+		englabel.setPreferredSize( d );
+		englabel.setSize( d );
 		/*DateSelectionModel mod = new DateSelectionModel() {
 			
 		};
@@ -138,6 +444,7 @@ public class HabitsPanel extends JComponent {
 		this.setLayout( new BorderLayout() );
 		toolbar = new JToolBar();
 		toolbar.add( datepicker );
+		toolbar.add( englabel );
 		this.add( toolbar, BorderLayout.NORTH );
 		//splitpane = new JSplitPane( JSplitPane.VERTICAL_SPLIT );
 		//this.add( splitpane );
@@ -215,6 +522,8 @@ public class HabitsPanel extends JComponent {
 				return c;
 			}
 		};
+		
+		timelineDataTable.setRowSelectionAllowed( true );
 		timelineDataTable.setColumnSelectionAllowed( true );
 		final JScrollPane timelineDataScroll = new JScrollPane( timelineDataTable );
 		
@@ -379,10 +688,11 @@ public class HabitsPanel extends JComponent {
 		timelineDataScroll.setDropTarget( dropTarget );
 		
 		colHeaderTable = new JTable();
-		colHeaderTable.setMinimumSize( new Dimension(50,20) );
+		//colHeaderTable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
+		//colHeaderTable.setMinimumSize( new Dimension(50,20) );
 		colHeaderTable.setRowHeight( 50 );
 		
-		TableCellRenderer	renderer = new DefaultTableCellRenderer() {
+		TableCellRenderer renderer = new DefaultTableCellRenderer() {
 		//TableCellRenderer	renderer = new TableCellRenderer() {
 			@Override
 			public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
@@ -391,9 +701,11 @@ public class HabitsPanel extends JComponent {
 				return comb;
 			}
 		};
-		colHeaderTable.setDefaultRenderer( String.class, renderer );
+		//colHeaderTable.setDefaultRenderer( String.class, renderer );
 		
-		TableCellEditor editor = new DefaultCellEditor( malCombo );
+		malCombo.setEditable( true );
+		DefaultCellEditor editor = new DefaultCellEditor( malCombo );
+		editor.setClickCountToStart( 2 );
 		colHeaderTable.setDefaultEditor( String.class, editor );
 		
 		timelineDataScroll.setRowHeaderView( colHeaderTable );
@@ -407,7 +719,15 @@ public class HabitsPanel extends JComponent {
 		lsplitPane.setLinkedSplitPane( timelineSplit );
 		timelineScroll.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_NEVER );
 		
-		tsplitPane = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT, lsplitPane, timelineSplit );
+		tsplitPane = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT, lsplitPane, timelineSplit ) {
+			public void setDividerLocation( double proportionalLocation ) {
+				super.setDividerLocation(proportionalLocation);
+				/*colHeaderTable.getColumnModel().getColumn(0).setPreferredWidth( 100 );
+				colHeaderTable.getColumnModel().getColumn(0).setWidth( 100 );
+				malCombo.setPreferredSize( prefSize );
+				malCombo.setSize( prefSize );*/
+			}
+		};
 		
 		/*if( lang.equals("IS") ) {
 			timelineTabPane.addTab("Inn", timelineSplit);
@@ -492,7 +812,7 @@ public class HabitsPanel extends JComponent {
 			public void setValueAt(Object arg0, int arg1, int arg2) {}
 		};
 		timelineTable.setModel( timelineModel );
-		timelineTable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
+		//timelineTable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
 		timelineTable.setRowSelectionAllowed( false );
 		timelineTable.setColumnSelectionAllowed( true );
 		
@@ -513,6 +833,8 @@ public class HabitsPanel extends JComponent {
 						timelineDataTable.addColumnSelectionInterval( i, i );
 					}
 					sel = false;
+					
+					updateEngLabel( stuff, foodInd, recipes );
 				}
 			}
 		});
@@ -522,15 +844,69 @@ public class HabitsPanel extends JComponent {
 				boolean ss = sel;
 				sel = true;
 				if (ss) {
-					int selcol = timelineDataTable.getSelectedColumn();
-					if( selcol >= 0 && selcol < timelineTable.getColumnCount() ) {
-						timelineTable.setColumnSelectionInterval(selcol, selcol);
-						
-						int[] selcols = timelineDataTable.getSelectedColumns();
-						for( int i : selcols ) {
-							timelineTable.addColumnSelectionInterval( i, i );
+					int[] cc = timelineDataTable.getSelectedColumns();
+					if( cc != null && cc.length > 0 ) {
+						//timelineTable.setColumnSelectionInterval(selcol, selcol);
+						for (int c : cc) {
+							if (c == cc[0])
+								timelineTable.setColumnSelectionInterval(c, c);
+							else
+								timelineTable.addColumnSelectionInterval(c, c);
+							sel = true;
 						}
-						sel = true;
+						
+						//System.err.println( timelineDataTable.getSelectedRow() );
+						//System.err.println( timelineDataTable.getSelectedColumn() );
+						
+						updateEngLabel( stuff, foodInd, recipes );
+					}
+				}
+			}
+		});
+		colHeaderTable.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				boolean ss = sel;
+				sel = false;
+				if (!ss) {
+					int cc = timelineDataTable.getColumnCount();
+					if( cc > 0 ) timelineDataTable.setColumnSelectionInterval(0, cc-1);
+					
+					int selrow = colHeaderTable.getSelectedRow();
+					timelineDataTable.setRowSelectionInterval(selrow, selrow);
+					
+					int[] selrows = colHeaderTable.getSelectedRows();
+					for( int i : selrows ) {
+						timelineDataTable.addRowSelectionInterval( i, i );
+					}
+					sel = false;
+					
+					updateEngLabel( stuff, foodInd, recipes );
+				}
+			}
+		});
+		
+		timelineDataTable.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				boolean ss = sel;
+				sel = true;
+				if (ss) {
+					int[] rr = timelineDataTable.getSelectedRows();
+					if( rr != null && rr.length > 0 ) {
+						//timelineTable.setColumnSelectionInterval(selcol, selcol);
+						for (int r : rr) {
+							if (r == rr[0])
+								colHeaderTable.setRowSelectionInterval(r, r);
+							else
+								colHeaderTable.addRowSelectionInterval(r, r);
+							sel = true;
+						}
+						
+						//System.err.println( timelineDataTable.getSelectedRow() );
+						//System.err.println( timelineDataTable.getSelectedColumn() );
+						
+						updateEngLabel( stuff, foodInd, recipes );
 					}
 				}
 			}
@@ -543,6 +919,8 @@ public class HabitsPanel extends JComponent {
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
+		timelineDataTable.setRowSelectionAllowed( true );
+		timelineDataTable.setColumnSelectionAllowed( true );
 
 		//timelineDataTable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
 		
@@ -594,11 +972,12 @@ public class HabitsPanel extends JComponent {
 							for( String str : spl ) {
 								String[] subspl = str.split("\t");
 								if( subspl.length > 0 ) {
+									String vstr = subspl[0]+"|100|g";
 									if( first ) {
-										list.d[c] += subspl[0];
+										list.d[c] += vstr;
 										first = false;
 									} else {
-										list.d[c] += "\t" + subspl[0];
+										list.d[c] += "\t" + vstr;
 									}
 								}
 								
@@ -627,11 +1006,8 @@ public class HabitsPanel extends JComponent {
 						e.printStackTrace();
 					}
 				}
-			
 				public void dragOver(DropTargetDragEvent dtde) {}
-			
 				public void dragExit(DropTargetEvent dte) {}
-			
 				public void dragEnter(DropTargetDragEvent dtde) {}
 			});
 		} catch (TooManyListenersException e) {
@@ -725,13 +1101,85 @@ public class HabitsPanel extends JComponent {
 			}
 
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
+				String val = (String)this.getValueAt( rowIndex, columnIndex );
+				if( val != null && val.length() > 3 ) return true;
 				return false;
 			}
 
 			public void removeTableModelListener(TableModelListener l) {}
-			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {}
+			
+			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+				String[] split = w.d[columnIndex].split("\t");
+				if( rowIndex < split.length ) {
+					split[rowIndex] = (String)aValue;
+				}
+				w.d[columnIndex] = split[0];
+				for( int i = 1; i < split.length; i++ ) {
+					w.d[columnIndex] += "\t" + split[i];
+				}
+				
+				try {
+					String tstr = getCurrentCardName();
+					save( tstr );
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
 		};
 		timelineDataTable.setModel( timelineDataModel );
+		
+		final RenderComponent	rc = new RenderComponent();
+		rc.addComboItems( allskmt );
+		TableCellRenderer renderer = new TableCellRenderer() {			
+			@Override
+			public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+				//rc.setBounds(0, 0, table.getRowHeight(row), table.getColumnModel().getColumn(column).getWidth());
+				rc.selected = isSelected;
+				rc.grayed = row % 2 == 0;
+				rc.selbg = table.getSelectionBackground();
+				if( isSelected ) {
+					rc.label.setForeground( Color.white );
+				} else {
+					rc.label.setForeground( Color.black );
+				}
+				
+				if( value != null ) {
+					String[] split = ((String)value).split("\\|");
+					rc.label.setText( split[0] );
+					if( split.length >= 3 && split[0].length() > 0 ) {
+						rc.field.setText( split[1] );
+						/*if( split[0].equals("BANANAR") ) {
+							System.err.println( "BANANA "+split[2] );
+							for( int i = 0; i < rc.combo.getItemCount(); i++ ) {
+								String str = (String)rc.combo.getItemAt(i);
+								if( str.startsWith("ltl") ) System.err.println( "item " + str );
+							}
+						}*/
+						rc.combo.setSelectedItem( split[2] );
+						rc.field.setVisible(true);
+						rc.combo.setVisible(true);
+					} else {
+						rc.field.setText( "" );
+						rc.combo.setSelectedItem( "" );
+						rc.field.setVisible(false);
+						rc.combo.setVisible(false);
+					}
+				} else {
+					rc.label.setText( "" );
+					rc.field.setText( "" );
+					rc.combo.setSelectedItem( "" );
+					rc.field.setVisible(false);
+					rc.combo.setVisible(false);
+				}
+				return rc;
+			}
+		};
+		timelineDataTable.setDefaultRenderer(String.class, renderer);
+		
+		TableCellEditor editor = new MyEditor( skmt );
+		timelineDataTable.setDefaultEditor( String.class, editor );
+		
+		//timelineDataTable.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
 		
 		final TableModel typeModel = new TableModel() {
 			@Override
@@ -815,6 +1263,16 @@ public class HabitsPanel extends JComponent {
 			}
 		};
 		colHeaderTable.setModel( typeModel );
+		
+		/*int pwd = 100;
+		colHeaderTable.getColumnModel().getColumn(0).setPreferredWidth( pwd );
+		colHeaderTable.getColumnModel().getColumn(0).setWidth( pwd );
+		colHeaderTable.getColumnModel().getColumn(0).setMinWidth( pwd );*/
+		
+		colHeaderTable.setPreferredScrollableViewportSize( colHeaderTable.getPreferredSize() );
+		
+		//tsplitPane.add
+		//colHeaderTable.getColumnModel().getColumn(0).setMaxWidth( pwd );
 	}
 	
 	public void load() throws IOException {

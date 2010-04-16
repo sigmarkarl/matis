@@ -64,11 +64,11 @@ public class GraphPanel extends JTabbedPane {
 		if( tc != null ) {
 			int col = tc.getModelIndex();*/
 		int col = 0;
-		String val = (String)topModel.getValueAt(0, col);
+		String val = (String)topTable.getValueAt(0, col);
 		while( !(val != null && val.contains(whr)) ) {
 			col++;
-			if( col < topModel.getColumnCount() ) {
-				val = (String)topModel.getValueAt(0, col);
+			if( col < topTable.getColumnCount() ) {
+				val = (String)topTable.getValueAt(0, col);
 			} else break;
 		}
 		if( col < table.getModel().getColumnCount() ) {
