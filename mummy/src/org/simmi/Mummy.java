@@ -270,6 +270,10 @@ public class Mummy extends JApplet {
 			lsubseq.add( subseq );
 		}
 		
+		public byte get( int i ) {
+			return bb.get( i );
+		}
+		
 		public void find( String val ) {
 			byte[] bb = val.getBytes();
 			findseq.clear();
@@ -355,6 +359,10 @@ public class Mummy extends JApplet {
 			return 0;
 		}
 		
+		public int getStop() {
+			return getOffset() + getLength();
+		}
+		
 		public int getLength() {
 			return bb.limit();
 		}
@@ -383,17 +391,7 @@ public class Mummy extends JApplet {
 			this.refseq = refseq;
 			//this.setBackground( Color.white );
 			this.sequencelist = seqlist;
-			seqgroups = new HashMap<String,List<Sequence>>();
-			for( Sequence seq : seqlist ) {
-				List<Sequence>	lseq;
-				if( seqgroups.containsKey( seq.gid ) ) {
-					lseq = seqgroups.get( seq.gid );
-				} else {
-					lseq = new ArrayList<Sequence>();
-					seqgroups.put(seq.gid, lseq);
-				}
-				lseq.add( seq );
-			}
+			initGroups();
 			this.seqtable = seqtable;
 			int size = getLength();
 			int seqtabHeight = 16;
@@ -410,6 +408,7 @@ public class Mummy extends JApplet {
 			this.refseq = refseq;
 			//this.setBackground( Color.white );
 			this.sequencelist = seqlist;
+			initGroups();
 			this.seqtable = seqtable;
 			int size = getLength();
 			int seqtabHeight = grid ? 32 : 16;
@@ -417,6 +416,20 @@ public class Mummy extends JApplet {
 			prefsize = new Dimension( 10*size, seqtabHeight );
 			setSize( prefsize );
 			setPreferredSize( prefsize );
+		}
+		
+		public void initGroups() {
+			seqgroups = new HashMap<String,List<Sequence>>();
+			for( Sequence seq : this.sequencelist ) {
+				List<Sequence>	lseq;
+				if( seqgroups.containsKey( seq.gid ) ) {
+					lseq = seqgroups.get( seq.gid );
+				} else {
+					lseq = new ArrayList<Sequence>();
+					seqgroups.put(seq.gid, lseq);
+				}
+				lseq.add( seq );
+			}
 		}
 		
 		public void find( String val ) {
@@ -607,50 +620,55 @@ public class Mummy extends JApplet {
 					Sequence seq = sequencelist.get(i);
 					
 					int subi = 0;
-					for( Subsequence subseq : seq.lsubseq ) {
-						//System.err.println( "seqlens " + seq.bb.limit() + "  " + subseq.bb.limit() );
-						
-						int xstart = Math.max( subseq.getOffset(), clip.x/10 );
-						int xstop = Math.min( subseq.getStop(), (clip.x+clip.width)/10 );
-						
-						List<Sequence>	lseq = seqgroups.get(seq.gid);
-						for( int x = xstart; x < xstop; x++ ) {
-							byte b = subseq.get( x - subseq.getOffset() );
+					
+					if( seq.lsubseq != null ) {
+						for( Subsequence subseq : seq.lsubseq ) {
+							//System.err.println( "seqlens " + seq.bb.limit() + "  " + subseq.bb.limit() );
 							
-							if( subi % 2 == 0 ) {
-								g.setColor( c1 );
-							} else {
-								g.setColor( c2 );
-							}
-							g.fillRect(x*10, (y)*rh, 10, rh);
+							int xstart = Math.max( subseq.getOffset(), clip.x/10 );
+							int xstop = Math.min( subseq.getStop(), (clip.x+clip.width)/10 );
 							
-							g.setColor( Color.black );
-							if( x == subseq.getOffset() ) {
-								g.drawString(subseq.getOffset()+"", x*10, y*rh);
-							}
-							
-							if( lseq != null ) {
-								for( Sequence gseq : lseq ) {
-									for( Subsequence sgseq : gseq.lsubseq ) {
-										if( x >= sgseq.getOffset() && x < sgseq.getStop() ) {
-											byte nb = sgseq.get( x - sgseq.getOffset() );
-											if( b != nb ) {
-												g.setColor( Color.red );
-												break;
+							List<Sequence>	lseq = seqgroups.get(seq.gid);
+							for( int x = xstart; x < xstop; x++ ) {
+								byte b = subseq.get( x - subseq.getOffset() );
+								
+								if( subi % 2 == 0 ) {
+									g.setColor( c1 );
+								} else {
+									g.setColor( c2 );
+								}
+								g.fillRect(x*10, (y)*rh, 10, rh);
+								
+								g.setColor( Color.black );
+								if( x == subseq.getOffset() ) {
+									g.drawString(subseq.getOffset()+"", x*10, y*rh);
+								}
+								
+								if( lseq != null ) {
+									for( Sequence gseq : lseq ) {
+										for( Subsequence sgseq : gseq.lsubseq ) {
+											if( x >= sgseq.getOffset() && x < sgseq.getStop() ) {
+												byte nb = sgseq.get( x - sgseq.getOffset() );
+												if( b != nb ) {
+													g.setColor( Color.red );
+													break;
+												}
 											}
 										}
 									}
 								}
+								
+								if( b == 'a' || b == 'A' ) g.drawString(this.a, x*10, (y+offval)*rh-3);
+								else if( b == 'c' || b == 'C' ) g.drawString(this.c, x*10, (y+offval)*rh-3);
+								else if( b == 'g' || b == 'G' ) g.drawString(this.g, x*10, (y+offval)*rh-3);
+								else if( b == 't' || b == 'T' ) g.drawString(this.t, x*10, (y+offval)*rh-3);
+								else g.drawString("N", x*10, (y+offval)*rh-3);
 							}
 							
-							if( b == 'a' || b == 'A' ) g.drawString(this.a, x*10, (y+offval)*rh-3);
-							else if( b == 'c' || b == 'C' ) g.drawString(this.c, x*10, (y+offval)*rh-3);
-							else if( b == 'g' || b == 'G' ) g.drawString(this.g, x*10, (y+offval)*rh-3);
-							else if( b == 't' || b == 'T' ) g.drawString(this.t, x*10, (y+offval)*rh-3);
-							else g.drawString("N", x*10, (y+offval)*rh-3);
+							subi++;
 						}
-						
-						subi++;
+					} else {
+						drawNormal( g, seq, clip, y );
 					}
 					
 					for( Subsequence subseq : seq.findseq ) {
@@ -698,13 +716,25 @@ public class Mummy extends JApplet {
 			if( ov != null ) ov.repaint();
 		}
 		
+		public byte revComp( byte b ) {
+			if( b == 'A' ) return 'T';
+			else if( b == 'C' ) return 'G';
+			else if( b == 'G' ) return 'C';
+			else if( b == 'T' ) return 'A';
+			else if( b == 'a' ) return 't';
+			else if( b == 'c' ) return 'g';
+			else if( b == 'g' ) return 'c';
+			else if( b == 't' ) return 'a';
+			return 'N';
+		}
+		
 		public void drawNormal( Graphics g, Sequence seq, Rectangle clip, int y ) {
 			int rh = 16;
 			int[] xx1 = { 0, 10, 0 };
 			int[] xx2 = { 10, 0, 10 };
 			int[] yy = { 0, 5, 10 };
 			
-			if( seq.lsubseq.size() > 0 ) {
+			if( seq.lsubseq != null && seq.lsubseq.size() > 0 ) {
 				for( Subsequence subseq : seq.lsubseq ) {
 					for( int x = Math.max( subseq.getOffset(), clip.x/10 ); x < Math.min( subseq.getStop(), (clip.x+clip.width)/10 ); x++ ) {
 						if( subseq.color != null ) {
@@ -724,7 +754,29 @@ public class Mummy extends JApplet {
 							g.drawString(subseq.tag, x*10, (y+offval-1)*rh-4 );
 						}
 						
-						byte b = subseq.bb.get( x - subseq.getOffset() );
+						byte b;
+						if( seq.rc ) {
+							b = revComp( subseq.bb.get( x - subseq.getOffset() ) );
+						} else {
+							b = subseq.bb.get( x - subseq.getOffset() );
+						}
+						
+						g.setColor( Color.black );
+						List<Sequence>	lseq = seqgroups.get( seq.gid );
+						if( lseq != null ) {
+							for( Sequence gseq : lseq ) {
+								for( Subsequence sgseq : gseq.lsubseq ) {
+									if( x >= sgseq.getOffset() && x < sgseq.getStop() ) {
+										byte nb = sgseq.get( x - sgseq.getOffset() );
+										if( b != nb ) {
+											g.setColor( Color.red );
+											break;
+										}
+									}
+								}
+							}
+						}
+						
 						if( b == 'a' || b == 'A' ) g.drawString(this.a, x*10, (y+offval)*rh-3);
 						else if( b == 'c' || b == 'C' ) g.drawString(this.c, x*10, (y+offval)*rh-3);
 						else if( b == 'g' || b == 'G' ) g.drawString(this.g, x*10, (y+offval)*rh-3);
@@ -734,7 +786,31 @@ public class Mummy extends JApplet {
 				}
 			} else {
 				for( int x = Math.max( seq.getOffset(), clip.x/10 ); x < Math.min( seq.getOffset()+seq.bb.limit(), (clip.x+clip.width)/10 ); x++ ) {
-					byte b = seq.bb.get( x - seq.getOffset() );
+					byte b;
+					//= seq.bb.get( x - seq.getOffset() );
+					if( seq.rc ) {
+						b = revComp( seq.bb.get( seq.bb.limit() - (x - seq.getOffset() + 1) ) );
+					} else {
+						b = seq.bb.get( x - seq.getOffset() );
+					}
+					
+					g.setColor( Color.black );
+					if( seqgroups == null ) {
+						System.err.println("");
+					}
+					List<Sequence>	lseq = seqgroups.get( seq.gid );
+					if( lseq != null ) {
+						for( Sequence gseq : lseq ) {
+							if( x >= gseq.getOffset() && x < gseq.getStop() ) {
+								byte nb = gseq.get( x - gseq.getOffset() );
+								if( b != nb ) {
+									g.setColor( Color.red );
+									break;
+								}
+							}
+						}
+					}
+					
 					if( b == 'a' || b == 'A' ) g.drawString(this.a, x*10, (y+offval)*rh-3);
 					else if( b == 'c' || b == 'C' ) g.drawString(this.c, x*10, (y+offval)*rh-3);
 					else if( b == 'g' || b == 'G' ) g.drawString(this.g, x*10, (y+offval)*rh-3);
@@ -851,9 +927,24 @@ public class Mummy extends JApplet {
 					int i = table.convertRowIndexToModel( y );
 					Sequence seq = lseq.get(i);
 					
-					for( Subsequence subseq : seq.lsubseq ) {
-						int x1 = (int)( ( (long)subseq.getOffset() * w ) / clength );
-						int x2 = Math.max( x1+1, (int)( ( (long)subseq.getStop() * w ) / clength ) );
+					if( seq.lsubseq != null ) {
+						for( Subsequence subseq : seq.lsubseq ) {
+							int x1 = (int)( ( (long)subseq.getOffset() * w ) / clength );
+							int x2 = Math.max( x1+1, (int)( ( (long)subseq.getStop() * w ) / clength ) );
+							int y1 = (int)( (y * h) / table.getRowCount() );
+							int y2 = (int)( ((y+1) * h) / table.getRowCount() );
+							
+							g.setColor( Color.green );
+							
+							for( int yy = y1; yy <= y2; yy++ ) {
+								g.drawLine(x1, yy, x2, yy);
+							}
+						}
+					} else {
+						//int seqstart = seq.getDerivedStart( rseq.name );
+						//int seqstop = seq.getDerivedStop( rseq.name );
+						int x1 = (int)( ( (long)seq.offset * w ) / clength );
+						int x2 = (int)( ( ((long)seq.getOffset()+seq.getLength()) * w ) / clength );
 						int y1 = (int)( (y * h) / table.getRowCount() );
 						int y2 = (int)( ((y+1) * h) / table.getRowCount() );
 						
@@ -864,15 +955,17 @@ public class Mummy extends JApplet {
 						}
 					}
 					
-					for( Subsequence subseq : seq.findseq ) {
-						int x1 = (int)( ( (long)subseq.getOffset() * w ) / clength );
-						int x2 = Math.max( x1+1, (int)( ( (long)subseq.getStop() * w ) / clength ) );
-						int y1 = (int)( (y * h) / table.getRowCount() );
-						int y2 = (int)( ((y+1) * h) / table.getRowCount() );
-						
-						g.setColor( Color.blue );
-						for( int yy = y1; yy <= y2; yy++ ) {
-							g.drawLine(x1, yy, x2, yy);
+					if( seq.findseq != null ) {
+						for( Subsequence subseq : seq.findseq ) {
+							int x1 = (int)( ( (long)subseq.getOffset() * w ) / clength );
+							int x2 = Math.max( x1+1, (int)( ( (long)subseq.getStop() * w ) / clength ) );
+							int y1 = (int)( (y * h) / table.getRowCount() );
+							int y2 = (int)( ((y+1) * h) / table.getRowCount() );
+							
+							g.setColor( Color.blue );
+							for( int yy = y1; yy <= y2; yy++ ) {
+								g.drawLine(x1, yy, x2, yy);
+							}
 						}
 					}
 				}
@@ -926,6 +1019,64 @@ public class Mummy extends JApplet {
 		rseq.add( seq );
 		
 		return rseq;
+	}
+	
+	public void calcSubseq() {
+		for( String s : seqpane.seqgroups.keySet() ) {
+			List<Sequence>	lseq = seqpane.seqgroups.get(s);
+			Collections.sort( lseq );
+			
+			for( Sequence seq : lseq ) {
+				//System.err.println( seq.gid + "  " + seq.offset );
+				
+				if( seq.offsetMap != null ) {
+					int off = 0;
+					for( Sequence seq2 : lseq ) {
+						if( seq != seq2 ) {
+							Coff coff = seq.offsetMap.get( seq2.name );
+							
+							if( coff != null ) {
+								int fi = seq.getFirstAlignIndex( seq2.name );
+								int li = seq.getLastAlignIndex( seq2.name );
+								
+								Offset fo = coff.loffset.get(fi);
+								seq.addSubsequence("subsequence", 0, Math.min( fo.b, seq.bb.limit() ), seq.offset+off );
+								for( int i = fi; i < li; i++ ) {
+									//Offset fo = coff.loffset.get(i);
+									Offset no = coff.loffset.get(i+1);
+									
+									int boff = Math.abs(no.b-fo.b);
+									int aoff = Math.abs(no.a-fo.a);
+									int addon = boff < aoff ? aoff-boff : 0;
+									off += addon;
+									
+									if( seq.gid.equals("12") && addon > 0 ) {
+										System.err.println( (i-fi) + "  " + fo.b + "  " + off );
+									}
+									
+									int start = fo.b;
+									int stop = no.b;//fo.b + no.b; //Math.max(aoff, boff);
+									
+									if( start < seq.bb.limit() && stop <= seq.bb.limit()+2 && start > 0 && stop > start ) {
+										seq.addSubsequence("subsequence", start, Math.min( stop, seq.bb.limit() ), seq.offset+start+off );
+									} else {
+										System.err.println( "not added " + start + "  " + seq.bb.limit() + "  " + stop );
+									}
+									
+									fo = no;
+								}
+								Offset lo = coff.loffset.get(li);
+								seq.addSubsequence( "subsequence", lo.b, seq.bb.limit(), seq.offset+lo.b+off );
+							} else {
+								//System.err.println( seq2.name + "   " + seq.name );
+							}
+						}
+					}
+				} else {
+					seq.addSubsequence( "sequence", 0, seq.bb.limit(), seq.offset );
+				}
+			}
+		}
 	}
 	
 	public void initGui() throws IOException {
@@ -985,6 +1136,69 @@ public class Mummy extends JApplet {
 			else System.err.println( cff.seq1.name + " on " + cff.seq2.name + " is " + cff.getAlignCount() + "  " + cff.getAlignLength() );
 		}
 		
+		/*for( Coff cff : coffList ) {
+			cff
+		}*/
+		
+		Set<Sequence>	seqset = new HashSet<Sequence>();
+		int gid = 0;		
+		for( Coff cff : coffList ) {
+			int f = cff.getFirstAlignIndex();
+			int l = cff.getLastAlignIndex();
+			
+			Offset fo = cff.loffset.get(f);
+			Offset lo = cff.loffset.get(l);
+			
+			String gidstr = Integer.toString(gid++);
+			cff.seq1.gid = gidstr;
+			cff.seq2.gid = gidstr;
+			
+			cff.seq1.lsubseq = null;
+			cff.seq2.lsubseq = null;
+			
+			seqset.add( cff.seq1 );
+			seqset.add( cff.seq2 );
+			
+			if( cff.seq1.name.equals("l1_contig00016") ) {
+				System.err.println();
+			}
+			
+			cff.seq1.rc = false;
+			if( cff.rc ) {
+				cff.seq2.rc = true;
+				if( fo.a > fo.b ) {
+					cff.seq1.offset = fo.a - fo.b;
+					cff.seq2.offset = 0;				
+				} else if( cff.seq1.bb.limit() - lo.b < cff.seq2.bb.limit() - lo.a ) {
+					cff.seq1.offset = 0;
+					cff.seq2.offset = lo.b - lo.a;
+				} else {
+					cff.seq1.offset = 0;
+					cff.seq2.offset = fo.b - fo.a;
+				}
+			} else {
+				cff.seq2.rc = false;
+				if( fo.a > fo.b ) {
+					cff.seq1.offset = fo.a - fo.b;
+					cff.seq2.offset = 0;				
+				} else if( cff.seq1.bb.limit() - lo.b < cff.seq2.bb.limit() - lo.a ) {
+					cff.seq1.offset = 0;
+					cff.seq2.offset = lo.b - lo.a;
+				} else {
+					cff.seq1.offset = 0;
+					cff.seq2.offset = fo.b - fo.a;
+				}
+			}
+			
+			//cff.seq1.offset = 0;
+			//cff.seq2.offset = cff.get
+			/*for( Coff cff2 : coffList ) {
+				if( cff == cff2 ) break;
+				
+				if( cff2.seq1 == cff.seq1 )
+			}*/
+		}
+		
 		//final List<Sequence> lseq2 = load( "/home/sigmar/fass/assembly2/454LargeContigs.fna", "/home/sigmar/fass/assembly3/454LargeContigs.fna", "/home/sigmar/fass/a23", "/home/sigmar/fass/a32" );
 		
 		//final List<Sequence>	lseq2 = load( "/home/sigmar/fass/seq_2120.fa", null );
@@ -1000,65 +1214,13 @@ public class Mummy extends JApplet {
 		
 		//seqpane = new SequencePane( lefttable, lseq2, lseq1.get(0) );
 		
+		lseq2.retainAll( seqset );
+		
 		seqpane = new SequencePane( lefttable, lseq2, null );
 		topseq = new SequencePane( null, lseq2, null, true );
 		topseq.setShowGrid( true );
 		
-		for( String s : seqpane.seqgroups.keySet() ) {
-			List<Sequence>	lseq = seqpane.seqgroups.get(s);
-			Collections.sort( lseq );
-			
-			for( Sequence seq : lseq ) {
-				//System.err.println( seq.gid + "  " + seq.offset );
-				
-				if( seq.offsetMap != null ) {
-					int off = 0;
-					for( Sequence seq2 : lseq ) {
-						if( seq != seq2 ) {
-							Coff coff = seq.offsetMap.get( seq2.name );
-							
-							if( coff != null ) {
-								int fi = seq.getFirstAlignIndex( seq2.name );
-								int li = seq.getLastAlignIndex( seq2.name );
-								
-								Offset fo = coff.loffset.get(fi);
-								seq.addSubsequence("subsequence", 0, Math.min( fo.b, seq.bb.limit() ), seq.offset+off );
-								for( int i = fi; i < li; i++ ) {
-									//Offset fo = coff.loffset.get(i);
-									Offset no = coff.loffset.get(i+1);
-									
-									int boff = Math.abs(no.b-fo.b);
-									int aoff = Math.abs(no.a-fo.a);
-									int addon = boff < aoff ? aoff-boff : 0;
-									off += addon;
-									
-									if( seq.gid.equals("12") && addon > 0 ) {
-										System.err.println( (i-fi) + "  " + fo.b + "  " + off );
-									}
-									
-									int start = fo.b;
-									int stop = no.b;//fo.b + no.b; //Math.max(aoff, boff);
-									
-									if( start < seq.bb.limit() && stop <= seq.bb.limit()+2 && start > 0 && stop > start ) {
-										seq.addSubsequence("subsequence", start, Math.min( stop, seq.bb.limit() ), seq.offset+start+off );
-									} else {
-										System.err.println( "not added " + start + "  " + seq.bb.limit() + "  " + stop );
-									}
-									
-									fo = no;
-								}
-								Offset lo = coff.loffset.get(li);
-								seq.addSubsequence( "subsequence", lo.b, seq.bb.limit(), seq.offset+lo.b+off );
-							} else {
-								//System.err.println( seq2.name + "   " + seq.name );
-							}
-						}
-					}
-				} else {
-					seq.addSubsequence( "sequence", 0, seq.bb.limit(), seq.offset );
-				}
-			}
-		}
+		//calcSubseq();
 		
 		scrollpane.getVerticalScrollBar().setBlockIncrement( seqpane.getUnitHeight() );
 		scrollpane.getHorizontalScrollBar().setBlockIncrement( 500 );
@@ -1099,7 +1261,7 @@ public class Mummy extends JApplet {
 			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
 				Sequence seq = lseq2.get(rowIndex);
-				if( columnIndex == 0 ) return seq.name;
+				if( columnIndex == 0 ) return seq.name + (seq.rc ? " Reverse" : "");
 				else if( columnIndex == 1 ) return seq.bb.limit();
 				else if( columnIndex == 2 ) return seq.getOffset();
 				else if( columnIndex == 3 ) return seq.gid;
@@ -1469,10 +1631,6 @@ public class Mummy extends JApplet {
 				}
 				
 				int nlen = lo.a - fo.a + lo.c;
-				
-				if( seq1.name.equals("l2_contig00095") ) {
-					System.err.println( s + " start " + nlen );
-				}
 				
 				//System.err.println( nlen + "  " + s );
 				if( where == -1 ) {
