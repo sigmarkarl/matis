@@ -728,6 +728,7 @@ public class HabitsPanel extends JComponent {
 				malCombo.setSize( prefSize );*/
 			}
 		};
+		tsplitPane.setBackground( Color.white );
 		
 		/*if( lang.equals("IS") ) {
 			timelineTabPane.addTab("Inn", timelineSplit);

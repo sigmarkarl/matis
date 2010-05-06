@@ -11,26 +11,72 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.swing.JComponent;
+import javax.swing.JDialog;
+import javax.swing.JProgressBar;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+
 public class Isgem1Update {
 	Connection con;
+	
+	JProgressBar	pb;
+	JDialog			dialog;
 	
 	public Isgem1Update() throws ClassNotFoundException, SQLException {
 		Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
 		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=isgem2;user=simmi;password=drsmorc.311;";
 		con = DriverManager.getConnection(connectionUrl);
+		
+		SwingUtilities.invokeLater( new Runnable() {
+			@Override
+			public void run() {
+				pb = new JProgressBar();
+				pb.setIndeterminate( true );
+				JComponent	c = new JComponent() {
+					public void setBounds( int x, int y, int w, int h ) {
+						super.setBounds(x, y, w, h);
+						pb.setBounds(10, 10, w-20, 20);
+					}
+				};
+				c.add( pb );
+				
+				dialog = new JDialog();
+				//dialog.getContentPane().setLayout( new BorderLayout() );
+				dialog.setModal( true );
+				dialog.setDefaultCloseOperation( JDialog.DISPOSE_ON_CLOSE );
+				dialog.setSize(400, 150);
+				dialog.setTitle("Updating ISGEM1");
+				dialog.add( c );
+				dialog.setVisible(true);		
+			}
+		});
 	}
 	
 	public static void main(String[] args) {
 		try {
-			Isgem1Update i1u = new Isgem1Update();
-			i1u.load();
+			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
+		} catch (InstantiationException e) {
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			e.printStackTrace();
+		} catch (UnsupportedLookAndFeelException e) {
 			e.printStackTrace();
 		}
+		
+		try {
+			Isgem1Update i1u = new Isgem1Update();
+			i1u.load();
+			i1u.dialog.setVisible( false );
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		System.exit( 0 );
 	}
 	
 	Map<String,float[]> enMap = new HashMap<String,float[]>();

@@ -34,7 +34,7 @@ import javax.swing.table.TableModel;
 import org.simmi.RecipePanel.Recipe;
 import org.simmi.RecipePanel.RecipeIngredient;
 
-public class DetailPanel extends JSplitPane {
+public class DetailPanel extends SimSplitPane {
 	JCompatTable	detailTable;
 	TableModel		detailModel;
 	List<Boolean>	showColumn;
@@ -73,17 +73,6 @@ public class DetailPanel extends JSplitPane {
 		
 		topTable.setModel( oldTop );
 		table.setModel( old );
-	}
-	
-	public void swapComponents() {
-		Component top = this.getTopComponent();
-		Component bottom = this.getBottomComponent();
-		
-		this.setTopComponent( null );
-		this.setBottomComponent( null );
-		
-		this.setTopComponent( bottom );
-		this.setBottomComponent( top );
 	}
 	
 	ByteArrayOutputStream	baos = new ByteArrayOutputStream();
@@ -178,7 +167,6 @@ public class DetailPanel extends JSplitPane {
 	
 	public DetailPanel( final RdsPanel rdsp, final String lang, final ImagePanel imgPanel, final JCompatTable table, final JCompatTable topTable, final JCompatTable leftTable, final List<Object[]> stuff, final List<String> ngroupList, final List<String> ngroupGroups, final Map<String,Integer> foodInd, final List<Recipe> recipes ) throws IOException {
 		super( JSplitPane.VERTICAL_SPLIT );
-		this.setOneTouchExpandable( true );
 		this.setDividerLocation( 300 );
 		
 		final JScrollPane	detailScroll = new JScrollPane();

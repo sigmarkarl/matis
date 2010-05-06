@@ -5,6 +5,7 @@ import java.awt.Desktop;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
@@ -38,10 +39,12 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -50,7 +53,7 @@ import javax.swing.table.TableModel;
 import org.netbeans.saas.RestConnection;
 import org.netbeans.saas.RestResponse;
 
-public class FriendsPanel extends JScrollPane {
+public class FriendsPanel extends SimSplitPane {
 	private final String apiKey = "d8993947d6a37b4bf754d2a578025c31";
 	private final String secret = "c9577f5b3a6c03abb63ebdadb39feea5";
 	
@@ -479,10 +482,8 @@ public class FriendsPanel extends JScrollPane {
 						}
 						isr.close();
 					} catch (FileNotFoundException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}
@@ -493,50 +494,45 @@ public class FriendsPanel extends JScrollPane {
 	
 	char[]	cbuf = new char[50000];
 	public FriendsPanel( String sessionKey0, final String currentUser ) {
+		super();
+		this.setDividerLocation( 300 );
+		
 		this.sessionKey = sessionKey0;
 		
+		this.setBackground( Color.white );
+		
+		JScrollPane	scrollpane = new JScrollPane();
+		
 		nullmodel = new TableModel() {
-			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {}
 			
 			public void removeTableModelListener(TableModelListener l) {}
 			
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
-				// TODO Auto-generated method stub
 				return false;
 			}
 			
 			public Object getValueAt(int rowIndex, int columnIndex) {
-				// TODO Auto-generated method stub
 				return null;
 			}
 			
 			public int getRowCount() {
-				// TODO Auto-generated method stub
 				return 0;
 			}
 			
 			public String getColumnName(int columnIndex) {
-				// TODO Auto-generated method stub
 				return null;
 			}
 			
 			public int getColumnCount() {
-				// TODO Auto-generated method stub
 				return 0;
 			}
 			
 			public Class<?> getColumnClass(int columnIndex) {
-				// TODO Auto-generated method stub
 				return null;
 			}
 			
-			public void addTableModelListener(TableModelListener l) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void addTableModelListener(TableModelListener l) {}
 		};
 		
 		Color cl = new Color( 0,0,0,0 );
@@ -611,10 +607,8 @@ public class FriendsPanel extends JScrollPane {
 				obj[arg2+1] = arg0;
 			}
 		};
-		table.setModel( model );
+		updateModel();
 		table.setAutoCreateRowSorter( true );
-		table.getColumnModel().getColumn(4).setCellRenderer(new IconRenderer());
-		table.getColumnModel().getColumn(5).setCellRenderer(new IconRenderer());
 		table.setRowHeight( 76 );
 		
 		JPopupMenu popup = new JPopupMenu();
@@ -681,9 +675,34 @@ public class FriendsPanel extends JScrollPane {
 			}
 		});
 		table.setComponentPopupMenu( popup );
-		this.setComponentPopupMenu( popup );
+		scrollpane.setComponentPopupMenu( popup );
 		
-		this.setViewportView( table );
+		scrollpane.setViewportView( table );
+		
+		this.setRightComponent( scrollpane );
+		
+		Object[]	me = null;
+		if( friendList.size() > 0 ) me = friendList.get(0);
+		
+		URL url = this.getClass().getResource("/re.png");
+		ImageIcon icon = new ImageIcon( url );
+		final MyPanel		mypanel = new MyPanel( ((ImageIcon)me[5]).getImage(), icon );
+		this.setLeftComponent( mypanel );
+		
+		final JButton	button = mypanel.rotatebutton;
+		button.addActionListener( new ActionListener() {	
+			public void actionPerformed(ActionEvent e) {
+				mypanel.orientation = (mypanel.orientation+1)%4;
+				
+				if( mypanel.orientation%2 == 1 ) {
+					swapComponents();
+				}
+				
+				int orientation = FriendsPanel.this.getOrientation() == JSplitPane.HORIZONTAL_SPLIT ? JSplitPane.VERTICAL_SPLIT : JSplitPane.HORIZONTAL_SPLIT;
+				FriendsPanel.this.setOrientation( orientation );
+				//DetailPanel.
+			}
+		});
 	}
 	
 	public void updateFriends( final String sessionKey, final String currentUser ) {
@@ -709,8 +728,11 @@ public class FriendsPanel extends JScrollPane {
 			table.setModel( nullmodel );
 		}
 		table.setModel( model );
+		table.getColumnModel().getColumn(0).setMaxWidth(50);
+		table.getColumnModel().getColumn(3).setMaxWidth(100);
 		table.getColumnModel().getColumn(4).setCellRenderer(new IconRenderer());
 		table.getColumnModel().getColumn(5).setCellRenderer(new IconRenderer());
+		table.getColumnModel().getColumn(5).setMaxWidth(100);
 		table.repaint();
 	}
 }
