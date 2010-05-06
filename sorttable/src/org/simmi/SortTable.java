@@ -1840,7 +1840,7 @@ public class SortTable extends JApplet {
 			tabbedPane.addTab("Samsetning", samicon, graph);
 			tabbedPane.addTab("Uppskriftir", uppicon, recipe);
 			if (fp != null)
-				tabbedPane.addTab("Vinir", vinicon, fp);
+				tabbedPane.addTab("Ég og vinir", vinicon, fp);
 			//tabbedPane.addTab("RDS", rdsicon, rdsPanel);
 			tabbedPane.addTab("Máltíðir", maticon, eat);
 			//tabbedPane.addTab("Mataræði og Hreyfing", maticon, eat);

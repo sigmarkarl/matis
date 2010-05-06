@@ -448,7 +448,7 @@ public class Order extends JApplet {
 	}
 	
 	boolean userCheck() {
-		return user.equals("ragnar") || user.equals("annas");// || user.equals("sigmar");
+		return user.equals("ragnar") || user.equals("annas") || user.equals("gulla") || user.equals("julia");
 	}
 	
 	public TableModel createModel( final List<?> datalist, final Class cls ) {
@@ -838,23 +838,55 @@ public class Order extends JApplet {
 				Pontun pnt = afglist.get(r);
 				
 				if( pnt.Pantað_Af.equals(user) || userCheck() ) {
-					pnt._Afhent = new Date( System.currentTimeMillis() );
-					pnts.add( pnt );
-					
-					try {
-						updateorder( pnt );
-					} catch (SQLException e1) {
-						e1.printStackTrace();
+					if( pnt.e_Magn > 1 ) {
+						ad.sp.setModel( new SpinnerNumberModel((int)pnt.e_Magn, 1, (int)pnt.e_Magn, 1) );
+						ad.setSize(350, 100);
+						ad.setLocationRelativeTo( this );
+						ad.setVisible( true );
+						
+						if( ad.appr ) {
+							if( !ad.sp.getValue().equals( pnt.e_Magn ) ) {
+								Pontun pntcln = pnt.clone();
+								int val = (Integer)ad.sp.getValue();
+								pntcln.e_Magn = pnt.e_Magn - val;
+								pnt.e_Magn = val;
+								afglist.add( pntcln );
+							}
+							
+							pnt._Afhent = new Date( System.currentTimeMillis() );
+							pnts.add( pnt );
+							
+							try {
+								updateorder( pnt );
+							} catch (SQLException e1) {
+								e1.printStackTrace();
+							}
+							
+							afglist.removeAll( pnts );
+							afhlist.addAll( pnts );
+							
+							atable.tableChanged( new TableModelEvent( amodel ) );
+							rtable.tableChanged( new TableModelEvent( rmodel ) );
+						}
+					} else {
+						pnt._Afhent = new Date( System.currentTimeMillis() );
+						pnts.add( pnt );
+						
+						try {
+							updateorder( pnt );
+						} catch (SQLException e1) {
+							e1.printStackTrace();
+						}
+						
+						afglist.removeAll( pnts );
+						afhlist.addAll( pnts );
+						
+						atable.tableChanged( new TableModelEvent( amodel ) );
+						rtable.tableChanged( new TableModelEvent( rmodel ) );
 					}
 				}
 			}
 		}
-		
-		afglist.removeAll( pnts );
-		afhlist.addAll( pnts );
-		
-		atable.tableChanged( new TableModelEvent( amodel ) );
-		rtable.tableChanged( new TableModelEvent( rmodel ) );
 	}
 	
 	private void afgr() {
@@ -866,7 +898,7 @@ public class Order extends JApplet {
 				
 				final Pontun pnt = pntlist.get(r);
 				
-				if( pnt.e_Magn > 1 ) {
+				/*if( pnt.e_Magn > 1 ) {
 					ad.sp.setModel( new SpinnerNumberModel((int)pnt.e_Magn, 1, (int)pnt.e_Magn, 1) );
 							
 					/*new SpinnerModel() {
@@ -901,7 +933,7 @@ public class Order extends JApplet {
 								ad.sp.repaint();
 							}
 						}
-					});*/
+					});*
 					ad.setSize(350, 100);
 					ad.setLocationRelativeTo( this );
 					ad.setVisible( true );
@@ -924,7 +956,7 @@ public class Order extends JApplet {
 							e1.printStackTrace();
 						}
 					}
-				} else {
+				} else {*/
 					pnt._Afgreitt = new Date( System.currentTimeMillis() );
 					pnts.add( pnt );
 					
@@ -933,7 +965,7 @@ public class Order extends JApplet {
 					} catch (SQLException e1) {
 						e1.printStackTrace();
 					}
-				}
+				//}
 			}
 		}
 		
