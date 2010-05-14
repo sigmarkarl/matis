@@ -7,5 +7,8 @@
 	<classpathentry kind="lib" path="/usr/share/java/mysql.jar"/>
 	<classpathentry kind="lib" path="/opt/poi-3.6/poi-3.6-20091214.jar"/>
 	<classpathentry kind="lib" path="/opt/poi-3.6/poi-contrib-3.6-20091214.jar"/>
+	<classpathentry kind="lib" path="/opt/jackcess/jackcess-1.2.0.jar"/>
+	<classpathentry kind="lib" path="/usr/share/java/commons-logging.jar"/>
+	<classpathentry kind="lib" path="/usr/share/java/commons-lang.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -1,7 +1,7 @@
 package org.simmi;
 
 import java.awt.BorderLayout;
-import java.awt.Component;
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -29,6 +29,7 @@ import javax.swing.event.RowSorterEvent;
 import javax.swing.event.RowSorterListener;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
 import org.simmi.RecipePanel.Recipe;
@@ -170,12 +171,13 @@ public class DetailPanel extends SimSplitPane {
 		this.setDividerLocation( 300 );
 		
 		final JScrollPane	detailScroll = new JScrollPane();
+		detailScroll.getViewport().setBackground( Color.white );
 		
 		URL url = this.getClass().getResource("/re.png");
 		//bi = ImageIO.read( url );
 		ImageIcon icon = new ImageIcon( url );
 		final JButton	button = new JButton( icon );
-		button.addActionListener( new ActionListener() {			
+		button.addActionListener( new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				imgPanel.orientation = (imgPanel.orientation+1)%4;
 				
@@ -494,6 +496,10 @@ public class DetailPanel extends SimSplitPane {
 			}
 		});
 		detailScroll.setViewportView( detailTable );
+		TableColumn col = detailTable.getColumn("Sýna dálk");
+		if( col != null ) {
+			col.setMaxWidth( 100 );
+		}
 		
 		for( int rowIndex = 0; rowIndex < detailModel.getRowCount(); rowIndex++ ) {
 			String efni = ngroupList.get( rowIndex );

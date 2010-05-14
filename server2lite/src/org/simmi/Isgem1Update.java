@@ -1,6 +1,8 @@
 package org.simmi;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.sql.Connection;
 import java.sql.Date;
@@ -17,6 +19,8 @@ import javax.swing.JProgressBar;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+
+import com.healthmarketscience.jackcess.Database;
 
 public class Isgem1Update {
 	Connection con;
@@ -70,10 +74,13 @@ public class Isgem1Update {
 		try {
 			Isgem1Update i1u = new Isgem1Update();
 			i1u.load();
+			i1u.save();
 			i1u.dialog.setVisible( false );
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		System.exit( 0 );
@@ -81,6 +88,42 @@ public class Isgem1Update {
 	
 	Map<String,float[]> enMap = new HashMap<String,float[]>();
 
+	private void save() throws IOException, SQLException {
+		System.err.println( "about to write" );
+		
+		Database isdb = Database.create( new File("ISDB.mdb") );
+		
+		String sql = "select * from [ISDB].[dbo].[EFNI]";
+		PreparedStatement	ps = con.prepareStatement( sql );
+		ResultSet	rs = ps.executeQuery();
+		isdb.copyTable("efni", rs);
+		rs.close();
+		ps.close();
+		
+		sql = "select * from [ISDB].[dbo].[FAEDA]";
+		ps = con.prepareStatement( sql );
+		rs = ps.executeQuery();
+		isdb.copyTable("faeda", rs);
+		rs.close();
+		ps.close();
+		
+		sql = "select * from [ISDB].[dbo].[HEIMILD]";
+		ps = con.prepareStatement( sql );
+		rs = ps.executeQuery();
+		isdb.copyTable("heimild", rs);
+		rs.close();
+		ps.close();
+		
+		sql = "select * from [ISDB].[dbo].[MAELING]";
+		ps = con.prepareStatement( sql );
+		rs = ps.executeQuery();
+		isdb.copyTable("maeling", rs);
+		rs.close();
+		ps.close();
+		
+		isdb.close();
+	}
+	
 	private void load() throws SQLException {
 		con.prepareCall("delete from [ISDB].[dbo].[HEIMILD]").execute();
 		con.prepareCall("delete from [ISDB].[dbo].[EFNI]").execute();
@@ -301,29 +344,52 @@ public class Isgem1Update {
 					ips.setString(10, fg1);
 					ips.setString(11, fg2);
 					ips.setString(12, fg3);
-					ips.setString(13, npf);
-					ips.setString(14, faf);
 					
-					pst.printf("%.1f", xProtein);
-					ips.setString(15, baos.toString());
-					baos.reset();
-					pst.printf("%.1f", xFat);
-					ips.setString(16, baos.toString());
-					baos.reset();
-					pst.printf("%.1f", xCarb);
-					ips.setString(17, baos.toString());
-					baos.reset();
+					//ips.setString(13, npf);
+					float f_npf = 0.0f;
+					float f_faf = 0.0f;
+					try {
+						f_npf = Float.parseFloat( npf );
+						f_faf = Float.parseFloat( faf );
+					} catch( Exception e ) {
+						
+					}
+					ips.setFloat(13, f_npf);
+					//ips.setString(14, faf);
+					ips.setFloat(14, f_faf);
+					
+					//pst.printf("%.1f", xProtein);
+					//ips.setString(15, baos.toString());
+					ips.setFloat(15, xProtein);
+					
+					//baos.reset();
+					//pst.printf("%.1f", xFat);
+					//ips.setString(16, baos.toString());
+					ips.setFloat(16, xFat);
+					
+					//baos.reset();
+					//pst.printf("%.1f", xCarb);
+					//ips.setString(17, baos.toString());
+					ips.setFloat(17, xCarb);
+					
+					//baos.reset();
 					/*pst.printf("%.1f", xFiber);
 					ips.setString(18, baos.toString());
 					baos.reset();*/
-					pst.printf("%.1f", xAlcohol);
-					ips.setString(18, baos.toString());
-					baos.reset();
-					pst.printf("%.1f", xKJ);
-					ips.setString(19, baos.toString());
-					baos.reset();
-					pst.printf("%.1f", xkkal);
-					ips.setString(20, baos.toString());
+					//pst.printf("%.1f", xAlcohol);
+					//ips.setString(18, baos.toString());
+					ips.setFloat(18, xAlcohol);
+					
+					//baos.reset();
+					//pst.printf("%.1f", xKJ);
+					//ips.setString(19, baos.toString());
+					ips.setFloat(19, xKJ);
+					
+					//baos.reset();
+					//pst.printf("%.1f", xkkal);
+					//ips.setString(20, baos.toString());
+					ips.setFloat(20, xkkal);
+					
 					baos.reset();
 					pst.printf("%.1f", xFa0tot);
 					ips.setString(21, baos.toString());

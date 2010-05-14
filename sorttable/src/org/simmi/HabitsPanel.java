@@ -5,7 +5,9 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.RenderingHints;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.dnd.DropTarget;
@@ -445,7 +447,9 @@ public class HabitsPanel extends JComponent {
 		toolbar = new JToolBar();
 		toolbar.add( datepicker );
 		toolbar.add( englabel );
+		
 		this.add( toolbar, BorderLayout.NORTH );
+		
 		//splitpane = new JSplitPane( JSplitPane.VERTICAL_SPLIT );
 		//this.add( splitpane );
 		
@@ -522,10 +526,29 @@ public class HabitsPanel extends JComponent {
 				return c;
 			}
 		};
-		
+		timelineDataTable.setBackground( Color.white );
 		timelineDataTable.setRowSelectionAllowed( true );
 		timelineDataTable.setColumnSelectionAllowed( true );
-		final JScrollPane timelineDataScroll = new JScrollPane( timelineDataTable );
+		final JScrollPane timelineDataScroll = new JScrollPane( timelineDataTable ) {
+			public void paint( Graphics g ) {
+				super.paint( g );
+				
+				if( timelineDataTable.getRowCount() == 0 ) {
+					Graphics2D g2 = (Graphics2D)g;
+					g2.setRenderingHint( RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON );
+					
+					String str = "Dragðu fæðutegundir úr tölfunni";
+					String nstr = "til vinstri hingað";
+					int strw = g.getFontMetrics().stringWidth( str );
+					int nstrw = g.getFontMetrics().stringWidth( nstr );
+					g.setColor( Color.lightGray );
+					g.drawString(str, (this.getWidth()-strw)/2, this.getHeight()/2-5);
+					g.drawString(nstr, (this.getWidth()-nstrw)/2, this.getHeight()/2+10);
+				}
+			}
+		};
+		timelineDataScroll.setBackground( Color.white );
+		timelineDataScroll.getViewport().setBackground( Color.white );
 		
 		timelineDataTable.getColumnModel().addColumnModelListener( new TableColumnModelListener() {
 			public void columnAdded(TableColumnModelEvent e) {}
@@ -713,6 +736,8 @@ public class HabitsPanel extends JComponent {
 		colHeaderScroll.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_NEVER );
 		colHeaderScroll.setHorizontalScrollBarPolicy( JScrollPane.HORIZONTAL_SCROLLBAR_NEVER );
 		
+		timelineDataScroll.getRowHeader().setBackground( Color.white );
+		
 		LinkedSplitPane	timelineSplit = new LinkedSplitPane( JSplitPane.VERTICAL_SPLIT, timelineScroll, timelineDataScroll );
 		lsplitPane = new LinkedSplitPane( JSplitPane.VERTICAL_SPLIT, colHeaderTable.getTableHeader(), colHeaderScroll );
 		timelineSplit.setLinkedSplitPane( lsplitPane );
@@ -758,18 +783,28 @@ public class HabitsPanel extends JComponent {
 				return 7;
 			}
 
-			public String getColumnName(int arg0) {
-				final long time = getCurrentTime();
-				cal.setTimeInMillis( time );
-				return cal.get( Calendar.WEEK_OF_YEAR ) + "";
+			public String getColumnName(int arg1) {
+				//final long time = getCurrentTime();
+				//cal.setTimeInMillis( time );
+				//return cal.get( Calendar.WEEK_OF_YEAR ) + "";
+				
+				if( arg1 == 0 ) return "Sunnudagur";
+				else if( arg1 == 1 ) return "Mánudagur";
+				else if( arg1 == 2 ) return "Þriðjudagur";
+				else if( arg1 == 3 ) return "Miðvikudagur";
+				else if( arg1 == 4 ) return "Fimmtudagur";
+				else if( arg1 == 5 ) return "Föstudagur";
+				else if( arg1 == 6 ) return "Laugardagur";
+				
+				return "";
 			}
 
 			public int getRowCount() {
-				return 2;
+				return 1;
 			}
 
 			public Object getValueAt(int arg0, int arg1) {
-				if( arg0 == 0 ) {
+				/*if( arg0 == 0 ) {
 					if( arg1 == 0 ) return "Sunnudagur";
 					else if( arg1 == 1 ) return "Mánudagur";
 					else if( arg1 == 2 ) return "Þriðjudagur";
@@ -777,7 +812,7 @@ public class HabitsPanel extends JComponent {
 					else if( arg1 == 4 ) return "Fimmtudagur";
 					else if( arg1 == 5 ) return "Föstudagur";
 					else if( arg1 == 6 ) return "Laugardagur";
-				} else {					
+				} else {	*/				
 					final long time = getCurrentTime();
 					cal.setTimeInMillis( time );
 					int weekday = cal.get( Calendar.DAY_OF_WEEK )-1;
@@ -798,7 +833,7 @@ public class HabitsPanel extends JComponent {
 					else if( mnum == 9 ) return mday + ". Október";
 					else if( mnum == 10 ) return mday + ". Nóvember";
 					else if( mnum == 11 ) return mday + ". Desember";
-				}
+				//}
 				//cal.setTimeInMillis( time+arg1*Timer.ONE_DAY );
 				//String str = CompatUtilities.getDateString( cal, arg0 == 1 );
 				return "";
@@ -874,11 +909,13 @@ public class HabitsPanel extends JComponent {
 					if( cc > 0 ) timelineDataTable.setColumnSelectionInterval(0, cc-1);
 					
 					int selrow = colHeaderTable.getSelectedRow();
-					timelineDataTable.setRowSelectionInterval(selrow, selrow);
+					if( selrow >= 0 && selrow < timelineDataTable.getRowCount() ) {
+						timelineDataTable.setRowSelectionInterval(selrow, selrow);
+					}
 					
 					int[] selrows = colHeaderTable.getSelectedRows();
 					for( int i : selrows ) {
-						timelineDataTable.addRowSelectionInterval( i, i );
+						if( i >= 0 && i < timelineDataTable.getRowCount() ) timelineDataTable.addRowSelectionInterval( i, i );
 					}
 					sel = false;
 					
@@ -1034,6 +1071,8 @@ public class HabitsPanel extends JComponent {
 		});
 		
 		this.add( tsplitPane );
+		
+		
 		//splitpane.setTopComponent( timelineTabPane );
 		//splitpane.setBottomComponent( timelineDrawScroll );
 	}
@@ -1081,10 +1120,20 @@ public class HabitsPanel extends JComponent {
 				return 7;
 			}
 
-			public String getColumnName(int arg0) {
-				final long time = getCurrentTime();
-				cal.setTimeInMillis( time );
-				return cal.get( Calendar.WEEK_OF_YEAR ) + "";
+			public String getColumnName(int arg1) {
+				//final long time = getCurrentTime();
+				//cal.setTimeInMillis( time );
+				//return cal.get( Calendar.WEEK_OF_YEAR ) + "";
+				
+				if( arg1 == 0 ) return "Sunnudagur";
+				else if( arg1 == 1 ) return "Mánudagur";
+				else if( arg1 == 2 ) return "Þriðjudagur";
+				else if( arg1 == 3 ) return "Miðvikudagur";
+				else if( arg1 == 4 ) return "Fimmtudagur";
+				else if( arg1 == 5 ) return "Föstudagur";
+				else if( arg1 == 6 ) return "Laugardagur";
+				
+				return "";
 			}
 
 			public int getRowCount() {
@@ -1198,7 +1247,11 @@ public class HabitsPanel extends JComponent {
 
 			@Override
 			public String getColumnName(int columnIndex) {
-				return "Máltíð";
+				final long time = getCurrentTime();
+				cal.setTimeInMillis( time );
+				int week = cal.get( Calendar.WEEK_OF_YEAR );
+				
+				return "Máltíð - " + week + ". vika";
 			}
 
 			@Override

@@ -8,19 +8,6 @@
 #include "simlab.h"
 #include <stdio.h>
 
-#ifdef JAVA
-#include <jni.h>
-#else
-#ifdef WIN
-#define JNIEXPORT	__declspec(dllexport)
-#else
-#define JNIEXPORT	extern "C"
-#endif
-#endif
-
-#define  mx(a, b)  ((a) > (b) ? (a) :  (b))
-#define  mn(a, b)  ((a) < (b) ? (a) :  (b))
-
 JNIEXPORT int zero();
 extern simlab 	data;
 extern c_const<int>		iconst;

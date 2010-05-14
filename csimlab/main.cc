@@ -11,10 +11,10 @@
 #include <math.h>
 #include <string.h>
 
-extern "C" JNIEXPORT int welcome();
-extern "C" JNIEXPORT int store( simlab name );
-extern "C" JNIEXPORT int parse( simlab name, simlab func );
-extern "C" JNIEXPORT int cmd( simlab name );
+JNIEXPORT int welcome();
+JNIEXPORT int store( simlab name );
+JNIEXPORT int parse( simlab name, simlab func );
+JNIEXPORT int cmd( simlab name );
 
 int module;
 extern int (*prnt)( const char*, ... );
@@ -269,8 +269,31 @@ JNIEXPORT int init() {
 
 void start() {
 	welcome();
+	parse( nulldata, nulldata );
+}
 
-	simlab null;
-	null.buffer = 0;
-	parse( null, null );
+int main( int argc, char** argv ) {
+#ifdef GTK
+	gtk_init(&argc, &argv);
+//#ifndef PTHREAD
+	g_thread_init( NULL );
+//#endif
+#ifdef GL
+	//gtk_gl_init( &argc, &argv );
+#endif
+#endif
+	init();
+	if( argc > 1 ) {
+		simlab line;
+		line.type = 8;
+		for( int i = 1; i < argc; i++ ) {
+			line.buffer = (long)argv[i];
+			line.length = strlen(argv[i]);
+			cmd( line );
+		}
+	} else {
+		start();
+	}
+
+	return 0;
 }

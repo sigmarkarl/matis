@@ -4,16 +4,6 @@
 #include <stdarg.h>
 #include <vector>
 
-#ifdef JAVA
-#include <jni.h>
-#else
-#ifdef WIN
-#define JNIEXPORT	__declspec(dllexport)
-#else
-#define JNIEXPORT	extern "C"
-#endif
-#endif
-
 extern simlab 		data;
 extern passa<4> 	passnext;
 int (*prnt)( const char*, ... );

@@ -23,7 +23,6 @@ extern simlab data;
 extern simlab nulldata;
 extern passa<4>	passnext;
 extern int module;
-
 int			bsize;
 
 int parseParameters( int bytesize ) {

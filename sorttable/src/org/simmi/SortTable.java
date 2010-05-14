@@ -370,6 +370,7 @@ public class SortTable extends JApplet {
 						InputStream inputStream = this.getClass().getResourceAsStream("/result.txt");
 						if (inputStream != null) {
 							BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+							int	linen = 0;
 							String line = br.readLine();
 							while (line != null) {
 								String[] split = line.split("\\t");
@@ -389,14 +390,20 @@ public class SortTable extends JApplet {
 											f = Float.parseFloat(replc);
 										} catch (Exception e) {
 										}
-										int ngroupOffset = ngroupMap.get(split[2]);
-										if (f != -1.0f)
-											objs[2 + ngroupOffset] = f;
-										else
-											objs[2 + ngroupOffset] = null;
+										Integer ngroupOffset = ngroupMap.get(split[2]);
+										
+										if( ngroupOffset != null ) {
+											if (f != -1.0f)
+												objs[2 + ngroupOffset] = f;
+											else
+												objs[2 + ngroupOffset] = null;
+										} else {
+											System.err.println();
+										}
 									}
 								}
 								line = br.readLine();
+								linen++;
 							}
 						}
 						
@@ -602,7 +609,6 @@ public class SortTable extends JApplet {
 	String sessionKey = null;
 	String currentUser = null;
 	public String lastResult;
-
 	public void init() {
 		firstInit();
 
@@ -1216,7 +1222,6 @@ public class SortTable extends JApplet {
 		topLeftScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
 		topLeftScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 
-		final String leit = "leit";
 		field = new JTextField() {
 			public void paintComponent(Graphics g) {
 				super.paintComponent(g);
@@ -1232,6 +1237,8 @@ public class SortTable extends JApplet {
 						g.setFont(f);
 					}
 					g.setColor(Color.gray);
+					
+					String leit = "leit í " + (stuff.size()-2) + " fæðutegundum";
 					int strw = g.getFontMetrics().stringWidth(leit);
 					int x = (this.getWidth() - strw) / 2;
 					g.drawString(leit, x, 20);

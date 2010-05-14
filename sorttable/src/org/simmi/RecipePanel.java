@@ -1,10 +1,14 @@
 package org.simmi;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.dnd.DropTarget;
@@ -447,6 +451,7 @@ public class RecipePanel extends JSplitPane {
 	public RecipePanel( final FriendsPanel fp, final String lang, final JCompatTable table, final JCompatTable leftTable, final Map<String,Integer> foodNameInd ) throws IOException {
 		super( JSplitPane.VERTICAL_SPLIT );
 		this.setDividerLocation( 300 );
+		this.setOneTouchExpandable( true );
 		
 		theTable = table;
 		theLeftTable = leftTable;
@@ -465,21 +470,9 @@ public class RecipePanel extends JSplitPane {
 					e1.printStackTrace();
 				}
 			}
-
-			public void componentResized(ComponentEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			public void componentMoved(ComponentEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			public void componentHidden(ComponentEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void componentResized(ComponentEvent e) {}
+			public void componentMoved(ComponentEvent e) {}
+			public void componentHidden(ComponentEvent e) {}
 		});
 		
 		new Thread() {
@@ -511,6 +504,7 @@ public class RecipePanel extends JSplitPane {
 		}
 		
 		JScrollPane	recipeScroll = new JScrollPane();
+		recipeScroll.getViewport().setBackground( Color.white );
 		
 		AbstractAction nu = new AbstractAction("Nýja uppskrift") {
 			public void actionPerformed(ActionEvent e) {
@@ -635,10 +629,12 @@ public class RecipePanel extends JSplitPane {
 				int r = recipeTable.getSelectedRow();
 				if( r >= 0 && r < recipes.size() ) {
 					Recipe rep = recipes.get(r);
-					RecipeIngredient repi = rep.ingredients.get(arg0);
-					if( arg1 == 0 ) return repi.stuff;
-					else if( arg1 == 1 ) return repi.measure;
-					else if( arg1 == 2 ) return repi.unit;
+					if( arg0 >= 0 && arg0 < rep.ingredients.size() ) {
+						RecipeIngredient repi = rep.ingredients.get(arg0);
+						if( arg1 == 0 ) return repi.stuff;
+						else if( arg1 == 1 ) return repi.measure;
+						else if( arg1 == 2 ) return repi.unit;
+					}
 				}
 				return null;
 			}
@@ -821,14 +817,13 @@ public class RecipePanel extends JSplitPane {
 					int[]	rr = recipeDetailTable.getSelectedRows();
 					for( int tr : rr ) {
 						int sr = recipeDetailTable.convertRowIndexToModel(tr);
-						setRep.add( rep.ingredients.get( sr ) );		
+						setRep.add( rep.ingredients.get( sr ) );	
 					}
 					
 					rep.ingredients.removeAll(setRep);
 					try {
 						rep.save();
 					} catch (IOException e1) {
-						// TODO Auto-generated catch block
 						e1.printStackTrace();
 					}
 					
@@ -888,8 +883,11 @@ public class RecipePanel extends JSplitPane {
 					Recipe r = recipes.get( rrr );
 					
 					rr = recipeDetailTable.convertRowIndexToModel( row );
-					RecipeIngredient rip = r.ingredients.get( rr );
-					return rip.cellEdit;
+					
+					if( rr >= 0 && rr < r.ingredients.size() ) {
+						RecipeIngredient rip = r.ingredients.get( rr );
+						return rip.cellEdit;
+					}
 				}
 				return null;
 			}
@@ -925,7 +923,23 @@ public class RecipePanel extends JSplitPane {
 			}
 		});
 		
-		JScrollPane			recipeInfoScroll = new JScrollPane( recipeInfo );
+		JScrollPane			recipeInfoScroll = new JScrollPane( recipeInfo ) {
+			public void paint( Graphics g ) {
+				super.paint( g );
+				
+				if( recipeInfo.getText().length() < 100 ) {
+					Graphics2D g2 = (Graphics2D)g;
+					g2.setRenderingHint( RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON );
+	
+					String str = "Settu inn upplýsingar um uppskriftina hér";
+					int strw = g.getFontMetrics().stringWidth( str );
+					g.setColor( Color.lightGray );
+					g.drawString(str, (this.getWidth()-strw)/2, this.getHeight()/2-5);
+				}
+			}
+		};
+		recipeInfoScroll.getViewport().setBackground( Color.white );
+		
 		final JTabbedPane			recipeInfoPane = new JTabbedPane();
 		recipeInfoPane.setTabPlacement( JTabbedPane.RIGHT );
 		recipeInfoPane.addTab("Skoða", recipeInfoScroll);
@@ -947,6 +961,27 @@ public class RecipePanel extends JSplitPane {
 		});
 		//final JTextArea	recipeInfo = new JTextArea();
 		//recipeInfo.set
+		
+		final JScrollPane recipeDetailScroll = new JScrollPane( recipeDetailTable ) {
+			public void paint( Graphics g ) {
+				super.paint(g);
+				
+				if( recipeDetailTable.getRowCount() == 0 ) {
+					Graphics2D g2 = (Graphics2D)g;
+					g2.setRenderingHint( RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON );
+
+					String str = "Dragðu fæðutegundir úr tölfunni";
+					String nstr = "til vinstri hingað";
+					int strw = g.getFontMetrics().stringWidth( str );
+					int nstrw = g.getFontMetrics().stringWidth( nstr );
+					g.setColor( Color.lightGray );
+					g.drawString(str, (this.getWidth()-strw)/2, this.getHeight()/2-5);
+					g.drawString(nstr, (this.getWidth()-nstrw)/2, this.getHeight()/2+10);
+				}
+			}
+		};
+		recipeDetailScroll.getViewport().setBackground( Color.white );
+		
 		recipeTable.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
 			public void valueChanged(ListSelectionEvent e) {
 				int r = recipeTable.getSelectedRow();
@@ -973,8 +1008,8 @@ public class RecipePanel extends JSplitPane {
 						table.scrollRectToVisible( visRect );
 					}
 				}
-				
 				recipeDetailTable.revalidate();
+				recipeDetailScroll.repaint();
 				recipeDetailTable.repaint();
 			}
 		});
@@ -983,42 +1018,43 @@ public class RecipePanel extends JSplitPane {
 			public void valueChanged(ListSelectionEvent e) {
 				int r = recipeDetailTable.getSelectedRow();
 				
-				int ri = recipeDetailTable.convertRowIndexToModel(r);
-				Object obj = recipeDetailTable.getValueAt(ri, 0);
-				if( obj != null && foodInd.containsKey( obj.toString() ) ) {
-					int i = foodInd.get( obj );
-					int mi = leftTable.convertRowIndexToView( i );
-					if( mi >= 0 && mi < leftTable.getRowCount() ) {
-						leftTable.setRowSelectionInterval( mi, mi );
-
-						Rectangle cellRect = leftTable.getCellRect(mi, 0, false);
-						Rectangle visRect = table.getVisibleRect();
-						visRect.y = cellRect.y;
-						table.scrollRectToVisible( visRect );
-					}
-					
-					clearCombo = r;
-					skmtCombo.removeAllItems();
-					if( currentRecipe != null && currentRecipe.ingredients != null ) {
-						RecipeIngredient rip = currentRecipe.ingredients.get(ri);
-						if( rip.values != null ) {
-							for( String str : rip.values.keySet() ) {
-								skmtCombo.addItem( str + " ("+rip.values.get(str)+")" );
-							}
+				if( r != -1 ) {
+					int ri = recipeDetailTable.convertRowIndexToModel(r);
+					Object obj = recipeDetailTable.getValueAt(ri, 0);
+					if( obj != null && foodInd.containsKey( obj.toString() ) ) {
+						int i = foodInd.get( obj );
+						int mi = leftTable.convertRowIndexToView( i );
+						if( mi >= 0 && mi < leftTable.getRowCount() ) {
+							leftTable.setRowSelectionInterval( mi, mi );
+	
+							Rectangle cellRect = leftTable.getCellRect(mi, 0, false);
+							Rectangle visRect = table.getVisibleRect();
+							visRect.y = cellRect.y;
+							table.scrollRectToVisible( visRect );
 						}
+						
+						clearCombo = r;
+						skmtCombo.removeAllItems();
+						if( currentRecipe != null && currentRecipe.ingredients != null ) {
+							RecipeIngredient rip = currentRecipe.ingredients.get(ri);
+							if( rip.values != null ) {
+								for( String str : rip.values.keySet() ) {
+									skmtCombo.addItem( str + " ("+rip.values.get(str)+")" );
+								}
+							}
+						} else {
+							System.err.println("somethingsomething null");
+						}
+						skmtCombo.addItem("g");
 					} else {
-						System.err.println("somethingsomething null");
+						skmtCombo.removeAllItems();
+						skmtCombo.addItem("g");
 					}
-					skmtCombo.addItem("g");
-				} else {
-					skmtCombo.removeAllItems();
-					skmtCombo.addItem("g");
 				}
 			}
 		});
 		
-		recipeDetailTable.setAutoCreateRowSorter( true );
-		JScrollPane recipeDetailScroll = new JScrollPane( recipeDetailTable );
+		recipeDetailTable.setAutoCreateRowSorter( true );		
 		recipeDetailTable.setModel( recipeDetailModel );
 		recipeDetailTable.setDropMode2( DropMode.INSERT_ROWS );
 		recipeDetailTable.getColumn("Eining").setCellRenderer( renderer );
@@ -1112,13 +1148,13 @@ public class RecipePanel extends JSplitPane {
 		
 		final JButton	addRecipeButton = new JButton( nu );
 		addRecipeButton.setText("");
-		addRecipeButton.setToolTipText("Nýja Uppskrift");
+		addRecipeButton.setToolTipText("Nýja uppskrift");
 		final JButton	removeRecipeButton = new JButton( eu );
 		removeRecipeButton.setText("");
-		removeRecipeButton.setToolTipText("Eyða Uppskrift");
+		removeRecipeButton.setToolTipText("Eyða uppskrift");
 		final JButton	shareRecipeButton = new JButton( du );
 		shareRecipeButton.setText("");
-		shareRecipeButton.setToolTipText("Deila Uppskrift");
+		shareRecipeButton.setToolTipText("Deila uppskrift með vinum");
 		JComponent recipeButtons = new JComponent() {};
 		recipeButtons.setLayout( new FlowLayout() );
 		recipeButtons.add( addRecipeButton );
@@ -1136,10 +1172,11 @@ public class RecipePanel extends JSplitPane {
 		
 		JSplitPane	recipeSplit = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT, recipeTmpScroll, recipeDetailScroll );
 		recipeSplit.setDividerLocation( 300 );
-		JSplitPane  recipeInfoSplit = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT, recipeImage, recipeInfoPane );
+		//JSplitPane  recipeInfoSplit = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT, recipeImage, recipeInfoPane );
+		
 		//JSplitPane	recipe = new JSplitPane( JSplitPane.VERTICAL_SPLIT, recipeSplit, recipeInfoSplit );
 		
 		this.setTopComponent( recipeSplit );
-		this.setBottomComponent( recipeInfoSplit );
+		this.setBottomComponent( recipeInfoPane );
 	}
 }
