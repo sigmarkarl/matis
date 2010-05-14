@@ -1,5 +1,6 @@
 package org.simmi;
 
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -154,6 +155,7 @@ public class ImagePanel extends JComponent {
 				}
 			}
 			
+			g.setColor( Color.lightGray );
 			if( b ) {
 				String str = "Engin mynd";
 				drawString( g, str, 0 );

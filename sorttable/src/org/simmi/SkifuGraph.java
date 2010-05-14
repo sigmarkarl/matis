@@ -243,7 +243,7 @@ public class SkifuGraph extends JComponent {
 						double hrn = (dn+dnn)/2.0;
 						
 						double cmpt = (100.0*f)/total;
-						String fstr =  Double.toString( Math.floor( 10.0*cmpt ) / 10.0 );
+						String fstr =  Double.toString( Math.floor( 10.0*cmpt ) / 10.0 ) + "%";
 						int strw = g2.getFontMetrics().stringWidth( fstr );
 						int strh = g2.getFontMetrics().getHeight();
 						g2.drawString( fstr, (int)((w+tt*Math.cos(hrn)-strw)/2.0), (int)((h+tt*Math.sin(hrn)+strh)/2.0) );
@@ -262,7 +262,7 @@ public class SkifuGraph extends JComponent {
 					double hrn = (dn+dnn)/2.0;
 					
 					
-					String fstr =  Double.toString(mun);
+					String fstr =  Double.toString(mun) + "%";
 					int strw = g2.getFontMetrics().stringWidth( fstr );
 					int strh = g2.getFontMetrics().getHeight();
 					g2.drawString( fstr, (int)((w+tt*Math.cos(hrn)-strw)/2.0), (int)((h+tt*Math.sin(hrn)+strh)/2.0) );

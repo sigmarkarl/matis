@@ -20,6 +20,7 @@ import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -87,6 +88,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
@@ -99,10 +101,11 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class Order extends JApplet {
-	JScrollPane	scrollpane = new JScrollPane();
-	JScrollPane	pscrollpane = new JScrollPane();
-	JScrollPane ascrollpane = new JScrollPane();
-	JScrollPane rscrollpane = new JScrollPane();
+	JScrollPane	scrollpane;
+	JScrollPane	pscrollpane;
+	JScrollPane ascrollpane;
+	JScrollPane rscrollpane;
+	JScrollPane	kscrollpane;
 	
 	Set<String>	myVars = new HashSet<String>();
 	
@@ -123,7 +126,7 @@ public class Order extends JApplet {
 	
 	Map<String,Integer>	modelRowMap = new HashMap<String,Integer>();
 	
-	JScrollPane	scrolled = new JScrollPane();
+	JScrollPane	scrolled;
 	JEditorPane	ed = new JEditorPane();
 	
 	JLabel		vorur = new JLabel( "Vörur", JLabel.CENTER );
@@ -367,7 +370,7 @@ public class Order extends JApplet {
 		String		_Lýsing;
 		String		e_Verknúmer;
 		String		e_Svið;
-		Integer		e_Verð;
+		Double		e_Verð;
 		Date		_Klárað;
 		
 		public Pontun clone() {
@@ -379,7 +382,7 @@ public class Order extends JApplet {
 			return null;
 		}
 		
-		public Pontun( boolean urgent, String byrgir, String cat, int ordno, String name, String user, int quant, Date orddate, Date purdate, Date recdate, String description, String vn, String st, int price, Date klrdate ) {
+		public Pontun( boolean urgent, String byrgir, String cat, int ordno, String name, String user, int quant, Date orddate, Date purdate, Date recdate, String description, String vn, String st, Double price, Date klrdate ) {
 			this.e_Mikilvægt = urgent;
 			this.Birgi = byrgir;
 			this.Cat = cat;
@@ -415,8 +418,9 @@ public class Order extends JApplet {
 		String	_User;
 		String	_lastJob;
 		String	_lastLoc;
+		Double	e_Verð;
 		
-		public Vara( String name, String prdc, String selr, String cat, String user, String lastjob, String lastloc ) {
+		public Vara( String name, String prdc, String selr, String cat, String user, String lastjob, String lastloc, Double price ) {
 			this.e_Nafn = name;
 			this.e_Framleiðandi = prdc;
 			this.e_Birgi = selr;
@@ -424,6 +428,7 @@ public class Order extends JApplet {
 			this._User = user;
 			this._lastJob = lastjob;
 			this._lastLoc = lastloc;
+			this.e_Verð = price;
 		}
 	};
 	
@@ -448,7 +453,7 @@ public class Order extends JApplet {
 	}
 	
 	boolean userCheck() {
-		return user.equals("ragnar") || user.equals("annas") || user.equals("gulla") || user.equals("julia");
+		return user.equals("ragnar") || user.equals("annas") || user.equals("gulla") || user.equals("julia") || user.equals("simmi") || user.equals("sigmar");
 	}
 	
 	public TableModel createModel( final List<?> datalist, final Class cls ) {
@@ -538,7 +543,7 @@ public class Order extends JApplet {
 			Date 	afgdate = rs.getDate(6);
 			Date	afhdate = rs.getDate(11);
 			Date	findate = rs.getDate(15);
-			int		price = rs.getInt(12);
+			double	price = rs.getDouble(12);
 			String 	puser = rs.getString(3);
 			String	pname = rs.getString(2);
 			Pontun pnt = new Pontun( rs.getBoolean(7), rs.getString(13), rs.getString(14), rs.getInt(1), pname, puser, rs.getInt(4), rs.getDate(5), afgdate, afhdate, rs.getString(8), rs.getString(9), rs.getString(10), price, rs.getDate(15) );
@@ -575,12 +580,12 @@ public class Order extends JApplet {
 		
 		List<Vara>	ordlist = new ArrayList<Vara>();
 		
-		String sql = "select [cat], [name], [byrgir], [framl], [user], [lastjob], [lastloc] from [order].[dbo].[Vara]"; // where [user] = '"+user+"'";
+		String sql = "select [cat], [name], [byrgir], [framl], [user], [lastjob], [lastloc], [price] from [order].[dbo].[Vara]"; // where [user] = '"+user+"'";
 		PreparedStatement 	ps = con.prepareStatement(sql);
 		ResultSet 			rs = ps.executeQuery();
 
 		while (rs.next()) {
-			ordlist.add( new Vara( rs.getString(2), rs.getString(4), rs.getString(3), rs.getString(1), rs.getString(5), rs.getString(6), rs.getString(7) ) );
+			ordlist.add( new Vara( rs.getString(2), rs.getString(4), rs.getString(3), rs.getString(1), rs.getString(5), rs.getString(6), rs.getString(7), rs.getDouble(8) ) );
 		}
 		
 		rs.close();
@@ -623,7 +628,7 @@ public class Order extends JApplet {
 	}*/
 	
 	public boolean updateVara( Vara v ) throws SQLException {
-		String sql = "update [order].[dbo].[Vara] set [cat] = '"+v.e_Cat+"' where [name] = '"+v.e_Nafn+"' and [framl] = '"+v.e_Framleiðandi+"'";
+		String sql = "update [order].[dbo].[Vara] set [cat] = '"+v.e_Cat+"', price = "+v.e_Verð+", [framl] = '"+v.e_Framleiðandi+"', [byrgir] = '"+v.e_Birgi+"' where [name] = '"+v.e_Nafn+"'";
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
 		boolean				b = ps.execute();
@@ -651,14 +656,15 @@ public class Order extends JApplet {
 		ps.close();
 	}
 	
-	public void updateorder( Pontun order, int quant ) throws SQLException {
+	public void updateorder( Pontun order, int quant, double price ) throws SQLException {
 		//String ord = ordno+",'"+name+"','"+user+"',"+quant+",GetDate(),null,0,null";
-		String sql = "update [order].[dbo].[Pontun] set [quant] = "+quant+" where [ordno] = "+order._Númer;
+		String sql = "update [order].[dbo].[Pontun] set [quant] = "+quant+", price = "+price+" where [ordno] = "+order._Númer;
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
 		boolean				b = ps.execute();
 		
 		order.e_Magn = quant;
+		order.e_Verð = price;
 		//pntlist.get(index)
 		/*if( !b ) {
 			pntlist.add( new Pnt( false, ordno, name, user, quant, new Date( System.currentTimeMillis() ), null, "" ) );
@@ -681,16 +687,16 @@ public class Order extends JApplet {
 		return con.prepareStatement( sql );
 	}
 	
-	public void order( String name, String birgi, String cat, int quant, String verknr, String location ) throws SQLException {
+	public void order( String name, String birgi, String cat, int quant, String verknr, String location, double price ) throws SQLException {
 		ordno++;
-		String ord = ordno+",'"+name+"','"+user+"',"+quant+",GetDate(),null,0,null,'"+verknr.substring(0, 10)+"','"+location+"',null,0,'"+birgi+"','"+cat+"',null";
+		String ord = ordno+",'"+name+"','"+user+"',"+quant+",GetDate(),null,0,null,'"+verknr.substring(0, 10)+"','"+location+"',null,"+price+",'"+birgi+"','"+cat+"',null";
 		String sql = "insert into [order].[dbo].[Pontun] values ("+ord+")";
 		
 		PreparedStatement 	ps = getPrepStat(sql);
 		boolean				b = ps.execute();
 		
 		if( !b ) {
-			pntlist.add( new Pontun( false, birgi, cat, ordno, name, user, quant, new Date( System.currentTimeMillis() ), null, null, "", verknr, location, 0, null ) );
+			pntlist.add( new Pontun( false, birgi, cat, ordno, name, user, quant, new Date( System.currentTimeMillis() ), null, null, "", verknr, location, price, null ) );
 		}
 		
 		ps.close();
@@ -715,8 +721,8 @@ public class Order extends JApplet {
 	}
 	
 	public String loadEmp() throws IOException {
-		URL url = new URL( "http://www.matis.is/um-matis-ohf/starfsfolk/svid/" );
-		InputStream stream = url.openStream();
+		//URL url = new URL( "http://www.matis.is/um-matis-ohf/starfsfolk/svid/" );
+		InputStream stream = this.getClass().getResourceAsStream("/emp.txt");//url.openStream();
 		
 		int r = stream.read(bb);
 		String ret = "";
@@ -724,6 +730,10 @@ public class Order extends JApplet {
 			ret += new String( bb, 0, r, "UTF-8" );
 			r = stream.read(bb);
 		}
+		
+		//FileWriter ff = new FileWriter("/home/sigmar/emp.txt");
+		//ff.write(ret);
+		//ff.close();
 		
 		return ret;
 	}
@@ -778,7 +788,7 @@ public class Order extends JApplet {
 		ps.close();
 	}
 	
-	private void panta(String name, String birgi, String cat, String lastjob, String lastloc ) {
+	private void panta(String name, String birgi, String cat, String lastjob, String lastloc, double price ) {
 		int 		quant = 1;
 		Pontun 		tpnt = null;
 		for( Pontun pnt : pntlist ) {
@@ -790,9 +800,9 @@ public class Order extends JApplet {
 		
 		try {
 			if( tpnt != null ) {
-				updateorder( tpnt, tpnt.e_Magn+1 );
+				updateorder( tpnt, tpnt.e_Magn+1, tpnt.e_Verð+price );
 			} else {
-				order( name, birgi, cat, quant, lastjob, lastloc );
+				order( name, birgi, cat, quant, lastjob, lastloc, price );
 			}
 		} catch (SQLException e1) {
 			e1.printStackTrace();
@@ -995,7 +1005,7 @@ public class Order extends JApplet {
 	private static class SMTPAuthenticator extends javax.mail.Authenticator {
 	    public PasswordAuthentication getPasswordAuthentication() {
 	        String username = "sigmar";
-	        String password = "drsmorc.311";
+	        String password = "mirodc30";
 	        return new PasswordAuthentication(username, password);
 	    }
 	}
@@ -1068,6 +1078,7 @@ public class Order extends JApplet {
 			String		name = (String)table.getValueAt(r, 0);
 			String		birgi = (String)table.getValueAt(r, 2);
 			String		cat = (String)table.getValueAt(r, 3);
+			Double		price = (Double)table.getValueAt(r, 4);
 			//String		name = (String)table.getValueAt(r, 0);
 			
 			String lastjob = null;
@@ -1082,7 +1093,7 @@ public class Order extends JApplet {
 				v._lastJob = lastjob;
 				v._lastLoc = lastloc;
 			}
-			panta(name,birgi,cat,lastjob,lastloc);
+			panta(name,birgi,cat,lastjob,lastloc,price);
 		}
 		ptable.tableChanged( new TableModelEvent( pmodel ) );
 	}
@@ -1112,6 +1123,19 @@ public class Order extends JApplet {
 		table.tableChanged( new TableModelEvent(model) );
 	}
 	
+	private void vupdate() {
+		try {
+			int r = table.getSelectedRow();
+			if( r != -1 ) {
+				int rr = table.convertRowIndexToModel( r );
+				Vara v = ordlist.get( rr );
+				updateVara( v );
+			}
+		} catch (SQLException e1) {
+			e1.printStackTrace();
+		}
+	}
+	
 	public void init() {
 		try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
@@ -1124,6 +1148,28 @@ public class Order extends JApplet {
 		} catch (UnsupportedLookAndFeelException e) {
 			e.printStackTrace();
 		}
+		
+		scrolled = new JScrollPane() {
+			public void paint( Graphics g ) {
+				super.paint(g);
+			}
+		};
+		scrollpane = new JScrollPane() {
+			public void paint( Graphics g ) {
+				super.paint(g);
+			}
+		};
+		pscrollpane = new JScrollPane();
+		ascrollpane = new JScrollPane();
+		rscrollpane = new JScrollPane();
+		kscrollpane = new JScrollPane();
+		
+		scrolled.getViewport().setBackground( Color.white );
+		scrollpane.getViewport().setBackground( Color.white );
+		pscrollpane.getViewport().setBackground( Color.white );
+		rscrollpane.getViewport().setBackground( Color.white );
+		ascrollpane.getViewport().setBackground( Color.white );
+		kscrollpane.getViewport().setBackground( Color.white );
 		
 		Window window = SwingUtilities.windowForComponent(this);
 		if (window instanceof JFrame) {
@@ -1147,7 +1193,6 @@ public class Order extends JApplet {
 		try {
 			loadPersons();
 		} catch (IOException e3) {
-			// TODO Auto-generated catch block
 			e3.printStackTrace();
 		}
 		
@@ -1230,7 +1275,7 @@ public class Order extends JApplet {
 		
 		try {
 			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=MATIS;user=simmi;password=drsmorc.311;";
+			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=MATIS;user=simmi;password=mirodc30;";
 			con = DriverManager.getConnection(connectionUrl);
 			
 			updateVerk();
@@ -1257,7 +1302,7 @@ public class Order extends JApplet {
 		
 		if( !valid ) {
 			try {
-				String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=order;user=simmi;password=drsmorc.311;";
+				String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=order;user=simmi;password=mirodc30;";
 				con = DriverManager.getConnection(connectionUrl);
 			} catch (SQLException e) {
 				e.printStackTrace();
@@ -1303,7 +1348,7 @@ public class Order extends JApplet {
 						String lastloc = (String)stcombo.getSelectedItem();
 						v._lastJob = lastjob;
 						v._lastLoc = lastloc;
-						panta( v.e_Nafn, v.e_Birgi, v.e_Cat, lastjob, lastloc );
+						panta( v.e_Nafn, v.e_Birgi, v.e_Cat, lastjob, lastloc, v.e_Verð );
 						ptable.tableChanged( new TableModelEvent( pmodel ) );
 						table.tableChanged( new TableModelEvent( model ) );
 					}
@@ -1685,19 +1730,45 @@ public class Order extends JApplet {
 		ktable.setAutoCreateRowSorter( true );
 		ktable.setModel( kmodel );
 		
+		DefaultTableCellRenderer cr = new DefaultTableCellRenderer() {
+			public Component getTableCellRendererComponent( JTable atable, Object value, boolean isSelected, boolean hasFocus, int row, int column ) {
+				Component c = super.getTableCellRendererComponent(atable, value, isSelected, hasFocus, row, column);
+				JLabel label = (JLabel)c;
+				if( value != null && value instanceof Double && ((Double)value) != 0.0 ) label.setText( value+" kr." );
+				else label.setText( "" );
+				return c;
+			}
+		};
+		table.setDefaultRenderer( Double.class, cr );
+		
+		CellEditorListener cedListener = new CellEditorListener() {
+			@Override
+			public void editingStopped(ChangeEvent e) {
+				vupdate();
+			}
+			
+			@Override
+			public void editingCanceled(ChangeEvent e) {}
+		};
+		
 		JComboBox	veditcombo = new JComboBox();
 		veditcombo.setEditable( true );
 		for( String citem : comboOptions ) {
 			veditcombo.addItem( citem );
 		}
-		table.getColumn("Framleiðandi").setCellEditor( new DefaultCellEditor( veditcombo ) );
+		TableCellEditor vcelledit = new DefaultCellEditor( veditcombo );
+		vcelledit.addCellEditorListener( cedListener );
+		table.getColumn("Framleiðandi").setCellEditor( vcelledit );
+		
 		
 		JComboBox	beditcombo = new JComboBox();
 		beditcombo.setEditable( true );
 		for( String citem : pcomboOptions ) {
 			beditcombo.addItem( citem );
 		}
-		table.getColumn("Birgi").setCellEditor( new DefaultCellEditor( beditcombo ) );
+		TableCellEditor bcelledit = new DefaultCellEditor( beditcombo );
+		bcelledit.addCellEditorListener( cedListener );
+		table.getColumn("Birgi").setCellEditor( bcelledit );
 		
 		if( myVars.size() > 0 ) {
 			ycombo.setSelectedItem("Mínar vörur");
@@ -1970,11 +2041,21 @@ public class Order extends JApplet {
 			@Override
 			public void editingStopped(ChangeEvent e) {
 				currentEdited = true;
+				
+				int r = ptable.getSelectedRow();
+				if( r != -1 ) {
+					int rr = ptable.convertRowIndexToModel( r );
+					Pontun pnt = pntlist.get( rr );
+					try {
+						updateorder( pnt );
+					} catch (SQLException e1) {
+						e1.printStackTrace();
+					}
+				}
 			}
 			
 			@Override
-			public void editingCanceled(ChangeEvent e) {
-			}
+			public void editingCanceled(ChangeEvent e) {}
 		};
 		
 		JComboBox	v2combo = new JComboBox( vcombo.getModel() );
@@ -1995,6 +2076,10 @@ public class Order extends JApplet {
 		rtable.getDefaultEditor( String.class ).addCellEditorListener( cel );
 		rtable.getDefaultEditor( Integer.class ).addCellEditorListener( cel );
 		
+		atable.setDefaultRenderer( Double.class, cr );
+		rtable.setDefaultRenderer( Double.class, cr );
+		ktable.setDefaultRenderer( Double.class, cr );
+		
 		table.getDefaultEditor( String.class ).addCellEditorListener( new CellEditorListener() {
 			@Override
 			public void editingCanceled(ChangeEvent e) {
@@ -2003,14 +2088,19 @@ public class Order extends JApplet {
 
 			@Override
 			public void editingStopped(ChangeEvent e) {
-				try {
-					int r = table.getSelectedRow();
-					int rr = table.convertRowIndexToModel( r );
-					Vara v = ordlist.get( rr );
-					updateVara( v );
-				} catch (SQLException e1) {
-					e1.printStackTrace();
-				}
+				vupdate();
+			}
+		});
+		
+		table.getDefaultEditor( Double.class ).addCellEditorListener( new CellEditorListener() {
+			@Override
+			public void editingStopped(ChangeEvent e) {
+				vupdate();
+			}
+			
+			@Override
+			public void editingCanceled(ChangeEvent e) {
+				
 			}
 		});
 		
@@ -2125,13 +2215,15 @@ public class Order extends JApplet {
 		//splitpane.setDividerLocation(1);
 		//splitpane.setDividerSize(1200);
 		
+		kscrollpane.setViewportView( ktable );
+		
 		final JTabbedPane tpane = new JTabbedPane();
 		tpane.addTab("Allt", splitpane);
 		tpane.addTab("Vörur", null);
 		tpane.addTab("Pantanir", null);
 		tpane.addTab("Afgreitt", null);
 		tpane.addTab("Afhent", null);
-		tpane.addTab("Klárað", new JScrollPane(ktable) );
+		tpane.addTab("Klárað", kscrollpane );
 		
 		tpane.addChangeListener( new ChangeListener() {
 			@Override
@@ -2316,7 +2408,7 @@ public class Order extends JApplet {
 			} catch( Exception e ) {
 				e.printStackTrace();
 			}*/
-			return new Vara( d.nameField.getText(), (String)d.frmlCombo.getSelectedItem(), (String)d.brgrCombo.getSelectedItem(), str, user, null, null );
+			return new Vara( d.nameField.getText(), (String)d.frmlCombo.getSelectedItem(), (String)d.brgrCombo.getSelectedItem(), str, user, null, null, 0.0 );
 		}
 		
 		return null;
@@ -2326,7 +2418,7 @@ public class Order extends JApplet {
 		Vara v = queryVara();
 		
 		if( v != null ) {
-			String ord = "'"+v.e_Nafn+"','"+v.e_Framleiðandi+"','"+v.e_Birgi+"','"+v.e_Cat+"','"+v._User+"',null,null";
+			String ord = "'"+v.e_Nafn+"','"+v.e_Framleiðandi+"','"+v.e_Birgi+"','"+v.e_Cat+"','"+v._User+"',null,null,0.0";
 			String sql = "insert into [order].[dbo].[Vara] values ("+ord+")";
 			
 			PreparedStatement 	ps = this.getPrepStat(sql);
@@ -2440,7 +2532,7 @@ public class Order extends JApplet {
 			InputStreamReader 	ir = new InputStreamReader( is, "UTF-8" );
 			BufferedReader		br = new BufferedReader( ir );
 			
-			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=order;user=simmi;password=drsmorc.311;";
+			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=order;user=simmi;password=mirodc30;";
 			Connection con = DriverManager.getConnection(connectionUrl);
 			PreparedStatement ps = con.prepareStatement("insert into Vara values (?,?,?,?,'None')");
 			

@@ -9,16 +9,6 @@
 #include <stdio.h>
 #include <math.h>
 
-#ifdef JAVA
-#include <jni.h>
-#else
-#ifdef WIN
-#define JNIEXPORT	__declspec(dllexport)
-#else
-#define JNIEXPORT	extern "C"
-#endif
-#endif
-
 extern simlab 	data;
 extern c_const<int>		iconst;
 extern c_const<float>	fconst;
@@ -227,7 +217,7 @@ JNIEXPORT int sub( simlab value ) {
 	return 1;
 }
 
-JNIEXPORT int div( simlab value ) {
+JNIEXPORT int simlab_div( simlab value ) {
 	arith< c_div >( value );
 	return 1;
 }

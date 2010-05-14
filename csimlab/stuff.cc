@@ -65,13 +65,6 @@ get
 #include <jni.h>
 #endif
 
-//#ifndef max
-#define  mx(a, b)  ((a) > (b) ? (a) :  (b))
-//#endif
-//#ifndef min
-#define  mn(a, b)  ((a) < (b) ? (a) :  (b))
-//#endif
-
 #ifdef JAVA
 //int java = 0;
 jobject 	jobj;
@@ -160,17 +153,17 @@ JavaVM 			*jvm = NULL;
 JNIEnv			*javaenv = NULL;
 #endif
 
-extern "C" JNIEXPORT int fft();
-extern "C" JNIEXPORT int vector( int type, int length );
-extern "C" JNIEXPORT int garbage();
-extern "C" JNIEXPORT int zero();
-extern "C" JNIEXPORT int store( simlab name );
-extern "C" JNIEXPORT int fetch( simlab name );
-extern "C" JNIEXPORT int echo( simlab str, ... );
-extern "C" JNIEXPORT int initjava();
-extern "C" JNIEXPORT int cmd( simlab );
-extern "C" JNIEXPORT int shift( simlab, simlab );
-extern "C" JNIEXPORT int add( simlab );
+JNIEXPORT int fft();
+JNIEXPORT int vector( int type, int length );
+JNIEXPORT int garbage();
+JNIEXPORT int zero();
+JNIEXPORT int store( simlab name );
+JNIEXPORT int fetch( simlab name );
+JNIEXPORT int echo( simlab str, ... );
+JNIEXPORT int initjava();
+JNIEXPORT int cmd( simlab );
+JNIEXPORT int shift( simlab, simlab );
+JNIEXPORT int add( simlab );
 
 //c_idx<int>	int_idx;
 
@@ -2683,7 +2676,8 @@ JNIEXPORT int wrt( char* str, char* fname, char* fo ) {
 	FILE* f;
 	if( fname == NULL ) f = stdout;
 	else {
-		if( fo == NULL ) fo = "w";
+		const char* wcnst = "w";
+		if( fo == NULL ) fo = (char*)wcnst;
 		f = fopen( fname, fo );
 	}
 	fprintf( f, "%s\n", str );
@@ -4347,7 +4341,7 @@ JNIEXPORT int cln() {
 	return (long)sl;
 }
 
-JNIEXPORT int divd( simlab value ) {
+JNIEXPORT int divd_old( simlab value ) {
 	if( data.length == 0 ) {
 		if( data.type == 32 ) {
 			if( value.length == 0 ) {
@@ -4927,8 +4921,8 @@ LRESULT CALLBACK MainWndProc( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 	switch (uMsg) {
         case WM_CREATE:
 			ghDC = GetDC(hwnd);
-			if (!bSetupPixelFormat(ghDC))
-				PostQuitMessage (0);
+			//if (!bSetupPixelFormat(ghDC))
+			//	PostQuitMessage (0);
 
 			ghRC = wglCreateContext(ghDC);
 			wglMakeCurrent(ghDC, ghRC);
@@ -4940,7 +4934,7 @@ LRESULT CALLBACK MainWndProc( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 		case WM_PAINT:
 			ghDC = GetDC(hwnd);
 			BeginPaint(hwnd, &ps);
-			drawGL();
+			//drawGL();
 			EndPaint(hwnd, &ps);
 			break;
 
@@ -5569,7 +5563,7 @@ JNIEXPORT int tst( passa<4> str ) {
 
 JNIEXPORT int jo() {
 	passa<4> p4;
-	char* he = "he";
+	const char* he = "he";
 	strcpy( (char*)&p4, he );
 	int (*ff)(...);
 	ff = (int (*)(...))tst;

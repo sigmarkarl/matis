@@ -29,6 +29,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import javax.swing.AbstractAction;
 import javax.swing.JApplet;
@@ -255,6 +259,14 @@ public class Mummy extends JApplet {
 		List<Subsequence>			lsubseq;
 		List<Subsequence>			findseq;
 		boolean						rc;
+		
+		public String toString() {
+			return name;
+		}
+		
+		public boolean equals( Sequence seq ) {
+			return seq.name.equals(name);
+		}
 		
 		public void addSubsequence( String tag, int start, int stop, int offset, Color c, boolean rc ) {
 			//Subsequence	subseq = new Subsequence( ByteBuffer.wrap( bb.array(), start, stop-start ), offset, stop-start );
@@ -795,15 +807,17 @@ public class Mummy extends JApplet {
 					}
 					
 					g.setColor( Color.black );
-					if( seqgroups == null ) {
-						System.err.println("");
-					}
 					List<Sequence>	lseq = seqgroups.get( seq.gid );
 					if( lseq != null ) {
 						for( Sequence gseq : lseq ) {
-							if( x >= gseq.getOffset() && x < gseq.getStop() ) {
-								byte nb = gseq.get( x - gseq.getOffset() );
-								if( b != nb ) {
+							if( seq != gseq && x >= gseq.getOffset() && x < gseq.getStop() ) {
+								byte nb;// = gseq.get( x - gseq.getOffset() );
+								if( gseq.rc ) {
+									nb = revComp( gseq.bb.get( gseq.bb.limit() - (x - gseq.getOffset() + 1) ) );
+								} else {
+									nb = gseq.bb.get( x - gseq.getOffset() );
+								}
+								if( b != nb && b != nb-32 && b-32 != nb ) {
 									g.setColor( Color.red );
 									break;
 								}
@@ -1112,6 +1126,7 @@ public class Mummy extends JApplet {
 		
 		final List<Sequence> lseq2 = load( "/home/sigmar/fass/assembly1/454LargeContigs.fna", "/home/sigmar/fass/assembly2/454LargeContigs.fna", "/home/sigmar/fass/ab12", "/home/sigmar/fass/ab21" );
 		
+		int countno = 0;
 		List<Coff> coffList = new ArrayList<Coff>();
 		for( Sequence seq : lseq2 ) {
 			if( seq.name.startsWith("l1_") ) {
@@ -1124,7 +1139,10 @@ public class Mummy extends JApplet {
 							System.err.println( o.c );
 						}
 					}*/
-					if( cff.getAlignLength() > 50 ) coffList.add( cff );
+					if( cff.getAlignLength() > 50 ) {
+						
+						coffList.add( cff );
+					}
 				}
 			}
 		}
@@ -1140,8 +1158,12 @@ public class Mummy extends JApplet {
 			cff
 		}*/
 		
-		Set<Sequence>	seqset = new HashSet<Sequence>();
-		int gid = 0;		
+		SortedMap<String,Sequence>		seqset = new TreeMap<String,Sequence>() {
+			public Sequence put( String key, Sequence seq ) {
+				return super.put( key, seq );
+			}
+		};
+		int gid = 0;
 		for( Coff cff : coffList ) {
 			int f = cff.getFirstAlignIndex();
 			int l = cff.getLastAlignIndex();
@@ -1149,44 +1171,127 @@ public class Mummy extends JApplet {
 			Offset fo = cff.loffset.get(f);
 			Offset lo = cff.loffset.get(l);
 			
-			String gidstr = Integer.toString(gid++);
-			cff.seq1.gid = gidstr;
-			cff.seq2.gid = gidstr;
+			if( !seqset.keySet().contains(cff.seq1.name) && !seqset.keySet().contains(cff.seq2.name) ) {
+				String gidstr = Integer.toString(gid++);
+				cff.seq1.gid = gidstr;
+				cff.seq2.gid = gidstr;
+				
+				cff.seq1.lsubseq = null;
+				cff.seq2.lsubseq = null;
+				
+				seqset.put( cff.seq1.name, cff.seq1 );
+				seqset.put( cff.seq2.name, cff.seq2 );
 			
-			cff.seq1.lsubseq = null;
-			cff.seq2.lsubseq = null;
-			
-			seqset.add( cff.seq1 );
-			seqset.add( cff.seq2 );
-			
-			if( cff.seq1.name.equals("l1_contig00016") ) {
-				System.err.println();
-			}
-			
-			cff.seq1.rc = false;
-			if( cff.rc ) {
-				cff.seq2.rc = true;
-				if( fo.a > fo.b ) {
-					cff.seq1.offset = fo.a - fo.b;
-					cff.seq2.offset = 0;				
-				} else if( cff.seq1.bb.limit() - lo.b < cff.seq2.bb.limit() - lo.a ) {
-					cff.seq1.offset = 0;
-					cff.seq2.offset = lo.b - lo.a;
+				if( cff.seq1.name.equals("l1_contig00008") ) {
+					System.err.println( cff.seq1.gid );
+					System.err.println( cff.seq2.gid );
+				}
+				
+				cff.seq1.rc = false;
+				if( cff.rc ) {
+					cff.seq2.rc = true;
+					//if( fo.a > fo.b ) {
+					
+					int a = (cff.seq1.getLength()+(fo.a-fo.b))-cff.seq2.getLength()+1;
+					
+					if( a > 0 ) {
+						cff.seq1.offset = 0;
+						cff.seq2.offset = a;
+					} else {
+						cff.seq1.offset = -a;
+						cff.seq2.offset = 0;
+						//(cff.seq1.getLength()-fo.b) - (cff.seq2.getLength()-fo.a);
+					}
+					/*} else if( cff.seq1.bb.limit() - lo.b < cff.seq2.bb.limit() - lo.a ) {
+						cff.seq1.offset = 0;
+						cff.seq2.offset = lo.b - lo.a;
+					} else {
+						cff.seq1.offset = 0;
+						cff.seq2.offset = fo.b - fo.a;
+					}*/
 				} else {
-					cff.seq1.offset = 0;
-					cff.seq2.offset = fo.b - fo.a;
+					cff.seq2.rc = false;
+					//if( fo.a > fo.b ) {
+					
+					int a = fo.a - fo.b;
+					
+					if( a > 0 ) {
+						cff.seq1.offset = a;
+						cff.seq2.offset = 0;
+					} else {
+						cff.seq1.offset = 0;
+						cff.seq2.offset = -a;
+					}
+					
+					/*} else if( cff.seq1.bb.limit() - lo.b < cff.seq2.bb.limit() - lo.a ) {
+						cff.seq1.offset = 0;
+						cff.seq2.offset = lo.b - lo.a;
+					} else {
+						cff.seq1.offset = 0;
+						cff.seq2.offset = fo.b - fo.a;
+					}*/
+				}
+			} else if( !seqset.keySet().contains(cff.seq1.name) ) {
+				cff.seq1.gid = cff.seq2.gid;
+				cff.seq1.lsubseq = null;
+				seqset.put( cff.seq1.name, cff.seq1 );
+				
+				if( cff.rc == true ) {
+					if( cff.seq2.rc == true ) {
+						cff.seq1.rc = false;
+						
+						cff.seq1.offset = 0;
+					} else {
+						cff.seq1.rc = true;
+						
+						int a = (cff.seq1.getLength()+(fo.a-fo.b))-cff.seq2.getLength()+1;
+						if( a > 0 ) {
+							//cff.seq1.offset = 0;
+							cff.seq1.offset = cff.seq2.offset-a;
+						} else {
+							//cff.seq1.offset = -a;
+							cff.seq1.offset = cff.seq2.offset+a;
+						}
+					}
+				} else {
+					if( cff.seq2.rc == true ) {
+						cff.seq1.rc = true;
+						
+						cff.seq1.offset = 0;
+					} else {
+						cff.seq1.rc = false;
+						int a = fo.a - fo.b;
+						if( a > 0 ) {
+							//cff.seq1.offset = a;
+							cff.seq1.offset = cff.seq2.offset-a;
+						} else {
+							//cff.seq1.offset = 0;
+							cff.seq1.offset = cff.seq2.offset+a;
+						}
+					}
+				}
+			} else if( !seqset.keySet().contains(cff.seq2.name) ) {
+				cff.seq2.gid = cff.seq1.gid;
+				cff.seq2.lsubseq = null;
+				seqset.put( cff.seq2.name, cff.seq2 );
+				
+				if( cff.rc == true ) {
+					
 				}
 			} else {
-				cff.seq2.rc = false;
-				if( fo.a > fo.b ) {
-					cff.seq1.offset = fo.a - fo.b;
-					cff.seq2.offset = 0;				
-				} else if( cff.seq1.bb.limit() - lo.b < cff.seq2.bb.limit() - lo.a ) {
-					cff.seq1.offset = 0;
-					cff.seq2.offset = lo.b - lo.a;
+				int newval = 0;
+				if( !cff.seq1.gid.equals(cff.seq2.gid) ) {
+					int diff = newval - cff.seq2.offset;
+					for( String seqname : seqset.keySet() ) {
+						Sequence seq = seqset.get(seqname);
+						if( seq.gid.equals( cff.seq2.gid ) ) {
+							seq.gid = cff.seq1.gid;
+							seq.offset += diff;
+						}
+					}
 				} else {
-					cff.seq1.offset = 0;
-					cff.seq2.offset = fo.b - fo.a;
+					System.err.println("same " + cff.seq1.name + "  " + cff.seq2.name);
+					countno++;
 				}
 			}
 			
@@ -1198,6 +1303,29 @@ public class Mummy extends JApplet {
 				if( cff2.seq1 == cff.seq1 )
 			}*/
 		}
+		System.err.println("count " + countno);
+		
+		/*SortedSet<Integer>	si = new TreeSet<Integer>();
+		for( String seqname : seqset.keySet() ) {
+			Sequence seq = seqset.get( seqname );
+			si.add( Integer.parseInt(seq.gid) );
+		}
+		
+		for( int val : si ) {
+			System.err.println("erm "+val);
+		}
+		
+		gid = 0;
+		for( int val : si ) {
+			for( String seqname : seqset.keySet() ) {
+				Sequence seq = seqset.get( seqname );
+				if( Integer.toString(val).equals(seq.gid) ) {
+					seq.gid = Integer.toString(gid);
+				}
+			}
+			gid++;
+		}*/
+		
 		
 		//final List<Sequence> lseq2 = load( "/home/sigmar/fass/assembly2/454LargeContigs.fna", "/home/sigmar/fass/assembly3/454LargeContigs.fna", "/home/sigmar/fass/a23", "/home/sigmar/fass/a32" );
 		
@@ -1214,7 +1342,17 @@ public class Mummy extends JApplet {
 		
 		//seqpane = new SequencePane( lefttable, lseq2, lseq1.get(0) );
 		
-		lseq2.retainAll( seqset );
+		//lseq2.retainAll( seqset );
+		
+		lseq2.clear();
+		for( String seqname : seqset.keySet() ) {
+			Sequence seq = seqset.get( seqname );
+			lseq2.add( seq );
+		}
+		
+		/*for( Sequence seq : lseq2 ) {
+			System.err.println( "name " + seq.name );
+		}*/
 		
 		seqpane = new SequencePane( lefttable, lseq2, null );
 		topseq = new SequencePane( null, lseq2, null, true );
@@ -1499,13 +1637,21 @@ public class Mummy extends JApplet {
 				//seq.offsetMap = offsetMap1.get(seq.name);
 			}
 			
-			if( offsetMap1.containsKey(seq.name+" Reverse") ) {			
+			if( offsetMap1.containsKey(seq.name+" Reverse") ) {	
 				seq.offsetMap.putAll( calcOff( seq, off, true, seqMap, offsetMap1.get(seq.name+" Reverse") ) );
 			}
 		}
 		
 		for( Sequence seq : lseq2 ) {
 			if( offsetMap2.containsKey(seq.name) ) {
+				seq.offsetMap = calcOff( seq, off, false, seqMap, offsetMap2.get(seq.name) );
+			}
+			
+			if( offsetMap2.containsKey(seq.name+" Reverse") ) {
+				seq.offsetMap.putAll( calcOff( seq, off, true, seqMap, offsetMap2.get(seq.name+" Reverse") ) );
+			}
+			
+			/*if( offsetMap2.containsKey(seq.name) ) {
 				seq.offsetMap = offsetMap2.get(seq.name);
 				for( String s : seq.offsetMap.keySet() ) {					
 					off = seq.offsetMap.get(s);
@@ -1524,10 +1670,10 @@ public class Mummy extends JApplet {
 				}
 			} else {
 				System.err.println( "not existing2 " + seq.name );
-			}
+			}*/
 		}
 		
-		int gid = 1;
+		/*int gid = 1;
 		for( Sequence seq1 : lseq1 ) {
 			if( !finishedSet.contains( seq1.name ) ) {
 				seq1.setOffset( 0 );
@@ -1552,8 +1698,7 @@ public class Mummy extends JApplet {
 				}
 				gid++;
 			}
-		}
-		
+		}*/
 		lseq1.addAll( lseq2 );
 		
 		return lseq1;
