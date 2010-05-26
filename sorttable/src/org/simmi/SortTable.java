@@ -12,6 +12,7 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Window;
+import java.awt.event.ActionEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.MouseAdapter;
@@ -38,13 +39,16 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import javax.imageio.ImageIO;
+import javax.swing.AbstractAction;
 import javax.swing.DefaultRowSorter;
 import javax.swing.ImageIcon;
 import javax.swing.JApplet;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JEditorPane;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
@@ -1278,10 +1282,8 @@ public class SortTable extends JApplet {
 			uc.setDefaultUseCaches(true);
 			uc.setUseCaches(true);
 		} catch (MalformedURLException e2) {
-			// TODO Auto-generated catch block
 			e2.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -1300,7 +1302,7 @@ public class SortTable extends JApplet {
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
-		HabitsPanel eat = new HabitsPanel(lang, stuff, recipe.recipes, foodNameInd, recipe.allskmt, recipe.skmt);
+		final HabitsPanel eat = new HabitsPanel(lang, friendsPanel, stuff, recipe.recipes, foodNameInd, recipe.allskmt, recipe.skmt);
 		CostPanel buy = new CostPanel();
 
 		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftSplitPane, tabbedPane);
@@ -1496,7 +1498,7 @@ public class SortTable extends JApplet {
 			}
 
 			public int getRowCount() {
-				return stuff.size() - 2 + recipe.recipes.size();
+				return stuff.size() - 2 + recipe.recipes.size() + 1;
 			}
 
 			public Object getValueAt(int rowIndex, int columnIndex) {
@@ -1505,7 +1507,7 @@ public class SortTable extends JApplet {
 					obj = stuff.get(rowIndex + 2);
 					if (columnIndex >= 0)
 						return obj[columnIndex];
-				} else {
+				} else if( rowIndex < stuff.size() - 2 + recipe.recipes.size() ) {
 					int r = rowIndex - (stuff.size() - 2);
 					if (r < recipe.recipes.size()) {
 						Recipe rep = recipe.recipes.get(r);
@@ -1515,6 +1517,9 @@ public class SortTable extends JApplet {
 							return rep.name + " - " + rep.author;
 						}
 					}
+				} else {
+					if( columnIndex == 0 ) return "Val";
+					return "í máltíðartöflu";
 				}
 
 				return null;
@@ -1641,7 +1646,7 @@ public class SortTable extends JApplet {
 			}
 
 			public int getRowCount() {
-				return stuff.size() - 2 + recipe.recipes.size();
+				return stuff.size() - 2 + recipe.recipes.size() + 1;
 			}
 
 			public Object getValueAt(int rowIndex, int columnIndex) {
@@ -1651,12 +1656,12 @@ public class SortTable extends JApplet {
 					int realColumnIndex = detail.convertIndex(columnIndex);
 					if (realColumnIndex != -1)
 						return obj[realColumnIndex + 2];
-				} else {
+				} else if( rowIndex < stuff.size() - 2 + recipe.recipes.size() ) {
 					float ret = 0.0f;
 					int i = rowIndex - (stuff.size() - 2);
 					Recipe rep = recipe.recipes.get(i);
 					//float tot = 0.0f;
-					int realColumnIndex = detail.convertIndex(columnIndex);
+					//int realColumnIndex = detail.convertIndex(columnIndex);
 					for (RecipeIngredient rip : rep.ingredients) {
 						int k = -1;
 						float div = 100.0f;
@@ -1676,6 +1681,7 @@ public class SortTable extends JApplet {
 								}
 								ri++;
 							}
+							
 							if( ri < recipe.recipes.size() ) {
 								k = stuff.size()-2+ri;
 								div = rp.getWeight();
@@ -1716,6 +1722,73 @@ public class SortTable extends JApplet {
 
 					if (ret != 0.0f) {
 						// return (ret * 100.0f) / tot;
+						return ret;
+					}
+				} else {
+					float ret = 0.0f;
+					String[] spl = eat.getSelection().split("\n");
+					
+					for( String val : spl ) {
+						String[] split = ((String)val).split("\\|");
+						Integer ii = foodNameInd.get( split[0] );
+						
+						int i;
+						if( ii == null ) {
+							i = stuff.size()-2;
+							for( Recipe rep : recipe.recipes ) {
+								if( split[0].equals( rep.name + " - " + rep.author ) ) break;
+								i++;
+							}
+						} else {
+							i = ii;
+						}
+						
+						if( i < stuff.size()+recipe.recipes.size()-2 ) {
+							Float fval = (Float)DetailPanel.getVal(i, columnIndex, stuff, foodNameInd, recipe.recipes, false);
+							if( fval != null ) {
+								ret += eat.updateEng( fval, split );
+							}
+						}
+						
+						/*int k = -1;
+						float div = 100.0f;
+						
+						String[] split = ss.split("\\|");
+						String name = split[0];
+						//Integer ii = foodInd.get( name );
+						
+						if( foodNameInd.containsKey( name ) ) {
+							k = foodNameInd.get( name );
+						} else {
+							/*int 	ri = 0;
+							Recipe 	rp = null;
+							for( Recipe r : recipe.recipes ) {
+								if( r.name.equals( r.name + " - " + r.author ) ) {
+									rp = r;
+									break;
+								}
+								ri++;
+							}
+							
+							if( ri < recipe.recipes.size() ) {
+								k = stuff.size()-2+ri;
+								div = rp.getWeight();
+								
+								float f = rip.getValue( (Float)val ) / div;
+								ret += f;
+							}*
+						}
+						
+						if( k != -1 ) {
+							Object val = getValueAt( k, columnIndex ); //obj[realColumnIndex + 2];
+							if (val != null && val instanceof Float) {
+								float f = 0.0f;//rip.getValue( (Float)val ) / div;
+								ret += f;
+							}
+						}*/
+					}
+					
+					if (ret >= 0) {
 						return ret;
 					}
 				}
@@ -1802,7 +1875,7 @@ public class SortTable extends JApplet {
 			}
 		});
 
-		graph = new GraphPanel(rdsPanel, recipe, stuff.size(), lang, new JCompatTable[] { table, leftTable, topTable }, topModel);
+		graph = new GraphPanel(rdsPanel, recipe, eat, foodNameInd, stuff.size(), lang, new JCompatTable[] { table, leftTable, topTable }, topModel);
 
 		ImageIcon fodicon = null;
 		ImageIcon helicon = null;
@@ -1839,8 +1912,17 @@ public class SortTable extends JApplet {
 			// TODO Auto-generated catch block
 			e2.printStackTrace();
 		}
+		
+		URL helpurl = this.getClass().getResource("/helppage.html");
+		ImageIcon helpicon = null;
+		JEditorPane helppane = new JEditorPane();
+		helppane.setContentType("text/html");
+		helppane.setEditable( false );
+		helppane.setPage( helpurl );
+		JScrollPane help = new JScrollPane( helppane );
 
 		if (lang.equals("IS")) {
+			tabbedPane.addTab("Hjálp", helpicon, help);
 			tabbedPane.addTab("Fæða", fodicon, rightSplitPane);
 			// tabbedPane.addTab( "Myndir", imgPanel );
 			tabbedPane.addTab("Næringarefni", helicon, detail);
@@ -1909,6 +1991,37 @@ public class SortTable extends JApplet {
 		 * e1.printStackTrace(); } catch (URISyntaxException e1) { // TODO
 		 * Auto-generated catch block e1.printStackTrace(); } } } } });
 		 */
+		
+		final JPopupMenu	leftpopup = new JPopupMenu();
+		leftpopup.add( new AbstractAction("Senda fæðutegund í valda uppskrift") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String str = "";
+				
+				for( int rr : leftTable.getSelectedRows() ) {
+					Object obj = leftTable.getValueAt( rr, 0 );
+					
+					str += (String)obj+"\n";
+				}
+				
+				try {
+					recipe.insertRepInfo(str);
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+		});
+		tabbedPane.addChangeListener( new ChangeListener() {
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				//if( tabbedPane.getTitleAt( tabbedPane.getSelectedIndex() ).equals("Uppskriftir") ) {
+				if( tabbedPane.getSelectedComponent().equals(recipe) ) {
+					leftTable.setComponentPopupMenu( leftpopup );
+				} else {
+					leftTable.setComponentPopupMenu( null );
+				}
+			}			
+		});
 
 		SortTable.this.setLayout(new BorderLayout());
 		splitPane.setBorder(new EmptyBorder(0, 0, 0, 0));

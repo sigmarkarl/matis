@@ -585,19 +585,19 @@ public class Simlab implements ScriptEngineFactory {
 				//List<Class<?>>	clist = new ArrayList<Class<?>>();
 				List<simlab.ByValue>	olist = new ArrayList<simlab.ByValue>();
 				tempbuffer.position(0);
-				Pointer				ptr = Native.getDirectBufferPointer( tempbuffer );
+				long	offset = 0;
+				long 	pvalr = getpointer( ptr );
 				while( st.hasMoreTokens() ) {
 					String str = st.nextToken(endStr);
 					if( str.startsWith("\"") ) {
 						//clist.add( str.getClass() );
 						String 	val = str.substring(1, str.length()-1);
 						
-						System.err.println( "val " + val );
-						
 						byte[]				bytes = Native.toByteArray( val );
 						//Pointer				ptr = nptr.getPointer( tempbuffer.position() );
 						tempbuffer.put( bytes );
-						long				pval = getpointer( ptr )+tempbuffer.position();
+						long				pval = pvalr+offset;
+						offset += bytes.length;
 						//NativeLongByReference		lbr = new NativeLongByReference();
 						//lbr.setPointer( ptr );
 						
@@ -743,8 +743,8 @@ public class Simlab implements ScriptEngineFactory {
 			}*/
 			
 			for( long key : compmap.keySet() ) {
-					SimComp sc = compmap.get( key );
-					if( sc != null ) sc.reload();
+				SimComp sc = compmap.get( key );
+				if( sc != null ) sc.reload();
 			}
 			
 			/*ByteBuffer buf = ByteBuffer.allocateDirect(6);
@@ -875,7 +875,6 @@ public class Simlab implements ScriptEngineFactory {
 			tempbuffer.position(0);
 			tempbuffer.put( bb );
 			//NativeLongByReference	nt = new NativeLongByReference();
-			Pointer ptr = Native.getDirectBufferPointer( tempbuffer );
 			long	pval = getpointer( ptr );
 			//nt.setPointer( ptr );
 			simlab.ByValue str = new simlab.ByValue(substr.length(), Simlab.BYTELEN, pval);
@@ -901,72 +900,66 @@ public class Simlab implements ScriptEngineFactory {
 	}
 	
 	ByteBuffer	tempbuffer = ByteBuffer.allocateDirect(256);
-	private void parse( Method m ) {		
-		try {
-			Pointer ptr = Native.getDirectBufferPointer( tempbuffer );
-			long	pval = getpointer( ptr );
-			//simlab.ByValue	psl = new simlab.ByValue( data.);
-			//NativeLongByReference nat = new NativeLongByReference();
-			//nat.setPointer( ptr );
-			
-			BufferedReader br = new BufferedReader( reader );
-			String line = br.readLine();
-			while( line != null && !line.equalsIgnoreCase("quit") ) {				
-				line = line.trim();
-				
-				byte[]	bb = Native.toByteArray( line );
-				tempbuffer.position(0);
-				tempbuffer.put( bb );
-				
-				simlab.ByValue	psl = new simlab.ByValue( bb.length, BYTELEN, pval );
-				//psl.length = bb.length;
-				
-				//cmd( psl );
-				m.invoke( this, psl );
-				
-				line = br.readLine();
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
-		} catch (InvocationTargetException e) {
-			e.printStackTrace();
-		}
+	Pointer 	ptr = Native.getDirectBufferPointer( tempbuffer );
+	public int parse( simlab.ByValue sl ) throws IOException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, SecurityException, NoSuchMethodException {		
+		//simlab.ByValue	psl = new simlab.ByValue( data.);
+		//NativeLongByReference nat = new NativeLongByReference();
+		//nat.setPointer( ptr );
+		
+		Pointer p = new Pointer( sl.buffer );
+		String	mname = p.getString(0);
+		Method m = this.getClass().getMethod( mname, simlab.ByValue.class );
+		parse( m );
+		
+		return 1;
 	}
 	
-	private void parse() {		
-		try {
-			Pointer ptr = Native.getDirectBufferPointer( tempbuffer );
-			long	pval = getpointer( ptr );
-			//simlab.ByValue	psl = new simlab.ByValue( data.);
-			//NativeLongByReference nat = new NativeLongByReference();
-			//nat.setPointer( ptr );
+	public int parse( Method m ) throws IOException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+		long	pval = getpointer( ptr );
+		BufferedReader br = new BufferedReader( reader );
+		String line = br.readLine();
+		while( line != null && !line.equalsIgnoreCase("quit") ) {				
+			line = line.trim();
 			
-			BufferedReader br = new BufferedReader( reader );
-			String line = br.readLine();
-			while( line != null && !line.equalsIgnoreCase("quit") ) {				
-				line = line.trim();
-				
-				byte[]	bb = Native.toByteArray( line );
-				tempbuffer.position(0);
-				tempbuffer.put( bb );
-				
-				simlab.ByValue	psl = new simlab.ByValue( bb.length, BYTELEN, pval );
-				//psl.length = bb.length;
-				cmd( psl );				
-				line = br.readLine();
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
+			byte[]	bb = Native.toByteArray( line );
+			tempbuffer.position(0);
+			tempbuffer.put( bb );
+			
+			simlab.ByValue	psl = new simlab.ByValue( bb.length, BYTELEN, pval );
+			//psl.length = bb.length;
+			//cmd( psl );
+			m.invoke( this, psl );
+			line = br.readLine();
 		}
+		
+		return 0;
 	}
 	
-	public void parse( final simlab.ByValue sl, final simlab.ByValue func ) throws SecurityException, NoSuchMethodException {
+	private int parse() throws IOException {		
+		long	pval = getpointer( ptr );
+		//simlab.ByValue	psl = new simlab.ByValue( data.);
+		//NativeLongByReference nat = new NativeLongByReference();
+		//nat.setPointer( ptr );
+		
+		BufferedReader br = new BufferedReader( reader );
+		String line = br.readLine();
+		while( line != null && !line.equalsIgnoreCase("quit") ) {				
+			line = line.trim();
+			
+			byte[]	bb = Native.toByteArray( line );
+			tempbuffer.position(0);
+			tempbuffer.put( bb );
+			
+			simlab.ByValue	psl = new simlab.ByValue( bb.length, BYTELEN, pval );
+			//psl.length = bb.length;
+			cmd( psl );				
+			line = br.readLine();
+		}
+		
+		return 0;
+	}
+	
+	public int parse( final simlab.ByValue sl, final simlab.ByValue func ) throws SecurityException, NoSuchMethodException, IllegalArgumentException, IOException, IllegalAccessException, InvocationTargetException {
 		Reader	oldreader = reader;
 		
 		if( sl.length > 0 ) {
@@ -1017,6 +1010,8 @@ public class Simlab implements ScriptEngineFactory {
 		parse( m );
 		
 		reader = oldreader;
+		
+		return 0;
 	}
 	
 	Simple	engine = new Simple();
@@ -1070,7 +1065,11 @@ public class Simlab implements ScriptEngineFactory {
 		@Override
 		public Object eval(Reader reader) throws ScriptException {
 			Simlab.this.reader = reader;
-			Simlab.this.parse();
+			try {
+				Simlab.this.parse();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 			System.exit(0);
 			
 			return null;

@@ -7,6 +7,7 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
@@ -16,6 +17,8 @@ import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.awt.dnd.DropTargetListener;
 import java.awt.event.ActionEvent;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
@@ -24,10 +27,19 @@ import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -47,9 +59,11 @@ import javax.management.timer.Timer;
 import javax.swing.AbstractAction;
 import javax.swing.AbstractCellEditor;
 import javax.swing.DefaultCellEditor;
+import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
@@ -179,6 +193,8 @@ public class HabitsPanel extends JComponent {
 			this.add( label );
 			this.add( field );
 			this.add( combo );
+			
+			setBounds( 0,0,200,100 );
 		}
 		
 		public void addComboItems( Collection<String> items ) {
@@ -310,7 +326,71 @@ public class HabitsPanel extends JComponent {
 		}*/
 	};
 	
-	private double updateEng( Float fval, String[] split ) {
+	public float getSelWeight( Map<String,Integer> foodInd ) {
+		float w = 0.0f;
+		for( int c : timelineDataTable.getSelectedColumns() ) {
+			for( int r : timelineDataTable.getSelectedRows() ) {
+				Object val = timelineDataTable.getValueAt(r, c);
+				
+				if( val != null ) {
+					String[] split = ((String)val).split("\\|");
+					if( split.length > 2 ) {
+						Integer ii = foodInd.get( split[0] );
+						
+						String measure = split[1];
+						String unit = split[2];
+						
+						float d = Float.parseFloat( measure );
+						if( !unit.equals("g") ) {
+							String ru = unit;
+							int f = ru.indexOf("(");
+							int n = ru.indexOf(")");
+							if (n > f && f != -1) {
+								String subbi = ru.substring(f + 1, n);
+								if (subbi.endsWith("g"))
+									subbi = subbi.substring(0, subbi.length() - 1);
+	
+								float fl = 0.0f;
+								try {
+									fl = Float.parseFloat(subbi);
+								} catch (Exception e) {
+	
+								}
+								d *= fl;
+							}
+						}
+						w += d;
+					}
+					
+					/*int i;
+					if( ii == null ) {
+						i = stuff.size()-2;
+						for( Recipe rep : recipes ) {
+							if( split[0].equals( rep.name + " - " + rep.author ) ) break;
+							i++;
+						}
+					} else {
+						i = ii;
+					}
+					
+					if( i < stuff.size()+recipes.size()-2 ) {
+						Float fval = (Float)DetailPanel.getVal(i, 0, stuff, foodInd, recipes, false);
+						if( fval != null ) {
+							total += updateEng( fval, split );
+						}
+						
+						Float fvalc = (Float)DetailPanel.getVal(i, 1, stuff, foodInd, recipes, false);
+						if( fvalc != null ) {
+							totalc += updateEng( fvalc, split );
+						}
+					}*/
+				}
+			}
+		}
+		return w;
+	}
+	
+	public double updateEng( Float fval, String[] split ) {
 		double d = (double)fval;
 		String ru = split[2];
 		float  me = 0.0f;
@@ -377,6 +457,22 @@ public class HabitsPanel extends JComponent {
 		}*/
 	}
 	
+	public String getSelection() {
+		String ret = "";
+		
+		for( int c : timelineDataTable.getSelectedColumns() ) {
+			for( int r : timelineDataTable.getSelectedRows() ) {
+				Object val = timelineDataTable.getValueAt(r, c);
+				
+				if( val != null && val.toString().length() > 0 ) {
+					ret += (String)val + "\n";
+				}
+			}
+		}
+		
+		return ret;
+	}
+	
 	public void updateEngLabel( List<Object[]> stuff, Map<String,Integer> foodInd, List<Recipe> recipes ) {
 		double total = 0.0f;
 		double totalc = 0.0f;
@@ -416,11 +512,154 @@ public class HabitsPanel extends JComponent {
 		englabel.setText( "Orka í vali: " + Math.round( total*10.0 )/10.0 + " kJ / " + Math.round( totalc*10.0 )/10.0 + " kcal" );
 	}
 	
-	public HabitsPanel( String lang, final List<Object[]>	stuff, final List<Recipe>	recipes, final Map<String,Integer>	foodInd, Set<String> allskmt, Map<String,Map<String,String>> skmt ) {
+	private String currentWeekToText() throws IOException {
+		ByteArrayOutputStream 	baos = new ByteArrayOutputStream();
+		OutputStreamWriter		osw = new OutputStreamWriter( baos );
+		
+		cardWrite( osw );
+		
+		osw.flush();
+		baos.flush();
+		String ret = baos.toString();
+		//System.err.println( ret );
+		
+		osw.close();
+		baos.close();
+		return ret;
+	}
+	
+	private void sendToFriend( String yourId, String[] ids ) throws IOException {
+		//String wtext = currentWeekToText();
+		if( ids.length > 0 ) {
+			try {					
+				URL url = new URL( "http://test.matis.is/isgem/week.php" );
+				HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+				connection.setDoInput(true);
+				connection.setDoOutput(true);
+				connection.setRequestMethod("POST");
+				
+				Integer.toString( Math.abs( this.toString().hashCode()) );
+				String write = "user="+yourId+"&friends=";
+				
+				String data = "";
+				for( String str : ids ) {
+					if( str.equals( ids[ids.length-1] ) ) data += str;
+					else data += str+";";
+				}
+				write += URLEncoder.encode(data, "UTF8")+"&date=";
+				data = getCurrentCardName();
+				write += URLEncoder.encode(data, "UTF8")+"&week=";
+				data = currentWeekToText();
+				write += URLEncoder.encode(data, "UTF8");
+				
+				/*for( Recipe r : repSet ) {
+					String rstr = r.toString();
+					String ival = Integer.toString( Math.abs( rstr.hashCode()) );
+					
+					write += "&"+ival+"=";
+					write += URLEncoder.encode(rstr, "UTF8");	
+				}*/
+				
+				connection.getOutputStream().write( write.getBytes() );
+				connection.getOutputStream().flush();
+				connection.getOutputStream().close();
+				
+				byte[] bb = new byte[128];
+				connection.getInputStream().read(bb);
+				/*for( String id : ids ) {
+					String val = id+"_";
+					connection.getOutputStream().write( id.getBytes() );
+				}
+				for( Recipe rep : repSet ) {
+					String str = rep.toString();
+					connection.getOutputStream().write( str.getBytes() );
+				}*/
+				//connection.disconnect();
+				JOptionPane.showMessageDialog(HabitsPanel.this, "Vinir hafa fengið vikukort");
+				//} else JOptionPane.showMessageDialog(RecipePanel.this, "Engar uppskriftir valdar");
+			} catch (MalformedURLException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} else 	JOptionPane.showMessageDialog(HabitsPanel.this, "Engir vinir valdir");
+	}
+	
+	char[]	cbuf = new char[2048];
+	public void checkMail( String currentUserId ) throws IOException {
+		URL url = new URL( "http://test.matis.is/isgem/getw.php" );
+		HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+		connection.setDoInput(true);
+		connection.setDoOutput(true);
+		connection.setRequestMethod("POST");
+		
+		Integer.toString( Math.abs( this.toString().hashCode()) );
+		String write = "user="+currentUserId;
+		
+		connection.getOutputStream().write( write.getBytes() );
+		connection.getOutputStream().flush();
+		connection.getOutputStream().close();
+		
+		byte[] bb = new byte[8192];
+		connection.getInputStream().read(bb);
+		
+		String s = new String( bb );
+		final String[] ss = s.split("\n");
+		
+		//JOptionPane	opt = new JOptionPane(ss.length + " uppskriftir í pósthólfi. Viltu taka við þeim?", JOptionPane.YES_NO_CANCEL_OPTION);
+		
+		if( ss.length > 1 ) {
+		String message = (ss.length-1) + " vikur í pósthólfi. Viltu taka við þeim?";
+			int val =  JOptionPane.showConfirmDialog(this, message, "Vikur frá vinum", JOptionPane.YES_NO_CANCEL_OPTION);
+			if( val != JOptionPane.CANCEL_OPTION ) {
+				for( int i = 0; i < ss.length-1; i++ ) {
+					String str = ss[i];
+					String splt = str.split("\t")[0];
+					
+					url = new URL( "http://test.matis.is/isgem/getww.php" );
+					connection = (HttpURLConnection)url.openConnection();
+					connection.setDoInput(true);
+					connection.setDoOutput(true);
+					connection.setRequestMethod("POST");
+					
+					Integer.toString( Math.abs( this.toString().hashCode()) );
+					write = "week="+splt;
+					
+					connection.getOutputStream().write( write.getBytes() );
+					connection.getOutputStream().flush();
+					connection.getOutputStream().close();
+					
+					if( val == JOptionPane.YES_OPTION ) {
+						//insertRecipe( new InputStreamReader( connection.getInputStream() ) );
+						Reader rd = new InputStreamReader( connection.getInputStream() );
+						int r = rd.read(cbuf);
+						saveString( splt, new String( cbuf,0 ,r ) );
+						eatList.remove( splt );
+						if( splt.equals( getCurrentCardName() ) ) load();
+					}
+				}
+			}
+		}
+	}
+	
+	public HabitsPanel( String lang, final FriendsPanel fp, final List<Object[]>	stuff, final List<Recipe>	recipes, final Map<String,Integer>	foodInd, Set<String> allskmt, Map<String,Map<String,String>> skmt ) {
 		super();
 		
 		this.allskmt = allskmt;
 		this.skmt = skmt;
+		
+		this.addComponentListener( new ComponentListener() {
+			public void componentShown(ComponentEvent e) {
+				try {
+					checkMail( fp.currentUserId );
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+			public void componentResized(ComponentEvent e) {}
+			public void componentMoved(ComponentEvent e) {}
+			public void componentHidden(ComponentEvent e) {}
+		});
 		
 		final Dimension prefSize = new Dimension(100,25);
 		malCombo = new JComboBox();
@@ -443,10 +682,23 @@ public class HabitsPanel extends JComponent {
 			
 		};
 		//datepicker.setMonthView(new JXM)*/
+		
+		JButton	sendfriend = new JButton( new AbstractAction("Senda völdum vinum") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					sendToFriend( fp.currentUserId, fp.getSelectedFriendsIds() );
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}			
+		});
+		
 		this.setLayout( new BorderLayout() );
 		toolbar = new JToolBar();
 		toolbar.add( datepicker );
 		toolbar.add( englabel );
+		toolbar.add( sendfriend );
 		
 		this.add( toolbar, BorderLayout.NORTH );
 		
@@ -1221,6 +1473,14 @@ public class HabitsPanel extends JComponent {
 					rc.field.setVisible(false);
 					rc.combo.setVisible(false);
 				}
+				//System.err.println( row+" "+column+""+rc.getBounds() );
+				Rectangle rect = table.getCellRect(row, column, true);
+				if( rc.getWidth() != rect.width || rc.getHeight() != rect.width ) {
+					System.err.println( "set size " + rect.width );
+					rc.setSize( rect.width, rect.height );
+					table.repaint();
+				}
+				
 				return rc;
 			}
 		};
@@ -1353,11 +1613,45 @@ public class HabitsPanel extends JComponent {
 						line = br.readLine();
 						i++;
 					}
+					eatList.put( tstr, w );
 				}
 			}
-			eatList.put( tstr, w );
 		}
 		setCurrentWeek( w );
+	}
+	
+	public void cardWrite( Writer w ) throws IOException {
+		for( int r = 0; r < colHeaderTable.getRowCount(); r++ ) {
+			Object val = colHeaderTable.getValueAt(r, 0);
+			if( val != null ) {
+				String valstr = val.toString();
+				if( r != 0 ) w.write( "\t" + valstr );
+				else w.write( valstr );
+			}
+		}
+		w.write("\n");
+		for( int c = 0; c < timelineDataTable.getColumnCount(); c++ ) {
+			for( int r = 0; r < timelineDataTable.getRowCount(); r++ ) {
+				Object val = timelineDataTable.getValueAt(r, c);
+				if( val != null ) {
+					String valstr = val.toString();
+					if( r != 0 ) w.write( "\t" + valstr );
+					else w.write( valstr );
+				}
+			}
+			w.write("\n");
+		}
+	}
+	
+	public void saveString( String name, String value ) throws IOException {
+		File f = new File( System.getProperty("user.home"), ".isgem" );
+		f = new File( f, "weeks" );
+		if( !f.exists() ) f.mkdirs();
+		
+		f = new File( f, name );
+		FileWriter	fw = new FileWriter( f );
+		fw.write( value );
+		fw.close();
 	}
 	
 	public void save( String name ) throws IOException {
@@ -1367,24 +1661,7 @@ public class HabitsPanel extends JComponent {
 		
 		f = new File( f, name );
 		FileWriter	fw = new FileWriter( f );
-		for( int r = 0; r < colHeaderTable.getRowCount(); r++ ) {
-			Object val = colHeaderTable.getValueAt(r, 0);
-			if( val != null ) {
-				if( r != 0 ) fw.write( "\t" + val.toString() );
-				else fw.write( val.toString() );
-			}
-		}
-		fw.write("\n");
-		for( int c = 0; c < timelineDataTable.getColumnCount(); c++ ) {
-			for( int r = 0; r < timelineDataTable.getRowCount(); r++ ) {
-				Object val = timelineDataTable.getValueAt(r, c);
-				if( val != null ) {
-					if( r != 0 ) fw.write( "\t" + val.toString() );
-					else fw.write( val.toString() );
-				}
-			}
-			fw.write("\n");
-		}
+		cardWrite( fw );
 		fw.close();
 	}
 }
