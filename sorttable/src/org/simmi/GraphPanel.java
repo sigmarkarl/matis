@@ -15,6 +15,8 @@ import java.awt.Toolkit;
 import java.awt.geom.AffineTransform;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.List;
+import java.util.Map;
 
 import javax.swing.Icon;
 import javax.swing.JComponent;
@@ -81,7 +83,7 @@ public class GraphPanel extends JTabbedPane {
 	}
 	
 	Font font;
-	public GraphPanel( final RdsPanel rdsPanel, final RecipePanel rpsPanel, final int stuffsize, final String lang, JCompatTable[]	tables, TableModel topModel ) {
+	public GraphPanel( final RdsPanel rdsPanel, final RecipePanel rpsPanel, final HabitsPanel hp, final Map<String,Integer> foodInd, final int stuffsize, final String lang, JCompatTable[]	tables, TableModel topModel ) {
 		super( JTabbedPane.RIGHT, JTabbedPane.WRAP_TAB_LAYOUT );
 		
 		table = tables[0];
@@ -120,9 +122,13 @@ public class GraphPanel extends JTabbedPane {
 					
 					float	wgh = 100.0f;
 					int rrow = leftTable.convertRowIndexToModel(row);
-					if( rrow >= stuffsize - 2 ) {
+					
+					List<Recipe>	repList = rpsPanel.recipes;
+					if( rrow >= stuffsize - 2 + repList.size() ) {
+						wgh = hp.getSelWeight(foodInd);
+					} else if( rrow >= stuffsize - 2 ) {
 						int i = rrow - (stuffsize-2);
-						Recipe rep = rpsPanel.recipes.get(i);
+						Recipe rep = repList.get(i);
 						wgh = rep.getWeight();
 					}
 					
@@ -399,9 +405,13 @@ public class GraphPanel extends JTabbedPane {
 					double	wgh = 100.0f;
 					int rrow = leftTable.convertRowIndexToModel(row);
 					//int stuffsize = leftTable.getModel().getRowCount();
-					if( rrow >= stuffsize - 2 ) {
+					
+					List<Recipe>	repList = rpsPanel.recipes;
+					if( rrow >= stuffsize -2 + repList.size() ) {
+						wgh = hp.getSelWeight( foodInd );
+					} else if( rrow >= stuffsize - 2 ) {
 						int i = rrow - (stuffsize-2);
-						Recipe rep = rpsPanel.recipes.get(i);
+						Recipe rep = repList.get(i);
 						wgh = rep.getWeight();
 					}
 					

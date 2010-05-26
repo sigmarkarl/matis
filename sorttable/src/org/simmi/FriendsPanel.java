@@ -2,7 +2,9 @@ package org.simmi;
 
 import java.awt.Color;
 import java.awt.Desktop;
+import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -498,10 +500,7 @@ public class FriendsPanel extends SimSplitPane {
 		this.setDividerLocation( 300 );
 		
 		this.sessionKey = sessionKey0;
-		
 		this.setBackground( Color.white );
-		
-		JScrollPane	scrollpane = new JScrollPane();
 		
 		nullmodel = new TableModel() {
 			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {}
@@ -675,8 +674,27 @@ public class FriendsPanel extends SimSplitPane {
 			}
 		});
 		table.setComponentPopupMenu( popup );
-		scrollpane.setComponentPopupMenu( popup );
 		
+		JScrollPane	scrollpane = new JScrollPane() {
+			public void paint(Graphics g) {
+				super.paint( g );
+				
+				if( table.getRowCount() == 0 ) {
+					Graphics2D g2 = (Graphics2D)g;
+					g2.setRenderingHint( RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON );
+					
+					String str = "Hægri smelltu til að";
+					String nstr = "fá upp vallista";
+					int strw = g.getFontMetrics().stringWidth( str );
+					int nstrw = g.getFontMetrics().stringWidth( nstr );
+					g.setColor( Color.lightGray );
+					g.drawString(str, (this.getWidth()-strw)/2, this.getHeight()/2-5);
+					g.drawString(nstr, (this.getWidth()-nstrw)/2, this.getHeight()/2+10);
+				}
+			}
+		};
+		scrollpane.getViewport().setBackground( Color.white );
+		scrollpane.setComponentPopupMenu( popup );
 		scrollpane.setViewportView( table );
 		
 		this.setRightComponent( scrollpane );
@@ -686,7 +704,20 @@ public class FriendsPanel extends SimSplitPane {
 		
 		URL url = this.getClass().getResource("/re.png");
 		ImageIcon icon = new ImageIcon( url );
-		final MyPanel		mypanel = new MyPanel( ((ImageIcon)me[5]).getImage(), icon );
+		ImageIcon imic = null;
+		if( me != null && me.length > 5 ) imic = (ImageIcon)me[5];
+		Image		img = null;
+		if( imic != null ) img = imic.getImage();
+		else {
+			BufferedImage bimg = new BufferedImage(150, 200, BufferedImage.TYPE_INT_RGB);
+			Graphics2D g2 = (Graphics2D)bimg.getGraphics();
+			g2.setColor( Color.blue );
+			g2.fillRect(0, 0, bimg.getWidth(), bimg.getHeight());
+			g2.dispose();
+			
+			img = bimg;
+		}
+		final MyPanel		mypanel = new MyPanel( img, icon );
 		this.setLeftComponent( mypanel );
 		
 		final JButton	button = mypanel.rotatebutton;

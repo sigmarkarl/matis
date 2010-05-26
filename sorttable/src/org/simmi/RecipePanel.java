@@ -312,24 +312,35 @@ public class RecipePanel extends JSplitPane {
 		
 		String s = new String( bb );
 		final String[] ss = s.split("\n");
-		for( int i = 0; i < ss.length-1; i++ ) {
-			String str = ss[i];
-			String splt = str.split("\t")[0];
-			
-			url = new URL( "http://test.matis.is/isgem/getd.php" );
-			connection = (HttpURLConnection)url.openConnection();
-			connection.setDoInput(true);
-			connection.setDoOutput(true);
-			connection.setRequestMethod("POST");
-			
-			Integer.toString( Math.abs( this.toString().hashCode()) );
-			write = "recipe="+splt;
-			
-			connection.getOutputStream().write( write.getBytes() );
-			connection.getOutputStream().flush();
-			connection.getOutputStream().close();
-			
-			insertRecipe( new InputStreamReader( connection.getInputStream() ) );
+		
+		//JOptionPane	opt = new JOptionPane(ss.length + " uppskriftir í pósthólfi. Viltu taka við þeim?", JOptionPane.YES_NO_CANCEL_OPTION);
+		
+		if( ss.length > 1 ) {
+		String message = (ss.length-1) + " uppskriftir í pósthólfi. Viltu taka við þeim?";
+			int val =  JOptionPane.showConfirmDialog(this, message, "Uppskriftir frá vinum", JOptionPane.YES_NO_CANCEL_OPTION);
+			if( val != JOptionPane.CANCEL_OPTION ) {
+				for( int i = 0; i < ss.length-1; i++ ) {
+					String str = ss[i];
+					String splt = str.split("\t")[0];
+					
+					url = new URL( "http://test.matis.is/isgem/getd.php" );
+					connection = (HttpURLConnection)url.openConnection();
+					connection.setDoInput(true);
+					connection.setDoOutput(true);
+					connection.setRequestMethod("POST");
+					
+					Integer.toString( Math.abs( this.toString().hashCode()) );
+					write = "recipe="+splt;
+					
+					connection.getOutputStream().write( write.getBytes() );
+					connection.getOutputStream().flush();
+					connection.getOutputStream().close();
+					
+					if( val == JOptionPane.YES_OPTION ) {
+						insertRecipe( new InputStreamReader( connection.getInputStream() ) );
+					}
+				}
+			}
 		}
 			
 		/*if( ss.length > 1 ) {
@@ -446,6 +457,34 @@ public class RecipePanel extends JSplitPane {
 			theTable.tableChanged( new TableModelEvent( theTable.getModel() ) );
 			theLeftTable.tableChanged( new TableModelEvent( theLeftTable.getModel() ) );
 		}
+	}
+	
+	public void insertRepInfo( Object obj ) throws IOException {
+		int r = recipeTable.getSelectedRow();
+		Recipe rep = null;
+		if( r >= 0 && r < recipes.size() ) {
+			rep = recipes.get(r);								
+			rep.destroy();
+		} else {
+			rep = new Recipe( fp.currentUser );
+			recipes.add( rep );
+			
+			int ri = recipes.size()-1;
+			recipeTable.tableChanged( new TableModelEvent( recipeTable.getModel() ) );
+			theTable.tableChanged( new TableModelEvent( theTable.getModel() ) );
+			theLeftTable.tableChanged( new TableModelEvent( theLeftTable.getModel() ) );
+			recipeTable.setRowSelectionInterval(ri, ri);
+		}
+			
+		String[] lines = obj.toString().split("\\n");
+		for( String line : lines ) {
+			String[] vals = line.split("\\t");
+			rep.ingredients.add( new RecipeIngredient( vals[0], 100, "g" ) );
+		}
+		recipeDetailTable.revalidate();
+		recipeDetailTable.repaint();
+		
+		rep.save();
 	}
 	
 	public RecipePanel( final FriendsPanel fp, final String lang, final JCompatTable table, final JCompatTable leftTable, final Map<String,Integer> foodNameInd ) throws IOException {
@@ -878,7 +917,7 @@ public class RecipePanel extends JSplitPane {
 			@Override
 			public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
 				int rr = recipeTable.getSelectedRow();
-				if( rr != -1 ) {
+				if( rr >= 0 && rr < recipeTable.getRowCount() ) {
 					int rrr = recipeTable.convertRowIndexToModel( rr );
 					Recipe r = recipes.get( rrr );
 					
@@ -1083,48 +1122,18 @@ public class RecipePanel extends JSplitPane {
 		recipeDetailScroll.setDropTarget( dropTarget );
 		try {
 			recipeDetailScroll.getDropTarget().addDropTargetListener( new DropTargetListener() {
-				public void dragEnter(DropTargetDragEvent dtde) {
-					
-				}
+				public void dragEnter(DropTargetDragEvent dtde) {}
 
-				public void dragExit(DropTargetEvent dte) {
-					
-				}
+				public void dragExit(DropTargetEvent dte) {}
 
-				public void dragOver(DropTargetDragEvent dtde) {
-					
-				}
+				public void dragOver(DropTargetDragEvent dtde) {}
 
 				public void drop(DropTargetDropEvent dtde) {
 					Object obj;
 					try {
 						obj = dtde.getTransferable().getTransferData( DataFlavor.stringFlavor );
 						if( obj != null ) {
-							int r = recipeTable.getSelectedRow();
-							Recipe rep = null;
-							if( r >= 0 && r < recipes.size() ) {
-								rep = recipes.get(r);								
-								rep.destroy();
-							} else {
-								rep = new Recipe( fp.currentUser );
-								recipes.add( rep );
-								
-								int ri = recipes.size()-1;
-								recipeTable.tableChanged( new TableModelEvent( recipeTable.getModel() ) );
-								theTable.tableChanged( new TableModelEvent( theTable.getModel() ) );
-								theLeftTable.tableChanged( new TableModelEvent( theLeftTable.getModel() ) );
-								recipeTable.setRowSelectionInterval(ri, ri);
-							}
-								
-							String[] lines = obj.toString().split("\\n");
-							for( String line : lines ) {
-								String[] vals = line.split("\\t");
-								rep.ingredients.add( new RecipeIngredient( vals[0], 100, "g" ) );
-							}
-							recipeDetailTable.revalidate();
-							recipeDetailTable.repaint();
-							
-							rep.save();
+							insertRepInfo( obj );
 						}
 					} catch (UnsupportedFlavorException e) {
 						e.printStackTrace();
