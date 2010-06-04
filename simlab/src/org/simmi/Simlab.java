@@ -918,7 +918,7 @@ public class Simlab implements ScriptEngineFactory {
 		long	pval = getpointer( ptr );
 		BufferedReader br = new BufferedReader( reader );
 		String line = br.readLine();
-		while( line != null && !line.equalsIgnoreCase("quit") ) {				
+		while( line != null && !line.equalsIgnoreCase("quit") ) {			
 			line = line.trim();
 			
 			byte[]	bb = Native.toByteArray( line );

@@ -20,7 +20,6 @@ import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -782,7 +781,7 @@ public class Order extends JApplet {
 		while (rs.next()) {
 			vcombo.addItem( rs.getString(1) + " - " + rs.getString(2) );
 		}
-		vcombo.addItem( "312(43%), 412(36%), 612(21%)" );
+		vcombo.addItem( "Almennt lab - 312(36%), 412(43%), 612(21%)" );
 		
 		rs.close();
 		ps.close();
