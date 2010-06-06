@@ -251,19 +251,37 @@ public class SortTable extends JApplet {
 			});
 			
 			ngroupMap.put( "0200", i++ );
-			ngroupList.add( "Orka cal" );
+			ngroupList.add( "Orka" );
 			ngroupGroups.add( "1" );
 			nutList[0].add( "Energy" );
 			nutList[1].add( "kJ" );
 			ngroupMap.put( "0201", i++ );
-			ngroupList.add( "Orka J" );
+			ngroupList.add( "Orka" );
 			ngroupGroups.add( "1" );
 			nutList[0].add( "Energy" );
 			nutList[1].add( "kcal" );
 			for (String[] vals : idList) {
 				ngroupMap.put(vals[0], i++);
-				ngroupList.add( vals[1].replace(", alls", "") );
-				ngroupGroups.add(vals[2]);
+				String cname = vals[1];
+				String group = vals[2];
+				if( group.equals("4") || group.equals("5") ) {
+					cname = cname.split(",")[0];
+				} else {
+					if( group.equals("6") || group.equals("1") ) {
+						if( cname.endsWith("n-3") ) {
+							cname = "Fjölóm. fitus. ómega-3";
+						} else if( cname.endsWith("n-6") ) {
+							cname = "Fjölóm. fitus. ómega-6";
+						} else {
+							cname = cname.replace("cis-", "");
+						}
+					}
+					
+					cname = cname.replace(", alls", "");
+					cname = cname.replace("Trefjaefni", "Trefjar");
+				}
+				ngroupList.add( cname );
+				ngroupGroups.add( group );
 				nutList[0].add(vals[3]);
 				nutList[1].add(vals[4]);
 			}

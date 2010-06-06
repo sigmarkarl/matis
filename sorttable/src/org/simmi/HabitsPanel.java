@@ -1475,10 +1475,11 @@ public class HabitsPanel extends JComponent {
 				}
 				//System.err.println( row+" "+column+""+rc.getBounds() );
 				Rectangle rect = table.getCellRect(row, column, true);
-				if( rc.getWidth() != rect.width || rc.getHeight() != rect.width ) {
-					System.err.println( "set size " + rect.width );
+				if( rc.getWidth() != rect.width || rc.getHeight() != rect.height ) {
+					//System.err.println( "set w " + rect.width + "  " + rc.getWidth() );
+					//System.err.println( "set h " + rect.height + "  " + rc.getHeight() );
 					rc.setSize( rect.width, rect.height );
-					table.repaint();
+					//table.repaint();
 				}
 				
 				return rc;

@@ -326,8 +326,8 @@ public class DetailPanel extends SimSplitPane {
 					else if( columnIndex == 1 ) return "Næringarefnaflokkur";
 					else if( columnIndex == 2 ) return "Eining";
 					else if( columnIndex == 3 ) return "Mæligildi";
-					else if( columnIndex == 4 ) return "RDS";
-					else if( columnIndex == 5 ) return "RDS %";
+					else if( columnIndex == 4 ) return "Æskilegt magn";
+					else if( columnIndex == 5 ) return "Hlutfall magns";
 					return "Sýna dálk";
 				} else {
 					if( columnIndex == 0 ) return "Name";
@@ -359,7 +359,7 @@ public class DetailPanel extends SimSplitPane {
 						String ret = groupMap.get( ind );
 						if( ret.equals("Annað") ) {
 							String efni = ngroupList.get( rowIndex );
-							if( efni.contains("fitus") || efni.contains("cis") || efni.contains("trans") ) {
+							if( efni.contains("fitus") || efni.contains("Fjöl") || efni.contains("trans") ) {
 								return "Fitusýrur";
 							} else if( efni.contains("sykur") || efni.contains("Sykrur") || efni.contains("Trefjaefni") ) {
 								return "Orkuefni";
