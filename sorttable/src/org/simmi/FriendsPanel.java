@@ -8,6 +8,8 @@ import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
@@ -494,10 +496,47 @@ public class FriendsPanel extends SimSplitPane {
 		if( xml != null ) parseFriendsXml( xml );
 	}
 	
+	public void selectMe( final MyPanel mypanel, int r ) {
+		if( r != -1 ) {
+			Object o = table.getValueAt(r, 1);
+			if( o != null && o instanceof String ) {
+				String s = (String)o;
+				mypanel.namefield.setText( s );
+			}
+			
+			o = table.getValueAt(r, 2);
+			if( o != null && o instanceof Date ) {
+				Date d = (Date)o;
+				Calendar dateOfBirth = new GregorianCalendar();
+				dateOfBirth.setTime(d);
+				Calendar today = Calendar.getInstance();
+				int age = today.get(Calendar.YEAR) - dateOfBirth.get(Calendar.YEAR);
+				dateOfBirth.add(Calendar.YEAR, age);
+				if (today.before(dateOfBirth)) {
+				    age--;
+				}
+				mypanel.agefield.setValue( age );
+			}
+			
+			o = table.getValueAt(r, 3);
+			if( o != null && o instanceof String ) {
+				String s = (String)o;
+				mypanel.sexfield.setSelectedItem( s );
+			}
+			
+			o = table.getValueAt(r, 4);
+			if( o != null && o instanceof ImageIcon ) {
+				ImageIcon	img = (ImageIcon)o;
+				mypanel.myimage = img.getImage();
+				mypanel.repaint();
+			}
+		}
+	}
+	
 	char[]	cbuf = new char[50000];
 	public FriendsPanel( String sessionKey0, final String currentUser ) {
 		super();
-		this.setDividerLocation( 300 );
+		this.setDividerLocation( 500 );
 		
 		this.sessionKey = sessionKey0;
 		this.setBackground( Color.white );
@@ -610,8 +649,45 @@ public class FriendsPanel extends SimSplitPane {
 		table.setAutoCreateRowSorter( true );
 		table.setRowHeight( 76 );
 		
+		Object[]	me = null;
+		if( friendList.size() > 0 ) me = friendList.get(0);
+		URL url = this.getClass().getResource("/re.png");
+		ImageIcon icon = new ImageIcon( url );
+		ImageIcon imic = null;
+		if( me != null && me.length > 5 ) imic = (ImageIcon)me[5];
+		Image		img = null;
+		if( imic != null ) img = imic.getImage();
+		else {
+			BufferedImage bimg = new BufferedImage(150, 200, BufferedImage.TYPE_INT_RGB);
+			Graphics2D g2 = (Graphics2D)bimg.getGraphics();
+			g2.setColor( Color.blue );
+			g2.fillRect(0, 0, bimg.getWidth(), bimg.getHeight());
+			g2.dispose();
+			
+			img = bimg;
+		}
+		final MyPanel		mypanel = new MyPanel( img, icon );
+		
+		table.addMouseListener( new MouseAdapter() {
+			public void mousePressed( MouseEvent me ) {
+				if( me.getClickCount() == 2 ) {
+					int r = table.getSelectedRow();
+					selectMe( mypanel, r );
+				}
+			}
+		});
+		
 		JPopupMenu popup = new JPopupMenu();
-		Action action = new AbstractAction("Sýna Alla") {
+		Action action = new AbstractAction("Velja mig") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int r = table.getSelectedRow();
+				selectMe( mypanel, r );
+			}
+		};
+		popup.add( action );
+		popup.addSeparator();
+		action = new AbstractAction("Sýna Alla") {
 			public void actionPerformed(ActionEvent e) {
 				for( int i : table.getSelectedRows() ) {
 					int k = table.convertRowIndexToModel(i);
@@ -668,6 +744,7 @@ public class FriendsPanel extends SimSplitPane {
 				try {
 					login();
 					FriendsPanel.this.createFriendsModel(FriendsPanel.this.sessionKey, FriendsPanel.this.currentUserId);
+					selectMe( mypanel, 0 );
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
@@ -698,26 +775,6 @@ public class FriendsPanel extends SimSplitPane {
 		scrollpane.setViewportView( table );
 		
 		this.setRightComponent( scrollpane );
-		
-		Object[]	me = null;
-		if( friendList.size() > 0 ) me = friendList.get(0);
-		
-		URL url = this.getClass().getResource("/re.png");
-		ImageIcon icon = new ImageIcon( url );
-		ImageIcon imic = null;
-		if( me != null && me.length > 5 ) imic = (ImageIcon)me[5];
-		Image		img = null;
-		if( imic != null ) img = imic.getImage();
-		else {
-			BufferedImage bimg = new BufferedImage(150, 200, BufferedImage.TYPE_INT_RGB);
-			Graphics2D g2 = (Graphics2D)bimg.getGraphics();
-			g2.setColor( Color.blue );
-			g2.fillRect(0, 0, bimg.getWidth(), bimg.getHeight());
-			g2.dispose();
-			
-			img = bimg;
-		}
-		final MyPanel		mypanel = new MyPanel( img, icon );
 		this.setLeftComponent( mypanel );
 		
 		final JButton	button = mypanel.rotatebutton;
