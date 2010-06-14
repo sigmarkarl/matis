@@ -3,6 +3,7 @@ package org.simmi;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
@@ -17,7 +18,10 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.image.ImageProducer;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -79,6 +83,11 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.simmi.RecipePanel.Recipe;
 import org.simmi.RecipePanel.RecipeIngredient;
 
@@ -1149,7 +1158,7 @@ public class SortTable extends JApplet {
 		// scrollPane.setColumnHeader( topScrollPane.getViewport() );
 		// scrollPane.setColumnHeaderView( topTable );
 
-		JComboBox topLeftCombo = new JComboBox() {
+		final JComboBox topLeftCombo = new JComboBox() {
 			private boolean layingOut = false;
 
 			public void doLayout() {
@@ -1277,19 +1286,6 @@ public class SortTable extends JApplet {
 
 		imgPanel = new ImagePanel(leftTable);
 		tabbedPane = new JTabbedPane(JTabbedPane.BOTTOM, JTabbedPane.SCROLL_TAB_LAYOUT);
-		tabbedPane.addChangeListener(new ChangeListener() {
-
-			public void stateChanged(ChangeEvent e) {
-				if (tabbedPane.getSelectedComponent() == rightSplitPane) {
-					leftScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
-					// leftSplitPane.setDividerLocation(60);
-				} else {
-					leftScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-					// leftSplitPane.setDividerLocation(0);
-				}
-			}
-
-		});
 
 		FriendsPanel fp = new FriendsPanel(sessionKey, currentUser);
 		friendsPanel = fp;
@@ -1902,6 +1898,7 @@ public class SortTable extends JApplet {
 		ImageIcon uppicon = null;
 		ImageIcon vinicon = null;
 		ImageIcon maticon = null;
+		ImageIcon hlpicon = null;
 
 		int size = 16;
 		try {
@@ -1926,21 +1923,39 @@ public class SortTable extends JApplet {
 			url = SortTable.this.getClass().getResource("/vinir.png");
 			if (url != null)
 				vinicon = new ImageIcon(ImageIO.read(url).getScaledInstance(16, 16, Image.SCALE_SMOOTH));
+			url = SortTable.this.getClass().getResource("/help.png");
+			if (url != null)
+				hlpicon = new ImageIcon(ImageIO.read(url).getScaledInstance(16, 16, Image.SCALE_SMOOTH));
 		} catch (IOException e2) {
 			// TODO Auto-generated catch block
 			e2.printStackTrace();
 		}
 		
-		URL helpurl = this.getClass().getResource("/helppage.html");
-		ImageIcon helpicon = null;
-		JEditorPane helppane = new JEditorPane();
+		//URL helpurl = this.getClass().getResource("/helppage.html");
+		JEditorPane helppane = new JEditorPane() {
+			public void paint( Graphics g ) {
+				Graphics2D	g2 = (Graphics2D)g;
+				g2.setRenderingHint( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+				g2.setRenderingHint( RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+				super.paintComponent( g );
+			}
+			
+			public void paintComponent( Graphics g ) {
+				Graphics2D	g2 = (Graphics2D)g;
+				g2.setRenderingHint( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+				g2.setRenderingHint( RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+				super.paintComponent( g );
+			}
+		};
+		//((Graphics2D)(helppane.getGraphics())).setRenderingHint( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		helppane.setContentType("text/html");
 		helppane.setEditable( false );
-		helppane.setPage( helpurl );
+		URL	url = new URL( "http://test.matis.is/isgem/help/" );
+		helppane.setPage( url );
 		JScrollPane help = new JScrollPane( helppane );
 
 		if (lang.equals("IS")) {
-			tabbedPane.addTab("Hjálp", helpicon, help);
+			tabbedPane.addTab("Hjálp", hlpicon, help);
 			tabbedPane.addTab("Fæða", fodicon, rightSplitPane);
 			// tabbedPane.addTab( "Myndir", imgPanel );
 			tabbedPane.addTab("Næringarefni", helicon, detail);
@@ -2029,17 +2044,51 @@ public class SortTable extends JApplet {
 				}
 			}
 		});
-		tabbedPane.addChangeListener( new ChangeListener() {
-			@Override
+		
+		tabbedPane.addChangeListener(new ChangeListener() {
+			Component previous;
+				
 			public void stateChanged(ChangeEvent e) {
+				Component	comp = tabbedPane.getSelectedComponent();
 				//if( tabbedPane.getTitleAt( tabbedPane.getSelectedIndex() ).equals("Uppskriftir") ) {
-				if( tabbedPane.getSelectedComponent().equals(recipe) ) {
-					leftTable.setComponentPopupMenu( leftpopup );
+				
+				if ( comp.equals(rightSplitPane) ) {
+					leftScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+					// leftSplitPane.setDividerLocation(60);
 				} else {
-					leftTable.setComponentPopupMenu( null );
+					if( comp.equals(recipe) ) {
+						leftTable.setComponentPopupMenu( leftpopup );
+					} else if( comp.equals(graph) && eat.equals(previous) ) {
+						topLeftCombo.setSelectedIndex(0);
+						int rc = leftTable.getRowCount();
+						leftTable.setRowSelectionIntervalSuper(rc-1, rc-1);
+						leftTable.scrollRectToVisible( leftTable.getCellRect(rc-1, 0, false) );
+					} else {
+						leftTable.setComponentPopupMenu( null );
+					}
+					leftScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+					// leftSplitPane.setDividerLocation(0);
 				}
-			}			
+				
+				previous = comp;
+			}
 		});
+		
+		JPopupMenu		popup = new JPopupMenu();
+		URL				xurl = this.getClass().getResource("/xlsx.png");
+		ImageProducer 	ims = (ImageProducer)xurl.getContent();
+		Image 		img = this.createImage( ims ).getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+		popup.add( new AbstractAction("Opna val í Excel", new ImageIcon(img) ) {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					openExcel();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+		});
+		table.setComponentPopupMenu( popup );
 
 		SortTable.this.setLayout(new BorderLayout());
 		splitPane.setBorder(new EmptyBorder(0, 0, 0, 0));
@@ -2059,6 +2108,47 @@ public class SortTable extends JApplet {
 
 		SortTable.this.getContentPane().setBackground(bgcolor);
 		SortTable.this.setBackground(bgcolor);
+	}
+	
+	public void openExcel() throws IOException {
+		File tmp = File.createTempFile("tmp_", ".xlsx");
+		Workbook	wb = new XSSFWorkbook();
+		Sheet		sh = wb.createSheet("ISGEM");
+		Row			rw1 = sh.createRow(0);
+		Row			rw2 = sh.createRow(1);
+		int 		i = 2;
+		for( int c : table.getSelectedColumns() ) {
+			Cell cell1 = rw1.createCell( i );
+			Cell cell2 = rw2.createCell( i );
+			String name = (String)topTable.getValueAt(0, c);
+			String unit = (String)table.getColumnName(c);
+			cell1.setCellValue( name );
+			cell2.setCellValue( unit );
+			i++;
+		}
+		
+		int ir = 2;
+		for( int r : table.getSelectedRows() ) {
+			Row row = sh.createRow( ir );
+			row.createCell(0).setCellValue( (String)leftTable.getValueAt(ir, 0) );
+			row.createCell(1).setCellValue( (String)leftTable.getValueAt(ir, 1) );
+			
+			i = 2;
+			for( int c : table.getSelectedColumns() ) {
+				Float f = (Float)table.getValueAt(r, c);
+				if( f != null ) {
+					double d = Math.round(f*100.0)/100.0;
+					row.createCell(i).setCellValue( d );
+				}
+				i++;
+			}
+			
+			ir++;
+		}
+		
+		wb.write( new FileOutputStream( tmp ) );
+		System.err.println( tmp.getName() );
+		Desktop.getDesktop().browse( tmp.toURI() );
 	}
 
 	public String updateFriends(final String sessionKey, final String currentUser) {

@@ -52,6 +52,28 @@ public class GraphPanel extends JTabbedPane {
 		return -1.0f;
 	}
 	
+	public double stuffYou( int row, String whr, String unt ) {
+		double f = -1.0;
+		int col = 0;
+		String val = (String)topTable.getValueAt(0, col);
+		String uval = table.getColumnName( col );
+		while( !(val != null && val.contains(whr) && uval.contains(unt)) ) {
+			col++;
+			if( col < topTable.getColumnCount() ) {
+				val = (String)topTable.getValueAt(0, col);
+				uval = table.getColumnName( col );
+			} else break;
+		}
+		if( col < table.getModel().getColumnCount() ) {
+			Float ff = (Float)table.getValueAt(row, col);
+			if( ff != null ) f = ff;
+		} else {
+			System.err.println(whr);
+		}
+			
+		return f;
+	}
+	
 	public double stuffYou( int row, String whr ) {
 		double f = -1.0;
 		
@@ -158,9 +180,9 @@ public class GraphPanel extends JTabbedPane {
 						prt = stuffYou(row, "Prótein");
 						cbh = stuffYou(row, "Kolvetni");
 						fat = stuffYou(row, "Fita");
-						fib = stuffYou(row, "Trefjaefni");
-						enj = stuffYou(row, "Orka J");
-						enc = stuffYou(row, "Orka cal");
+						fib = stuffYou(row, "Trefjar");
+						enj = stuffYou(row, "Orka", "kJ");
+						enc = stuffYou(row, "Orka", "kcal");
 					} else {
 						alc = stuffYou(row, "ALC");
 						prt = stuffYou(row, "PROCNT");
@@ -341,7 +363,7 @@ public class GraphPanel extends JTabbedPane {
 						else str = "Fat";
 						strw = g2.getFontMetrics().stringWidth(str);
 						g2.drawString(str, (19*w)/20-strw-hh/2, (4*this.getHeight())/25+hh/4 );
-						if( lang.equals("IS") ) str = "Trefjaefni";
+						if( lang.equals("IS") ) str = "Trefjar";
 						else str = "Dietary fiber";
 						strw = g2.getFontMetrics().stringWidth(str);
 						g2.drawString(str, (19*w)/20-strw-hh/2, (5*this.getHeight())/25+hh/4 );
@@ -390,9 +412,9 @@ public class GraphPanel extends JTabbedPane {
 						prt = stuffYou(row, "Prótein");
 						cbh = stuffYou(row, "Kolvetni");
 						fat = stuffYou(row, "Fita");
-						fib = stuffYou(row, "Trefjaefni");
-						enj = stuffYou(row, "Orka J");
-						enc = stuffYou(row, "Orka cal");
+						fib = stuffYou(row, "Trefjar");
+						enj = stuffYou(row, "Orka", "kJ");
+						enc = stuffYou(row, "Orka", "kcal");
 					} else {
 						alc = stuffYou(row, "ALC");
 						prt = stuffYou(row, "PROCNT");
@@ -487,30 +509,33 @@ public class GraphPanel extends JTabbedPane {
 						
 						g2.setFont( new Font("Arial", Font.BOLD, this.getHeight()/40 ) );
 						
-						double	logf = Math.log10( wgh )-1;
-						double	flor = Math.floor( logf );
-						double	ceil = Math.ceil( logf );
-						double	fval = Math.pow( 10.0, flor );
-						double	cval = Math.pow( 10.0, ceil );
-						double	dval = (wgh/cval);
-						
-						double jump = 1.0;
-						if( dval < 2.5 ) jump = 0.25;
-						else if( dval < 5.0 ) jump = 0.5;
-						
-						int hh = (h+th)/2;
-						String str = "g";
-						int strw = g.getFontMetrics().stringWidth(str);
-						g.setColor( Color.darkGray );
-						g.drawString( str, (w-tw)/2-strw-10, hh);
-						for( double i = jump; i < dval; i+=jump ) {
-							hh = (int)((h+th)/2 - (i*th) / dval );
-							str = i*cval+"";
-							strw = g.getFontMetrics().stringWidth(str);
+						boolean drawWeight = false;
+						if( drawWeight ) {
+							double	logf = Math.log10( wgh )-1;
+							double	flor = Math.floor( logf );
+							double	ceil = Math.ceil( logf );
+							double	fval = Math.pow( 10.0, flor );
+							double	cval = Math.pow( 10.0, ceil );
+							double	dval = (wgh/cval);
+							
+							double jump = 1.0;
+							if( dval < 2.5 ) jump = 0.25;
+							else if( dval < 5.0 ) jump = 0.5;
+							
+							int hh = (h+th)/2;
+							String str = "g";
+							int strw = g.getFontMetrics().stringWidth(str);
 							g.setColor( Color.darkGray );
 							g.drawString( str, (w-tw)/2-strw-10, hh);
-							g.setColor( Color.lightGray );
-							g.drawLine( (w-tw)/2, hh, (w+tw)/2, hh );
+							for( double i = jump; i < dval; i+=jump ) {
+								hh = (int)((h+th)/2 - (i*th) / dval );
+								str = i*cval+"";
+								strw = g.getFontMetrics().stringWidth(str);
+								g.setColor( Color.darkGray );
+								g.drawString( str, (w-tw)/2-strw-10, hh);
+								g.setColor( Color.lightGray );
+								g.drawLine( (w-tw)/2, hh, (w+tw)/2, hh );
+							}
 						}
 						
 						Stroke stroke = g2.getStroke();
@@ -518,20 +543,20 @@ public class GraphPanel extends JTabbedPane {
 						BasicStroke bs = new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1.0f, ff, 0.0f);
 						g2.setStroke( bs );
 						
-						logf = Math.log10( wgh*9.0 )-1;
-						flor = Math.floor( logf );
-						ceil = Math.ceil( logf );
-						fval = Math.pow( 10.0, flor );
-						cval = Math.pow( 10.0, ceil );
-						dval = (wgh*9.0)/cval;
+						double logf = Math.log10( wgh*9.0 )-1;
+						double flor = Math.floor( logf );
+						double ceil = Math.ceil( logf );
+						double fval = Math.pow( 10.0, flor );
+						double cval = Math.pow( 10.0, ceil );
+						double dval = (wgh*9.0)/cval;
 						
-						jump = 1.0;
+						double jump = 1.0;
 						if( dval < 0.25 ) jump = 2.5;
 						else if( dval < 0.5 ) jump = 5.0;
 						
-						hh = (h+th)/2;
-						str = "kcal";
-						strw = g.getFontMetrics().stringWidth(str);
+						int hh = (h+th)/2;
+						String str = "kcal";
+						int strw = g.getFontMetrics().stringWidth(str);
 						g.setColor( Color.darkGray );
 						g.drawString( str, (w+tw)/2+10, hh);
 						for( double i = jump; i < dval; i+=jump ) {
@@ -558,94 +583,95 @@ public class GraphPanel extends JTabbedPane {
 						//Color o2 = new Color( 250, 180, 100 );
 						
 						Color r2 = new Color( 250, 150, 150 );
+						
 						GradientPaint gp = new GradientPaint( (w-tnrw)/2-bil, 0,r1, (w-tnrw)/2+bil, 0, r2 );
 						g2.setPaint( gp );
 						//int n = (int)((alc*360.0f)/total);
 						int val = (int)(th*alc/wgh);
-						g2.fillRect( (w-tnrw)/2-bil, (h+th)/2-val, bil, val );
+						if( drawWeight ) g2.fillRect( (w-tnrw)/2-bil, (h+th)/2-val, bil, val );
 						int val2 = (int)(th*alco/(37.0*wgh));
 						g2.fillRect( (w-tnrw)/2, (h+th)/2-val2, bil, val2 );
 						
 						gp = new GradientPaint( (w-tnrw)/2-2*bil/3, 0, aGray1, (w-tnrw)/2, 0, aGray2 );
 						g2.setPaint( gp );
-						g2.fillRect( (w-tnrw)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
+						if( drawWeight ) g2.fillRect( (w-tnrw)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
 						g2.fillRect( (w-tnrw)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
 						
 						g2.setPaint(p);
 						g2.setColor( Color.darkGray );
-						g2.drawRect( (w-tnrw)/2-bil, (h+th)/2-val, bil, val );
+						if( drawWeight ) g2.drawRect( (w-tnrw)/2-bil, (h+th)/2-val, bil, val );
 						g2.drawRect( (w-tnrw)/2, (h+th)/2-val2, bil, val2 );
 						
 						Color gn = new Color( 150, 250, 150 );
 						gp = new GradientPaint( (w-tnrw/2)/2-bil, 0, g1, (w-tnrw/3)/2+bil, 0, gn );
 						g2.setPaint( gp );
 						val = (int)(th*prt/wgh);
-						g2.fillRect( (w-tnrw/2)/2-bil, (h+th)/2-val, bil, val );
+						if( drawWeight ) g2.fillRect( (w-tnrw/2)/2-bil, (h+th)/2-val, bil, val );
 						val2 = (int)(th*prto/(37.0*wgh));
 						g2.fillRect( (w-tnrw/2)/2, (h+th)/2-val2, bil, val2 );
 						
 						gp = new GradientPaint( (w-tnrw/2)/2-2*bil/3, 0, aGray1, (w-tnrw/3)/2, 0, aGray2 );
 						g2.setPaint( gp );
-						g2.fillRect( (w-tnrw/2)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
+						if( drawWeight ) g2.fillRect( (w-tnrw/2)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
 						g2.fillRect( (w-tnrw/2)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
 						
 						g2.setPaint(p);
 						g2.setColor( Color.darkGray );
-						g2.drawRect( (w-tnrw/2)/2-bil, (h+th)/2-val, bil, val );
+						if( drawWeight ) g2.drawRect( (w-tnrw/2)/2-bil, (h+th)/2-val, bil, val );
 						g2.drawRect( (w-tnrw/2)/2, (h+th)/2-val2, bil, val2 );
 						
 						Color b2 = new Color( 150, 150, 250 );
 						gp = new GradientPaint( (w)/2-bil, 0, b1, (w+tnrw/3)/2+bil, 0, b2 );
 						g2.setPaint( gp );
 						val = (int)(th*cbh/wgh);
-						g2.fillRect( (w)/2-bil, (h+th)/2-val, bil, val );
+						if( drawWeight ) g2.fillRect( (w)/2-bil, (h+th)/2-val, bil, val );
 						val2 = (int)(th*cbho/(37.0*wgh));
 						g2.fillRect( (w)/2, (h+th)/2-val2, bil, val2 );
 						
 						gp = new GradientPaint( (w+tnrw/3)/2-2*bil/3, 0, aGray1, (w+tnrw/3)/2, 0, aGray2 );
 						g2.setPaint( gp );
-						g2.fillRect( (w)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
+						if( drawWeight ) g2.fillRect( (w)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
 						g2.fillRect( (w)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
 						
 						g2.setPaint(p);
 						g2.setColor( Color.darkGray );
-						g2.drawRect( (w)/2-bil, (h+th)/2-val, bil, val );
+						if( drawWeight ) g2.drawRect( (w)/2-bil, (h+th)/2-val, bil, val );
 						g2.drawRect( (w)/2, (h+th)/2-val2, bil, val2 );
 						
 						Color y2 = new Color( 250, 250, 150 );
 						gp = new GradientPaint( (w+tnrw/2)/2-bil, 0, y1, (w+tnrw)/2+bil, 0, y2 );
 						g2.setPaint( gp );
 						val = (int)(th*fat/wgh);
-						g2.fillRect( (w+tnrw/2)/2-bil, (h+th)/2-val, bil, val );
+						if( drawWeight ) g2.fillRect( (w+tnrw/2)/2-bil, (h+th)/2-val, bil, val );
 						val2 = (int)(th*fato/(37.0*wgh));
 						g2.fillRect( (w+tnrw/2)/2, (h+th)/2-val2, bil, val2 );
 						
 						gp = new GradientPaint( (w+tnrw/2)/2-2*bil/3, 0, aGray1, (w+tnrw)/2, 0, aGray2 );
 						g2.setPaint( gp );
-						g2.fillRect( (w+tnrw/2)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
+						if( drawWeight ) g2.fillRect( (w+tnrw/2)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
 						g2.fillRect( (w+tnrw/2)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
 						
 						g2.setPaint(p);
 						g2.setColor( Color.darkGray );
-						g2.drawRect( (w+tnrw/2)/2-bil, (h+th)/2-val, bil, val );
+						if( drawWeight ) g2.drawRect( (w+tnrw/2)/2-bil, (h+th)/2-val, bil, val );
 						g2.drawRect( (w+tnrw/2)/2, (h+th)/2-val2, bil, val2 );
 						
 						Color o2 = new Color( 250, 180, 100 );
 						gp = new GradientPaint( (w+tnrw)/2-bil, 0, o1, (w+tnrw)/2+bil, 0, o2 );
 						g2.setPaint( gp );
 						val = (int)(th*fib/wgh);
-						g2.fillRect( (w+tnrw)/2-bil, (h+th)/2-val, bil, val );
+						if( drawWeight ) g2.fillRect( (w+tnrw)/2-bil, (h+th)/2-val, bil, val );
 						val2 = (int)(th*fibo/(37.0*wgh));
 						g2.fillRect( (w+tnrw)/2, (h+th)/2-val2, bil, val2 );
 						
 						gp = new GradientPaint( (w+tnrw)/2-2*bil/3, 0, aGray1, (w+tnrw)/2, 0, aGray2 );
 						g2.setPaint( gp );
-						g2.fillRect( (w+tnrw)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
+						if( drawWeight ) g2.fillRect( (w+tnrw)/2-5*bil/6, (h+th)/2-val, 1*bil/3, val );
 						g2.fillRect( (w+tnrw)/2+1*bil/6, (h+th)/2-val2, 1*bil/3, val2 );
 						
 						g2.setPaint(p);
 						g2.setColor( Color.darkGray );
-						g2.drawRect( (w+tnrw)/2-bil, (h+th)/2-val, bil, val );
+						if( drawWeight ) g2.drawRect( (w+tnrw)/2-bil, (h+th)/2-val, bil, val );
 						g2.drawRect( (w+tnrw)/2, (h+th)/2-val2, bil, val2 );
 						
 						/*g2.setColor( Color.darkGray );
@@ -698,7 +724,7 @@ public class GraphPanel extends JTabbedPane {
 						else str = "Fat";
 						strw = g2.getFontMetrics().stringWidth(str);
 						g2.drawString(str, (15*w)/20-strw-hh/2, (2*this.getHeight())/25+hh/4 );
-						if( lang.equals("IS") ) str = "Trefjaefni";
+						if( lang.equals("IS") ) str = "Trefjar";
 						else str = "Dietary fiber";
 						strw = g2.getFontMetrics().stringWidth(str);
 						g2.drawString(str, (11*w)/20-strw-hh/2, (1*this.getHeight())/25+hh/4 );
@@ -718,8 +744,8 @@ public class GraphPanel extends JTabbedPane {
 		String[] comb;
 		String[] cnames;
 		if( lang.equals("IS") ) {
-			comb = new String[] {"Alkóhól", "Prótein", "Kolvetni", "Fita", "Trefjaefni", "Steinefni", "Vatn"};
-			cnames = new String[] {"Alkóhól", "Prótein", "Kolvetni", "Fita", "Trefjaefni", "Steinefni", "Vatn"};
+			comb = new String[] {"Alkóhól", "Prótein", "Kolvetni", "Fita", "Trefjar", "Steinefni", "Vatn"};
+			cnames = new String[] {"Alkóhól", "Prótein", "Kolvetni", "Fita", "Trefjar", "Steinefni", "Vatn"};
 		} else {
 			comb = new String[] {"Alcohol, ethyl", "Protein", "Carbohydrate, by difference", "Total lipid (fat)", "Dietary fiber", "Ash", "Water"};
 			cnames = new String[] {"Alcohol", "Protein", "Carbohydrades", "Fat", "Dietary fiber", "Ash", "Water"};

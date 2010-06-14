@@ -75,6 +75,8 @@ public class FriendsPanel extends SimSplitPane {
 	
 	String		sessionKey;
 	
+	MyPanel		mypanel;
+	
 	public String sign(String[][] params) throws IOException {
         return sign( secret, params);
     }
@@ -208,7 +210,7 @@ public class FriendsPanel extends SimSplitPane {
     }
 	
 	public String getSelectedSex() {
-		String sex = "";
+		/*String sex = "";
 		int rr = 0;
 		int r = table.getSelectedRow();
 		if( r >= 0 && r < table.getRowCount() ) {
@@ -218,11 +220,13 @@ public class FriendsPanel extends SimSplitPane {
 			Object[] obj = friendList.get(rr);
 			sex = (String)obj[4];
 		}
-		return sex;
+		return sex;*/
+		
+		return mypanel.sexfield.getSelectedItem().toString();
 	}
 	
 	public int getSelectedAge() {
-		int age = 0;
+		/*int age = 0;
 		int rr = 0;
 		int r = table.getSelectedRow();
 		if( r >= 0 && r < table.getRowCount() ) {
@@ -239,6 +243,13 @@ public class FriendsPanel extends SimSplitPane {
 		          factor = -1; //birthday not celebrated
 		    }
 		    age = now.get(Calendar.YEAR) - cal.get(Calendar.YEAR) + factor;
+		}
+		return age;*/
+		
+		int age = 40;
+		Object o = mypanel.agefield.getValue();
+		if( o instanceof Number ) {
+			age = ((Number)o).intValue();
 		}
 		return age;
 	}
@@ -666,8 +677,7 @@ public class FriendsPanel extends SimSplitPane {
 			
 			img = bimg;
 		}
-		final MyPanel		mypanel = new MyPanel( img, icon );
-		
+		mypanel = new MyPanel( img, icon );		
 		table.addMouseListener( new MouseAdapter() {
 			public void mousePressed( MouseEvent me ) {
 				if( me.getClickCount() == 2 ) {
