@@ -48,18 +48,28 @@ public class RdsPanel extends JSplitPane {
 		int r = table.getSelectedRow();
 		//System.err.println("erm " + colname);
 		
-		int base = 4;
+		int age = fp.getSelectedAge();
+		String sex = fp.getSelectedSex();
+		
+		int base = 0;
 		if( r >= 0 ) {
-			base = r+2;
+			base = r+2;	
+		} else if( age < 10 ) {
+			if( age < 2 ) {
+				base = 2;
+			} else if( age < 6 ) {
+				base = 3;
+			} else {
+				base = 4;
+			}
 		} else {
-			int age = fp.getSelectedAge();
-			String sex = fp.getSelectedSex();
-			if( sex != null && sex.equals("Karl") ) base += 8;
-			if( age < 14 ) base+=1;
-			else if( age < 18 ) base+=2;
-			else if( age < 31 ) base+=3;
-			else if( age < 61 ) base+=4;
-			else base+=5;
+			if( sex != null && sex.equals("Karl") ) base = 15;
+			else base = 7;
+			if( age < 14 ) base+=0;
+			else if( age < 18 ) base+=1;
+			else if( age < 31 ) base+=2;
+			else if( age < 61 ) base+=3;
+			else base+=4;
 		}
 		
 		int i = 0;
@@ -339,7 +349,7 @@ public class RdsPanel extends JSplitPane {
 					e1.printStackTrace();
 				}
 			}
-		}.start();
+		};//.start();
 		
 		table.getSelectionModel().addListSelectionListener( new ListSelectionListener(){
 			public void valueChanged(ListSelectionEvent e) {
@@ -348,16 +358,15 @@ public class RdsPanel extends JSplitPane {
 					String cName = table.getColumnName(c);
 					if( detailMapping.containsKey(cName) ) {
 						String vfl = detailMapping.get(cName);
-						try {
+						/*try {
 							if( vfl.contains("Vatnsl") && !vurl.equals(editor.getPage().toString()) ) {
 								editor.setPage(vurl);
 							} else if( vfl.contains("Fitul") && !furl.equals(editor.getPage().toString()) ) {
 								editor.setPage(furl);
 							}
 						} catch (IOException e1) {
-							// TODO Auto-generated catch block
 							e1.printStackTrace();
-						}
+						}*/
 					}
 				}
 				

@@ -428,7 +428,7 @@ public class StarlimsReport extends JApplet {
 		
 		try {
 			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=MATIS;user=simmi;password=drsmorc.311;";
+			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=MATIS;user=simmi;password=mirodc30;";
 			con = DriverManager.getConnection(connectionUrl);
 			loadInvoice();
 			load();

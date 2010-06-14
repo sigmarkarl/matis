@@ -1073,18 +1073,18 @@ public class HabitsPanel extends JComponent {
 					int mday = cal.get( Calendar.DAY_OF_MONTH );
 					int mnum = cal.get( Calendar.MONTH );
 					
-					if( mnum == 0 ) return mday + ". Janúar";
-					else if( mnum == 1 ) return mday + ". Febrúar";
-					else if( mnum == 2 ) return mday + ". Mars";
-					else if( mnum == 3 ) return mday + ". Apríl";
-					else if( mnum == 4 ) return mday + ". Maí";
-					else if( mnum == 5 ) return mday + ". Júní";
-					else if( mnum == 6 ) return mday + ". Júlí";
-					else if( mnum == 7 ) return mday + ". Ágúst";
-					else if( mnum == 8 ) return mday + ". September";
-					else if( mnum == 9 ) return mday + ". Október";
-					else if( mnum == 10 ) return mday + ". Nóvember";
-					else if( mnum == 11 ) return mday + ". Desember";
+					if( mnum == 0 ) return mday + ". janúar";
+					else if( mnum == 1 ) return mday + ". febrúar";
+					else if( mnum == 2 ) return mday + ". mars";
+					else if( mnum == 3 ) return mday + ". apríl";
+					else if( mnum == 4 ) return mday + ". maí";
+					else if( mnum == 5 ) return mday + ". júní";
+					else if( mnum == 6 ) return mday + ". júlí";
+					else if( mnum == 7 ) return mday + ". ágúst";
+					else if( mnum == 8 ) return mday + ". september";
+					else if( mnum == 9 ) return mday + ". október";
+					else if( mnum == 10 ) return mday + ". nóvember";
+					else if( mnum == 11 ) return mday + ". desember";
 				//}
 				//cal.setTimeInMillis( time+arg1*Timer.ONE_DAY );
 				//String str = CompatUtilities.getDateString( cal, arg0 == 1 );
@@ -1478,7 +1478,11 @@ public class HabitsPanel extends JComponent {
 				if( rc.getWidth() != rect.width || rc.getHeight() != rect.height ) {
 					//System.err.println( "set w " + rect.width + "  " + rc.getWidth() );
 					//System.err.println( "set h " + rect.height + "  " + rc.getHeight() );
-					rc.setSize( rect.width, rect.height );
+					//System.err.println( "set uuuh " + rc.label.getBounds() );
+					Dimension d = new Dimension( rect.width, rect.height );
+					rc.setPreferredSize( d );
+					rc.setMinimumSize( d );
+					rc.setBounds( 0, 0, rect.width, rect.height );
 					//table.repaint();
 				}
 				

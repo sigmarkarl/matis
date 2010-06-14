@@ -334,7 +334,6 @@ public class Order extends JApplet {
 			this.getRootPane().setForeground( Color.white );
 			this.setBackground( Color.white );
 			this.setForeground( Color.white );*/
-			this.getContentPane().setBackground( Color.white );
 			//this.getContentPane().setForeground( Color.white );
 			
 			this.add( name );
@@ -349,6 +348,8 @@ public class Order extends JApplet {
 			
 			this.add(ok);
 			this.add(cancel);
+			
+			if( this.getContentPane() != null ) this.getContentPane().setBackground( Color.white );
 			
 			frmlCombo.setEditable( true );
 			brgrCombo.setEditable( true );
@@ -772,16 +773,27 @@ public class Order extends JApplet {
 		//ptable.setModel( pmodel );
 	}
 	
+	public void updateVerkCombo( String filter ) {
+		vcombo.removeAllItems();
+		for( String v : verkList ) {
+			if( filter == null || v.startsWith( filter ) ) vcombo.addItem( v );
+		}
+		if( filter == null || filter.equals("3") || filter.equals("4") || filter.equals("6") ) vcombo.addItem( "Almennt lab - 312(36%), 412(43%), 612(21%)" );
+	}
+	
+	List<String>	verkList = new ArrayList<String>();
 	public void updateVerk() throws SQLException {
-		String sql = "select [No_], [Description] from [MATIS].[dbo].[Matís ohf_$Job] where [Blocked] = 0 and ([Global Dimension 1 Code] = '0300' or [Global Dimension 1 Code] = '0400' or [Global Dimension 1 Code] = '0500' or [Global Dimension 1 Code] = '0600')"; // where [user] = '"+user+"'";
+		String sql = "select [No_], [Description] from [MATIS].[dbo].[Matís ohf_$Job] where [Blocked] = 0 and ([Global Dimension 1 Code] = '0100' or [Global Dimension 1 Code] = '0200' or [Global Dimension 1 Code] = '0300' or [Global Dimension 1 Code] = '0400' or [Global Dimension 1 Code] = '0500' or [Global Dimension 1 Code] = '0600')"; // where [user] = '"+user+"'";
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
 		ResultSet 			rs = ps.executeQuery();
 
 		while (rs.next()) {
-			vcombo.addItem( rs.getString(1) + " - " + rs.getString(2) );
+			verkList.add( rs.getString(1) + " - " + rs.getString(2) );
+			//vcombo.addItem( rs.getString(1) + " - " + rs.getString(2) );
 		}
-		vcombo.addItem( "Almennt lab - 312(36%), 412(43%), 612(21%)" );
+		
+		updateVerkCombo( null );
 		
 		rs.close();
 		ps.close();
@@ -1268,7 +1280,6 @@ public class Order extends JApplet {
 				}
 			}
 		} catch (IOException e2) {
-			// TODO Auto-generated catch block
 			e2.printStackTrace();
 		}
 		
@@ -1286,10 +1297,22 @@ public class Order extends JApplet {
 			e.printStackTrace();
 		}
 		
-		stcombo.addItem("Erfðir og eldi");
-		stcombo.addItem("Líftækni og lífefni");
-		stcombo.addItem("Mælingar og miðlun");
-		stcombo.addItem("Öryggi og umhverfi");
+		stcombo.addItem("Öll svið");
+		stcombo.addItem("Nýsköpun og neytendur (0100)");
+		stcombo.addItem("Vinnsla og virðisaukning (0200)");
+		stcombo.addItem("Erfðir og eldi (0300)");
+		stcombo.addItem("Líftækni og lífefni (0400)");
+		stcombo.addItem("Mælingar og miðlun (0500)");
+		stcombo.addItem("Öryggi og umhverfi (0600)");
+		
+		stcombo.addItemListener( new ItemListener() {
+			@Override
+			public void itemStateChanged(ItemEvent e) {
+				String val = (String)stcombo.getSelectedItem();
+				String filter = val.equals("Öll svið") ? null : val.substring(val.length()-4, val.length()-3);
+				updateVerkCombo( filter );
+			}
+		});
 		
 		boolean valid = false;
 		try {

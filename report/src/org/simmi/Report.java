@@ -200,7 +200,7 @@ public class Report extends JApplet {
 	
 	public Result	loadAll() throws ClassNotFoundException, SQLException {
 		Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=MATIS;user=simmi;password=drsmorc.311;";
+		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=MATIS;user=simmi;password=mirodc30;";
 		con = DriverManager.getConnection(connectionUrl);
 			
 		final Result	res = new Result();
@@ -266,7 +266,7 @@ public class Report extends JApplet {
 	public Result	loadSingle( String str ) throws ClassNotFoundException, SQLException {
 		if( con == null || con.isClosed() ) {
 			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=MATIS;user=simmi;password=drsmorc.311;";
+			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=MATIS;user=simmi;password=mirodc30;";
 			con = DriverManager.getConnection(connectionUrl);
 		}
 			
@@ -317,7 +317,7 @@ public class Report extends JApplet {
 	Map<String,Result>	resMap = new HashMap<String,Result>();
 	public TableModel calcModel() throws ClassNotFoundException, SQLException {
 		Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=MATIS;user=simmi;password=drsmorc.311;";
+		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=MATIS;user=simmi;password=mirodc30;";
 		Connection con = DriverManager.getConnection(connectionUrl);
 		
 		final List<Result>	reslist = new ArrayList<Result>();
@@ -451,7 +451,7 @@ public class Report extends JApplet {
 	public void load(String filename) {
 		try {
 			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=MATIS;user=simmi;password=drsmorc.311;";
+			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=MATIS;user=simmi;password=mirodc30;";
 			Connection con = DriverManager.getConnection(connectionUrl);
 	
 			workbook = new XSSFWorkbook(filename);
@@ -1466,7 +1466,7 @@ public class Report extends JApplet {
 		List<Svid>	svidlist = new ArrayList<Svid>();
 		try {
 			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=MATIS;user=simmi;password=drsmorc.311;";
+			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=MATIS;user=simmi;password=mirodc30;";
 			Connection con = DriverManager.getConnection(connectionUrl);
 			
 			String sql = "SELECT \"Global Dimension 1 Code\", No_, Description, \"Person Responsible\", \"Starting Date\", \"Ending Date\" FROM \"Matís ohf_$Job\" where \"Job Posting Group\" != 'INNSELD' and \"Completion Date\" < '1900-01-01'";
