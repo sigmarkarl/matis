@@ -134,7 +134,7 @@ public class HabitsPanel extends JComponent {
 	};
 	
 	public long getCurrentTime() {
-		Date date = datepicker.getDate();
+		Date date = datepicker != null ? datepicker.getDate() : null;
 		long time = System.currentTimeMillis();
 		if( date != null ) time = date.getTime();
 		
@@ -235,7 +235,6 @@ public class HabitsPanel extends JComponent {
 		public MyEditor( Map<String,Map<String,String>> skmt ) {
 			this.skmt = skmt;
 			rc.combo.addItemListener( new ItemListener() {
-				@Override
 				public void itemStateChanged(ItemEvent e) {
 					Object selitem = rc.combo.getSelectedItem();
 					if( selitem != null ) {
@@ -249,7 +248,6 @@ public class HabitsPanel extends JComponent {
 			});
 		}
 		
-		@Override
 		public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
 			r = row;
 			c = column;
@@ -298,7 +296,6 @@ public class HabitsPanel extends JComponent {
 		@Override
 		public void cancelCellEditing() {}*/
 
-		@Override
 		public Object getCellEditorValue() {
 			return rc.label.getText() + "|" + rc.field.getText() + "|" + rc.combo.getSelectedItem();
 		}
@@ -672,7 +669,11 @@ public class HabitsPanel extends JComponent {
 		malCombo.addItem("Kvöldmatur");
 		malCombo.addItem("Millimáltíð3");
 		
-		datepicker = new JXDatePicker();
+		try {
+			datepicker = new JXDatePicker();
+		} catch( Exception e ) {
+			e.printStackTrace();
+		}
 		englabel = new JLabel( "Orka í vali: " );
 		
 		Dimension d = new Dimension( 300, 25 );
@@ -684,7 +685,6 @@ public class HabitsPanel extends JComponent {
 		//datepicker.setMonthView(new JXM)*/
 		
 		JButton	sendfriend = new JButton( new AbstractAction("Senda völdum vinum") {
-			@Override
 			public void actionPerformed(ActionEvent e) {
 				try {
 					sendToFriend( fp.currentUserId, fp.getSelectedFriendsIds() );
@@ -696,7 +696,7 @@ public class HabitsPanel extends JComponent {
 		
 		this.setLayout( new BorderLayout() );
 		toolbar = new JToolBar();
-		toolbar.add( datepicker );
+		if( datepicker != null ) toolbar.add( datepicker );
 		toolbar.add( englabel );
 		toolbar.add( sendfriend );
 		
@@ -824,17 +824,14 @@ public class HabitsPanel extends JComponent {
 		});
 		
 		timelineDataTable.addKeyListener( new KeyListener() {
-			@Override
 			public void keyTyped(KeyEvent e) {
 				
 			}
 			
-			@Override
 			public void keyReleased(KeyEvent e) {
 				
 			}
 			
-			@Override
 			public void keyPressed(KeyEvent e) {
 				if( e.getKeyCode() == KeyEvent.VK_DELETE ) {
 					String tstr = getCurrentCardName();
@@ -876,7 +873,6 @@ public class HabitsPanel extends JComponent {
 		
 		JPopupMenu	popup = new JPopupMenu();
 		popup.add( new AbstractAction("Eyða röð") {
-			@Override
 			public void actionPerformed(ActionEvent e) {
 				String tstr = getCurrentCardName();
 				Week list = eatList.get( tstr );
@@ -1105,7 +1101,6 @@ public class HabitsPanel extends JComponent {
 		timelineTable.setColumnSelectionAllowed( true );
 		
 		timelineTable.getColumnModel().getSelectionModel().addListSelectionListener( new ListSelectionListener() {
-			@Override
 			public void valueChanged(ListSelectionEvent e) {
 				boolean ss = sel;
 				sel = false;
@@ -1127,7 +1122,6 @@ public class HabitsPanel extends JComponent {
 			}
 		});
 		timelineDataTable.getColumnModel().getSelectionModel().addListSelectionListener( new ListSelectionListener() {
-			@Override
 			public void valueChanged(ListSelectionEvent e) {
 				boolean ss = sel;
 				sel = true;
@@ -1152,7 +1146,6 @@ public class HabitsPanel extends JComponent {
 			}
 		});
 		colHeaderTable.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
-			@Override
 			public void valueChanged(ListSelectionEvent e) {
 				boolean ss = sel;
 				sel = false;
@@ -1177,7 +1170,6 @@ public class HabitsPanel extends JComponent {
 		});
 		
 		timelineDataTable.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
-			@Override
 			public void valueChanged(ListSelectionEvent e) {
 				boolean ss = sel;
 				sel = true;
@@ -1311,16 +1303,17 @@ public class HabitsPanel extends JComponent {
 		};
 		JScrollPane timelineDrawScroll = new JScrollPane( drawer );
 		
-		datepicker.addPropertyChangeListener( new PropertyChangeListener() {
-			@Override
-			public void propertyChange(PropertyChangeEvent evt) {
-				try {
-					load();
-				} catch (IOException e) {
-					e.printStackTrace();
+		if( datepicker != null ) {
+			datepicker.addPropertyChangeListener( new PropertyChangeListener() {
+				public void propertyChange(PropertyChangeEvent evt) {
+					try {
+						load();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
 				}
-			}
-		});
+			});
+		}
 		
 		this.add( tsplitPane );
 		
@@ -1433,7 +1426,6 @@ public class HabitsPanel extends JComponent {
 		final RenderComponent	rc = new RenderComponent();
 		rc.addComboItems( allskmt );
 		TableCellRenderer renderer = new TableCellRenderer() {			
-			@Override
 			public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
 				//rc.setBounds(0, 0, table.getRowHeight(row), table.getColumnModel().getColumn(column).getWidth());
 				rc.selected = isSelected;
@@ -1497,20 +1489,15 @@ public class HabitsPanel extends JComponent {
 		//timelineDataTable.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
 		
 		final TableModel typeModel = new TableModel() {
-			@Override
 			public void addTableModelListener(TableModelListener l) {}
-
-			@Override
 			public Class<?> getColumnClass(int columnIndex) {
 				return String.class;
 			}
 
-			@Override
 			public int getColumnCount() {
 				return 1;
 			}
 
-			@Override
 			public String getColumnName(int columnIndex) {
 				final long time = getCurrentTime();
 				cal.setTimeInMillis( time );
@@ -1519,12 +1506,10 @@ public class HabitsPanel extends JComponent {
 				return "Máltíð - " + week + ". vika";
 			}
 
-			@Override
 			public int getRowCount() {
 				return timelineDataModel.getRowCount();
 			}
 
-			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
 				if( w != null ) {
 					String[] split = w.d[7].split("\t");
@@ -1535,15 +1520,11 @@ public class HabitsPanel extends JComponent {
 				return null;
 			}
 
-			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
 				return true;
 			}
 
-			@Override
 			public void removeTableModelListener(TableModelListener l) {}
-
-			@Override
 			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
 				String s = w.d[7];
 				String[] split = s.split("\t");

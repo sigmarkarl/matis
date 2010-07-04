@@ -776,14 +776,15 @@ public class Order extends JApplet {
 	public void updateVerkCombo( String filter ) {
 		vcombo.removeAllItems();
 		for( String v : verkList ) {
-			if( filter == null || v.startsWith( filter ) ) vcombo.addItem( v );
+			if( filter == null || v.startsWith( filter ) || (filter.equals("0") && v.startsWith("31")) ) vcombo.addItem( v );
 		}
 		if( filter == null || filter.equals("3") || filter.equals("4") || filter.equals("6") ) vcombo.addItem( "Almennt lab - 312(36%), 412(43%), 612(21%)" );
+		if( filter == null || filter.equals("1") || filter.equals("2") || filter.equals("4") ) vcombo.addItem( "60% 40000412, 30% 10000112, 10% 20000212" );
 	}
 	
 	List<String>	verkList = new ArrayList<String>();
 	public void updateVerk() throws SQLException {
-		String sql = "select [No_], [Description] from [MATIS].[dbo].[Matís ohf_$Job] where [Blocked] = 0 and ([Global Dimension 1 Code] = '0100' or [Global Dimension 1 Code] = '0200' or [Global Dimension 1 Code] = '0300' or [Global Dimension 1 Code] = '0400' or [Global Dimension 1 Code] = '0500' or [Global Dimension 1 Code] = '0600')"; // where [user] = '"+user+"'";
+		String sql = "select [No_], [Description] from [MATIS].[dbo].[Matís ohf_$Job] where ([Blocked] = 0 and ([Global Dimension 1 Code] = '0100' or [Global Dimension 1 Code] = '0200' or [Global Dimension 1 Code] = '0300' or [Global Dimension 1 Code] = '0400' or [Global Dimension 1 Code] = '0500' or [Global Dimension 1 Code] = '0600') or [Global Dimension 1 Code] = '3000' )"; // where [user] = '"+user+"'";
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
 		ResultSet 			rs = ps.executeQuery();
@@ -1304,6 +1305,7 @@ public class Order extends JApplet {
 		stcombo.addItem("Líftækni og lífefni (0400)");
 		stcombo.addItem("Mælingar og miðlun (0500)");
 		stcombo.addItem("Öryggi og umhverfi (0600)");
+		stcombo.addItem("Svið þrjúþúsund (3000)");
 		
 		stcombo.addItemListener( new ItemListener() {
 			@Override

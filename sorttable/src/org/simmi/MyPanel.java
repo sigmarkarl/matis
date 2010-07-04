@@ -131,7 +131,6 @@ public class MyPanel extends JComponent {
 		final JSpinner[]	sp = {resthours,easyhours,mediumhours,hardhours};
 		
 		resthours.addChangeListener( new ChangeListener() {
-			@Override
 			public void stateChanged(ChangeEvent ce) {
 				if( stateInactive != true ) {
 					stateInactive = true;
@@ -142,7 +141,6 @@ public class MyPanel extends JComponent {
 		});
 		
 		easyhours.addChangeListener( new ChangeListener() {
-			@Override
 			public void stateChanged(ChangeEvent ce) {
 				if( stateInactive != true ) {
 					stateInactive = true;
@@ -153,7 +151,6 @@ public class MyPanel extends JComponent {
 		});
 		
 		mediumhours.addChangeListener( new ChangeListener() {
-			@Override
 			public void stateChanged(ChangeEvent ce) {
 				if( stateInactive != true ) {
 					stateInactive = true;
@@ -164,7 +161,6 @@ public class MyPanel extends JComponent {
 		});
 		
 		hardhours.addChangeListener( new ChangeListener() {
-			@Override
 			public void stateChanged(ChangeEvent ce) {
 				if( stateInactive != true ) {
 					stateInactive = true;

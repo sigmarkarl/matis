@@ -689,7 +689,6 @@ public class FriendsPanel extends SimSplitPane {
 		
 		JPopupMenu popup = new JPopupMenu();
 		Action action = new AbstractAction("Velja mig") {
-			@Override
 			public void actionPerformed(ActionEvent e) {
 				int r = table.getSelectedRow();
 				selectMe( mypanel, r );
@@ -749,7 +748,6 @@ public class FriendsPanel extends SimSplitPane {
 		});
 		popup.addSeparator();
 		popup.add( new AbstractAction("Uppfæra vinalista") {
-			@Override
 			public void actionPerformed(ActionEvent e) {
 				try {
 					login();

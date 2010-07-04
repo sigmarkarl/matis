@@ -914,7 +914,6 @@ public class RecipePanel extends JSplitPane {
 		});*/
 		
 		TableCellRenderer renderer = new TableCellRenderer() {
-			@Override
 			public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
 				int rr = recipeTable.getSelectedRow();
 				if( rr >= 0 && rr < recipeTable.getRowCount() ) {
