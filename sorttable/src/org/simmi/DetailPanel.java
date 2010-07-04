@@ -576,9 +576,8 @@ public class DetailPanel extends SimSplitPane {
 		popup.addSeparator();
 		URL				xurl = this.getClass().getResource("/xlsx.png");
 		ImageProducer 	ims = (ImageProducer)xurl.getContent();
-		Image 		img = this.createImage( ims ).getScaledInstance(16, 16, Image.SCALE_SMOOTH);
-		popup.add( new AbstractAction("Opna val í Excel", new ImageIcon(img) ) {
-			@Override
+		Image 		img = (ims != null ? this.createImage( ims ).getScaledInstance(16, 16, Image.SCALE_SMOOTH) : null);
+		popup.add( new AbstractAction("Opna val í Excel", img != null ? new ImageIcon(img) : null ) {
 			public void actionPerformed(ActionEvent e) {
 				try {
 					openExcel( leftTable );

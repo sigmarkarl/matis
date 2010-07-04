@@ -44,6 +44,7 @@ import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -371,13 +372,15 @@ public class Parentage extends JApplet {
 		int br = 1;
 		b_row = b_sheet.getRow(br++);		
 		while( b_row != null ) {
-			if( b_row.getCell(0) != null && b_row.getCell(0).getStringCellValue().length() > 0 ) {
+			Cell cell = b_row.getCell(0);
+			if( cell != null && (cell.getCellType() == XSSFCell.CELL_TYPE_NUMERIC || cell.getStringCellValue().length() > 0) ) {
 				if( pbar != null ) {
 					pbar.setValue( br );
 					pbar.setString( Integer.toString(br) );
 				}
 				
-				String bname = b_row.getCell(0).getStringCellValue();
+				cell = b_row.getCell(0);
+				String bname = cell.getCellType() == XSSFCell.CELL_TYPE_NUMERIC ? Double.toString(cell.getNumericCellValue()) : cell.getStringCellValue();
 				System.err.println( bname );
 				XSSFCell rcell = rrow.createCell( 0 );
 				//rcell.setCellType( XSSFCell.CELL_TYPE_STRING );
@@ -388,7 +391,8 @@ public class Parentage extends JApplet {
 				int mr = 1;
 				XSSFRow 	m_row = m_sheet.getRow(mr++);
 				while( m_row != null ) {
-					if( m_row.getCell(0) != null && m_row.getCell(0).getStringCellValue().length() > 0 ) {
+					cell = m_row.getCell(0);
+					if( cell != null && (cell.getCellType() == Cell.CELL_TYPE_NUMERIC || cell.getStringCellValue().length() > 0) ) {
 						int c = 1;
 						
 						int dcount = 0;
@@ -442,7 +446,7 @@ public class Parentage extends JApplet {
 							c += 2;
 						}
 						if( mcount+dcount >= (cellcount-1)/2-villur ) {
-							XSSFCell cell = m_row.getCell(0);
+							cell = m_row.getCell(0);
 							
 							if( cell != null ) {
 								mlist.add(m_row);
@@ -456,7 +460,8 @@ public class Parentage extends JApplet {
 				int fr = 1;
 				XSSFRow 	f_row = f_sheet.getRow(fr++);
 				while( f_row != null ) {
-					if( f_row.getCell(0) != null && f_row.getCell(0).getStringCellValue().length() > 0 ) {
+					cell = f_row.getCell(0);
+					if( cell != null && (cell.getCellType() == Cell.CELL_TYPE_NUMERIC || cell.getStringCellValue().length() > 0) ) {
 						int c = 1;
 						
 						int dcount = 0;
@@ -510,7 +515,7 @@ public class Parentage extends JApplet {
 							c += 2;
 						}
 						if( mcount+dcount >= (cellcount-1)/2-villur ) {
-							XSSFCell cell = f_row.getCell(0);
+							cell = f_row.getCell(0);
 							
 							if( cell != null ) {
 								flist.add(f_row);
@@ -589,8 +594,8 @@ public class Parentage extends JApplet {
 							XSSFCell fcell = frow.getCell(0);
 							
 							if( mcell != null && fcell != null ) {
-								String mname = mcell.getStringCellValue();
-								String fname = fcell.getStringCellValue();
+								String mname = mcell.getCellType() == Cell.CELL_TYPE_NUMERIC ? Double.toString( mcell.getNumericCellValue() ) : mcell.getStringCellValue();
+								String fname = fcell.getCellType() == Cell.CELL_TYPE_NUMERIC ? Double.toString( fcell.getNumericCellValue() ) : fcell.getStringCellValue();
 								System.err.println( "\t"+mname+"\t"+fname );
 								
 								rcell = rrow.createCell( 1 );
@@ -609,10 +614,10 @@ public class Parentage extends JApplet {
 				flist.removeAll( set );
 				mlist.removeAll( set );
 				for( XSSFRow r : mlist ) {
-					XSSFCell cell = r.getCell(0);
+					cell = r.getCell(0);
 					
 					if( cell != null ) {
-						String name = cell.getStringCellValue();
+						String name = cell.getCellType() == Cell.CELL_TYPE_NUMERIC ? Double.toString( cell.getNumericCellValue() ) : cell.getStringCellValue();
 						System.err.println( "\t"+name );
 						
 						rcell = rrow.createCell( 1 );
@@ -622,10 +627,10 @@ public class Parentage extends JApplet {
 				}
 					
 				for( XSSFRow r : flist ) {
-					XSSFCell cell = r.getCell(0);
+					cell = r.getCell(0);
 					
 					if( cell != null ) {
-						String name = cell.getStringCellValue();
+						String name = cell.getCellType() == Cell.CELL_TYPE_NUMERIC ? Double.toString( cell.getNumericCellValue() ) : cell.getStringCellValue();
 						System.err.println( "\t\t"+name );
 						
 						rcell = rrow.createCell( 2 );

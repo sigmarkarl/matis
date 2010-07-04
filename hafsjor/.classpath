@@ -15,5 +15,13 @@
 	<classpathentry kind="lib" path="/opt/poi-3.6/lib/commons-logging-1.1.jar"/>
 	<classpathentry kind="lib" path="/opt/poi-3.6/lib/junit-3.8.1.jar"/>
 	<classpathentry kind="lib" path="/opt/poi-3.6/lib/log4j-1.2.13.jar"/>
+	<classpathentry kind="lib" path="/opt/tika-0.7/tika-core/target/tika-core-0.7.jar"/>
+	<classpathentry kind="lib" path="/opt/tika-0.7/tika-parsers/target/tika-parsers-0.7.jar"/>
+	<classpathentry kind="lib" path="/usr/share/java/libcommons-openpgp-java.jar"/>
+	<classpathentry kind="lib" path="/usr/share/java/bcprov.jar"/>
+	<classpathentry kind="lib" path="/usr/share/java/bcpg.jar"/>
+	<classpathentry kind="lib" path="/usr/share/java/bctsp.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/pdfbox"/>
+	<classpathentry kind="lib" path="/usr/share/java/pdfrenderer.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

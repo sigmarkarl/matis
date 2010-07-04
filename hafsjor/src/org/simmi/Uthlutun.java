@@ -1,10 +1,8 @@
 package org.simmi;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.sql.Connection;
@@ -17,9 +15,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.SortedSet;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
@@ -33,7 +29,7 @@ public class Uthlutun {
 
 	public static Connection connect() throws SQLException, ClassNotFoundException {
 		Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=order;user=simmi;password=mirodc30;";
+		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=hafsjor;user=simmi;password=mirodc30;";
 		// String connectionUrl =
 		// "jdbc:sqlserver://navision.rf.is:1433;databaseName=order;integratedSecurity=true;";
 		return DriverManager.getConnection(connectionUrl);

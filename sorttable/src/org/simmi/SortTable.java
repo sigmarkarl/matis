@@ -2027,7 +2027,6 @@ public class SortTable extends JApplet {
 		
 		final JPopupMenu	leftpopup = new JPopupMenu();
 		leftpopup.add( new AbstractAction("Senda fæðutegund í valda uppskrift") {
-			@Override
 			public void actionPerformed(ActionEvent e) {
 				String str = "";
 				
@@ -2077,9 +2076,8 @@ public class SortTable extends JApplet {
 		JPopupMenu		popup = new JPopupMenu();
 		URL				xurl = this.getClass().getResource("/xlsx.png");
 		ImageProducer 	ims = (ImageProducer)xurl.getContent();
-		Image 		img = this.createImage( ims ).getScaledInstance(16, 16, Image.SCALE_SMOOTH);
-		popup.add( new AbstractAction("Opna val í Excel", new ImageIcon(img) ) {
-			@Override
+		Image 		img = (ims != null ? this.createImage( ims ).getScaledInstance(16, 16, Image.SCALE_SMOOTH) : null);
+		popup.add( new AbstractAction("Opna val í Excel", img != null ? new ImageIcon(img) : null ) {
 			public void actionPerformed(ActionEvent e) {
 				try {
 					openExcel();
@@ -2130,8 +2128,8 @@ public class SortTable extends JApplet {
 		int ir = 2;
 		for( int r : table.getSelectedRows() ) {
 			Row row = sh.createRow( ir );
-			row.createCell(0).setCellValue( (String)leftTable.getValueAt(ir, 0) );
-			row.createCell(1).setCellValue( (String)leftTable.getValueAt(ir, 1) );
+			row.createCell(0).setCellValue( (String)leftTable.getValueAt(r, 0) );
+			row.createCell(1).setCellValue( (String)leftTable.getValueAt(r, 1) );
 			
 			i = 2;
 			for( int c : table.getSelectedColumns() ) {
@@ -2214,8 +2212,8 @@ public class SortTable extends JApplet {
 	}
 
 	public void frame() {
+		JFrame frame = new JFrame();
 		try {
-			JFrame frame = new JFrame();
 			frame.setBackground(Color.white);
 			frame.getContentPane().setBackground(Color.white);
 			this.initGui(null, null);
@@ -2224,13 +2222,12 @@ public class SortTable extends JApplet {
 			frame.add(this.getSplitPane(), BorderLayout.CENTER);
 			// frame.getContentPane().add( new JButton("simmi") );
 			frame.pack();
-			frame.setSize(800, 600);
-			// frame.add(sortTable.getEditor(), BorderLayout.SOUTH);
-			frame.setVisible(true);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
+		} catch(Exception e) {
 			e.printStackTrace();
 		}
+		frame.setSize(800, 600);
+		// frame.add(sortTable.getEditor(), BorderLayout.SOUTH);
+		frame.setVisible(true);
 	}
 
 	public JTextField getSearchField() {
