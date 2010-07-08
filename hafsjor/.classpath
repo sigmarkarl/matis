@@ -23,5 +23,6 @@
 	<classpathentry kind="lib" path="/usr/share/java/bctsp.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/pdfbox"/>
 	<classpathentry kind="lib" path="/usr/share/java/pdfrenderer.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/icepdf"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

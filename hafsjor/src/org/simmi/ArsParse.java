@@ -10,11 +10,14 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.tika.Tika;
 import org.apache.tika.config.TikaConfig;
+import org.simmi.GiskPanel.Arsuppl;
 
 public class ArsParse {
 	static Connection 		con;
@@ -27,7 +30,7 @@ public class ArsParse {
 	}
 	
 	static int fcount = 0;
-	public static void sub( Tika t, File fl ) throws SQLException, ClassNotFoundException, IOException {	
+	public static void sub( Tika t, File fl ) throws SQLException, ClassNotFoundException, IOException {
 		File[] files = fl.listFiles( new FileFilter() {
 			@Override
 			public boolean accept(File pathname) {
@@ -39,7 +42,7 @@ public class ArsParse {
 		String	sql = "insert into [hafsjor].[dbo].[ars_temp] ([f_heiti],[f_kt],[e_heiti],[e_kt],[ef_heiti],[ef_kt],[ath],[artal],[skra_nafn],[path],[hagn],[hagnfyrr],[eign],[eignfyrr]) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"; // where heiti = 'Sæfari'";
 		PreparedStatement 	ps = connect().prepareStatement(sql);
 		
-		int ecount = 0;
+		Arsuppl arsuppl = new GiskPanel.Arsuppl();
 		for( File f : files ) {
 			if( f.isDirectory() ) sub( t, f );
 			else /*if( f.getName().startsWith("Vestri") )*/ {
@@ -63,216 +66,17 @@ public class ArsParse {
 				String 	fname = f.getName().substring(0, Math.min(50, f.getName().length()));
 				String	parname = f.getParentFile().getName();
 				parname = parname.substring(0, Math.min(50,parname.length()) );
-				Reader 		rd = t.parse( f );
-			
-				boolean inside = false;
-				boolean inarit = false;
-				boolean inhagn = false;
-				boolean ineign = false;
-				int passtskyr = 0;
 				
-				BufferedReader br = new BufferedReader( rd );
-				String line = null;
-				try {
-					line = br.readLine();
-				} catch( Exception e ) {
-					e.printStackTrace();
-				}
+				boolean inside = func( t, f, ps, arsuppl );
 				
-				if( line == null ) {
-					inside = true;
-					ps.setString(7, "io error");
-				}
-				
-				while( line != null ) {
-					line = line.trim();
-					String woSpace = line.toLowerCase().replace(" ", "");
-					if( woSpace.startsWith("uppl") && !inside ) {						
-						inside = true;						
-						line = br.readLine();
-						line = br.readLine().trim();
-						woSpace = line.toLowerCase().replace(" ", "");
-						String[] split = line.split("[\t ]+");
-						
-						String fkt = "";
-						String fheiti = "";
-						if( split[0].length() < 4 ) {
-							if( woSpace.length() > 11 ) {
-								fkt = woSpace.substring(0,11);
-								fheiti = woSpace.substring(11);
-							}
-						} else {
-							fkt = split[0];
-							if( split.length > 1 ) {
-								fheiti = split[1];
-								for( int i = 2; i < split.length; i++ ) {
-									fheiti += " "+split[i];
-								}
-							}
-						}
-						
-						fheiti = fheiti.substring(0, Math.min(50, fheiti.length()));
-						fheiti = fheiti.replace("ehf", " ehf");
-						fkt = fkt.substring(0, Math.min(50, fkt.length()));
-						ps.setString(1, fheiti);
-						ps.setString(2, fkt);
-						
-						String ar = "";
-						while( !woSpace.startsWith("reikningsár") ) {
-							try {
-								line = br.readLine();
-								woSpace = line.toLowerCase().replace(" ", "");
-							} catch( Exception e ) {
-								System.err.println("simmi3");
-								line = null;
-							}
-							if( line != null ) {
-								line = line.trim();
-							} else break;
-						}
-						
-						if( line == null ) {
-							ecount++;
-							break;
-						}
-						String next = br.readLine();
-						
-						String efheiti = "";
-						String efkt = "";
-						
-						int c = 0;
-						while( line != null && !woSpace.startsWith("endursk") && c < 10 ) {								
-							line = br.readLine();
-							woSpace = line.toLowerCase().replace(" ", "");
-							c++;
-						}
-						
-						if( line != null ) {
-							line = br.readLine();
-						}
-						
-						if( line != null ) {
-							line = br.readLine();
-						}
-						
-						if( line != null ) {
-							line = line.trim();
-							woSpace = line.toLowerCase().replace(" ", "");
-							split = line.split("[\t ]+");
-							
-							if( split[0].length() < 10 && woSpace.length() > 10 ) {
-								if( woSpace.charAt(6) == '-' ) {
-									efkt = woSpace.substring(0,11);
-									efheiti = woSpace.substring(11);
-								} else {
-									efkt = woSpace.substring(0,10);
-									efheiti = woSpace.substring(10);
-								}
-								efheiti = efheiti.replace("ehf", " ehf");
-							} else {
-								if( split.length > 1 ) {
-									String kt = split[0];
-									String heiti = split[1];
-									for( int i = 2; i < split.length; i++ ) {
-										heiti += " "+split[i];
-									}
-									efheiti = heiti;
-									efkt = kt;
-								}
-							}
-							
-							efheiti = efheiti.substring(0, Math.min(50, efheiti.length()));
-							efkt = efkt.substring(0, Math.min(50, efkt.length()));
-						}
-						
-						if( next != null ) {
-							next = next.trim();
-							String nwoSpace = next.replace(" ", "");
-							String[] wspl = next.split("[\t ]+");
-							if( wspl[0].length() < 2 ) {
-								ar = nwoSpace;
-							} else {
-								ar = wspl[0];
-							}
-						}
-						
-						//if( efheiti.length() == 0 ) efheiti = "Deloitte";
-						ps.setString(5, efheiti);
-						ps.setString(6, efkt);
-						ps.setString(8, ar);
-						//ps.execute();
-						
-					} else if( woSpace.startsWith("áritun") && !inarit ) {
-						String prev = "";
-						while( !(woSpace.startsWith("endursk") || woSpace.startsWith("löggilturendursk")) && !woSpace.contains("rekstrarreikn") && !woSpace.contains("skýr.") ) {
-							prev = woSpace;
-							try {
-								line = br.readLine();
-							} catch( Exception e ) {
-								System.err.println("simmi2");
-								line = null;
-							}
-							if( line != null ) {
-								line = line.trim();
-								woSpace = line.toLowerCase().replace(" ", "");
-							}
-							else break;
-						}
-						
-						if( woSpace.contains("skýr.") ) {
-							passtskyr = 1;
-						} else {
-							String nafn = prev.substring(0, Math.min(50, prev.length()));
-							if( nafn.contains("son") || nafn.contains("dóttir") ) {
-								ps.setString(3, nafn);
-								inarit = true;
-							}
-						}
-					} else if( passtskyr > 0 && !inhagn && (woSpace.startsWith("ársniðurstaða") || ((woSpace.startsWith("(tap") || woSpace.startsWith("tap") || woSpace.startsWith("hagnaður") || woSpace.startsWith("rekstrarafkoma")) && woSpace.contains("ársins"))) ) {
-						stuff( br, line, woSpace, ps, 11, 12 );
-						inhagn = true;
-						
-						/*String nafn = prev.substring(0, Math.min(50, prev.length()));
-						if( nafn.contains("son") || nafn.contains("dóttir") ) {
-							ps.setString(3, nafn);					
-							break;
-						}*/
-					} else if( !ineign && passtskyr > 1 && woSpace.startsWith("eignir") ) {
-						stuff( br, line, woSpace, ps, 13, 14 );
-						ineign = true;
-						//inhagn = true;
-					} else {
-						if( woSpace.contains("skýr.") ) {
-							passtskyr++;
-						}
+				if( ps != null ) {
+					if( !inside ) {
+						ps.setString(7, "parse error");
 					}
-						/*else if( !in && (((woSpace.startsWith("(Eignir") || woSpace.startsWith("tap") || woSpace.startsWith("hagnaður") || woSpace.startsWith("rekstrarafkoma")) && woSpace.contains("ársins"))) ) {
-					}
-												
-					}*/
-					
-					/* System.err.println( line );
-					}*/
-					
-					//if( count++ > 10 ) break;
-					try {
-						line = br.readLine();
-					} catch( Exception e ) {
-						System.err.println("simmi");
-						line = null;
-					}
+					ps.setString(9, fname);
+					ps.setString(10, parname);
+					ps.execute();
 				}
-				
-				rd.close();
-				if( !inside ) {
-					ps.setString(7, "parse error");
-					
-					//fcount++;
-					//System.err.println( ""+f.getName() );
-				}
-				ps.setString(9, fname);
-				ps.setString(10, parname);
-				ps.execute();
 			}
 			
 			/*String res = "";
@@ -289,7 +93,254 @@ public class ArsParse {
 		ps.close();
 	}
 	
-	public static void stuff( BufferedReader br, String line, String woSpace, PreparedStatement ps, int ind1, int ind2 ) throws SQLException {
+	//int ecount = 0;
+	public static boolean func( Tika t, File f, PreparedStatement ps, Arsuppl arsuppl ) throws IOException, SQLException {
+		Reader 		rd = t.parse( f );
+		
+		boolean inside = false;
+		boolean inarit = false;
+		boolean inhagn = false;
+		boolean ineign = false;
+		int passtskyr = 0;
+		
+		BufferedReader br = new BufferedReader( rd );
+		String line = null;
+		try {
+			line = br.readLine();
+		} catch( Exception e ) {
+			e.printStackTrace();
+		}
+		
+		if( line == null ) {
+			inside = true;
+			ps.setString(7, "io error");
+		}
+		
+		while( line != null ) {
+			line = line.trim();
+			String woSpace = line.toLowerCase().replace(" ", "");
+			String wOSpace = line.replace(" ", "");
+			if( woSpace.startsWith("uppl") && !inside ) {						
+				inside = true;						
+				line = br.readLine();
+				line = br.readLine().trim();
+				woSpace = line.toLowerCase().replace(" ", "");
+				wOSpace = line.replace(" ", "");
+				String[] split = line.split("[\t ]+");
+				
+				String fkt = "";
+				String fheiti = "";
+				if( split[0].length() < 4 ) {
+					if( woSpace.length() > 11 ) {
+						fkt = wOSpace.substring(0,11);
+						fheiti = wOSpace.substring(11);
+					}
+				} else {
+					fkt = split[0];
+					if( split.length > 1 ) {
+						fheiti = split[1];
+						for( int i = 2; i < split.length; i++ ) {
+							fheiti += " "+split[i];
+						}
+					}
+				}
+				
+				fheiti = fheiti.substring(0, Math.min(50, fheiti.length()));
+				fheiti = fheiti.replace("ehf", " ehf");
+				fkt = fkt.substring(0, Math.min(50, fkt.length()));
+				
+				if( ps != null ) {
+					ps.setString(1, fheiti);
+					ps.setString(2, fkt);
+				}
+				
+				if( arsuppl != null ) {
+					arsuppl.name = fheiti;
+					arsuppl.kt = fkt;
+				}
+				
+				String ar = "";
+				while( !woSpace.startsWith("reikningsár") ) {
+					try {
+						line = br.readLine();
+						woSpace = line.toLowerCase().replace(" ", "");
+						wOSpace = line.replace(" ", "");
+					} catch( Exception e ) {
+						System.err.println("simmi3");
+						line = null;
+					}
+					if( line != null ) {
+						line = line.trim();
+					} else break;
+				}
+				
+				if( line == null ) {
+					//ecount++;
+					break;
+				}
+				String next = br.readLine();
+				
+				String efheiti = "";
+				String efkt = "";
+				
+				int c = 0;
+				while( line != null && !woSpace.startsWith("endursk") && c < 10 ) {								
+					line = br.readLine();
+					woSpace = line.toLowerCase().replace(" ", "");
+					wOSpace = line.replace(" ", "");
+					c++;
+				}
+				
+				if( line != null ) {
+					line = br.readLine();
+				}
+				
+				if( line != null ) {
+					line = br.readLine();
+				}
+				
+				if( line != null ) {
+					line = line.trim();
+					woSpace = line.toLowerCase().replace(" ", "");
+					wOSpace = line.replace(" ", "");
+					split = line.split("[\t ]+");
+					
+					if( split[0].length() < 10 && woSpace.length() > 10 ) {
+						if( woSpace.charAt(6) == '-' ) {
+							efkt = wOSpace.substring(0,11);
+							efheiti = wOSpace.substring(11);
+						} else {
+							efkt = wOSpace.substring(0,10);
+							efheiti = wOSpace.substring(10);
+						}
+						String res = "";
+						for( int i = 0; i < efheiti.length(); i++ ) {
+							char ch = efheiti.charAt(i);
+							if( i != 0 && Character.isUpperCase( ch ) ) res += " "+ch;
+							else res += ch;
+						}
+						efheiti = res.replace("ehf", " ehf");
+					} else {
+						if( split.length > 1 ) {
+							String kt = split[0];
+							String heiti = split[1];
+							for( int i = 2; i < split.length; i++ ) {
+								heiti += " "+split[i];
+							}
+							
+							String res = "";
+							for( int i = 0; i < heiti.length(); i++ ) {
+								char ch = heiti.charAt(i);
+								if( i != 0 && Character.isUpperCase( ch ) ) res += " "+ch;
+								else res += ch;
+							}
+							
+							efheiti = res;
+							efkt = kt;
+						}
+					}
+					
+					efheiti = efheiti.substring(0, Math.min(50, efheiti.length()));
+					efkt = efkt.substring(0, Math.min(50, efkt.length()));
+				}
+				
+				if( next != null ) {
+					next = next.trim();
+					String nwoSpace = next.replace(" ", "");
+					String[] wspl = next.split("[\t ]+");
+					if( wspl[0].length() < 2 ) {
+						ar = nwoSpace.substring(0, 4);
+					} else {
+						ar = wspl[0];
+					}
+				}
+				
+				//if( efheiti.length() == 0 ) efheiti = "Deloitte";
+				if( ps != null ) {
+					ps.setString(5, efheiti);
+					ps.setString(6, efkt);
+					ps.setString(8, ar);
+				}
+				
+				if( arsuppl != null ) {
+					arsuppl.endurskf = efheiti;
+					arsuppl.endurktf = efkt;
+					arsuppl.year = ar;
+				}
+				//ps.execute();
+				
+			} else if( woSpace.startsWith("áritun") && !inarit ) {
+				String prev = "";
+				while( !(woSpace.startsWith("endursk") || woSpace.startsWith("löggilturendursk")) && !woSpace.contains("rekstrarreikn") && !woSpace.contains("skýr.") ) {
+					prev = wOSpace;
+					try {
+						line = br.readLine();
+					} catch( Exception e ) {
+						System.err.println("simmi2");
+						line = null;
+					}
+					if( line != null ) {
+						line = line.trim();
+						woSpace = line.toLowerCase().replace(" ", "");
+						wOSpace = line.replace(" ", "");
+					}
+					else break;
+				}
+				
+				if( woSpace.contains("skýr.") ) {
+					passtskyr = 1;
+				} else {
+					String nafn = prev.substring(0, Math.min(50, prev.length()));
+					if( nafn.contains("son") || nafn.contains("dóttir") ) {
+						//Set<Character>	charset = new HashSet<Character>();
+						String res = "";
+						for( int i = 0; i < nafn.length(); i++ ) {
+							char ch = nafn.charAt(i);
+							if( i != 0 && Character.isUpperCase( ch ) ) res += " "+ch;
+							else res += ch;
+						}
+						
+						if( ps != null ) ps.setString(3, res);
+						if( arsuppl != null ) arsuppl.endursk = res;
+						inarit = true;
+					}
+				}
+			} else if( passtskyr > 0 && !inhagn && (woSpace.startsWith("ársniðurstaða") || ((woSpace.startsWith("(tap") || woSpace.startsWith("tap") || woSpace.startsWith("hagnaður") || woSpace.startsWith("rekstrarafkoma")) && woSpace.contains("ársins"))) ) {
+				stuff( br, line, woSpace, ps, 11, 12, arsuppl );
+				inhagn = true;
+				
+				/*String nafn = prev.substring(0, Math.min(50, prev.length()));
+				if( nafn.contains("son") || nafn.contains("dóttir") ) {
+					ps.setString(3, nafn);
+					break;
+				}*/
+			} else if( !ineign && passtskyr > 1 && woSpace.startsWith("eignir") ) {
+				stuff( br, line, woSpace, ps, 13, 14, arsuppl );
+				ineign = true;
+				//inhagn = true;
+			} else {
+				if( woSpace.contains("skýr.") ) {
+					passtskyr++;
+				}
+			}
+				/*else if( !in && (((woSpace.startsWith("(Eignir") || woSpace.startsWith("tap") || woSpace.startsWith("hagnaður") || woSpace.startsWith("rekstrarafkoma")) && woSpace.contains("ársins"))) ) {*/
+			
+			
+			//if( count++ > 10 ) break;
+			try {
+				line = br.readLine();
+			} catch( Exception e ) {
+				System.err.println("simmi");
+				line = null;
+			}
+		}
+		
+		rd.close();
+		
+		return inside;
+	}
+	
+	public static void stuff( BufferedReader br, String line, String woSpace, PreparedStatement ps, int ind1, int ind2, Arsuppl arsuppl ) throws SQLException {
 		String prev = "";
 		/*while( !line.startsWith("endursk") ) {
 			prev = line;
@@ -415,8 +466,15 @@ public class ArsParse {
 		String hagnf = line.substring(Math.max(0,si-1), Math.min( Math.max(0, sei-1 ), line.length()));
 		if( pc2 == '(' ) hagnf = "-"+hagnf;
 		
-		ps.setString(ind1, hagn);
-		ps.setString(ind2, hagnf);
+		if( ps != null ) {
+			ps.setString(ind1, hagn);
+			ps.setString(ind2, hagnf);
+		}
+		
+		if( arsuppl != null ) {
+			if( ind1 == 11 ) arsuppl.hagn = hagn;
+			else if( ind1 == 13 ) arsuppl.eignir = hagn;
+		}
 	}
 	
 	/**
