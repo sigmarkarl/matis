@@ -38,8 +38,11 @@ import java.awt.Container;
 import java.awt.Window;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.lang.ref.WeakReference;
 import java.net.MalformedURLException;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.logging.Logger;
 
 import javax.swing.JApplet;
@@ -54,7 +57,11 @@ import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
+import org.icepdf.core.pobjects.graphics.text.LineText;
+import org.icepdf.core.pobjects.graphics.text.PageText;
+import org.icepdf.core.pobjects.graphics.text.WordText;
 import org.icepdf.core.views.DocumentView;
+import org.icepdf.core.views.DocumentViewModel;
 import org.icepdf.core.views.swing.AbstractPageViewComponent;
 import org.icepdf.ri.common.SwingController;
 import org.icepdf.ri.common.SwingViewBuilder;
@@ -106,7 +113,29 @@ public class ViewerApplet extends JApplet {
     	add( splitpane );
     }
     
-    public void initGui( Container cont ) {
+    public void checkKeyListeners( JScrollPane scroll, KeyListener key ) {
+    	Component comp = scroll.getViewport().getView();
+		if( comp != null ) {
+			boolean b = false;
+			for( KeyListener kl : comp.getKeyListeners() ) {
+				if( kl == key ) b = true;
+			}
+			if( !b ) comp.addKeyListener( key );
+		}
+		
+		java.util.List<AbstractPageViewComponent> pages = controller.getDocumentViewController().getDocumentViewModel().getPageComponents();
+        for (AbstractPageViewComponent page : pages) {
+        	if( page != null ) {
+        		boolean b = false;
+				for( KeyListener kl : page.getKeyListeners() ) {
+					if( kl == key ) b = true;
+				}
+				if( !b ) page.addKeyListener( key );
+        	}
+        }
+    }
+    
+    public void initGui( final Container cont ) {
     	try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		} catch (ClassNotFoundException e) {
@@ -119,7 +148,7 @@ public class ViewerApplet extends JApplet {
 			e.printStackTrace();
 		}
 		
-		giskPanel = new GiskPanel();
+		giskPanel = new GiskPanel( cont );
 		
         // Open a url if available
         /*URL documentURL = null;
@@ -158,6 +187,7 @@ public class ViewerApplet extends JApplet {
 			}
 		});
         
+        final JPanel	viewerpanel = factory.buildViewerPanel();
         final JScrollPane	scroll = (JScrollPane)controller.getDocumentViewController().getViewContainer();
         KeyAdapter key = new KeyAdapter() {
         	public void keyPressed( KeyEvent e ) {
@@ -168,23 +198,26 @@ public class ViewerApplet extends JApplet {
         	 		//controller.getDocumentViewController().setCurrentPageNext();
         		} else if( code == KeyEvent.VK_F2 ) {
         			controller.goToDeltaPage(-documentView.getPreviousPageIncrement());
-        		} else if( code == KeyEvent.VK_F3 ) {
-        			Component comp = scroll.getViewport().getView();
-        			if( comp != null ) {
-        				comp.removeKeyListener( this );
-        				comp.addKeyListener( this );
-        			}
-        			
-        			java.util.List<AbstractPageViewComponent> pages = controller.getDocumentViewController().getDocumentViewModel().getPageComponents();
-        	        for (AbstractPageViewComponent page : pages) {
-        	        	if( page != null ) {
-        	        		page.removeKeyListener( this );
-        	        		page.addKeyListener( this );
-        	        	}
-        	        }
-        			
+        		} else if( code == KeyEvent.VK_F7 ) {
+        			checkKeyListeners( scroll, this );
+        	        
+        	        Component comp1 = ((JFrame)cont).getFocusOwner();
+        			System.err.println( comp1 );
         			String seltext = controller.getDocumentViewController().getSelectedText();
         			giskPanel.copyTextToFocus( seltext.trim() );
+        		} else if( code == KeyEvent.VK_F3 ) {
+        			JTextField prevfield = null;
+        			for( JTextField field : giskPanel.fields ) {
+        				if( field == giskPanel.lastField ) {
+        					if( prevfield != null ) {
+        						prevfield.requestFocus();
+        						giskPanel.scrollCompToVis( prevfield.getBounds() );
+        					}
+            				break;
+        				}
+        				
+        				prevfield = field;
+        			}
         		} else if( code == KeyEvent.VK_F4 ) {
         			boolean boo = false;
         			for( JTextField field : giskPanel.fields ) {
@@ -198,8 +231,107 @@ public class ViewerApplet extends JApplet {
         					boo = true;
         				}
         			}
-        		}
-        	}
+        			if( !boo ) {
+        				giskPanel.lastField = giskPanel.fields[0];
+        				giskPanel.lastField.requestFocus();
+        			}
+        		} else if( code == KeyEvent.VK_F5 ) {
+        			checkKeyListeners( scroll, this );
+        			
+        			boolean shift = (e.getModifiersEx() & KeyEvent.SHIFT_DOWN_MASK) > 0;
+        			DocumentViewModel documentViewModel = controller.getDocumentViewController().getDocumentViewModel();
+        			if (!documentViewModel.isSelectAll()) {
+        				int pi = controller.getDocumentViewController().getCurrentPageIndex();
+        				
+        	            ArrayList<WeakReference<AbstractPageViewComponent>> selectedPages = documentViewModel.getSelectedPageText();
+        	            if (selectedPages != null && selectedPages.size() > 0) {
+        	                for (WeakReference<AbstractPageViewComponent> page : selectedPages) {
+        	                    AbstractPageViewComponent pageComp = page.get();
+        	                    if (pageComp != null) {
+        	                        int pageIndex = pageComp.getPageIndex();
+        	                        if( pageIndex != pi ) {
+        	                        	PageText pt = controller.getDocument().getPageText(pageIndex);
+        	                        	pt.clearSelected();
+        	                        } else {
+        	                        	//controller.getDocumentViewController().getDocumentViewModel().
+        	                        	//.addSelectedPageText( controller.getDocumentViewController().getDocumentViewModel().getPageComponents().get(pi) );
+        	                        }
+        	                    }
+        	                }
+        	            }
+        	                        
+    	            	PageText pt = controller.getDocument().getPageText(pi);
+                        
+                        boolean b = false;
+                        boolean noselected = true;
+                        for( LineText	lt : pt.getPageLines() ) {
+                        	if( b ) {
+                        		boolean done = false;
+                        		for( WordText wt : lt.getWords() ) {
+                        			if( !wt.isSelected() ) {
+                        				wt.selectAll();
+                        				noselected = false;
+                        				done = true;
+                        				break;
+                        			}
+                        		}
+                        		if( done ) break;
+                    		}
+                        	
+                        	boolean done = false;
+                        	for( WordText wt : lt.getWords() ) {
+                        		if( b && !wt.isSelected() ) {
+                        			wt.selectAll();
+                        			noselected = false;
+                        			done = true;
+                        			break;
+                        		}
+                        		System.err.println(wt.getText());
+                        		if(  wt.isSelected() ) {
+                        			//wt.setHighlighted( false );
+                        			if( !shift ) {
+                        				wt.clearSelected();
+                        			}
+                        			b = true;
+                        		} else {
+                        			wt.clearSelected();
+                        		}
+                        	}
+                        	if( done ) break;
+                        }
+                        
+                        if( noselected ) {
+                        	 for( LineText	lt : pt.getPageLines() ) {
+                        		 for( WordText wt : lt.getWords() ) {
+                        			 wt.selectAll();
+                        			 break;
+                        		 }
+                        		 break;
+                        	 }
+                        	 AbstractPageViewComponent abpvc = controller.getDocumentViewController().getDocumentViewModel().getPageComponents().get(pi);
+                        	 controller.getDocumentViewController().getDocumentViewModel().clearSelectedPageText();
+                        	 controller.getDocumentViewController().getDocumentViewModel().addSelectedPageText( abpvc );
+                        }
+                        
+                        viewerpanel.repaint();
+                        scroll.repaint();
+                    }
+                }
+            } /*else {
+            	int pi = controller.getDocumentViewController().getCurrentPageIndex();
+            	PageText pt = controller.getDocument().getPageText(pi);
+            	for( LineText	lt : pt.getPageLines() ) {
+               		 for( WordText wt : lt.getWords() ) {
+               			 wt.selectAll();
+               			 break;
+               		 }
+               		 lt.setHasSelected( true );
+               		 break;
+           	 	}
+            	controller.getDocumentViewController().getDocumentViewModel().addSelectedPageText( controller.getDocumentViewController().getDocumentViewModel().getPageComponents().get(pi) );
+            	viewerpanel.repaint();
+                scroll.repaint();
+            }*/
         };
         cont.addKeyListener( key );
         giskPanel.addKeyListener( key );
@@ -213,16 +345,18 @@ public class ViewerApplet extends JApplet {
         
         splitpane = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT );
         splitpane.setLeftComponent( giskPanel );
+        splitpane.setRightComponent( viewerpanel );
         
-        JPanel	viewerpanel = factory.buildViewerPanel();
+        splitpane.addKeyListener( key );        
         viewerpanel.addKeyListener( key );
+        
+        giskPanel.splitpane.addKeyListener( key );
+        giskPanel.scrollpane.addKeyListener( key );
         
         scroll.addKeyListener( key );
         scroll.getViewport().addKeyListener( key );
         
         //scroll.getViewport().getView().addKeyListener( key );
-        
-        splitpane.setRightComponent( viewerpanel );
         //add( giskPanel, BorderLayout.WEST );
         //add( factory.buildViewerPanel() );
     }
