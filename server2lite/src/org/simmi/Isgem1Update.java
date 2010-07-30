@@ -3,6 +3,7 @@ package org.simmi;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.sql.Connection;
 import java.sql.Date;
@@ -21,6 +22,7 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 import com.healthmarketscience.jackcess.Database;
+import com.sun.jna.Platform;
 
 public class Isgem1Update {
 	Connection con;
@@ -30,7 +32,17 @@ public class Isgem1Update {
 	
 	public Isgem1Update() throws ClassNotFoundException, SQLException {
 		Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=isgem2;user=simmi;password=drsmorc.311;";
+		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=isgem2;user=simmi;password=mirodc30;";
+		
+		if( Platform.isWindows() ) {
+			connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=isgem2;integratedSecurity=true;";
+			InputStream is;
+			if( Platform.is64Bit() ) {
+				is = this.getClass().getResourceAsStream("auth/x64/sqljdbc_auth.dll");
+			} else {
+				is = this.getClass().getResourceAsStream("auth/x86/sqljdbc_auth.dll");
+			}
+		}		
 		con = DriverManager.getConnection(connectionUrl);
 		
 		SwingUtilities.invokeLater( new Runnable() {

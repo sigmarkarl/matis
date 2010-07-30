@@ -294,53 +294,58 @@ public class RecipePanel extends JSplitPane {
 	JScrollPane		scrollPane;
 	
 	public void checkMail() throws IOException {
-		URL url = new URL( "http://test.matis.is/isgem/getr.php" );
-		HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-		connection.setDoInput(true);
-		connection.setDoOutput(true);
-		connection.setRequestMethod("POST");
-		
-		Integer.toString( Math.abs( this.toString().hashCode()) );
-		String write = "user="+fp.currentUserId;
-		
-		connection.getOutputStream().write( write.getBytes() );
-		connection.getOutputStream().flush();
-		connection.getOutputStream().close();
-		
-		byte[] bb = new byte[8192];
-		connection.getInputStream().read(bb);
-		
-		String s = new String( bb );
-		final String[] ss = s.split("\n");
-		
-		//JOptionPane	opt = new JOptionPane(ss.length + " uppskriftir í pósthólfi. Viltu taka við þeim?", JOptionPane.YES_NO_CANCEL_OPTION);
-		
-		if( ss.length > 1 ) {
-		String message = (ss.length-1) + " uppskriftir í pósthólfi. Viltu taka við þeim?";
-			int val =  JOptionPane.showConfirmDialog(this, message, "Uppskriftir frá vinum", JOptionPane.YES_NO_CANCEL_OPTION);
-			if( val != JOptionPane.CANCEL_OPTION ) {
-				for( int i = 0; i < ss.length-1; i++ ) {
-					String str = ss[i];
-					String splt = str.split("\t")[0];
-					
-					url = new URL( "http://test.matis.is/isgem/getd.php" );
-					connection = (HttpURLConnection)url.openConnection();
-					connection.setDoInput(true);
-					connection.setDoOutput(true);
-					connection.setRequestMethod("POST");
-					
-					Integer.toString( Math.abs( this.toString().hashCode()) );
-					write = "recipe="+splt;
-					
-					connection.getOutputStream().write( write.getBytes() );
-					connection.getOutputStream().flush();
-					connection.getOutputStream().close();
-					
-					if( val == JOptionPane.YES_OPTION ) {
-						insertRecipe( new InputStreamReader( connection.getInputStream() ) );
+		try {
+			System.getSecurityManager().checkConnect("test.matis.is", 80);
+			URL url = new URL( "http://test.matis.is/isgem/getr.php" );
+			HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+			connection.setDoInput(true);
+			connection.setDoOutput(true);
+			connection.setRequestMethod("POST");
+			
+			Integer.toString( Math.abs( this.toString().hashCode()) );
+			String write = "user="+fp.currentUserId;
+			
+			connection.getOutputStream().write( write.getBytes() );
+			connection.getOutputStream().flush();
+			connection.getOutputStream().close();
+			
+			byte[] bb = new byte[8192];
+			connection.getInputStream().read(bb);
+			
+			String s = new String( bb );
+			final String[] ss = s.split("\n");
+			
+			//JOptionPane	opt = new JOptionPane(ss.length + " uppskriftir í pósthólfi. Viltu taka við þeim?", JOptionPane.YES_NO_CANCEL_OPTION);
+			
+			if( ss.length > 1 ) {
+			String message = (ss.length-1) + " uppskriftir í pósthólfi. Viltu taka við þeim?";
+				int val =  JOptionPane.showConfirmDialog(this, message, "Uppskriftir frá vinum", JOptionPane.YES_NO_CANCEL_OPTION);
+				if( val != JOptionPane.CANCEL_OPTION ) {
+					for( int i = 0; i < ss.length-1; i++ ) {
+						String str = ss[i];
+						String splt = str.split("\t")[0];
+						
+						url = new URL( "http://test.matis.is/isgem/getd.php" );
+						connection = (HttpURLConnection)url.openConnection();
+						connection.setDoInput(true);
+						connection.setDoOutput(true);
+						connection.setRequestMethod("POST");
+						
+						Integer.toString( Math.abs( this.toString().hashCode()) );
+						write = "recipe="+splt;
+						
+						connection.getOutputStream().write( write.getBytes() );
+						connection.getOutputStream().flush();
+						connection.getOutputStream().close();
+						
+						if( val == JOptionPane.YES_OPTION ) {
+							insertRecipe( new InputStreamReader( connection.getInputStream() ) );
+						}
 					}
 				}
 			}
+		} catch( Exception e ) {
+			
 		}
 			
 		/*if( ss.length > 1 ) {
@@ -514,7 +519,7 @@ public class RecipePanel extends JSplitPane {
 			public void componentHidden(ComponentEvent e) {}
 		});
 		
-		new Thread() {
+		/*new Thread() {
 			public void run() {
 				try {
 					fillSkmt();
@@ -522,24 +527,29 @@ public class RecipePanel extends JSplitPane {
 					e.printStackTrace();
 				}
 			}
-		}.run();
+		}.run();*/
+		fillSkmt();
 		
 		this.fp = fp;
 		foodInd = foodNameInd;
 		recipes = new ArrayList<Recipe>();
 		
-		File f = new File( System.getProperty("user.home"), ".isgem" );
-		f = new File( f, "recipes" );
-		File[] ff = f.listFiles();
-		if( ff != null ) {
-			for( File file : ff ) {
-				FileReader	fr = new FileReader( file );
-				insertRecipe( fr );	
-				//String str = rep.toString();
-				//System.err.println( str );
-				
-				fr.close();
+		try {
+			File f = new File( System.getProperty("user.home"), ".isgem" );
+			f = new File( f, "recipes" );
+			File[] ff = f.listFiles();
+			if( ff != null ) {
+				for( File file : ff ) {
+					FileReader	fr = new FileReader( file );
+					insertRecipe( fr );	
+					//String str = rep.toString();
+					//System.err.println( str );
+					
+					fr.close();
+				}
 			}
+		} catch( SecurityException se ) {
+			
 		}
 		
 		JScrollPane	recipeScroll = new JScrollPane();

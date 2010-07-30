@@ -35,6 +35,7 @@ package org.simmi;
 
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.Window;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
@@ -101,7 +102,13 @@ public class ViewerApplet extends JApplet {
      * Creates an Applet which contains the default viewer.
      */
     public void init() {
-    	initGui( this );
+    	try {
+			initGui( this );
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
     	
     	Window window = SwingUtilities.windowForComponent(this);
 		if (window instanceof JFrame) {
@@ -135,7 +142,26 @@ public class ViewerApplet extends JApplet {
         }
     }
     
-    public void initGui( final Container cont ) {
+    public void next() {
+    	boolean boo = false;
+		for( JTextField field : giskPanel.fields ) {
+			if( boo && field.isShowing() ) {
+				field.requestFocus();
+				giskPanel.scrollCompToVis( field.getBounds() );
+				break;
+			}
+
+			if( field == giskPanel.lastField ) {
+				boo = true;
+			}
+		}
+		if( !boo ) {
+			giskPanel.lastField = giskPanel.fields[0];
+			giskPanel.lastField.requestFocus();
+		}
+    }
+    
+    public void initGui( final Container cont ) throws SQLException, ClassNotFoundException {
     	try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		} catch (ClassNotFoundException e) {
@@ -177,6 +203,8 @@ public class ViewerApplet extends JApplet {
 					//giskPanel
 					giskPanel.filelist.requestFocus();
 					giskPanel.refreshForm();
+					giskPanel.current.skranafn = giskPanel.getSelectedFile().getName();
+					giskPanel.current.index = giskPanel.filelist.getSelectedIndex();
 				} catch (MalformedURLException e1) {
 					e1.printStackTrace();
 				} catch (SQLException e1) {
@@ -192,19 +220,48 @@ public class ViewerApplet extends JApplet {
         KeyAdapter key = new KeyAdapter() {
         	public void keyPressed( KeyEvent e ) {
         		int code = e.getKeyCode();
+        		boolean ctrl = (e.getModifiersEx() & KeyEvent.CTRL_DOWN_MASK) > 0;
         		DocumentView documentView = ((DocumentViewControllerImpl)controller.getDocumentViewController()).getDocumentView();
-        		if( code == KeyEvent.VK_F1 ) {
+        		if( code == KeyEvent.VK_F2 ) {
+        			checkKeyListeners( scroll, this );
         			controller.goToDeltaPage(documentView.getNextPageIncrement());
         	 		//controller.getDocumentViewController().setCurrentPageNext();
-        		} else if( code == KeyEvent.VK_F2 ) {
+        		} else if( code == KeyEvent.VK_F1 ) {
+        			checkKeyListeners( scroll, this );
         			controller.goToDeltaPage(-documentView.getPreviousPageIncrement());
-        		} else if( code == KeyEvent.VK_F7 ) {
+        		} else if( code == KeyEvent.VK_F9 || code == KeyEvent.VK_F8 || (code == KeyEvent.VK_9 && ctrl) ) {
         			checkKeyListeners( scroll, this );
         	        
-        	        Component comp1 = ((JFrame)cont).getFocusOwner();
-        			System.err.println( comp1 );
+        			if( cont instanceof JFrame ) {
+        				Component comp1 = ((JFrame)cont).getFocusOwner();
+        				System.err.println( comp1 );
+        			}
         			String seltext = controller.getDocumentViewController().getSelectedText();
+        			
+        			if( seltext == null || seltext.length() == 0 ) {
+        				StringBuilder selectedText = new StringBuilder();
+        				int pi = controller.getDocumentViewController().getCurrentPageIndex();
+        				PageText pt = controller.getDocument().getPageText(pi);
+	                    selectedText.append(pt.getSelected());
+	                    
+	                    seltext = selectedText.toString();
+        			}
+        			
+        			seltext = seltext.replace(".", "");
+        			
+        			int i;
+        			for( i = 0; i < seltext.length(); i++ ) {
+        				char c = seltext.charAt( i );
+        				if( c >= '0' && c <= '9' ) break;
+        			}
+        			
+        			if( i < seltext.length() ) {
+        				String[] uh = seltext.split("\n");
+        				seltext = uh[0];
+        			}
         			giskPanel.copyTextToFocus( seltext.trim() );
+        			
+        			next();
         		} else if( code == KeyEvent.VK_F3 ) {
         			JTextField prevfield = null;
         			for( JTextField field : giskPanel.fields ) {
@@ -219,22 +276,7 @@ public class ViewerApplet extends JApplet {
         				prevfield = field;
         			}
         		} else if( code == KeyEvent.VK_F4 ) {
-        			boolean boo = false;
-        			for( JTextField field : giskPanel.fields ) {
-        				if( boo ) {
-        					field.requestFocus();
-        					giskPanel.scrollCompToVis( field.getBounds() );
-            				break;
-            			}
-
-        				if( field == giskPanel.lastField ) {
-        					boo = true;
-        				}
-        			}
-        			if( !boo ) {
-        				giskPanel.lastField = giskPanel.fields[0];
-        				giskPanel.lastField.requestFocus();
-        			}
+        			next();
         		} else if( code == KeyEvent.VK_F5 ) {
         			checkKeyListeners( scroll, this );
         			
@@ -263,11 +305,90 @@ public class ViewerApplet extends JApplet {
     	            	PageText pt = controller.getDocument().getPageText(pi);
                         
                         boolean b = false;
-                        boolean noselected = true;
-                        for( LineText	lt : pt.getPageLines() ) {
+                        WordText lastword = null;
+                        for( Object	o : pt.getPageLines() ) {
+                        	LineText lt = (LineText)o;
                         	if( b ) {
                         		boolean done = false;
-                        		for( WordText wt : lt.getWords() ) {
+                        		for( Object ow : lt.getWords() ) {
+                        			WordText wt = (WordText)ow;
+                        			if( !wt.isSelected() ) {
+                        				if( lastword != null ) {
+                        					if( lastword.isSelected() ) lastword.clearSelected();
+                            				else lastword.selectAll();
+                        				}
+                        				done = true;
+                        				break;
+                        			}
+                        		}
+                        		if( done ) break;
+                    		}
+                        	
+                        	boolean done = false;
+                        	for( Object ow : lt.getWords() ) {
+                        		WordText wt = (WordText)ow;
+                        		if( b && !wt.isSelected() ) {
+                        			if( lastword != null ) {
+                        				if( lastword.isSelected() ) lastword.clearSelected();
+                        				else lastword.selectAll();
+                        			}
+                        			done = true;
+                        			break;
+                        		}
+                        		if( wt.isSelected() ) {
+                        			if( !shift ) {
+                        				wt.clearSelected();
+                        			}
+                        			if( b ) {
+                        				lastword = wt;
+                        			}
+                        			b = true;
+                        		} else {
+                        			wt.clearSelected();
+                        			lastword = wt;
+                        		}
+                        	}
+                        	if( done ) break;
+                        }
+                        
+                        viewerpanel.repaint();
+                        scroll.repaint();
+        			}
+        		} else if( code == KeyEvent.VK_F6 ) {
+        			checkKeyListeners( scroll, this );
+        			
+        			boolean shift = (e.getModifiersEx() & KeyEvent.SHIFT_DOWN_MASK) > 0;
+        			DocumentViewModel documentViewModel = controller.getDocumentViewController().getDocumentViewModel();
+        			if (!documentViewModel.isSelectAll()) {
+        				int pi = controller.getDocumentViewController().getCurrentPageIndex();
+        				
+        	            ArrayList<WeakReference<AbstractPageViewComponent>> selectedPages = documentViewModel.getSelectedPageText();
+        	            if (selectedPages != null && selectedPages.size() > 0) {
+        	                for (WeakReference<AbstractPageViewComponent> page : selectedPages) {
+        	                    AbstractPageViewComponent pageComp = page.get();
+        	                    if (pageComp != null) {
+        	                        int pageIndex = pageComp.getPageIndex();
+        	                        if( pageIndex != pi ) {
+        	                        	PageText pt = controller.getDocument().getPageText(pageIndex);
+        	                        	pt.clearSelected();
+        	                        } else {
+        	                        	//controller.getDocumentViewController().getDocumentViewModel().
+        	                        	//.addSelectedPageText( controller.getDocumentViewController().getDocumentViewModel().getPageComponents().get(pi) );
+        	                        }
+        	                    }
+        	                }
+        	            }
+        	                        
+    	            	PageText pt = controller.getDocument().getPageText(pi);
+                        
+                        boolean b = false;
+                        boolean noselected = true;
+                        for( Object o : pt.getPageLines() ) {
+                        	LineText	lt = (LineText)o;
+                        	if( b ) {
+                        		boolean done = false;
+                        		for( Object ow : lt.getWords() ) {
+                        			WordText wt = (WordText)ow;
                         			if( !wt.isSelected() ) {
                         				wt.selectAll();
                         				noselected = false;
@@ -279,7 +400,8 @@ public class ViewerApplet extends JApplet {
                     		}
                         	
                         	boolean done = false;
-                        	for( WordText wt : lt.getWords() ) {
+                        	for( Object ow : lt.getWords() ) {
+                        		WordText wt = (WordText)ow;
                         		if( b && !wt.isSelected() ) {
                         			wt.selectAll();
                         			noselected = false;
@@ -301,14 +423,16 @@ public class ViewerApplet extends JApplet {
                         }
                         
                         if( noselected ) {
-                        	 for( LineText	lt : pt.getPageLines() ) {
-                        		 for( WordText wt : lt.getWords() ) {
+                        	 for( Object o : pt.getPageLines() ) {
+                        		 LineText lt = (LineText)o;
+                        		 for( Object ow : lt.getWords() ) {
+                        			 WordText wt = (WordText)ow;
                         			 wt.selectAll();
                         			 break;
                         		 }
                         		 break;
                         	 }
-                        	 AbstractPageViewComponent abpvc = controller.getDocumentViewController().getDocumentViewModel().getPageComponents().get(pi);
+                        	 AbstractPageViewComponent abpvc = (AbstractPageViewComponent)controller.getDocumentViewController().getDocumentViewModel().getPageComponents().get(pi);
                         	 controller.getDocumentViewController().getDocumentViewModel().clearSelectedPageText();
                         	 controller.getDocumentViewController().getDocumentViewModel().addSelectedPageText( abpvc );
                         }
@@ -346,6 +470,11 @@ public class ViewerApplet extends JApplet {
         splitpane = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT );
         splitpane.setLeftComponent( giskPanel );
         splitpane.setRightComponent( viewerpanel );
+        splitpane.setOneTouchExpandable( true );
+        
+        Dimension d = new Dimension(0,0);
+        viewerpanel.setPreferredSize( d );
+        viewerpanel.setMinimumSize( d );
         
         splitpane.addKeyListener( key );        
         viewerpanel.addKeyListener( key );
@@ -378,9 +507,14 @@ public class ViewerApplet extends JApplet {
 		frame.setSize( 800,600 );
 		
 		ViewerApplet va = new ViewerApplet();
-		va.initGui( frame );
-		frame.add( va.splitpane );
-		
-		frame.setVisible( true );
+		try {
+			va.initGui( frame );
+			frame.add( va.splitpane );
+			frame.setVisible( true );
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
 	}
 }
