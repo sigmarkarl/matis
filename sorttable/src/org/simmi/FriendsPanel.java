@@ -483,25 +483,29 @@ public class FriendsPanel extends SimSplitPane {
 				e.printStackTrace();
 			}
 		} else {
-			File f = new File( System.getProperty("user.home"), ".isgem" );
-			f = new File( f, "friends" );
-			if( f.exists() ) {
-				f = new File( f, "friends.xml" );
+			try {
+				File f = new File( System.getProperty("user.home"), ".isgem" );
+				f = new File( f, "friends" );
 				if( f.exists() ) {
-					try {
-						FileInputStream	fis = new FileInputStream( f );
-						InputStreamReader	isr = new InputStreamReader( fis );
-						int r = isr.read( cbuf );
-						if( r > 0 ) {
-							xml = new String( cbuf, 0, r );
+					f = new File( f, "friends.xml" );
+					if( f.exists() ) {
+						try {
+							FileInputStream	fis = new FileInputStream( f );
+							InputStreamReader	isr = new InputStreamReader( fis );
+							int r = isr.read( cbuf );
+							if( r > 0 ) {
+								xml = new String( cbuf, 0, r );
+							}
+							isr.close();
+						} catch (FileNotFoundException e) {
+							e.printStackTrace();
+						} catch (IOException e) {
+							e.printStackTrace();
 						}
-						isr.close();
-					} catch (FileNotFoundException e) {
-						e.printStackTrace();
-					} catch (IOException e) {
-						e.printStackTrace();
 					}
 				}
+			} catch( Exception e ) {
+				
 			}
 		}
 		if( xml != null ) parseFriendsXml( xml );

@@ -4,7 +4,7 @@
     <options buildIfNeeded="true" compress="true" descriptionLocation="/sorttable_5/food.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
     <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
     <selectedProjects/>
-    <manifest generateManifest="true" manifestLocation="" manifestVersion="1.0" reuseManifest="false" saveManifest="false" usesManifest="true">
+    <manifest generateManifest="false" mainClassHandleIdentifier="=sorttable_5/src&lt;org.simmi{SortTable.java[SortTable" manifestLocation="/sorttable_5/manifest" manifestVersion="1.0" reuseManifest="true" saveManifest="true" usesManifest="true">
         <sealing sealJar="false">
             <packagesToSeal/>
             <packagesToUnSeal/>
@@ -13,21 +13,22 @@
     <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
         <javaElement handleIdentifier="=sorttable_5/src&lt;org.simmi{DetailPanel.java"/>
         <file path="/sorttable_5/src/mat.png"/>
+        <javaElement handleIdentifier="=sorttable_5/src&lt;org.simmi{MyPanel.java"/>
         <file path="/sorttable_5/src/thsGroups.txt"/>
         <file path="/sorttable_5/src/bkl.png"/>
         <file path="/sorttable_5/src/uppsk.png"/>
         <file path="/sorttable_5/src/food.png"/>
         <file path="/sorttable_5/src/du.png"/>
-        <file path="/sorttable_5/src/nu.png"/>
         <javaElement handleIdentifier="=sorttable_5/src&lt;org.simmi{FriendsPanel.java"/>
+        <file path="/sorttable_5/src/nu.png"/>
         <javaElement handleIdentifier="=sorttable_5/src&lt;org.simmi{SortTable.java"/>
         <file path="/sorttable_5/src/eu.png"/>
         <javaElement handleIdentifier="=sorttable_5/loc"/>
         <javaElement handleIdentifier="=sorttable_5/src&lt;org.simmi{GraphPanel.java"/>
         <javaElement handleIdentifier="=sorttable_5/src&lt;org.simmi{RdsPanel.java"/>
         <file path="/sorttable_5/src/sams_nona.png"/>
-        <javaElement handleIdentifier="=sorttable_5/src&lt;org.simmi{Intro.java"/>
         <javaElement handleIdentifier="=sorttable_5/src&lt;org.simmi{HabitsPanel.java"/>
+        <javaElement handleIdentifier="=sorttable_5/src&lt;org.simmi{Intro.java"/>
         <javaElement handleIdentifier="=sorttable_5/src&lt;org.simmi{ImagePanel.java"/>
         <file path="/sorttable_5/src/result.txt"/>
         <javaElement handleIdentifier="=sorttable_5/src&lt;org.netbeans.saas"/>
@@ -36,6 +37,7 @@
         <file path="/sorttable_5/src/vinir.png"/>
         <javaElement handleIdentifier="=sorttable_5/src&lt;org.simmi{RecipePanel.java"/>
         <file path="/sorttable_5/src/smooth.png"/>
+        <javaElement handleIdentifier="=sorttable_5/src&lt;org.simmi{LinkedSplitPane.java"/>
         <file path="/sorttable_5/src/org/simmi/stuff2.txt"/>
         <javaElement handleIdentifier="=sorttable_5/src&lt;org.simmi{CompleteReader.java"/>
         <file path="/sorttable_5/src/org/simmi/rds.txt"/>
@@ -46,8 +48,10 @@
         <file path="/sorttable_5/src/rds.png"/>
         <javaElement handleIdentifier="=sorttable_5/src&lt;org.simmi{SkifuGraph.java"/>
         <file path="/sorttable_5/src/myndir.txt"/>
+        <file path="/sorttable_5/src/xlsx.png"/>
         <file path="/sorttable_5/src/matis.png"/>
         <file path="/sorttable_5/src/skmt.txt"/>
+        <javaElement handleIdentifier="=sorttable_5/src&lt;org.simmi{SimSplitPane.java"/>
         <javaElement handleIdentifier="=sorttable_5/src&lt;org.simmi{CostPanel.java"/>
         <file path="/sorttable_5/src/Food.txt"/>
         <file path="/sorttable_5/src/Component.txt"/>

@@ -23,6 +23,15 @@
 	<classpathentry kind="lib" path="/usr/share/java/bctsp.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/pdfbox"/>
 	<classpathentry kind="lib" path="/usr/share/java/pdfrenderer.jar"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/icepdf"/>
+	<classpathentry kind="lib" path="/home/sigmar/icepdf/ICEpdf-pro-4.0.1-bin-trial/icepdf/lib/batik-awt-util.jar"/>
+	<classpathentry kind="lib" path="/home/sigmar/icepdf/ICEpdf-pro-4.0.1-bin-trial/icepdf/lib/batik-dom.jar"/>
+	<classpathentry kind="lib" path="/home/sigmar/icepdf/ICEpdf-pro-4.0.1-bin-trial/icepdf/lib/batik-svg-dom.jar"/>
+	<classpathentry kind="lib" path="/home/sigmar/icepdf/ICEpdf-pro-4.0.1-bin-trial/icepdf/lib/batik-svggen.jar"/>
+	<classpathentry kind="lib" path="/home/sigmar/icepdf/ICEpdf-pro-4.0.1-bin-trial/icepdf/lib/batik-util.jar"/>
+	<classpathentry kind="lib" path="/home/sigmar/icepdf/ICEpdf-pro-4.0.1-bin-trial/icepdf/lib/batik-xml.jar"/>
+	<classpathentry kind="lib" path="/home/sigmar/icepdf/ICEpdf-pro-4.0.1-bin-trial/icepdf/lib/icepdf-core.jar"/>
+	<classpathentry kind="lib" path="/home/sigmar/icepdf/ICEpdf-pro-4.0.1-bin-trial/icepdf/lib/icepdf-pro.jar"/>
+	<classpathentry kind="lib" path="/home/sigmar/icepdf/ICEpdf-pro-4.0.1-bin-trial/icepdf/lib/icepdf-pro-intl.jar"/>
+	<classpathentry kind="lib" path="/home/sigmar/icepdf/ICEpdf-pro-4.0.1-bin-trial/icepdf/lib/icepdf-viewer.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

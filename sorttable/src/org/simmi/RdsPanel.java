@@ -340,16 +340,16 @@ public class RdsPanel extends JSplitPane {
 		final JEditorPane editor = new JEditorPane();
 		editor.setEditable( false );
 		editor.setContentType("text/html");
-		new Thread() {
+		
+		/*new Thread() {
 			public void run() {
 				try {
 					editor.setPage(vurl);
 				} catch (IOException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 			}
-		};//.start();
+		};//.start();*/
 		
 		table.getSelectionModel().addListSelectionListener( new ListSelectionListener(){
 			public void valueChanged(ListSelectionEvent e) {

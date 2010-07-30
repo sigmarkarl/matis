@@ -182,6 +182,7 @@ public class HabitsPanel extends JComponent {
 		
 		public RenderComponent() {
 			super();
+			this.setName( "asni" );
 			this.setLayout( null );
 			
 			field.setHorizontalAlignment( JTextField.RIGHT );
@@ -215,6 +216,8 @@ public class HabitsPanel extends JComponent {
 			} else if( grayed ) {
 				g.setColor( gray );
 				g.fillRect(0, 0, this.getWidth(), this.getHeight());
+				//g.setColor( Color.red );
+				//g.fillRect(0, 0, label.getWidth(), label.getHeight());
 			}
 			//size = Math.max(20, this.getPreferredSize().width);
 		}
@@ -224,6 +227,8 @@ public class HabitsPanel extends JComponent {
 			label.setBounds(0, 0, w, h/2);
 			field.setBounds(0, h/2, w/3, h/2);
 			combo.setBounds(w/3, h/2, (2*w)/3, h/2);
+			
+			//label.setBackground( Color.cyan );
 		}
 	};
 	
@@ -584,55 +589,64 @@ public class HabitsPanel extends JComponent {
 	
 	char[]	cbuf = new char[2048];
 	public void checkMail( String currentUserId ) throws IOException {
-		URL url = new URL( "http://test.matis.is/isgem/getw.php" );
-		HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-		connection.setDoInput(true);
-		connection.setDoOutput(true);
-		connection.setRequestMethod("POST");
+		boolean allowed = true;
+		try {
+			System.getSecurityManager().checkConnect("test.matis.is", 80);
+		} catch( Exception e ) {
+			allowed = false;
+		}
 		
-		Integer.toString( Math.abs( this.toString().hashCode()) );
-		String write = "user="+currentUserId;
-		
-		connection.getOutputStream().write( write.getBytes() );
-		connection.getOutputStream().flush();
-		connection.getOutputStream().close();
-		
-		byte[] bb = new byte[8192];
-		connection.getInputStream().read(bb);
-		
-		String s = new String( bb );
-		final String[] ss = s.split("\n");
-		
-		//JOptionPane	opt = new JOptionPane(ss.length + " uppskriftir í pósthólfi. Viltu taka við þeim?", JOptionPane.YES_NO_CANCEL_OPTION);
-		
-		if( ss.length > 1 ) {
-		String message = (ss.length-1) + " vikur í pósthólfi. Viltu taka við þeim?";
-			int val =  JOptionPane.showConfirmDialog(this, message, "Vikur frá vinum", JOptionPane.YES_NO_CANCEL_OPTION);
-			if( val != JOptionPane.CANCEL_OPTION ) {
-				for( int i = 0; i < ss.length-1; i++ ) {
-					String str = ss[i];
-					String splt = str.split("\t")[0];
-					
-					url = new URL( "http://test.matis.is/isgem/getww.php" );
-					connection = (HttpURLConnection)url.openConnection();
-					connection.setDoInput(true);
-					connection.setDoOutput(true);
-					connection.setRequestMethod("POST");
-					
-					Integer.toString( Math.abs( this.toString().hashCode()) );
-					write = "week="+splt;
-					
-					connection.getOutputStream().write( write.getBytes() );
-					connection.getOutputStream().flush();
-					connection.getOutputStream().close();
-					
-					if( val == JOptionPane.YES_OPTION ) {
-						//insertRecipe( new InputStreamReader( connection.getInputStream() ) );
-						Reader rd = new InputStreamReader( connection.getInputStream() );
-						int r = rd.read(cbuf);
-						saveString( splt, new String( cbuf,0 ,r ) );
-						eatList.remove( splt );
-						if( splt.equals( getCurrentCardName() ) ) load();
+		if( allowed ) {
+			URL url = new URL( "http://test.matis.is/isgem/getw.php" );
+			HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+			connection.setDoInput(true);
+			connection.setDoOutput(true);
+			connection.setRequestMethod("POST");
+			
+			Integer.toString( Math.abs( this.toString().hashCode()) );
+			String write = "user="+currentUserId;
+			
+			connection.getOutputStream().write( write.getBytes() );
+			connection.getOutputStream().flush();
+			connection.getOutputStream().close();
+			
+			byte[] bb = new byte[8192];
+			connection.getInputStream().read(bb);
+			
+			String s = new String( bb );
+			final String[] ss = s.split("\n");
+			
+			//JOptionPane	opt = new JOptionPane(ss.length + " uppskriftir í pósthólfi. Viltu taka við þeim?", JOptionPane.YES_NO_CANCEL_OPTION);
+			
+			if( ss.length > 1 ) {
+			String message = (ss.length-1) + " vikur í pósthólfi. Viltu taka við þeim?";
+				int val =  JOptionPane.showConfirmDialog(this, message, "Vikur frá vinum", JOptionPane.YES_NO_CANCEL_OPTION);
+				if( val != JOptionPane.CANCEL_OPTION ) {
+					for( int i = 0; i < ss.length-1; i++ ) {
+						String str = ss[i];
+						String splt = str.split("\t")[0];
+						
+						url = new URL( "http://test.matis.is/isgem/getww.php" );
+						connection = (HttpURLConnection)url.openConnection();
+						connection.setDoInput(true);
+						connection.setDoOutput(true);
+						connection.setRequestMethod("POST");
+						
+						Integer.toString( Math.abs( this.toString().hashCode()) );
+						write = "week="+splt;
+						
+						connection.getOutputStream().write( write.getBytes() );
+						connection.getOutputStream().flush();
+						connection.getOutputStream().close();
+						
+						if( val == JOptionPane.YES_OPTION ) {
+							//insertRecipe( new InputStreamReader( connection.getInputStream() ) );
+							Reader rd = new InputStreamReader( connection.getInputStream() );
+							int r = rd.read(cbuf);
+							saveString( splt, new String( cbuf,0 ,r ) );
+							eatList.remove( splt );
+							if( splt.equals( getCurrentCardName() ) ) load();
+						}
 					}
 				}
 			}
@@ -729,6 +743,7 @@ public class HabitsPanel extends JComponent {
 
 			public Component prepareRenderer( TableCellRenderer renderer, int row, int column ) {
 				Component c = super.prepareRenderer( renderer, row, column );
+				//c.setBackground( Color.green );
 				//Color bc = c.getBackground();
 				/*Object val = this.getValueAt(0, column);
 				if( val.equals("Sunnudagur") || val.equals("Laugardagur") ) {
@@ -766,6 +781,12 @@ public class HabitsPanel extends JComponent {
 			@Override
 			public Component prepareRenderer( TableCellRenderer renderer, int row, int column ) {
 				Component c = super.prepareRenderer( renderer, row, column );
+				
+				/*if( c instanceof RenderComponent ) {
+					RenderComponent rc = (RenderComponent)c;
+					c.setBackground( Color.green );
+					System.err.println("hello " + c.getSize() + c.isShowing() + c.isVisible() + c.getName() + " uu " + rc.label.getText());
+				}*/
 				//Color bc = c.getBackground();
 				/*Object val = timelineTable.getValueAt(0, column);
 				if( val.equals("Sat") || val.equals("Sun") ) {
@@ -839,6 +860,7 @@ public class HabitsPanel extends JComponent {
 					if( list == null ) {
 						list = new Week();
 						eatList.put( tstr, list );
+						setCurrentWeek( list );
 					}
 					
 					int[] cc = timelineDataTable.getSelectedColumns();
@@ -878,6 +900,7 @@ public class HabitsPanel extends JComponent {
 				Week list = eatList.get( tstr );
 				if( list == null ) {
 					list = new Week();
+					setCurrentWeek( list );
 					eatList.put( tstr, list );
 				}
 				
@@ -1221,12 +1244,14 @@ public class HabitsPanel extends JComponent {
 					Week list = eatList.get( tstr );
 					if( list == null ) {
 						list = new Week();
+						setCurrentWeek( list );
 						eatList.put( tstr, list );
 					}
 					String val;
 					try {
-						val = dtde.getTransferable().getTransferData( DataFlavor.stringFlavor ).toString();
-						if( val != null ) {
+						Object o = dtde.getTransferable().getTransferData( DataFlavor.stringFlavor );
+						if( o != null ) {
+							val = o.toString();
 							String[] spl = val.split("\n");
 							int r = timelineDataTable.getRowCount();
 							if( intable ) r = timelineDataTable.rowAtPoint( p );
@@ -1583,24 +1608,29 @@ public class HabitsPanel extends JComponent {
 			w = eatList.get( tstr );
 		} else {
 			w = new Week();
-			File f = new File( System.getProperty("user.home"), ".isgem" );
-			f = new File( f, "weeks" );
-			if( f.exists() ) {
-				f = new File( f, tstr );
+			setCurrentWeek( w );
+			try {
+				File f = new File( System.getProperty("user.home"), ".isgem" );
+				f = new File( f, "weeks" );
 				if( f.exists() ) {
-					FileReader		fr = new FileReader( f );
-					BufferedReader	br = new BufferedReader( fr );
-					
-					int i = 0;
-					String line = br.readLine();
-					while( line != null && i < 8 ) {
-						if( i == 0 ) w.d[7] += line;
-						else w.d[i-1] += line;
-						line = br.readLine();
-						i++;
+					f = new File( f, tstr );
+					if( f.exists() ) {
+						FileReader		fr = new FileReader( f );
+						BufferedReader	br = new BufferedReader( fr );
+						
+						int i = 0;
+						String line = br.readLine();
+						while( line != null && i < 8 ) {
+							if( i == 0 ) w.d[7] += line;
+							else w.d[i-1] += line;
+							line = br.readLine();
+							i++;
+						}
+						eatList.put( tstr, w );
 					}
-					eatList.put( tstr, w );
 				}
+			} catch( SecurityException e ) {
+				
 			}
 		}
 		setCurrentWeek( w );

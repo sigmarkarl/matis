@@ -30,6 +30,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -147,7 +148,12 @@ public class SortTable extends JApplet {
 
 	static {
 		CompatUtilities.updateLof();
-		System.setProperty("file.encoding", "UTF8");
+		try {
+			//System.getSecurityManager().checkPropertiesAccess();
+			System.setProperty("file.encoding", "UTF8");
+		} catch( SecurityException e ) {
+			
+		}
 	}
 
 	public void selectTabIndex(int index) {
@@ -175,6 +181,122 @@ public class SortTable extends JApplet {
 
 		String name;
 		String unit;
+	}
+	
+	public void inThread( final List<Object[]>	result, final Set<Integer> is ) throws IOException {
+		int start = -1;
+
+		/*
+		 * File file = new File(
+		 * System.getProperty("user.home"), ".isgem" ); if(
+		 * !file.exists() ) { file.mkdirs(); } file = new File(
+		 * file, "result.zip" ); if( !file.exists() ||
+		 * file.length() != 3200582 ) { if( !file.exists() )
+		 * System.err.println( "hey file" );
+		 * 
+		 * InputStream inputStream =
+		 * this.getClass().getResourceAsStream( "/result.txt" );
+		 * FileOutputStream fos = new FileOutputStream( file );
+		 * 
+		 * byte[] bb = new byte[3200582]; int r =
+		 * inputStream.read(bb); while( r > 0 ) { fos.write(bb,
+		 * 0, r); r = inputStream.read(bb); } fos.close(); }
+		 * 
+		 * //if( f.exists() ) { //inputStream =
+		 * this.getClass().getResourceAsStream( "result.zip" );
+		 * ZipFile zipfile = new ZipFile( file ); ZipEntry
+		 * zipentry = zipfile.getEntry("result.txt");
+		 */
+		// InputStream inputStream = zipfile.getInputStream(
+		// zipentry );
+
+		InputStream inputStream = this.getClass().getResourceAsStream("/result.txt");
+		if (inputStream != null) {
+			BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+			int	linen = 0;
+			String line = br.readLine();
+			while (line != null) {
+				String[] split = line.split("\\t");
+
+				if (split.length > 4 && is.contains(Integer.parseInt(split[2]))) {
+					if (foodInd.containsKey(split[1])) {
+						start = foodInd.get(split[1]);
+					} else {
+
+					}
+					Object[] objs = result.get(start + 2);
+					if (split[5].length() > 0) {
+						String replc = split[5].replace(',', '.');
+						replc = replc.replace("<", "");
+						float f = -1.0f;
+						try {
+							f = Float.parseFloat(replc);
+						} catch (Exception e) {
+						}
+						Integer ngroupOffset = ngroupMap.get(split[2]);
+						
+						if( ngroupOffset != null ) {
+							if (f != -1.0f)
+								objs[2 + ngroupOffset] = f;
+							else
+								objs[2 + ngroupOffset] = null;
+						} else {
+							System.err.println();
+						}
+					}
+				}
+				line = br.readLine();
+				linen++;
+			}
+		}
+		
+		int poffset = ngroupMap.get("0001");
+		int foffset = ngroupMap.get("0002");
+		int koffset = ngroupMap.get("0010");
+		int aoffset = ngroupMap.get("0014");
+		int toffset = ngroupMap.get("0013");
+		for( int i = 2; i < result.size(); i++ ) {
+			Object[] objs = result.get(i);
+			float jres = 0.0f;
+			float calres = 0.0f;
+			if( objs[2 + aoffset] != null ) {
+				Float f = (Float)objs[2+aoffset];
+				jres += 29.0f*f;
+				calres += 7.0f*f;
+			}
+			if( objs[2 + poffset] != null ) {
+				Float f = (Float)objs[2+poffset];
+				jres += 17.0f*f;
+				calres += 4.0f*f;
+			}
+			if( objs[2 + koffset] != null ) {
+				Float f = (Float)objs[2+koffset];
+				jres += 17.0f*f;
+				calres += 4.0f*f;
+			}
+			if( objs[2 + foffset] != null ) {
+				Float f = (Float)objs[2+foffset];
+				jres += 37.0f*f;
+				calres += 9.0f*f;
+			}
+			if( objs[2 + toffset] != null ) {
+				Float f = (Float)objs[2+toffset];
+				jres += 8.0*f;
+				calres += 2.0f*f;
+			}
+			
+			//System.err.println( objs[0] + "  " + jres + "  " + calres );
+			objs[2] = jres;
+			objs[3] = calres;
+		}
+
+		System.err.println("issgem loaded");
+		/*
+		 * while( tableSorter == null ) Thread.sleep(100);
+		 * table.setModel( model ); table.setRowSorter(
+		 * tableSorter );
+		 */
+		// table.tableChanged( new TableModelEvent( model ) );
 	}
 
 	public List<Object[]> parseData(String loc) throws IOException {
@@ -369,127 +491,23 @@ public class SortTable extends JApplet {
 
 		String prev = "";
 		if (loc.equals("IS")) {
-			new Thread() {
-				public void run() {
-					try {
-						int start = -1;
-
-						/*
-						 * File file = new File(
-						 * System.getProperty("user.home"), ".isgem" ); if(
-						 * !file.exists() ) { file.mkdirs(); } file = new File(
-						 * file, "result.zip" ); if( !file.exists() ||
-						 * file.length() != 3200582 ) { if( !file.exists() )
-						 * System.err.println( "hey file" );
-						 * 
-						 * InputStream inputStream =
-						 * this.getClass().getResourceAsStream( "/result.txt" );
-						 * FileOutputStream fos = new FileOutputStream( file );
-						 * 
-						 * byte[] bb = new byte[3200582]; int r =
-						 * inputStream.read(bb); while( r > 0 ) { fos.write(bb,
-						 * 0, r); r = inputStream.read(bb); } fos.close(); }
-						 * 
-						 * //if( f.exists() ) { //inputStream =
-						 * this.getClass().getResourceAsStream( "result.zip" );
-						 * ZipFile zipfile = new ZipFile( file ); ZipEntry
-						 * zipentry = zipfile.getEntry("result.txt");
-						 */
-						// InputStream inputStream = zipfile.getInputStream(
-						// zipentry );
-
-						InputStream inputStream = this.getClass().getResourceAsStream("/result.txt");
-						if (inputStream != null) {
-							BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
-							int	linen = 0;
-							String line = br.readLine();
-							while (line != null) {
-								String[] split = line.split("\\t");
-
-								if (split.length > 4 && is.contains(Integer.parseInt(split[2]))) {
-									if (foodInd.containsKey(split[1])) {
-										start = foodInd.get(split[1]);
-									} else {
-
-									}
-									Object[] objs = result.get(start + 2);
-									if (split[5].length() > 0) {
-										String replc = split[5].replace(',', '.');
-										replc = replc.replace("<", "");
-										float f = -1.0f;
-										try {
-											f = Float.parseFloat(replc);
-										} catch (Exception e) {
-										}
-										Integer ngroupOffset = ngroupMap.get(split[2]);
-										
-										if( ngroupOffset != null ) {
-											if (f != -1.0f)
-												objs[2 + ngroupOffset] = f;
-											else
-												objs[2 + ngroupOffset] = null;
-										} else {
-											System.err.println();
-										}
-									}
-								}
-								line = br.readLine();
-								linen++;
-							}
+			/*try {
+				new Thread() {
+					public void run() {
+						try {
+							inThread( result, is );
+						} catch (IOException e) {
+							e.printStackTrace();
 						}
-						
-						int poffset = ngroupMap.get("0001");
-						int foffset = ngroupMap.get("0002");
-						int koffset = ngroupMap.get("0010");
-						int aoffset = ngroupMap.get("0014");
-						int toffset = ngroupMap.get("0013");
-						for( int i = 2; i < result.size(); i++ ) {
-							Object[] objs = result.get(i);
-							float jres = 0.0f;
-							float calres = 0.0f;
-							if( objs[2 + aoffset] != null ) {
-								Float f = (Float)objs[2+aoffset];
-								jres += 29.0f*f;
-								calres += 7.0f*f;
-							}
-							if( objs[2 + poffset] != null ) {
-								Float f = (Float)objs[2+poffset];
-								jres += 17.0f*f;
-								calres += 4.0f*f;
-							}
-							if( objs[2 + koffset] != null ) {
-								Float f = (Float)objs[2+koffset];
-								jres += 17.0f*f;
-								calres += 4.0f*f;
-							}
-							if( objs[2 + foffset] != null ) {
-								Float f = (Float)objs[2+foffset];
-								jres += 37.0f*f;
-								calres += 9.0f*f;
-							}
-							if( objs[2 + toffset] != null ) {
-								Float f = (Float)objs[2+toffset];
-								jres += 8.0*f;
-								calres += 2.0f*f;
-							}
-							
-							//System.err.println( objs[0] + "  " + jres + "  " + calres );
-							objs[2] = jres;
-							objs[3] = calres;
-						}
-
-						System.err.println("issgem loaded");
-						/*
-						 * while( tableSorter == null ) Thread.sleep(100);
-						 * table.setModel( model ); table.setRowSorter(
-						 * tableSorter );
-						 */
-						// table.tableChanged( new TableModelEvent( model ) );
-					} catch (Exception e) {
-						e.printStackTrace();
 					}
+				}.run();
+			} catch( SecurityException e ) {*/
+				try {
+					inThread( result, is );
+				} catch (IOException ee) {
+					ee.printStackTrace();
 				}
-			}.run();
+			//}
 		} else {
 			int start = -1;
 			inputStream = this.getClass().getResourceAsStream("NUT_DATA.txt");
@@ -584,7 +602,12 @@ public class SortTable extends JApplet {
 
 		this.getContentPane().setBackground(bgcolor);
 		this.setBackground(bgcolor);
-		System.setProperty("file.encoding", "UTF8");
+		try {
+			//System.getSecurityManager().checkPropertiesAccess();
+			System.setProperty("file.encoding", "UTF8");
+		} catch( SecurityException e ) {
+			
+		}
 
 		loadStuff();
 
@@ -707,19 +730,22 @@ public class SortTable extends JApplet {
 			}
 		});
 
-		new Thread() {
-			public void run() {
-				System.err.println("starting");
-				try {
-					Thread.sleep(20000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+		try {
+			new Thread() {
+				public void run() {
+					System.err.println("starting");
+					try {
+						Thread.sleep(20000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					System.err.println("now");
+					updateFriends(sessionKey, currentUser);
 				}
-				System.err.println("now");
-				updateFriends(sessionKey, currentUser);
-			}
-		}.start();
+			}.start();
+		} catch( SecurityException se ) {
+			updateFriends(sessionKey, currentUser);
+		}
 	}
 
 	Color bgcolor = new Color(255, 255, 255);
@@ -1950,26 +1976,43 @@ public class SortTable extends JApplet {
 		//((Graphics2D)(helppane.getGraphics())).setRenderingHint( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		helppane.setContentType("text/html");
 		helppane.setEditable( false );
-		URL	url = new URL( "http://test.matis.is/isgem/help/" );
-		helppane.setPage( url );
+		
+		try {
+			System.getSecurityManager().checkConnect("test.matis.is", 80);
+			URL	url = new URL( "http://test.matis.is/isgem/help/" );
+			helppane.setPage( url );
+		} catch( AccessControlException e ) {
+			
+		}
+		
 		JScrollPane help = new JScrollPane( helppane );
-
 		if (lang.equals("IS")) {
 			tabbedPane.addTab("Hjálp", hlpicon, help);
+			tabbedPane.addTab("Fæða", fodicon, rightSplitPane);
+			tabbedPane.addTab("Næringarefni", helicon, detail);
+			tabbedPane.addTab("Samsetning", samicon, graph);
+			tabbedPane.addTab("Uppskriftir", uppicon, recipe);
+			if (fp != null) tabbedPane.addTab("Ég og vinir", vinicon, fp);
+			tabbedPane.addTab("Máltíðir", maticon, eat);
+			
+			//tabbedPane.addTab("Mataræði og Hreyfing", maticon, eat);
+			//tabbedPane.addTab("Innkaup og kostnaður", buy);
+			// tabbedPane.setEnabledAt( tabbedPane.getTabCount()-2, false );
+			//tabbedPane.setEnabledAt(tabbedPane.getTabCount() - 1, false);
+			
+			/*tabbedPane.addTab("Hjálp", hlpicon, help);
 			tabbedPane.addTab("Fæða", fodicon, rightSplitPane);
 			// tabbedPane.addTab( "Myndir", imgPanel );
 			tabbedPane.addTab("Næringarefni", helicon, detail);
 			tabbedPane.addTab("Samsetning", samicon, graph);
 			tabbedPane.addTab("Uppskriftir", uppicon, recipe);
-			if (fp != null)
-				tabbedPane.addTab("Ég og vinir", vinicon, fp);
+			if (fp != null) tabbedPane.addTab("Ég og vinir", vinicon, fp);
 			//tabbedPane.addTab("RDS", rdsicon, rdsPanel);
 			tabbedPane.addTab("Máltíðir", maticon, eat);
 			//tabbedPane.addTab("Mataræði og Hreyfing", maticon, eat);
 			//tabbedPane.addTab("Innkaup og kostnaður", buy);
-
 			// tabbedPane.setEnabledAt( tabbedPane.getTabCount()-2, false );
-			//tabbedPane.setEnabledAt(tabbedPane.getTabCount() - 1, false);
+			//tabbedPane.setEnabledAt(tabbedPane.getTabCount() - 1, false);*/
 		} else {
 			tabbedPane.addTab("Food", fodicon, rightSplitPane);
 			// tabbedPane.addTab( "Image", imgPanel );
@@ -2213,6 +2256,7 @@ public class SortTable extends JApplet {
 
 	public void frame() {
 		JFrame frame = new JFrame();
+		frame.setSize(800, 600);
 		try {
 			frame.setBackground(Color.white);
 			frame.getContentPane().setBackground(Color.white);
@@ -2221,11 +2265,10 @@ public class SortTable extends JApplet {
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			frame.add(this.getSplitPane(), BorderLayout.CENTER);
 			// frame.getContentPane().add( new JButton("simmi") );
-			frame.pack();
+			//frame.pack();
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
-		frame.setSize(800, 600);
 		// frame.add(sortTable.getEditor(), BorderLayout.SOUTH);
 		frame.setVisible(true);
 	}

@@ -113,7 +113,7 @@ public class ArsParse {
 		
 		if( line == null ) {
 			inside = true;
-			ps.setString(7, "io error");
+			if( ps != null ) ps.setString(7, "io error");
 		}
 		
 		while( line != null ) {
