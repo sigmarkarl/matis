@@ -1257,13 +1257,16 @@ public class HabitsPanel extends JComponent {
 							if( intable ) r = timelineDataTable.rowAtPoint( p );
 							
 							String[] dayfood = list.d[c].split("\t");
-							String[] bef = Arrays.copyOfRange( list.d[c].split("\t"), 0, Math.min(r,dayfood.length) );
+							String[] bef = Arrays.copyOfRange( dayfood, 0, Math.min(r,dayfood.length) );
 							
 							list.d[c] = "";
 							int rr = 0;
 							boolean first = true;
 							for( String b : bef ) {
-								if( list.d[c].length() == 0 ) list.d[c] += b;
+								if( list.d[c].length() == 0 ) {
+									if( b.length() == 0 ) list.d[c] += " ";
+									else list.d[c] += b;
+								}
 								else list.d[c] += "\t" + b;
 								
 								first = false;

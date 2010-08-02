@@ -3,7 +3,6 @@ package org.simmi;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
@@ -20,11 +19,10 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.ImageProducer;
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -84,11 +82,6 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.simmi.RecipePanel.Recipe;
 import org.simmi.RecipePanel.RecipeIngredient;
 
@@ -1465,9 +1458,8 @@ public class SortTable extends JApplet {
 		};
 		topLeftTable.setModel(topLeftModel);
 
-		detail = new DetailPanel(rdsPanel, lang, imgPanel, table, topTable, leftTable, stuff, ngroupList, ngroupGroups, foodNameInd, recipe.recipes);
+		detail = new DetailPanel( this, rdsPanel, lang, imgPanel, table, topTable, leftTable, stuff, ngroupList, ngroupGroups, foodNameInd, recipe.recipes );
 		topModel = new TableModel() {
-
 			public void addTableModelListener(TableModelListener l) {
 			}
 
@@ -2121,11 +2113,21 @@ public class SortTable extends JApplet {
 		ImageProducer 	ims = (ImageProducer)xurl.getContent();
 		Image 		img = (ims != null ? this.createImage( ims ).getScaledInstance(16, 16, Image.SCALE_SMOOTH) : null);
 		popup.add( new AbstractAction("Opna val í Excel", img != null ? new ImageIcon(img) : null ) {
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(ActionEvent ae) {
 				try {
 					openExcel();
-				} catch (IOException e1) {
-					e1.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				} catch (SecurityException e) {
+					e.printStackTrace();
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (NoSuchMethodException e) {
+					e.printStackTrace();
+				} catch (IllegalAccessException e) {
+					e.printStackTrace();
+				} catch (InvocationTargetException e) {
+					e.printStackTrace();
 				}
 			}
 		});
@@ -2151,45 +2153,67 @@ public class SortTable extends JApplet {
 		SortTable.this.setBackground(bgcolor);
 	}
 	
-	public void openExcel() throws IOException {
-		File tmp = File.createTempFile("tmp_", ".xlsx");
-		Workbook	wb = new XSSFWorkbook();
-		Sheet		sh = wb.createSheet("ISGEM");
-		Row			rw1 = sh.createRow(0);
-		Row			rw2 = sh.createRow(1);
-		int 		i = 2;
-		for( int c : table.getSelectedColumns() ) {
-			Cell cell1 = rw1.createCell( i );
-			Cell cell2 = rw2.createCell( i );
-			String name = (String)topTable.getValueAt(0, c);
-			String unit = (String)table.getColumnName(c);
-			cell1.setCellValue( name );
-			cell2.setCellValue( unit );
-			i++;
-		}
+	public String getAppletInfo() {
+		return "SortTable";
+	}
+	
+	public String applet;
+	public void openExcel() throws IOException, SecurityException, NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+		//this.getCodeBase();
 		
-		int ir = 2;
-		for( int r : table.getSelectedRows() ) {
-			Row row = sh.createRow( ir );
-			row.createCell(0).setCellValue( (String)leftTable.getValueAt(r, 0) );
-			row.createCell(1).setCellValue( (String)leftTable.getValueAt(r, 1) );
+		/*if( applet == null ) {
+			String js = "document.getElementById('applet').innerHTML = '<applet codebase=\"http://localhost/\" code=\"org.simmi.PoiFactory\" id=\"minunsign\" name=\"minunsign\"><param name=\"jnlp_href\" value=\"minapplet.jnlp\"></applet>'"; 
+				//"var attributes = { codebase:'http://localhost/', archive:'minapplet.jar', code:'org.simmi.PoiFactory', width:'1', height:'1', id:'food', name:'minunsign' }; var parameters = { jnlp_href:'minapplet.jnlp' }; deployJava.runApplet(attributes, parameters, '1.6');";
+				//System.err.println( js );
 			
-			i = 2;
-			for( int c : table.getSelectedColumns() ) {
-				Float f = (Float)table.getValueAt(r, c);
-				if( f != null ) {
-					double d = Math.round(f*100.0)/100.0;
-					row.createCell(i).setCellValue( d );
+			System.err.println("mo");
+			JSObject win = JSObject.getWindow(this);
+			//JSObject doc = (JSObject)win.getMember("document");
+			win.eval( js );
+			
+			/*try {
+			      getAppletContext().showDocument( new URL("http://localhost/simple.html"), "simmi" );
+			      //getAppletContext().showDocument(url, target)
+			} catch (MalformedURLException me) { }*
+			//applet = getAppletContext().getApplet("minunsign");
+			applet = "simmi";
+		} else { //if( applet != null ) {
+			System.err.println("me");
+			
+			String js = "document.getElementById('minunsign').notifyAll();";
+			System.err.println("mo");
+			JSObject win = JSObject.getWindow(this);
+			//JSObject doc = (JSObject)win.getMember("document");
+			win.eval( js );
+		
+			//if( applet instanceof PoiFactory ) {
+			//	System.err.println("me2");
+				/*for( Method m : applet.getClass().getMethods() ) {
+					System.err.println( m.getName() );
 				}
-				i++;
-			}
-			
-			ir++;
-		}
+				Method m = applet.getClass().getMethod("run", JTable.class, JTable.class, JTable.class);
+				if( m != null ) {
+					m.invoke( applet, table, topTable, leftTable );
+				}*
+				
+				//.run( table, topTable, leftTable );
+			//}
+		} else {
+			JOptionPane.showMessageDialog(this, "Hef ekki leyfi til að skifa á diskinn");
+		}*/
 		
-		wb.write( new FileOutputStream( tmp ) );
-		System.err.println( tmp.getName() );
-		Desktop.getDesktop().browse( tmp.toURI() );
+		PoiFactory.run( table, topTable, leftTable );
+	}
+	
+	public void openExcel( JCompatTable detailTable, JCompatTable	leftTable ) throws IOException {
+		//Applet applet = getAppletContext().getApplet("minunsign");
+		//if( applet != null ) {
+		//	if( applet instanceof PoiFactory ) {
+		//		((PoiFactory)applet).run2( detailTable, leftTable );
+		//	}
+		//}
+		
+		PoiFactory.run2( detailTable, leftTable );
 	}
 
 	public String updateFriends(final String sessionKey, final String currentUser) {
