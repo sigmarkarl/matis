@@ -1,8 +1,8 @@
 package org.simmi;
 
+import java.applet.Applet;
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Desktop;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -10,7 +10,6 @@ import java.awt.image.BufferedImage;
 import java.awt.image.ImageProducer;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URL;
@@ -37,11 +36,6 @@ import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.simmi.RecipePanel.Recipe;
 import org.simmi.RecipePanel.RecipeIngredient;
 
@@ -176,69 +170,7 @@ public class DetailPanel extends SimSplitPane {
 		return null;
 	}
 	
-	public void openExcel( JCompatTable	leftTable ) throws IOException {
-		File tmp = File.createTempFile("tmp_", ".xlsx");
-		Workbook	wb = new XSSFWorkbook();
-		Sheet		sh = wb.createSheet("ISGEM");
-		
-		int rsel = leftTable.getSelectedRow();
-		if( rsel != -1 ) {
-			Row			rw1 = sh.createRow(0);
-			Row			rw2 = sh.createRow(1);
-			
-			String s1 = (String)leftTable.getValueAt(rsel, 0);
-			String s2 = (String)leftTable.getValueAt(rsel, 1);
-			
-			rw1.createCell(0).setCellValue( s1 );
-			rw2.createCell(0).setCellValue( s2 );
-		}
-		
-		Row			rw = sh.createRow(2);
-		int 		i = 0;
-		for( int c = 0; c < detailTable.getColumnCount()-1; c++ ) {
-			Cell cell = rw.createCell( i );
-			String name = (String)detailTable.getColumnName(c);
-			cell.setCellValue( name );
-			i++;
-		}
-		
-		int ir = 3;
-		for( int r : detailTable.getSelectedRows() ) {
-			Row row = sh.createRow( ir );
-			
-			i = 0;
-			for( int c = 0; c < detailTable.getColumnCount()-1; c++ ) {
-				Object o = detailTable.getValueAt(r, c);
-				if( o != null ) {
-					if( o instanceof Float ) {
-						double d = Math.round((Float)o*100.0)/100.0;
-						row.createCell(i).setCellValue( d );
-					} else if( o instanceof Double ) {
-						double d = Math.round((Double)o*100.0)/100.0;
-						row.createCell(i).setCellValue( d );
-					} else if( o instanceof Integer ) {
-						double d = Math.round((Integer)o*100.0)/100.0;
-						row.createCell(i).setCellValue( d );
-					} else if( o instanceof String ) {
-						row.createCell(i).setCellValue( (String)o );
-					} else if( o instanceof PercStr ) {
-						PercStr ps = (PercStr)o;
-						row.createCell(i).setCellValue( ps.toString() );
-					}
-				}
-				i++;
-			}
-			
-			ir++;
-		}
-		
-		wb.write( new FileOutputStream( tmp ) );
-		System.err.println( tmp.getName() );
-		Desktop.getDesktop().browse( tmp.toURI() );
-	}
-
-	
-	public DetailPanel( final RdsPanel rdsp, final String lang, final ImagePanel imgPanel, final JCompatTable table, final JCompatTable topTable, final JCompatTable leftTable, final List<Object[]> stuff, final List<String> ngroupList, final List<String> ngroupGroups, final Map<String,Integer> foodInd, final List<Recipe> recipes ) throws IOException {
+	public DetailPanel( final SortTable sortTable, final RdsPanel rdsp, final String lang, final ImagePanel imgPanel, final JCompatTable table, final JCompatTable topTable, final JCompatTable leftTable, final List<Object[]> stuff, final List<String> ngroupList, final List<String> ngroupGroups, final Map<String,Integer> foodInd, final List<Recipe> recipes ) throws IOException {
 		super( JSplitPane.VERTICAL_SPLIT );
 		this.setDividerLocation( 300 );
 		
@@ -580,7 +512,7 @@ public class DetailPanel extends SimSplitPane {
 		popup.add( new AbstractAction("Opna val í Excel", img != null ? new ImageIcon(img) : null ) {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					openExcel( leftTable );
+					sortTable.openExcel( detailTable, leftTable );
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
