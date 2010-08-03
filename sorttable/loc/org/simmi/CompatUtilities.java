@@ -4,9 +4,11 @@ import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Window;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Locale;
 
@@ -45,20 +47,20 @@ public class CompatUtilities {
 		return new String(buffer, i, read, cs);
 	}
 	
-	public static void browse( URL url ) {
-		try {
-			Desktop.getDesktop().browse( url.toURI() );
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (URISyntaxException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	public static void browse( URL url ) throws IOException, URISyntaxException {
+		browse( url.toURI() );
+	}
+	
+	public static void browse( URI uri ) throws IOException {
+		Desktop.getDesktop().browse( uri );
 	}
 	
 	public static String getDateString( Calendar cal, boolean val ) {
 		if( val ) return cal.get(Calendar.DAY_OF_MONTH) + ". "+ cal.getDisplayName( Calendar.MONTH, Calendar.SHORT, Locale.getDefault());
 		else return cal.getDisplayName( Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.getDefault());
+	}
+
+	public static String[] copyOfRange(String[] dayfood, int i, int min) {
+		return Arrays.copyOfRange(dayfood, i, min);
 	}
 }

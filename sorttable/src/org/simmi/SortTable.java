@@ -46,11 +46,13 @@ import javax.swing.AbstractAction;
 import javax.swing.DefaultRowSorter;
 import javax.swing.ImageIcon;
 import javax.swing.JApplet;
+import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JEditorPane;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
@@ -693,7 +695,12 @@ public class SortTable extends JApplet {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
 				try {
+					SortTable.this.setLayout(new BorderLayout());
+					SortTable.this.getContentPane().setBackground(bgcolor);
+					SortTable.this.setBackground(bgcolor);
+					SortTable.this.getRootPane().setBackground(bgcolor);
 					initGui(sessionKey, currentUser);
+					SortTable.this.requestFocus();
 					
 					try {
 						URL url = SortTable.this.getDocumentBase();
@@ -751,9 +758,6 @@ public class SortTable extends JApplet {
 	int size = 300;
 
 	public void initGui(String sessionKey, String currentUser) throws IOException {
-		SortTable.this.getRootPane().setBackground(bgcolor);
-		SortTable.this.requestFocus();
-
 		scrollPane = new JScrollPane();
 		leftScrollPane = new JScrollPane();
 		topScrollPane = new JScrollPane();
@@ -1106,12 +1110,10 @@ public class SortTable extends JApplet {
 		// leftTable.setRowSorter( table.getRowSorter() );
 		// leftTable.setAutoCreateRowSorter( true );
 
-		JComponent topComp = new JComponent() {
-		};
+		JComponent topComp = new JComponent() {};
 		topComp.setLayout(new BorderLayout());
 
-		JComponent topLeftComp = new JComponent() {
-		};
+		JComponent topLeftComp = new JComponent() {};
 		topLeftComp.setLayout(new BorderLayout());
 
 		topTable.setShowGrid(true);
@@ -1149,7 +1151,6 @@ public class SortTable extends JApplet {
 			} catch (MalformedURLException e2) {
 				e2.printStackTrace();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 
@@ -1970,9 +1971,12 @@ public class SortTable extends JApplet {
 		helppane.setEditable( false );
 		
 		try {
-			System.getSecurityManager().checkConnect("test.matis.is", 80);
-			URL	url = new URL( "http://test.matis.is/isgem/help/" );
-			helppane.setPage( url );
+			SecurityManager secm = System.getSecurityManager();
+			if( secm != null ) {
+				secm.checkConnect("test.matis.is", 80);
+				URL	url = new URL( "http://test.matis.is/isgem/help/" );
+				helppane.setPage( url );
+			}
 		} catch( AccessControlException e ) {
 			
 		}
@@ -2133,7 +2137,6 @@ public class SortTable extends JApplet {
 		});
 		table.setComponentPopupMenu( popup );
 
-		SortTable.this.setLayout(new BorderLayout());
 		splitPane.setBorder(new EmptyBorder(0, 0, 0, 0));
 		// SortTable.this.add(ed, BorderLayout.SOUTH);
 		splitPane.setDividerLocation(1.0 / 3.0);
@@ -2148,9 +2151,6 @@ public class SortTable extends JApplet {
 		// topScrollPane.setViewport( scrollPane.getColumnHeader() );
 
 		// SwingUtilities.updateComponentTreeUI( this );
-
-		SortTable.this.getContentPane().setBackground(bgcolor);
-		SortTable.this.setBackground(bgcolor);
 	}
 	
 	public String getAppletInfo() {
@@ -2267,29 +2267,29 @@ public class SortTable extends JApplet {
 		 */
 
 		sortTable.loadStuff();
-
-		sortTable.getContentPane().setBackground(Color.white);
-		sortTable.setBackground(Color.white);
-
 		sortTable.frame();
-		/*
-		 * SwingUtilities.invokeLater(new Runnable() { public void run() {
-		 * sortTable.frame(); } });
-		 */
+		
+		/*SwingUtilities.invokeLater(new Runnable() { 
+			public void run() {
+				sortTable.frame(); 
+			}
+		});*/
 	}
 
 	public void frame() {
-		JFrame frame = new JFrame();
+		JFrame frame = new JFrame("Matisgem");
 		frame.setSize(800, 600);
 		try {
-			frame.setBackground(Color.white);
-			frame.getContentPane().setBackground(Color.white);
+			frame.setBackground( bgcolor );
+			frame.getContentPane().setBackground( bgcolor );
 			this.initGui(null, null);
-			frame.setLayout(new BorderLayout());
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-			frame.add(this.getSplitPane(), BorderLayout.CENTER);
-			// frame.getContentPane().add( new JButton("simmi") );
+			
+			//frame.getContentPane().setLayout(new BorderLayout());
+			frame.add( this.splitPane );
+			//frame.getContentPane().add( new JButton("simmi"), BorderLayout.CENTER );
 			//frame.pack();
+			//frame.setContentPane( panel );
 		} catch(Exception e) {
 			e.printStackTrace();
 		}

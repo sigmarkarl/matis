@@ -1257,7 +1257,7 @@ public class HabitsPanel extends JComponent {
 							if( intable ) r = timelineDataTable.rowAtPoint( p );
 							
 							String[] dayfood = list.d[c].split("\t");
-							String[] bef = Arrays.copyOfRange( dayfood, 0, Math.min(r,dayfood.length) );
+							String[] bef = CompatUtilities.copyOfRange( dayfood, 0, Math.min(r,dayfood.length) );
 							
 							list.d[c] = "";
 							int rr = 0;

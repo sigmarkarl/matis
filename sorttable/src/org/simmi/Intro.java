@@ -303,7 +303,13 @@ public class Intro extends JApplet {
 						CompatUtilities.lof = "com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel";
 						CompatUtilities.updateLof();
 					} else {
-						CompatUtilities.browse( e.getURL() );						
+						try {
+							CompatUtilities.browse( e.getURL() );
+						} catch (URISyntaxException e1) {
+							e1.printStackTrace();
+						} catch (IOException e1) {
+							e1.printStackTrace();
+						}					
 					}
 				}
 			}

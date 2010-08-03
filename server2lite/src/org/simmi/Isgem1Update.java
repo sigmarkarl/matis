@@ -32,7 +32,7 @@ public class Isgem1Update {
 	
 	public Isgem1Update() throws ClassNotFoundException, SQLException {
 		Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=isgem2;user=simmi;password=mirodc30;";
+		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=isgem2;user=simmi;password=****;";
 		
 		if( Platform.isWindows() ) {
 			connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=isgem2;integratedSecurity=true;";
