@@ -633,8 +633,9 @@ public class GiskPanel extends JComponent {
 				current.skeig = rs.getString("skuldur_og_eigid_fe");
 			}
 			
+			// her var current.handbf
+			current.avox = rs.getString("avoxtunarkrafa");
 			
-			current.handbf = rs.getString("avoxtunarkrafa");
 			current.skra = rs.getString("skraningaradili");
 			current.skranafn = rs.getString("skranafn");
 			

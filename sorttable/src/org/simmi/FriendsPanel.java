@@ -1,7 +1,6 @@
 package org.simmi;
 
 import java.awt.Color;
-import java.awt.Desktop;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -115,7 +114,7 @@ public class FriendsPanel extends SimSplitPane {
                 apiKey + "&v=" + v + "&auth_token=" + token;
 
         try {
-			Desktop.getDesktop().browse( new URI( loginUrl ) );
+			CompatUtilities.browse( new URI( loginUrl ) );
 		} catch (URISyntaxException e) {
 			e.printStackTrace();
 		}

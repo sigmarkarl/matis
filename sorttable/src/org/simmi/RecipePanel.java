@@ -33,6 +33,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -966,7 +967,13 @@ public class RecipePanel extends JSplitPane {
 		recipeInfo.addHyperlinkListener( new HyperlinkListener() {
 			public void hyperlinkUpdate(HyperlinkEvent e) {
 				if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-					CompatUtilities.browse( e.getURL() );
+					try {
+						CompatUtilities.browse( e.getURL() );
+					} catch (URISyntaxException e1) {
+						e1.printStackTrace();
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
 				}
 			}
 		});
