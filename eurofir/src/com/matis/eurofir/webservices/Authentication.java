@@ -5,11 +5,8 @@ import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.Signature;
 import java.util.Arrays;
 import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TreeMap;
 
 import org.apache.commons.codec.digest.DigestUtils;
 
