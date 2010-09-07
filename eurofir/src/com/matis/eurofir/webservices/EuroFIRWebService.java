@@ -23,7 +23,7 @@ public class EuroFIRWebService {
 	public static PrintStream	ostream = System.out;
 	static String				cdataStr = "<![CDATA[";
 	static String				cstopStr = "]]>";
-	static String				passi = "jP4dj4";
+	//static String				passi = "jP4dj4";
 	//static String				passi = "drsmorc.311";
 	
 	public static void parse( String val ) throws SecurityException, NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchAlgorithmException {
@@ -155,9 +155,15 @@ public class EuroFIRWebService {
 
 	private static void getFoodFromSql(String sql) throws ClassNotFoundException, SQLException {
 		Ws.header( ostream );
-		Class.forName("com.mysql.jdbc.Driver");
-		String connectionUrl = "jdbc:mysql://localhost:3306/isgem"; //?useUnicode=yes&characterEncoding=UTF-8";
-		Connection conn = DriverManager.getConnection(connectionUrl, "root", passi );
+		
+		//Class.forName("com.mysql.jdbc.Driver");
+		//String connectionUrl = "jdbc:mysql://localhost:3306/isgem"; //?useUnicode=yes&characterEncoding=UTF-8";
+		//Connection conn = DriverManager.getConnection(connectionUrl, "root", passi );
+		
+		Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=ISGEM2;user=simmi;password=mirodc30;";
+		Connection conn = DriverManager.getConnection(connectionUrl);
+		
 		Ws.body( conn, sql, ostream );
 		conn.close();
 		Ws.footer( ostream );
@@ -171,9 +177,15 @@ public class EuroFIRWebService {
 		lastCon += ")";*/
 		
 		Ws.header( ostream );
-		Class.forName("com.mysql.jdbc.Driver");
-		String connectionUrl = "jdbc:mysql://localhost:3306/isgem"; //?useUnicode=yes&characterEncoding=UTF-8";
-		Connection conn = DriverManager.getConnection(connectionUrl, "root", passi );
+		
+		//Class.forName("com.mysql.jdbc.Driver");
+		//String connectionUrl = "jdbc:mysql://localhost:3306/isgem"; //?useUnicode=yes&characterEncoding=UTF-8";
+		//Connection conn = DriverManager.getConnection(connectionUrl, "root", passi );
+		
+		Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=ISGEM2;user=simmi;password=mirodc30;";
+		Connection conn = DriverManager.getConnection(connectionUrl);
+		
 		ostream.println("<Foods>");
 		for( String id : ids ) {
 			String lastCon = "fd.OriginalFoodCode = '"+id+"'";
@@ -213,25 +225,18 @@ public class EuroFIRWebService {
 				InputStream stream = System.in;
 				parseStream( stream );
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (SecurityException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (IllegalArgumentException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (NoSuchMethodException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (IllegalAccessException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (InvocationTargetException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (NoSuchAlgorithmException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}

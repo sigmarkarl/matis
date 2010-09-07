@@ -316,6 +316,8 @@ JNIEXPORT int compile( simlab fnc, ... ) {
 	simlab & subdata = databuffer[ind];
 	subdata = fnc;
 	if( bsize > 0 ) memcpy( &databuffer[data.length-datasize], &passnext, bsize );
+
+	return 1;
 }
 
 JNIEXPORT int interprete( simlab cmd ) {
@@ -437,7 +439,7 @@ JNIEXPORT int jcmd( simlab sl ) {
 	printf( "%lld\n", (long)func );
 
 	func();
-	/*simlab2	sl;
+	*simlab2	sl;
 
 	sl.i1 = 1;
 	sl.i2 = 2;
@@ -473,7 +475,7 @@ JNIEXPORT int parse( simlab fname, simlab func ) {
 		char* 	filename = (char*)(fname.buffer);
 		if( filename != 0 ) {
 			if( strcmp( filename, "this" ) == 0 ) {
-				printf("erme %lld %lld\n", (long)currf, (long)stdin);
+				printf("erme %lld %lld\n", (long long int)currf, (long long int)stdin);
 				f = currf;
 			} else if( strcmp( filename, "stdin" ) != 0 ) {
 				f = fopen( filename, "r" );

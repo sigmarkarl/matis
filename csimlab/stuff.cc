@@ -2173,7 +2173,7 @@ template <typename T> class c_add : public PseudoBuffer<T> {
 	T	&	array;
 };
 
-template <typename K, typename T> class c_dfunc : public PseudoBuffer<T> {
+/*template <typename K, typename T> class c_dfunc : public PseudoBuffer<T> {
 	K	& 	array;
 	double	(*dfunc)(double);
 	int		len;
@@ -2184,7 +2184,7 @@ public:
 
 	virtual T operator[]( int ind ) { return (T)dfunc((double)array[ind]); }
 	virtual int length() { return len; }
-};
+};*/
 
 template <typename K, typename T> class c_trans : public PseudoBuffer<T> {
 	K	& 	array;
@@ -2320,7 +2320,7 @@ JNIEXPORT int pseudotran( simlab c, simlab r ) {
 	return current;
 }
 
-JNIEXPORT int pseudodfunc( simlab func ) {
+/*JNIEXPORT int pseudodfunc( simlab func ) {
 	if( data.length == -1 ) {
 		//PseudoBuffer<double>*	pb = (PseudoBuffer<double>*)data.buffer;
 		if( data.type == 66 ) data.buffer = (long)new c_dfunc<PseudoBuffer<double>,double>( *(PseudoBuffer<double>*)data.buffer, ((PseudoBuffer<double>*)data.buffer)->length(), (double (*)(double))func.buffer );
@@ -2341,7 +2341,7 @@ JNIEXPORT int pseudodfunc( simlab func ) {
 	data.length = -1;
 
 	return current;
-}
+}*/
 
 JNIEXPORT int createarrange( simlab index ) {
 	if( data.type == 66 ) {
@@ -2355,6 +2355,8 @@ JNIEXPORT int createarrange( simlab index ) {
 
 JNIEXPORT int jstore( char* name, simlab sl ) {
 	retlib[ name ] = sl;
+
+	return 2;
 }
 
 JNIEXPORT int tramat( int a ) {
@@ -2594,7 +2596,7 @@ JNIEXPORT int getptr( int byteoffset ) {
 
 JNIEXPORT int welcome() {
 	simlab str;
-	str.buffer =  (long)"Welcome to SimLab 2.0";
+	str.buffer =  (long)"Welcome to SimLab 2.1";
 	echo( str );
 	return 0;
 }
@@ -2694,7 +2696,7 @@ JNIEXPORT int change( int type, int size ) {
 
 JNIEXPORT int echo( simlab str, ... ) {
 	char* buffer = (char*)str.buffer;
-	if( buffer != NULL ) prnt( "%s\n", buffer );
+	if( buffer != NULL ) prnt( "%s\n\0", buffer );
 	//else prnt( "%s\n", "jo" );
 
 	return 1;
@@ -3710,9 +3712,9 @@ JNIEXPORT int identity() {
 JNIEXPORT int idx() {
 	if( data.length == 0 ) t_index<int*,int>( (int*)&data.buffer, 1 );
 	else if( data.type < 0 ) {
-		if( data.type == -66 ) t_index<c_simlab<double&>&,double>( *(c_simlab<double&>*)data.buffer, data.length );
-		else if( data.type == -34 ) t_index<c_simlab<float&>&,float>( *(c_simlab<float&>*)data.buffer, data.length );
-		else if( data.type == -32 ) t_index<c_simlab<int&>&,int>( *(c_simlab<int&>*)data.buffer, data.length );
+		//if( data.type == -66 ) t_index<c_simlab<double&>&,double>( *(c_simlab<double&>*)data.buffer, data.length );
+		//else if( data.type == -34 ) t_index<c_simlab<float&>&,float>( *(c_simlab<float&>*)data.buffer, data.length );
+		//else if( data.type == -32 ) t_index<c_simlab<int&>&,int>( *(c_simlab<int&>*)data.buffer, data.length );
 	} else {
 		if( data.type == 96 ) t_index<long double*,long double>( (long double*)data.buffer, data.length );
 		else if( data.type == 66 ) t_index<double*,double>( (double*)data.buffer, data.length );
@@ -3770,6 +3772,8 @@ JNIEXPORT int complement() {
 	for( int i = 0; i < bytelen; i++ ) {
 		c[i] = ~c[i];
 	}
+
+	return 0;
 }
 
 JNIEXPORT int invert() {
@@ -3846,7 +3850,7 @@ JNIEXPORT int addold( simlab value ) {
 			t_add<c_simlab<float>& >( *((c_simlab<float>*)value.buffer), data.length );
 		}
 	} else if( data.length == 0 ) {
-		/*if( data.type == 32 ) {
+		/if( data.type == 32 ) {
 			if( value.length == 0 ) {
 				if( value.type == 34 ) t_add( (unsigned int*)&data.buffer, 1, (float*)&value.buffer, 1 );
 				if( value.type == 32 || value.type == 0 ) t_add( (unsigned int*)&data.buffer, 1, (int*)&value.buffer, 1 );
@@ -3878,7 +3882,7 @@ JNIEXPORT int addold( simlab value ) {
 				if( value.type == 32 ) t_add<double,double*,int*>( (double*)data.buffer, data.length, (int*)value.buffer, value.length );
 				if( value.type == 8 ) t_add<double,double*,char*>( (double*)data.buffer, data.length, (char*)value.buffer, value.length );
 			}
-		} /*else if( data.type == 34 ) {
+		} /else if( data.type == 34 ) {
 			if( value.length == 0 ) {
 				if( value.type == 34 ) t_add( (float*)data.buffer, data.length, (float*)&value.buffer, 1 );
 				if( value.type == 32 || value.type == 0 ) t_add( (float*)data.buffer, data.length, (int*)&value.buffer, 1 );
@@ -4623,7 +4627,8 @@ JNIEXPORT int trans( simlab cl, simlab rl ) {
 
 	//printf("%d\n", sizeof(long double) );
 	if( data.type < 0 ) {
-		if( data.type == -66 ) t_trans<c_simlab<double&>&,double>( *(c_simlab<double&>*)data.buffer, data.length, c, r );
+		c_simlab<double&> ubs = *(c_simlab<double&>*)data.buffer;
+		if( data.type == -66 ) t_trans<c_simlab<double&>&,double>( ubs, data.length, c, r );
 	} else {
 		if( data.type == sizeof(long double)*8 ) t_trans<long double*,long double>( (long double*)data.buffer, data.length, c, r );
 		else if( data.type == 66 ) t_trans<double*,double>( (double*)data.buffer, data.length, c, r );

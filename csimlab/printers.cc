@@ -148,7 +148,7 @@ JNIEXPORT int print( const char* format, const char* end, ... ) {
 				//if( format[1] == 'e' ) t_print<PseudoBuffer<double>,double>( format, end, *buffer, buffer->length(), passnext );
 				//else if( format[1] == 'd' ) t_print<PseudoBuffer<double>,int>( format, end, *buffer, buffer->length(), passnext );
 			} else if( data.type == 32 ) {
-				c_simlab<int>*	buffer = (c_simlab<int>*)data.buffer;
+				//c_simlab<int>*	buffer = (c_simlab<int>*)data.buffer;
 				//if( format[1] == 'e' ) t_print<c_simlab<int>,double>( format, end, *buffer, buffer->length(), passnext );
 				//else if( format[1] == 'd' ) t_print<c_simlab<int>,int>( format, end, *buffer, buffer->length(), passnext );
 			} else if( data.type == 34 ) {
@@ -194,7 +194,6 @@ JNIEXPORT int print( const char* format, const char* end, ... ) {
 		if( data.type == -66 ) {
 			c_simlab<double&> & sdb = *(c_simlab<double&>*)data.buffer;
 			if( format[1] == 'e' ) {
-				printf("okok %d\n", sdb[2] );
 				t_print<c_simlab<double&>,double>( format, end, sdb, data.length, passnext );
 			} else if( format[1] == 'd' ) {
 				t_print<c_simlab<double&>,int>( format, end, sdb, data.length, passnext );

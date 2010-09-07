@@ -4,6 +4,7 @@ import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.Console;
 import java.io.File;
@@ -13,6 +14,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PipedReader;
+import java.io.PipedWriter;
 import java.io.Reader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -61,38 +64,42 @@ import com.sun.jna.Structure;
 
 public class Simlab implements ScriptEngineFactory {
 	static {
-		System.setProperty("jna.library.path", ".");
-		boolean	iswin = Platform.isWindows();
+		String jnalib = System.getProperty("jna.library.path");
 		
-		String filename;
-		if( !iswin ) filename = "libcsimlab.so";
-		else filename = "csimlab.dll";
+		if( jnalib == null || jnalib.length() == 0 ) {
+			System.setProperty("jna.library.path", ".");
+			boolean	iswin = Platform.isWindows();
 			
-		File f = new File( filename );
-		if( !f.exists() ) {
-			InputStream 		is;
-			if( iswin ) is = Simlab.class.getResourceAsStream("/org/simmi/"+filename);
-			else is = Simlab.class.getResourceAsStream("/org/simmi/"+filename);
-			
-			if( is != null ) {
-				try {
-					FileOutputStream 	fos = new FileOutputStream(filename);
-					byte[]	bb = new byte[1024];
-					int r = is.read( bb );
-					while( r > 0 ) {
-						fos.write(bb, 0, r);
-						r = is.read( bb );
+			String filename;
+			if( !iswin ) filename = "libcsimlab.so";
+			else filename = "csimlab.dll";
+				
+			File f = new File( filename );
+			if( !f.exists() ) {
+				InputStream 		is;
+				if( iswin ) is = Simlab.class.getResourceAsStream("/org/simmi/"+filename);
+				else is = Simlab.class.getResourceAsStream("/org/simmi/"+filename);
+				
+				if( is != null ) {
+					try {
+						FileOutputStream 	fos = new FileOutputStream(filename);
+						byte[]	bb = new byte[1024];
+						int r = is.read( bb );
+						while( r > 0 ) {
+							fos.write(bb, 0, r);
+							r = is.read( bb );
+						}
+						fos.close();
+					} catch (FileNotFoundException e) {
+						e.printStackTrace();
+					} catch (IOException e) {
+						e.printStackTrace();
 					}
-					fos.close();
-				} catch (FileNotFoundException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
+				} else {
+					System.err.println("null");
 				}
-			} else {
-				System.err.println("null");
+				//Native.re
 			}
-			//Native.re
 		}
 		Native.register("csimlab");
 	}
@@ -141,11 +148,9 @@ public class Simlab implements ScriptEngineFactory {
 	
 	public native int sine( simlab.ByValue val );
 	public native int cosine();
-	//public native int echo( simlab.ByValue sl );
 	public native int printall();
 	public native int simmi();
 	public native int idx();
-	public native long getpointer( Pointer ptr );
 	
 	public static long	BYTELEN = 8;
 	public static long	USHORTLEN = 16;
@@ -260,7 +265,7 @@ public class Simlab implements ScriptEngineFactory {
 			
 			//NativeLongByReference nat = new NativeLongByReference();
 			//nat.setPointer( Native.getDirectBufferPointer( bb ) );
-			long ptr = getpointer( Native.getDirectBufferPointer( bb ) );
+			long ptr = Pointer.nativeValue( Native.getDirectBufferPointer( bb ) );
 			data = new simlab.ByValue( bb.limit()/4, UINTLEN, ptr );
 		}
 	}
@@ -484,6 +489,7 @@ public class Simlab implements ScriptEngineFactory {
 	
 	public int echo( simlab.ByValue sl ) {
 		String val = new Pointer( sl.buffer ).getString(0);
+		System.err.println( val );
 		System.out.println( val );
 		
 		return 1;
@@ -578,7 +584,7 @@ public class Simlab implements ScriptEngineFactory {
 		String s = new Pointer( sl.buffer ).getString(0);
 		StringTokenizer	st = new StringTokenizer(s);
 		if( st.hasMoreTokens() ) {
-			String fname = st.nextToken(" (_\n");			
+			String fname = st.nextToken(" (_\n");
 			Method m = null;
 			try {
 				//clist.toArray( new Class<?>[ clist.size() ]
@@ -586,7 +592,8 @@ public class Simlab implements ScriptEngineFactory {
 				List<simlab.ByValue>	olist = new ArrayList<simlab.ByValue>();
 				tempbuffer.position(0);
 				long	offset = 0;
-				long 	pvalr = getpointer( ptr );
+				long 	pvalr = Pointer.nativeValue( Native.getDirectBufferPointer( tempbuffer ) );
+				System.err.println( pvalr );
 				while( st.hasMoreTokens() ) {
 					String str = st.nextToken(endStr);
 					if( str.startsWith("\"") ) {
@@ -598,6 +605,8 @@ public class Simlab implements ScriptEngineFactory {
 						tempbuffer.put( bytes );
 						long				pval = pvalr+offset;
 						offset += bytes.length;
+						
+						//ptr.nativeValue( ptr );
 						//NativeLongByReference		lbr = new NativeLongByReference();
 						//lbr.setPointer( ptr );
 						
@@ -633,7 +642,7 @@ public class Simlab implements ScriptEngineFactory {
 						for( double d : d_vec ) {
 							dd.put(d);
 						}
-						long lptr = getpointer( Native.getDirectBufferPointer(bb) );
+						long lptr = Pointer.nativeValue( Native.getDirectBufferPointer(bb) );
 						simlab.ByValue	nsl = new simlab.ByValue( d_vec.size(), DOUBLELEN, lptr );
 						olist.add( nsl );
 					} else if( str.contains(".") ) {
@@ -797,7 +806,7 @@ public class Simlab implements ScriptEngineFactory {
 		//NativeLongByReference nat = new NativeLongByReference();
 		//nat.setPointer( Native.getDirectBufferPointer( bb ) );
 		
-		long pval = getpointer( Native.getDirectBufferPointer( bb ) );
+		long pval = Pointer.nativeValue( Native.getDirectBufferPointer( bb ) );
 		data = new simlab.ByValue( lenval, data.type, pval );
 
 		return 1;
@@ -875,7 +884,7 @@ public class Simlab implements ScriptEngineFactory {
 			tempbuffer.position(0);
 			tempbuffer.put( bb );
 			//NativeLongByReference	nt = new NativeLongByReference();
-			long	pval = getpointer( ptr );
+			long	pval = Pointer.nativeValue( Native.getDirectBufferPointer(tempbuffer) );
 			//nt.setPointer( ptr );
 			simlab.ByValue str = new simlab.ByValue(substr.length(), Simlab.BYTELEN, pval);
 			echo( str );
@@ -900,7 +909,7 @@ public class Simlab implements ScriptEngineFactory {
 	}
 	
 	ByteBuffer	tempbuffer = ByteBuffer.allocateDirect(256);
-	Pointer 	ptr = Native.getDirectBufferPointer( tempbuffer );
+	//Pointer 	ptr = Native.getDirectBufferPointer( tempbuffer );
 	public int parse( simlab.ByValue sl ) throws IOException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, SecurityException, NoSuchMethodException {		
 		//simlab.ByValue	psl = new simlab.ByValue( data.);
 		//NativeLongByReference nat = new NativeLongByReference();
@@ -915,7 +924,6 @@ public class Simlab implements ScriptEngineFactory {
 	}
 	
 	public int parse( Method m ) throws IOException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
-		long	pval = getpointer( ptr );
 		BufferedReader br = new BufferedReader( reader );
 		String line = br.readLine();
 		while( line != null && !line.equalsIgnoreCase("quit") ) {			
@@ -923,6 +931,7 @@ public class Simlab implements ScriptEngineFactory {
 			
 			byte[]	bb = Native.toByteArray( line );
 			tempbuffer.position(0);
+			long	pval = Pointer.nativeValue( Native.getDirectBufferPointer( tempbuffer ) );
 			tempbuffer.put( bb );
 			
 			simlab.ByValue	psl = new simlab.ByValue( bb.length, BYTELEN, pval );
@@ -936,23 +945,27 @@ public class Simlab implements ScriptEngineFactory {
 	}
 	
 	private int parse() throws IOException {		
-		long	pval = getpointer( ptr );
 		//simlab.ByValue	psl = new simlab.ByValue( data.);
 		//NativeLongByReference nat = new NativeLongByReference();
 		//nat.setPointer( ptr );
 		
 		BufferedReader br = new BufferedReader( reader );
 		String line = br.readLine();
-		while( line != null && !line.equalsIgnoreCase("quit") ) {				
+		while( line != null && !line.equalsIgnoreCase("quit") ) {			
 			line = line.trim();
 			
 			byte[]	bb = Native.toByteArray( line );
 			tempbuffer.position(0);
+			long	pval = Pointer.nativeValue( Native.getDirectBufferPointer(tempbuffer) );
 			tempbuffer.put( bb );
 			
 			simlab.ByValue	psl = new simlab.ByValue( bb.length, BYTELEN, pval );
 			//psl.length = bb.length;
-			cmd( psl );				
+			cmd( psl );
+			/*if( reader instanceof InputStreamReader ) {
+				System.out.println("erm");
+				System.out.flush();
+			}*/
 			line = br.readLine();
 		}
 		
@@ -962,9 +975,7 @@ public class Simlab implements ScriptEngineFactory {
 	public int parse( final simlab.ByValue sl, final simlab.ByValue func ) throws SecurityException, NoSuchMethodException, IllegalArgumentException, IOException, IllegalAccessException, InvocationTargetException {
 		Reader	oldreader = reader;
 		
-		if( sl.length > 0 ) {
-			System.err.println( "erm " + sl.buffer + "  " + func.buffer );
-			
+		if( sl.length > 0 ) {			
 			Pointer 		lbr = new Pointer( sl.buffer );
 			String 			path = lbr.getString(0);
 			
@@ -1116,19 +1127,13 @@ public class Simlab implements ScriptEngineFactory {
 		}
 
 		@Override
-		public void put(String key, Object value) {
-			
-		}
+		public void put(String key, Object value) {}
 
 		@Override
-		public void setBindings(Bindings bindings, int scope) {
-			
-		}
+		public void setBindings(Bindings bindings, int scope) {}
 
 		@Override
-		public void setContext(ScriptContext context) {
-			
-		}
+		public void setContext(ScriptContext context) {}
 	};
 	
 	public static void test() {
@@ -1158,35 +1163,55 @@ public class Simlab implements ScriptEngineFactory {
 		try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (UnsupportedLookAndFeelException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
-		Console console = System.console();
 		/*ScriptEngineManager scriptEngineManager = new ScriptEngineManager();
 		List<ScriptEngineFactory> scriptEngineFactories = scriptEngineManager.getEngineFactories();
 		for( ScriptEngineFactory scriptEngineFactory : scriptEngineFactories ) {
 			System.err.println( scriptEngineFactory.getEngineName() );
 		}*/
 		
+		Console console = System.console();
 		Simlab  simlab = new Simlab();
 		simlab.init();
 		simlab.welcome();
 		simlab.jinit();
 		ScriptEngine engine = simlab.getScriptEngine();
+		
+		boolean gui = false;
+		for( String arg : args ) {
+			if( arg.equals("--gui") ) {
+				gui = true;
+				break;
+			}
+		}
+		
 		try {
-			//engine.eval( console.reader() );
-			engine.eval( new InputStreamReader( System.in ) );
-		} catch (ScriptException e) {
+			if( gui ) {
+				PipedWriter		pw = new PipedWriter();
+				BufferedWriter	bw = new BufferedWriter( pw );
+				SimConsole	simconsole = new SimConsole( bw );
+				//ByteArrayOutputStream	baos = new ByteArrayOutputStream();
+				//InputStreamReader	ir = new InputStreamReader(in);
+				
+				PipedReader	pr = new PipedReader( pw );
+				//BufferedReader br = new BufferedReader( pr );
+				engine.eval( pr );
+			} if( console == null || args.length > 0 ) {
+				engine.eval( new InputStreamReader( System.in ) );
+			} else {
+				engine.eval( console.reader() );
+			}
+		} catch( ScriptException e ) {
+			e.printStackTrace();
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
