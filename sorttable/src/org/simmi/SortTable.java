@@ -1979,6 +1979,8 @@ public class SortTable extends JApplet {
 			}
 		} catch( AccessControlException e ) {
 			
+		} catch( IOException e ) {
+			
 		}
 		
 		JScrollPane help = new JScrollPane( helppane );

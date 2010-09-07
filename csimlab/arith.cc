@@ -13,6 +13,70 @@ extern simlab 	data;
 extern c_const<int>		iconst;
 extern c_const<float>	fconst;
 
+int g_i = 0;
+unsigned int g_ui = 0;
+long	g_l = 0;
+long long	g_ll = 0;
+unsigned long	g_ul = 0;
+float	g_f = 0;
+double	g_d = 0;
+
+template<> int c_simlab<int>::operator[]( int i ) {
+	return g_i;
+};
+
+template<> int & c_simlab<int&>::operator[]( int i ) {
+	return g_i;
+};
+
+template<> unsigned int c_simlab<unsigned int>::operator[]( int i ) {
+	return g_ui;
+};
+
+template<> unsigned int& c_simlab<unsigned int&>::operator[]( int i ) {
+	return g_ui;
+};
+
+template<> long long c_simlab<long long>::operator[]( int i ) {
+	return g_ll;
+};
+
+template<> long long & c_simlab<long long&>::operator[]( int i ) {
+	return g_ll;
+};
+
+template<> long c_simlab<long>::operator[]( int i ) {
+	return g_l;
+};
+
+template<> long& c_simlab<long&>::operator[]( int i ) {
+	return g_l;
+};
+
+template<> unsigned long c_simlab<unsigned long>::operator[]( int i ) {
+	return g_ul;
+};
+
+template<> unsigned long& c_simlab<unsigned long&>::operator[]( int i ) {
+	return g_ul;
+};
+
+template<> float c_simlab<float>::operator[]( int i ) {
+	return g_f;
+};
+
+template<> float& c_simlab<float&>::operator[]( int i ) {
+	return g_f;
+};
+
+template<> double c_simlab<double>::operator[]( int i ) {
+	return g_d;
+};
+
+template<> double& c_simlab<double&>::operator[]( int i ) {
+	return g_d;
+};
+
 template <typename T, typename K> void t_set( T buffer, long length, K value, long vallen ) {
 	long len = vallen > length ? vallen : length;
 

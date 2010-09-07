@@ -74,6 +74,10 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
 
 public class RecipePanel extends JSplitPane {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	final JCompatTable		recipeTable = new JCompatTable();
 	final JCompatTable		recipeDetailTable = new JCompatTable();
 	Map<String,Integer>	foodInd;
@@ -90,7 +94,7 @@ public class RecipePanel extends JSplitPane {
 		if( skmt.containsKey( stuff.toLowerCase() ) ) {
 			values = skmt.get( stuff.toLowerCase() );
 		} else {
-			String store = null;
+			String store = "";
 			int max = 0;
 			
 			List<String> pars = Arrays.asList( stuff.toLowerCase().split("[, ]+") );
@@ -99,7 +103,9 @@ public class RecipePanel extends JSplitPane {
 				
 				int count = 0;
 				for( String a : pars ) {
-					if( vals.contains(a) ) count++;
+					if( !(a.contains("steikt") || a.contains("soðin")) && vals.contains(a) ) {
+						count++;
+					}
 				}
 				
 				if( count > max ) {
@@ -108,7 +114,7 @@ public class RecipePanel extends JSplitPane {
 				}
 			}
 			
-			if( store != null ) values = skmt.get( store );
+			if( store != null && store.length() > 0 ) values = skmt.get( store );
 		}
 		
 		return values;
@@ -442,7 +448,7 @@ public class RecipePanel extends JSplitPane {
 				for( i = 2; i < spl.length-1; i++ ) {
 					rep.desc += spl[i] + "\n\n";
 				}
-				System.err.println("jospl " + spl[i] );
+				//System.err.println("jospl " + spl[i] );
 				rep.desc += spl[i];
 			}
 			
@@ -1077,6 +1083,8 @@ public class RecipePanel extends JSplitPane {
 					int ri = recipeDetailTable.convertRowIndexToModel(r);
 					Object obj = recipeDetailTable.getValueAt(ri, 0);
 					if( obj != null && foodInd.containsKey( obj.toString() ) ) {
+						//System.err.println( "reppi " + obj );
+						
 						int i = foodInd.get( obj );
 						int mi = leftTable.convertRowIndexToView( i );
 						if( mi >= 0 && mi < leftTable.getRowCount() ) {
@@ -1094,7 +1102,8 @@ public class RecipePanel extends JSplitPane {
 							RecipeIngredient rip = currentRecipe.ingredients.get(ri);
 							if( rip.values != null ) {
 								for( String str : rip.values.keySet() ) {
-									skmtCombo.addItem( str + " ("+rip.values.get(str)+")" );
+									String addval = str + " ("+rip.values.get(str)+")";
+									skmtCombo.addItem( addval );
 								}
 							}
 						} else {

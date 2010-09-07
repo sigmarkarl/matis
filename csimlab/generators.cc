@@ -255,7 +255,7 @@ template<typename T> void t_adder( T t, int len ) {
 		data.length = min == -1 ? max : min;
 	} else {
 		if( data.type == -32 ) {
-			c_adder<T,c_simlab<int> &,int> *ca = new c_adder<T,c_simlab<int> &,int>( t, *(c_simlab<int>*)data.buffer );
+			//c_adder<T,c_simlab<int> &,int> *ca = new c_adder<T,c_simlab<int> &,int>( t, *(c_simlab<int>*)data.buffer );
 			data.buffer = (long)new c_adder<T,c_simlab<int> &,int>( t, *(c_simlab<int>*)data.buffer );
 		} else if( data.type == -34 ) {
 			data.buffer = (long)new c_adder<T,c_simlab<float> &,float>( t, *(c_simlab<float>*)data.buffer );
@@ -416,4 +416,6 @@ extern "C" JNIEXPORT int dfuncer( simlab dfunc ) {
 		else if( data.type == -66 ) data.buffer = (long)new c_funcer<double,c_simlab<double> >( (double (*)(double))dfunc.buffer, *(c_simlab<double>*)data.buffer );
 	}
 	data.type = -66;
+
+	return 1;
 }
