@@ -784,7 +784,7 @@ public class Order extends JApplet {
 	
 	List<String>	verkList = new ArrayList<String>();
 	public void updateVerk() throws SQLException {
-		String sql = "select [No_], [Description] from [MATIS].[dbo].[Matís ohf_$Job] where ([Blocked] = 0 and ([Global Dimension 1 Code] = '0100' or [Global Dimension 1 Code] = '0200' or [Global Dimension 1 Code] = '0300' or [Global Dimension 1 Code] = '0400' or [Global Dimension 1 Code] = '0500' or [Global Dimension 1 Code] = '0600') or [Global Dimension 1 Code] = '3000' )"; // where [user] = '"+user+"'";
+		String sql = "select [No_], [Description] from [MATIS].[dbo].[Matís ohf_$Job] where ([Blocked] = 0 and ([Global Dimension 1 Code] = '0100' or [Global Dimension 1 Code] = '0200' or [Global Dimension 1 Code] = '0300' or [Global Dimension 1 Code] = '0400' or [Global Dimension 1 Code] = '0500' or [Global Dimension 1 Code] = '0600' or [Global Dimension 1 Code] = '0700') or [Global Dimension 1 Code] = '3000' )"; // where [user] = '"+user+"'";
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
 		ResultSet 			rs = ps.executeQuery();
@@ -1300,11 +1300,14 @@ public class Order extends JApplet {
 		
 		stcombo.addItem("Öll svið");
 		stcombo.addItem("Nýsköpun og neytendur (0100)");
-		stcombo.addItem("Vinnsla og virðisaukning (0200)");
+		stcombo.addItem("Eldi, vinnsla og virðisaukning (0200)");
 		stcombo.addItem("Erfðir og eldi (0300)");
 		stcombo.addItem("Líftækni og lífefni (0400)");
 		stcombo.addItem("Mælingar og miðlun (0500)");
-		stcombo.addItem("Öryggi og umhverfi (0600)");
+		stcombo.addItem("Erfðir, öryggi og umhverfi (0600)");
+		stcombo.addItem("Viðskiptaþróun (0700)");
+		
+		
 		stcombo.addItem("Svið þrjúþúsund (3000)");
 		
 		stcombo.addItemListener( new ItemListener() {
