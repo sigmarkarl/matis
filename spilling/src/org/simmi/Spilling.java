@@ -64,9 +64,7 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 	boolean				drawPersonNames = true;
 	boolean				d3 = true;
 	
-	double hhx;
-	double hhy;
-	double hhz;
+	static double hhx, hhy, hhz;
 	double cx;
 	double cy;
 	double cz;
@@ -139,17 +137,45 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 		//c.repaint();
 	}
 	
-	void backtrack( Point p, Corp c ) {		
-		double hx = hhx;
-		double hy = hhy;
-		double hz = hhz;
-		
-		//System.err.println( "doing " + hx + "  " + hy + "  " + hz );
+	static void backtrack( int x, int y, int w, int h, Corp c, double cx, double cy, double cz ) {
+		double cosx = Math.cos(hhx);
+		double sinx = Math.sin(hhx);
+		double cosy = Math.cos(hhy);
+		double siny = Math.sin(hhy);
+		double cosz = Math.cos(hhz);
+		double sinz = Math.sin(hhz);
 		
 		double d = dzoomval;
 		double zval = d;
 		double mval = d * 1.5;
 		
+		double dx = x - w/2;
+		double dy = y - h/2;
+		double dz = zoomval;
+			
+		double lz = dz;
+		double lx = ( dx * (zval + dz) ) / mval;
+		double ly = ( dy * (zval + dz) ) / mval;
+		
+		double nz = lz - zoomval;
+		double nx = lx * cosz - ly * sinz;
+		double ny = ly * cosz + lx * sinz;
+		
+		double xx = nx;
+		double zz = nz * cosx - ny * sinx;
+		double yy = ny * cosx + nz * sinx;
+		
+		c.sety( yy + cy );
+		c.setx( xx * cosy + zz * siny + cx );
+		c.setz( zz * cosy - xx * siny + cz );
+	}
+	
+	void backtrack( Point p, Corp c ) {		
+		//double hx = hhx;
+		//double hy = hhy;
+		//double hz = hhz;
+		
+		//System.err.println( "doing " + hx + "  " + hy + "  " + hz );		
 		/*if (np != null && p != null) {
 			if (!shift)
 				hy += (np.x - p.x) / 100.0;
@@ -159,13 +185,6 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 		}*/
 		
 		//System.err.println( p + "    " + np );
-
-		double cosx = Math.cos(hx);
-		double sinx = Math.sin(hx);
-		double cosy = Math.cos(hy);
-		double siny = Math.sin(hy);
-		double cosz = Math.cos(hz);
-		double sinz = Math.sin(hz);
 		
 		double len = Corp.corpList.size();
 		cx = 0.0;
@@ -180,7 +199,9 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 		cy /= len;
 		cz /= len;
 		
-		double dx = p.x - this.getWidth()/2;
+		backtrack( p.x, p.y, this.getWidth(), this.getHeight(), c, cx, cy, cz );
+		
+		/*double dx = p.x - this.getWidth()/2;
 		double dy = p.y - this.getHeight()/2;
 		double dz = zoomval;
 		
@@ -208,7 +229,7 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 		c.setx( xx * cosy + zz * siny + cx );
 		c.setz( zz * cosy - xx * siny + cz );
 		
-		//System.err.println( "fock " + c.x + "  " + c.y + "  " + c.z + "  point  " + p.x + "   " + p.y );
+		//System.err.println( "fock " + c.x + "  " + c.y + "  " + c.z + "  point  " + p.x + "   " + p.y );*/
 	}
 	
 	public void backtest( double x, double y ) {		
@@ -319,8 +340,8 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 		System.err.println( "xyz " + x + "  " + y + "  " + z );
 	}
 	
-	double zoomval = 500.0;
-	double dzoomval = 500.0;
+	static double zoomval = 500.0;
+	static double dzoomval = 500.0;
 	public void depth() {
 		double hx = hhx;
 		double hy = hhy;
@@ -769,11 +790,11 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 				
 				//backtest( m.x, m.y );
 				
+				//System.err.println( m );
 				backtrack( m, corp );
 				try {
 					corp.save();
 				} catch (IOException e2) {
-					// TODO Auto-generated catch block
 					e2.printStackTrace();
 				}
 				c.add( corp );
@@ -787,7 +808,6 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 				try {
 					corp.save();
 				} catch (IOException e2) {
-					// TODO Auto-generated catch block
 					e2.printStackTrace();
 				}
 				c.add( corp );
@@ -803,7 +823,6 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 				try {
 					excelLoad( is );
 				} catch (IOException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 			}
@@ -894,7 +913,6 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 						}
 						Spilling.this.repaint();
 					} catch (IOException e1) {
-						// TODO Auto-generated catch block
 						e1.printStackTrace();
 					}
 				}
@@ -984,7 +1002,6 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 					workbook.write( new FileOutputStream( nf ) );
 					Desktop.getDesktop().open( nf );
 				} catch (IOException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 			}
@@ -1084,22 +1101,13 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 	}
 
 	@Override
-	public void mouseClicked(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
+	public void mouseClicked(MouseEvent e) {}
 
 	@Override
-	public void mouseEntered(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
+	public void mouseEntered(MouseEvent e) {}
 
 	@Override
-	public void mouseExited(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
+	public void mouseExited(MouseEvent e) {}
 
 	@Override
 	public void mousePressed(MouseEvent e) {
@@ -1259,14 +1267,8 @@ public class Spilling extends JApplet implements MouseListener, MouseMotionListe
 	}
 
 	@Override
-	public void keyReleased(KeyEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
+	public void keyReleased(KeyEvent e) {}
 
 	@Override
-	public void keyTyped(KeyEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
+	public void keyTyped(KeyEvent e) {}
 }
