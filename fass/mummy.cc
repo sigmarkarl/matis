@@ -200,12 +200,19 @@ int main( int argc, char* argv[] ) {
 							bool b1 = ib1 > PERC;
 							bool b2 = ib2 > PERC;
 
-							if( (a1 && b2) || (a2 && b1) || (a1 && a2) || (b1 && b2) ) {
+							int ic1 = (perc*100)/(len1);
+							int ic2 = (perc*100)/(len2);
+
+							bool c1 = ic1 > PERC;
+							bool c2 = ic2 > PERC;
+
+							if( (a1 && b2) || (a2 && b1) ) {
 								/*sprintf( temp, "%d %d %d %d %d", perc, (len2-astart), astop, ia1, ia2 );
 								sset.push_back( temp );
 								sprintf( temp, "%d %d %d %d %d", perc, (len1-bstart), bstop, ib1, ib2 );
 								sset.push_back( temp );*/
 
+								//printf( "%d %d %d %d\n", (int)a1, (int)a2, (int)b1, (int)b2 );
 								if( r == 1 ) {
 									if( len1 >= 100000 ) sprintf( temp, "%s\t(%d)\t%d\t%d\t%s (%d)\t%d\t%d", current, len1, bstart, bstop, str.c_str(), len2, astart, astop );
 									else sprintf( temp, "%s\t(%d)\t\t%d\t%d\t%s (%d)\t%d\t%d", current, len1, bstart, bstop, str.c_str(), len2, astart, astop );
@@ -214,7 +221,25 @@ int main( int argc, char* argv[] ) {
 									else sprintf( temp, "%s\t\t(%d)\t\t%d\t%d\t%s (%d)\t%d\t%d", current, len1, bstart, bstop, str.c_str(), len2, astart, astop );
 								}
 								sset.push_back( temp );
-							}
+							} else if( (a1 && a2) || (b1 && b2) ) {
+								if( r == 1 ) {
+									if( len1 >= 100000 ) sprintf( temp, "%s\t(%d)\t%d\t%d\t%s (%d)\t%d\t%d (c)", current, len1, bstart, bstop, str.c_str(), len2, astart, astop );
+									else sprintf( temp, "%s\t(%d)\t\t%d\t%d\t%s (%d)\t%d\t%d (c)", current, len1, bstart, bstop, str.c_str(), len2, astart, astop );
+								} else {
+									if( len1 >= 100000 ) sprintf( temp, "%s\t\t(%d)\t%d\t%d\t%s (%d)\t%d\t%d (c)", current, len1, bstart, bstop, str.c_str(), len2, astart, astop );
+									else sprintf( temp, "%s\t\t(%d)\t\t%d\t%d\t%s (%d)\t%d\t%d (c)", current, len1, bstart, bstop, str.c_str(), len2, astart, astop );
+								}
+								sset.push_back( temp );
+							} /*else if( c1 || c2 ) {
+								if( r == 1 ) {
+									if( len1 >= 100000 ) sprintf( temp, "%s\t(%d)\t%d\t%d\t%s (%d)\t%d\t%d (c)", current, len1, bstart, bstop, str.c_str(), len2, astart, astop );
+									else sprintf( temp, "%s\t(%d)\t\t%d\t%d\t%s (%d)\t%d\t%d (c)", current, len1, bstart, bstop, str.c_str(), len2, astart, astop );
+								} else {
+									if( len1 >= 100000 ) sprintf( temp, "%s\t\t(%d)\t%d\t%d\t%s (%d)\t%d\t%d (c)", current, len1, bstart, bstop, str.c_str(), len2, astart, astop );
+									else sprintf( temp, "%s\t\t(%d)\t\t%d\t%d\t%s (%d)\t%d\t%d (c)", current, len1, bstart, bstop, str.c_str(), len2, astart, astop );
+								}
+								sset.push_back( temp );
+							}*/
 						}
 					}
 					mit++;

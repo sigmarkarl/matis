@@ -4,7 +4,6 @@ import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.Console;
 import java.io.File;
@@ -152,6 +151,9 @@ public class Simlab implements ScriptEngineFactory {
 	public native int simmi();
 	public native int idx();
 	
+	public static long	BOOLEN = 1;
+	public static long	DUOLEN = 2;
+	public static long	QUADLEN = 4;
 	public static long	BYTELEN = 8;
 	public static long	USHORTLEN = 16;
 	public static long	SHORTLEN = 17;
@@ -229,6 +231,37 @@ public class Simlab implements ScriptEngineFactory {
 	public static int jcrnt_local() {
 		simlab.ByValue ps = new simlab.ByValue( 0, 66, 14 );
 		return crnt( ps );
+	}
+	
+	Object obj = null;
+	public void create( final simlab.ByValue sl ) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
+		String className = new Pointer( sl.buffer ).getString( 0 );
+		Class theclass = Class.forName(className);
+		obj = theclass.newInstance();
+	}
+	
+	public void call( final simlab.ByValue ... sl ) throws SecurityException, NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+		String methodName = null;
+		List<Class>		lClass = new ArrayList<Class>();
+		List<Object>	lObj = new ArrayList<Object>();
+		for( simlab.ByValue v : sl ) {
+			if( v == sl[0] ) {
+				methodName = new Pointer( v.buffer ).getString( 0 );
+			} else {
+				if( v.type == BYTELEN ) {
+					lClass.add( String.class );
+					lObj.add( new Pointer( v.buffer ).getString( 0 ) );
+				} else if( v.type == INTLEN ) {
+					lClass.add( int.class );
+					lObj.add( v.buffer );
+				} else if( v.type == BOOLEN ) {
+					lClass.add( boolean.class );
+					lObj.add( v.buffer == 1 );
+				}
+			}
+		}
+		Method meth = obj.getClass().getMethod( methodName, lClass.toArray( new Class[0] ) );
+		meth.invoke( obj, lObj.toArray() );
 	}
 	
 	/*public static void jerm() {
@@ -489,7 +522,7 @@ public class Simlab implements ScriptEngineFactory {
 	
 	public int echo( simlab.ByValue sl ) {
 		String val = new Pointer( sl.buffer ).getString(0);
-		System.err.println( val );
+		//System.err.println( val );
 		System.out.println( val );
 		
 		return 1;
@@ -698,7 +731,17 @@ public class Simlab implements ScriptEngineFactory {
 						if( m == null ) m = Simlab.class.getMethod( "simlab_"+fname, simlab.ByValue.class, simlab.ByValue.class, simlab.ByValue.class, simlab.ByValue.class );
 					}
 				} catch (NoSuchMethodException e) {
-					e.printStackTrace();
+					//e.printStackTrace();
+				}
+				
+				boolean multi = false;
+				if( m == null ) {
+					multi = true;
+					try {
+						m = Simlab.class.getMethod( fname, simlab.ByValue[].class );
+					} catch (NoSuchMethodException e) {
+						//e.printStackTrace();
+					}
 				}
 				
 				if( m == null ) {
@@ -711,7 +754,9 @@ public class Simlab implements ScriptEngineFactory {
 				//if( where ) data = getdata();
 				//where = false;
 					crnt( data );
-					if( olist.size() == 0 ) { 
+					if( multi ) {
+						m.invoke( Simlab.this, new Object[] {olist.toArray( new simlab.ByValue[0] )} );
+					} else if( olist.size() == 0 ) { 
 						m.invoke( Simlab.this );
 					} else if( olist.size() == 1 ) { 
 						m.invoke( Simlab.this, olist.get(0) );
@@ -845,6 +890,12 @@ public class Simlab implements ScriptEngineFactory {
 		datalib.put("int", new simlab.ByValue(0, 64, 32) );
 		datalib.put("float", new simlab.ByValue(0, 64, 34) );
 		datalib.put("double", new simlab.ByValue(0, 64, 66) );
+		
+		datalib.put("PI", new simlab.ByValue(0, 64, Double.doubleToRawLongBits(Math.PI)) );
+		datalib.put("e", new simlab.ByValue(0, 64, Double.doubleToRawLongBits(Math.E)) );
+		
+		datalib.put("true", new simlab.ByValue(0, 1, 1) );
+		datalib.put("false", new simlab.ByValue(0, 1, 0) );
 		
 		return 0;
 	}
@@ -1196,8 +1247,9 @@ public class Simlab implements ScriptEngineFactory {
 		try {
 			if( gui ) {
 				PipedWriter		pw = new PipedWriter();
-				BufferedWriter	bw = new BufferedWriter( pw );
-				SimConsole	simconsole = new SimConsole( bw );
+				//BufferedWriter	bw = new BufferedWriter( pw );
+				//SimConsole	simconsole = 
+				new SimConsole( pw );
 				//ByteArrayOutputStream	baos = new ByteArrayOutputStream();
 				//InputStreamReader	ir = new InputStreamReader(in);
 				
