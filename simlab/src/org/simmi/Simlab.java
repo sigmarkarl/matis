@@ -5,6 +5,7 @@ import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.Console;
 import java.io.File;
 import java.io.FileInputStream;
@@ -106,6 +107,7 @@ public class Simlab implements ScriptEngineFactory {
 	public Map<String,simlab.ByValue>		datalib = new HashMap<String,simlab.ByValue>();
 	public simlab.ByValue					data = new simlab.ByValue();
 	public simlab.ByValue					nulldata = new simlab.ByValue(0,0,0);
+	public List<Object>						objects = new ArrayList<Object>();
 	
 	public static native int jcmd( simlab.ByValue sl );
 	public static native int jcmdstr( final String s );
@@ -158,9 +160,10 @@ public class Simlab implements ScriptEngineFactory {
 	public static long	USHORTLEN = 16;
 	public static long	SHORTLEN = 17;
 	public static long	UINTLEN = 32;
-	public static long	INTLEN = 32;
+	public static long	INTLEN = 33;
 	public static long	FLOATLEN = 34;
-	public static long	LONGLEN = 64;
+	public static long	ULONGLEN = 64;
+	public static long	LONGLEN = 65;
 	public static long	DOUBLELEN = 66;
 	
 	boolean where = false;
@@ -238,28 +241,29 @@ public class Simlab implements ScriptEngineFactory {
 		String className = new Pointer( sl.buffer ).getString( 0 );
 		Class theclass = Class.forName(className);
 		obj = theclass.newInstance();
+		data.buffer = objects.size();
+		data.length = 0;
+		data.type = Byte.MIN_VALUE;
+		objects.add( obj );
 	}
 	
-	public void call( final simlab.ByValue ... sl ) throws SecurityException, NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
-		String methodName = null;
+	public void call( final simlab.ByValue methn, final simlab.ByValue ... sl ) throws SecurityException, NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+		String methodName = new Pointer( methn.buffer ).getString( 0 );
 		List<Class>		lClass = new ArrayList<Class>();
 		List<Object>	lObj = new ArrayList<Object>();
 		for( simlab.ByValue v : sl ) {
-			if( v == sl[0] ) {
-				methodName = new Pointer( v.buffer ).getString( 0 );
-			} else {
-				if( v.type == BYTELEN ) {
-					lClass.add( String.class );
-					lObj.add( new Pointer( v.buffer ).getString( 0 ) );
-				} else if( v.type == INTLEN ) {
-					lClass.add( int.class );
-					lObj.add( v.buffer );
-				} else if( v.type == BOOLEN ) {
-					lClass.add( boolean.class );
-					lObj.add( v.buffer == 1 );
-				}
+			if( v.type == BYTELEN ) {
+				lClass.add( String.class );
+				lObj.add( new Pointer( v.buffer ).getString( 0 ) );
+			} else if( v.type == INTLEN || v.type == UINTLEN || v.type == LONGLEN || v.type == ULONGLEN ) {
+				lClass.add( int.class );
+				lObj.add( (int)v.buffer );
+			} else if( v.type == BOOLEN ) {
+				lClass.add( boolean.class );
+				lObj.add( v.buffer == 1 );
 			}
 		}
+		//Object obj = objects.get(index)
 		Method meth = obj.getClass().getMethod( methodName, lClass.toArray( new Class[0] ) );
 		meth.invoke( obj, lObj.toArray() );
 	}
@@ -492,6 +496,39 @@ public class Simlab implements ScriptEngineFactory {
 		});
 	}
 	
+	public int run( simlab.ByValue runner ) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+		simlab.ByValue olddata = data;
+		
+		if( runner.buffer == 0 ) runner = data;
+		Pointer p = new Pointer( runner.buffer );
+		
+		//simlab* databuffer = (simlab*)runner.buffer;
+		int i = 0;
+		while( i < runner.length ) {
+			Method m = (Method)objects.get( (int)p.getLong(i*3) );
+			int len = m.getParameterTypes().length;
+			int ret = 0;
+			if( len == 0 ) ret = (Integer)m.invoke( Simlab.this );
+			else if( len == 1 ) {
+				ret = (Integer)m.invoke( Simlab.this, new simlab.ByValue( p.getLong((i+1)*3+1), p.getLong((i+1)*3+2), p.getLong((i+1)*3) ) );
+			}
+			else if( len == 2 ) ret = (Integer)m.invoke( Simlab.this, 
+															new simlab.ByValue( p.getLong((i+1)*3+1), p.getLong((i+1)*3+2), p.getLong((i+1)*3) ), 
+															new simlab.ByValue( p.getLong((i+2)*3+1), p.getLong((i+2)*3+2), p.getLong((i+2)*3) ) );
+			else if( len == 3 ) ret = (Integer)m.invoke( Simlab.this,
+															new simlab.ByValue( p.getLong((i+1)*3+1), p.getLong((i+1)*3+2), p.getLong((i+1)*3) ), 
+															new simlab.ByValue( p.getLong((i+2)*3+1), p.getLong((i+2)*3+2), p.getLong((i+2)*3) ),
+															new simlab.ByValue( p.getLong((i+3)*3+1), p.getLong((i+3)*3+2), p.getLong((i+3)*3) ) );
+			else if( len == 4 ) ret = (Integer)m.invoke( Simlab.this );
+			i += ret;
+			i++;
+		}
+		
+		data = olddata;
+		
+		return 1;
+	}
+	
 	public void update( String name, final long w ) {
 		SimComp sc = compmap.get(name);
 		sc.h = (int)((sc.h*sc.w)/w);
@@ -536,6 +573,33 @@ public class Simlab implements ScriptEngineFactory {
 		jcrnt( bb, 8, buffer.length );
 	}
 	
+	public int read( final simlab.ByValue sl ) throws IOException {
+		String val = new Pointer( sl.buffer ).getString(0);
+		URL url = new URL( val );
+		InputStream stream = url.openStream();
+		
+		ByteArrayOutputStream	baos = new ByteArrayOutputStream();
+		byte[] bb = new byte[1024];
+		int r = stream.read( bb );
+		int t = 0;
+		while( r > 0 ) {
+			t += r;
+			baos.write( bb, 0, r );
+			r = stream.read( bb );
+		}
+		data.length = t;
+		data.type = 8;
+		bb = baos.toByteArray();
+		ByteBuffer	bbuff = ByteBuffer.allocateDirect( t );
+		for( int i = 0; i < t; i++ ) {
+			bbuff.put(i, bb[i]);
+		}
+		data.buffer = Pointer.nativeValue( Native.getDirectBufferPointer( bbuff ) );
+		baos.close();
+		
+		return 1;
+	}
+	
 	public void write( final String s ) {
 		try {
 			//URL 			url = new URL( s );
@@ -558,13 +622,17 @@ public class Simlab implements ScriptEngineFactory {
 		data = sl;
 	}
 	
-	public void store( simlab.ByValue ps ) {
+	public void store( final simlab.ByValue ps ) {
 		String name = new Pointer( ps.buffer ).getString(0);
+		data.buffer = objects.size();
 		datalib.put(name, data);
+		if( data.type == Byte.MIN_VALUE ) {
+			objects.add( obj );
+		}
 		jstore( name, data );
 	}
 	
-	public void fetch( simlab.ByValue ps ) {
+	public void fetch( final simlab.ByValue ps ) {
 		//String name = ps[0].buffer.getPointer().getString(0);
 		//data = datalib.get(name);
 		
@@ -730,18 +798,14 @@ public class Simlab implements ScriptEngineFactory {
 						m = Simlab.class.getMethod( fname, simlab.ByValue.class, simlab.ByValue.class, simlab.ByValue.class, simlab.ByValue.class );
 						if( m == null ) m = Simlab.class.getMethod( "simlab_"+fname, simlab.ByValue.class, simlab.ByValue.class, simlab.ByValue.class, simlab.ByValue.class );
 					}
-				} catch (NoSuchMethodException e) {
-					//e.printStackTrace();
-				}
+				} catch (NoSuchMethodException e) {}
 				
 				boolean multi = false;
 				if( m == null ) {
 					multi = true;
 					try {
 						m = Simlab.class.getMethod( fname, simlab.ByValue[].class );
-					} catch (NoSuchMethodException e) {
-						//e.printStackTrace();
-					}
+					} catch (NoSuchMethodException e) {}
 				}
 				
 				if( m == null ) {
@@ -883,6 +947,21 @@ public class Simlab implements ScriptEngineFactory {
 		} else {}
 		
 		return 0;
+	}
+	
+	public int system( final simlab.ByValue s ) throws IOException {
+		String command = new Pointer( s.buffer ).getString(0);
+		Process p = Runtime.getRuntime().exec(command);
+		InputStream is = p.getInputStream();
+		BufferedReader br = new BufferedReader( new InputStreamReader( is ) );
+		String line = br.readLine();
+		while( line != null ) {
+			System.out.println( line );
+			
+			line = br.readLine();
+		}		
+		
+		return 1;
 	}
 	
 	public int jinit() {
