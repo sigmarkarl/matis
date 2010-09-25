@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,7 +26,7 @@ public class DiyaHelper {
 	}
 	
 	public static void usage() {
-		System.out.println( "usage: java -jar diyahelper.jar [outfile] [gbkfile] [resultsfile] [aminoacid fasta file]" );
+		System.out.println( "usage: java -jar diyahelper.jar [outfile] [gbkfile] [resultsfile] > [aminoacid fasta file]" );
 	}
 	
 	/**
@@ -127,7 +128,12 @@ public class DiyaHelper {
 				bufferedReader.close();
 				fw.close();
 				
-				GBK2AminoFasta.main( new String[] { aafa } );
+				PrintStream old = System.out;
+				PrintStream	ps = new PrintStream(aafa);
+				System.setOut(ps);
+				GBK2AminoFasta.main( new String[] { outfilename } );
+				ps.close();
+				System.setOut( old );
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
