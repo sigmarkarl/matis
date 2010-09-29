@@ -13,6 +13,15 @@ public:
 	int len;
 };
 
+template<typename T, typename K, typename L> class c_viewer {
+public:
+	c_viewer( T b, K a, int l ) : buf(b), map(a), len(l) {};
+	virtual L operator[](int i) { return map[ (int)buf[i] ]; };
+	T	buf;
+	K	map;
+	int len;
+};
+
 template<typename T,typename L> class c_inverter {
 public:
 	c_inverter( T & nt ) : t(nt) {}
@@ -150,7 +159,7 @@ public:
 	int current;
 };
 
-extern "C" JNIEXPORT int fiboer() {
+JNIEXPORT int fiboer() {
 	data.buffer = (long)new c_fiboer();
 	data.type = -64;
 	data.length = -1;
@@ -166,7 +175,70 @@ extern "C" JNIEXPORT int indexer() {
 	return 0;
 }
 
-extern "C" JNIEXPORT int buffer( simlab bff ) {
+template<typename T> void t_viewer( T t, int len ) {
+	if( data.type > 0 ) {
+		if( data.type == 32 ) data.buffer = (long)new c_viewer<T,unsigned int*,unsigned int&>( t, (unsigned int*)data.buffer, len );
+		else if( data.type == 33 ) data.buffer = (long)new c_viewer<T,int*,int&>( t, (int*)data.buffer, len );
+		else if( data.type == 34 ) data.buffer = (long)new c_viewer<T,float*,float&>( t, (float*)data.buffer, len );
+		else if( data.type == 66 ) data.buffer = (long)new c_viewer<T,double*,double&>( t, (double*)data.buffer, len );
+
+		data.type *= -1;
+		int min = len < data.length ? len : data.length;
+		int max = len > data.length ? len : data.length;
+		data.length = min == -1 ? max : min;
+	} else {
+		if( data.type == -32 ) {
+			//c_adder<T,c_simlab<int> &,int> *ca = new c_adder<T,c_simlab<int> &,int>( t, *(c_simlab<int>*)data.buffer );
+			data.buffer = (long)new c_viewer<T,c_simlab<unsigned int&> &,unsigned int&>( t, *(c_simlab<unsigned int&>*)data.buffer, len );
+		} else if( data.type == -33 ) {
+			data.buffer = (long)new c_viewer<T,c_simlab<int&> &,int&>( t, *(c_simlab<int&>*)data.buffer, len );
+		} else if( data.type == -34 ) {
+			data.buffer = (long)new c_viewer<T,c_simlab<float> &,float>( t, *(c_simlab<float>*)data.buffer, len );
+		}
+		else if( data.type == -64 ) data.buffer = (long)new c_viewer<T,c_simlab<long long> &,long long>( t, *(c_simlab<long long>*)data.buffer, len );
+		else if( data.type == -66 ) data.buffer = (long)new c_viewer<T,c_simlab<double> &,double>( t, *(c_simlab<double>*)data.buffer, len );
+	}
+}
+
+JNIEXPORT int viewer( simlab addr ) {
+	printf("ERMIFUCK\n");
+	if( addr.type > 0 ) {
+		if( addr.length == 0 ) {
+			if( addr.type == 32 ) {
+				c_const<int> cbuf( *(unsigned int*)&addr.buffer );
+				t_viewer<c_simlab<unsigned int> &>( (c_simlab<unsigned int> &)cbuf, 0 );
+			} else if( addr.type == 33 ) {
+				c_const<int> cbuf( *(int*)&addr.buffer );
+				t_viewer<c_simlab<int> &>( (c_simlab<int> &)cbuf, 0 );
+			} else if( addr.type == 64 ) {
+				c_const<long long> *cbuf = new c_const<long long>( *(long long*)&addr.buffer );
+				t_viewer<c_simlab<long long> &>( *(c_simlab<long long> *)cbuf, 0 );
+			} else if( addr.type == 34 ) {
+				c_const<float> cbuf( *(float*)&addr.buffer );
+				t_viewer<c_simlab<float> &>( (c_simlab<float> &)cbuf, 0 );
+			}
+		} else {
+			if( addr.type == 32 ) t_viewer<unsigned int*>( (unsigned int*)addr.buffer, addr.length );
+			else if( addr.type == 33 ) t_viewer<int*>( (int*)addr.buffer, addr.length );
+			else if( addr.type == 64 ) t_viewer<long long*>( (long long*)addr.buffer, addr.length );
+			else if( addr.type == 66 ) t_viewer<double*>( (double*)addr.buffer, addr.length );
+		}
+	} else {
+		if( addr.type == -32 ) t_viewer<c_simlab<unsigned int> &>( *(c_simlab<unsigned int>*)addr.buffer, addr.length );
+		else if( addr.type == -33 ) t_viewer<c_simlab<int> &>( *(c_simlab<int>*)addr.buffer, addr.length );
+		else if( addr.type == -34 ) t_viewer<c_simlab<float> &>( *(c_simlab<float>*)addr.buffer, addr.length );
+		else if( addr.type == -64 ) t_viewer<c_simlab<long long> &>( *(c_simlab<long long>*)addr.buffer, addr.length );
+		else if( addr.type == -66 ) t_viewer<c_simlab<double> &>( *(c_simlab<double>*)addr.buffer, addr.length );
+	}
+
+	c_simlab<int> & s = *(c_simlab<int>*)data.buffer;
+
+	printf("oki %d %d\n", s[0], s[1]);
+
+	return 1;
+}
+
+JNIEXPORT int buffer( simlab bff ) {
 	if( bff.type != 0 ) {
 		if( bff.length == 0 ) {
 			if( bff.type == 32 ) {

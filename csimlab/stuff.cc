@@ -3719,22 +3719,29 @@ JNIEXPORT int idx() {
 		if( data.type == 96 ) t_index<long double*,long double>( (long double*)data.buffer, data.length );
 		else if( data.type == 66 ) t_index<double*,double>( (double*)data.buffer, data.length );
 		else if( data.type == 34 ) t_index<float*,float>( (float*)data.buffer, data.length );
-		//else if( data.type == 33 ) t_index( (unsigned int*)data.buffer, data.length );
-		else if( data.type == 32 ) t_index<int*,int>( (int*)data.buffer, data.length );
-		else if( data.type == 16 ) t_index<short*,short>( (short*)data.buffer, data.length );
-		else if( data.type == 8 ) t_index<char*,char>( (char*)data.buffer, data.length );
+		else if( data.type == 33 ) t_index<int*,int>( (int*)data.buffer, data.length );
+		else if( data.type == 32 ) t_index<unsigned int*,unsigned int>( (unsigned int*)data.buffer, data.length );
+		else if( data.type == 17 ) t_index<short*,short>( (short*)data.buffer, data.length );
+		else if( data.type == 16 ) t_index<unsigned short*,unsigned short>( (unsigned short*)data.buffer, data.length );
+		else if( data.type == 9 ) t_index<char*,char>( (char*)data.buffer, data.length );
+		else if( data.type == 8 ) t_index<unsigned char*,unsigned char>( (unsigned char*)data.buffer, data.length );
 	}
 
 	return 0;
 }
 
-JNIEXPORT int cl() {
+JNIEXPORT int getPseudoInt( void* p, int k ) {
+	c_simlab<int>	& c = *(c_simlab<int>*)p;
+	return c[k];
+}
+
+JNIEXPORT int simlab_ceil() {
 	if( data.type == 66 ) t_ceil( (double*)data.buffer, data.length );
 	if( data.type == 34 ) t_ceil( (float*)data.buffer, data.length );
 	return 0;
 }
 
-JNIEXPORT int flr() {
+JNIEXPORT int simlab_floor() {
 	if( data.type == 66 ) t_floor( (double*)data.buffer, data.length );
 	if( data.type == 34 ) t_floor( (float*)data.buffer, data.length );
 	return 0;
@@ -4080,7 +4087,7 @@ JNIEXPORT int ln( simlab wh ) {
 	return current;
 }
 
-JNIEXPORT int cosine( simlab wh ) {
+JNIEXPORT int simlab_cos( simlab wh ) {
 	simlab func;
 	func.type = 32;
 	func.length = 0;
@@ -4111,7 +4118,7 @@ JNIEXPORT int cosine( simlab wh ) {
 	return current;
 }*/
 
-JNIEXPORT int sine( simlab wh ) {
+JNIEXPORT int simlab_sin( simlab wh ) {
 	simlab func;
 	func.type = 32;
 	func.length = 0;
