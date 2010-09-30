@@ -16,7 +16,15 @@ public:
 template<typename T, typename K, typename L> class c_viewer {
 public:
 	c_viewer( T b, K a, int l ) : buf(b), map(a), len(l) {};
-	virtual L operator[](int i) { return map[ (int)buf[i] ]; };
+	virtual L operator[](int i) {
+		int ind = (int)buf[i];
+		/*if( ind >= 768*768 or ind < 0 ) {
+			printf("simmi\n");
+		} else if(i==0) {
+			printf("neisko\n");
+		}*/
+		return map[ ind ];
+	};
 	T	buf;
 	K	map;
 	int len;

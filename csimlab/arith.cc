@@ -261,6 +261,12 @@ template<template<typename T, typename K> class c_func> void iarith( simlab & va
 	}
 }
 
+JNIEXPORT int simmi( simlab value ) {
+	printf("erm %d %d %d %d\n", (int)value.buffer, (int)data.buffer, (int)data.type, (int)data.length );
+
+	return 1;
+}
+
 JNIEXPORT int set( simlab value ) {
 	arith< c_set >( value );
 	return 1;
