@@ -178,7 +178,10 @@ extern "C" JNIEXPORT int indexer() {
 template<typename T> void t_viewer( T t, int len ) {
 	if( data.type > 0 ) {
 		if( data.type == 32 ) data.buffer = (long)new c_viewer<T,unsigned int*,unsigned int&>( t, (unsigned int*)data.buffer, len );
-		else if( data.type == 33 ) data.buffer = (long)new c_viewer<T,int*,int&>( t, (int*)data.buffer, len );
+		else if( data.type == 33 ) {
+			printf( "hoho %d %d\n", (int)t[0], *(int*)data.buffer );
+			data.buffer = (long)new c_viewer<T,int*,int&>( t, (int*)data.buffer, len );
+		}
 		else if( data.type == 34 ) data.buffer = (long)new c_viewer<T,float*,float&>( t, (float*)data.buffer, len );
 		else if( data.type == 66 ) data.buffer = (long)new c_viewer<T,double*,double&>( t, (double*)data.buffer, len );
 
@@ -201,7 +204,6 @@ template<typename T> void t_viewer( T t, int len ) {
 }
 
 JNIEXPORT int viewer( simlab addr ) {
-	printf("ERMIFUCK\n");
 	if( addr.type > 0 ) {
 		if( addr.length == 0 ) {
 			if( addr.type == 32 ) {
@@ -221,7 +223,9 @@ JNIEXPORT int viewer( simlab addr ) {
 			if( addr.type == 32 ) t_viewer<unsigned int*>( (unsigned int*)addr.buffer, addr.length );
 			else if( addr.type == 33 ) t_viewer<int*>( (int*)addr.buffer, addr.length );
 			else if( addr.type == 64 ) t_viewer<long long*>( (long long*)addr.buffer, addr.length );
-			else if( addr.type == 66 ) t_viewer<double*>( (double*)addr.buffer, addr.length );
+			else if( addr.type == 66 ) {
+				t_viewer<double*>( (double*)addr.buffer, addr.length );
+			}
 		}
 	} else {
 		if( addr.type == -32 ) t_viewer<c_simlab<unsigned int> &>( *(c_simlab<unsigned int>*)addr.buffer, addr.length );
@@ -230,11 +234,6 @@ JNIEXPORT int viewer( simlab addr ) {
 		else if( addr.type == -64 ) t_viewer<c_simlab<long long> &>( *(c_simlab<long long>*)addr.buffer, addr.length );
 		else if( addr.type == -66 ) t_viewer<c_simlab<double> &>( *(c_simlab<double>*)addr.buffer, addr.length );
 	}
-
-	c_simlab<int> & s = *(c_simlab<int>*)data.buffer;
-
-	printf("oki %d %d\n", s[0], s[1]);
-
 	return 1;
 }
 

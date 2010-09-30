@@ -3730,8 +3730,33 @@ JNIEXPORT int idx() {
 	return 0;
 }
 
+JNIEXPORT long long getPseudoUint( void* p, int k ) {
+	c_simlab<unsigned int>	& c = *(c_simlab<unsigned int>*)p;
+	return c[k];
+}
+
+JNIEXPORT long long getPseudoUintr( void* p, int k ) {
+	c_simlab<unsigned int&>	& c = *(c_simlab<unsigned int&>*)p;
+	return (long long)c[k];
+}
+
 JNIEXPORT int getPseudoInt( void* p, int k ) {
 	c_simlab<int>	& c = *(c_simlab<int>*)p;
+	return c[k];
+}
+
+JNIEXPORT int getPseudoIntr( void* p, int k ) {
+	c_simlab<int&>	& c = *(c_simlab<int&>*)p;
+	return c[k];
+}
+
+JNIEXPORT int getPseudoDouble( void* p, int k ) {
+	c_simlab<double>	& c = *(c_simlab<double>*)p;
+	return c[k];
+}
+
+JNIEXPORT int getPseudoDoubler( void* p, int k ) {
+	c_simlab<double&>	& c = *(c_simlab<double&>*)p;
 	return c[k];
 }
 
