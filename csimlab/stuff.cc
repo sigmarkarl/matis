@@ -2627,20 +2627,20 @@ JNIEXPORT int garbage() {
 	return current;
 }
 
-JNIEXPORT int view( simlab lstart, simlab lsize, simlab ltype ) {
+JNIEXPORT int view( simlab lstart, simlab lsize ) { //, simlab ltype ) {
 	int start = lstart.buffer;
-	int typ = ltype.buffer;
+	//int typ = ltype.buffer;
 	int size = lsize.buffer;
-	if( typ == 0 ) {
-		typ = data.type;
+	//if( typ == 0 ) {
+		//typ = data.type;
 		if( size == 0 ) {
 			size = data.length-start;
 		}
-	}
+	//}
 
-	data.type = typ;
+	data.type = data.type;//typ;
 	data.length = size;
-	data.buffer = data.buffer+bytelength(typ,start);
+	data.buffer = data.buffer+bytelength(data.type,start);
 
 	return current;
 }
@@ -3676,13 +3676,19 @@ JNIEXPORT int matrix( int type, int columns, int rows ) {
 }
 
 JNIEXPORT int intersect( simlab inter ) {
+	printf("ja %d %d\n", (int)data.type, (int)inter.type);
 	if( data.type == 66 ) {
 		if( inter.type == 66 ) {
 			t_intersect( (double*)data.buffer, data.length, (double*)inter.buffer, inter.length );
 		}
+	} else if( data.type == 8 || data.type == 9 ) {
+		if( inter.type == 8 || inter.type == 9 ) {
+			printf("ja\n");
+			t_intersect( (unsigned char*)data.buffer, data.length, (unsigned char*)inter.buffer, inter.length );
+		}
 	}
 
-	return current;
+	return 1;
 }
 
 JNIEXPORT int intersecindex( simlab* intsct ) {
@@ -4669,7 +4675,8 @@ JNIEXPORT int trans( simlab cl, simlab rl ) {
 		else if( data.type == 32 ) t_trans<int*,int>( (int*)data.buffer, data.length, c, r );
 		else if( data.type == 24 ) t_transmem( (char*)data.buffer, data.length, c, r, 3 );
 		else if( data.type == 16 ) t_trans<short*,short>( (short*)data.buffer, data.length, c, r );
-		else if( data.type == 8 ) t_trans<char*,char>( (char*)data.buffer, data.length, c, r );
+		else if( data.type == 9 ) t_trans<char*,char>( (char*)data.buffer, data.length, c, r );
+		else if( data.type == 8 ) t_trans<unsigned char*,unsigned char>( (unsigned char*)data.buffer, data.length, c, r );
 		else if( data.type > 96 ) t_transmem( (char*)data.buffer, data.length, c, r, data.type/8 );
 		else if( data.type == 1 ) t_transbit( (unsigned char*)data.buffer, data.type, data.length, c, r );
 		else if( data.type == 2 ) t_transbits<unsigned char>( *(unsigned char**)&data.buffer, data.length, data.type, 1, c, r );
@@ -5437,10 +5444,18 @@ JNIEXPORT int fibo() {
 	return k;
 }*/
 
-JNIEXPORT int find( simlab* what ) {
-	simlab* data = (simlab*)current;
-	if( data->type == 66 ) {
-//		if( what->type == 66 ) t_wrap( t_find(
+JNIEXPORT int find_old( simlab what ) {
+	if( data.type == 66 ) {
+		if( what.type == 66 ) {
+			//t_wrap( t_find(
+		} else if( what.type == 8 ) {
+			//;
+		}
+	} else if( data.type == 8 ) {
+		if( what.type == 66 ) ;//t_wrap( t_find(
+		else if( what.type == 8 ) {
+
+		}
 	}
 
 	return current;
