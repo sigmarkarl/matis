@@ -1,7 +1,11 @@
 package org.simmi;
 
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.RenderingHints;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -58,6 +62,7 @@ import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
@@ -204,16 +209,18 @@ public class Simlab implements ScriptEngineFactory {
 
 	public native int simmi( simlab.ByValue s );
 
+	public native int intersect( final simlab.ByValue s );
 	public native int idx();
-
 	public native int indexer();
-
+	public native int find( final simlab.ByValue s );
+	
 	public native int viewer(simlab.ByValue s);
 
 	public static long BOOLEN = 1;
 	public static long DUOLEN = 2;
 	public static long QUADLEN = 4;
-	public static long BYTELEN = 8;
+	public static long UBYTELEN = 8;
+	public static long BYTELEN = 9;
 	public static long USHORTLEN = 16;
 	public static long SHORTLEN = 17;
 	public static long UINTLEN = 32;
@@ -312,7 +319,19 @@ public class Simlab implements ScriptEngineFactory {
 
 	Object obj = null;
 
-	public void create(final simlab.ByValue sl) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
+	public int view( final simlab.ByValue lstart, final simlab.ByValue lsize ) {
+		long start = lstart.buffer;
+		long size = lsize.buffer;
+		if( size == 0 ) {
+			size = data.length-start;
+		}
+		data.length = size;
+		data.buffer = data.buffer+bytelength(data.type,start);
+
+		return 1;
+	}
+	
+	public int create(final simlab.ByValue sl) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
 		String className = sl.toString();
 		Class theclass = Class.forName(className);
 		obj = theclass.newInstance();
@@ -321,9 +340,11 @@ public class Simlab implements ScriptEngineFactory {
 		;
 		data.type = Byte.MIN_VALUE;
 		objects.add(obj);
+		
+		return 1;
 	}
 
-	public void call(final simlab.ByValue methn, final simlab.ByValue... sl) throws SecurityException, NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+	public int call(final simlab.ByValue methn, final simlab.ByValue... sl) throws SecurityException, NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
 		if (data.type == Byte.MIN_VALUE) {
 			String methodName = methn.toString();
 			List<Class> lClass = new ArrayList<Class>();
@@ -344,6 +365,8 @@ public class Simlab implements ScriptEngineFactory {
 			Method meth = obj.getClass().getMethod(methodName, lClass.toArray(new Class[0]));
 			meth.invoke(obj, lObj.toArray());
 		}
+		
+		return 1;
 	}
 
 	public int zero() {
@@ -565,7 +588,7 @@ public class Simlab implements ScriptEngineFactory {
 		}
 	}
 
-	public void image(final simlab.ByValue sl, final simlab.ByValue ww) {
+	public void image(final simlab.ByValue sl, final simlab.ByValue ww, final simlab.ByValue timer, final simlab.ByValue time) {
 		final String name = sl.getPointer().getString(0);
 		final long w = ww.buffer;
 		final long t = data.length;
@@ -584,13 +607,30 @@ public class Simlab implements ScriptEngineFactory {
 			public void run() {
 				JFrame frame = new JFrame(name);
 				frame.setSize(400, 300);
-				SimComp c = new SimComp(name, bi, ptr, (int) w, (int) h);
+				final SimComp c = new SimComp(name, bi, ptr, (int) w, (int) h);
 				frame.add(c);
 				// datalib.put(name, current);
 				compmap.put(data.buffer, c);
 
 				frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+				
+				Timer	tmr = new Timer((int)time.buffer, new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						try {
+							Simlab.this.run( timer );
+						} catch (IllegalArgumentException e1) {
+							e1.printStackTrace();
+						} catch (IllegalAccessException e1) {
+							e1.printStackTrace();
+						} catch (InvocationTargetException e1) {
+							e1.printStackTrace();
+						}
+						c.reload();
+					}
+				});
 				frame.setVisible(true);
+				tmr.start();
 			}
 		});
 	}
@@ -989,6 +1029,17 @@ public class Simlab implements ScriptEngineFactory {
 					}
 					System.out.println(bb.getInt(k * bl));
 				}
+			} else if (data.type == UBYTELEN || data.type == BYTELEN) {
+				if( chunk == 0 ) {
+					System.out.println( new String(bb.toString()) );
+				} else {
+					byte[] bchunk = new byte[(int)chunk];
+					for (int i = 0; i < data.length; i += chunk) {
+						//int k = i;
+						bb.get( bchunk );
+						System.out.println( new String(bchunk) );
+					}
+				}
 			}
 		} else {
 			if (data.type == -INTLEN) {
@@ -1319,6 +1370,8 @@ public class Simlab implements ScriptEngineFactory {
 						m.invoke(Simlab.this, olist.get(0), olist.get(1));
 					} else if (olist.size() == 3) {
 						m.invoke(Simlab.this, olist.get(0), olist.get(1), olist.get(2));
+					} else if (olist.size() == 4) {
+						m.invoke(Simlab.this, olist.get(0), olist.get(1), olist.get(2), olist.get(3));
 					}
 					if (nv)
 						data = getdata();
@@ -1750,6 +1803,8 @@ public class Simlab implements ScriptEngineFactory {
 
 		public void paintComponent(Graphics g) {
 			super.paintComponent(g);
+			Graphics2D g2 = (Graphics2D)g;
+			g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 			g.drawImage(bi, 0, 0, this.getWidth(), this.getHeight(), this);
 		}
 
