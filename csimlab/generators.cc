@@ -18,11 +18,10 @@ public:
 	c_viewer( T b, K a, int l ) : buf(b), map(a), len(l) {};
 	virtual L operator[](int i) {
 		int ind = (int)buf[i];
-		/*if( ind >= 768*768 or ind < 0 ) {
-			printf("simmi\n");
-		} else if(i==0) {
-			printf("neisko\n");
-		}*/
+		if( ind >= 768*768 or ind < 0 ) {
+			printf("simmi %d\n", ind);
+			return map[0];
+		}
 		return map[ ind ];
 	};
 	T	buf;

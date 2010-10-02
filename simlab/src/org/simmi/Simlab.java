@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -65,6 +66,8 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+
+import org.simmi.Simlab.simlab.ByValue;
 
 import com.sun.jna.Function;
 import com.sun.jna.Native;
@@ -276,16 +279,30 @@ public class Simlab implements ScriptEngineFactory {
 			return new simlab.ByValue(length, type, buffer);
 		}
 
+		private Pointer p = null;
 		public Pointer getPointer() {
-			return new Pointer(buffer);
+			if( p == null || Pointer.nativeValue(p) != buffer ) {
+				p = new Pointer(buffer);
+				
+				if( (type == 8 || type == 9) && buffer != 0 && length > 0 ) {
+					s = p.getString(0);
+				} else s = buffer + " " + type + " " + length;
+			}
+			
+			return p;
 		}
 
+		private String s = null;
 		public String toString() {
-			if( (type == 8 || type == 9) && buffer != 0 && length > 0 ) {
+			getPointer();
+			//if( s == null || s.equals(anObject) ) {
+			/*if( (type == 8 || type == 9) && buffer != 0 && length > 0 ) {
 				return getPointer().getString(0);
 			}
 			
-			return buffer + " " + type + " " + length;
+			return buffer + " " + type + " " + length;*/
+			
+			return s;
 		}
 
 		/*
@@ -630,6 +647,7 @@ public class Simlab implements ScriptEngineFactory {
 					}
 				});
 				frame.setVisible(true);
+				//tmr.set
 				tmr.start();
 			}
 		});
@@ -671,6 +689,7 @@ public class Simlab implements ScriptEngineFactory {
 					ret = (Integer) m.invoke(Simlab.this);
 				else if (len == 1) {
 					simlab.ByValue sb = slist.get(i + 1);
+					if( m.getName().contains("fetch") ) System.err.println( "buuh " + sb.toString() + "  " + Pointer.nativeValue(sb.getPointer()) + "  " + sb.buffer + "  " + runner.length + "  " + slist.size() );
 					Object o = m.invoke(Simlab.this, sb);
 					ret = (Integer)o;
 				} else if (len == 2)
@@ -678,8 +697,9 @@ public class Simlab implements ScriptEngineFactory {
 				else if (len == 3)
 					ret = (Integer) m.invoke(Simlab.this, slist.get(i + 1), slist.get(i + 2), slist.get(i + 3));
 				else if (len == 4)
-					ret = (Integer) m.invoke(Simlab.this);
+					ret = (Integer) m.invoke(Simlab.this, slist.get(i + 1), slist.get(i + 2), slist.get(i + 3), slist.get(i + 4));
 				i += ret;
+				
 				if( nat ) data = getdata();
 				i++;
 			}
@@ -826,6 +846,8 @@ public class Simlab implements ScriptEngineFactory {
 			String name = ps.toString();
 			if (datalib.containsKey(name)) {
 				data = datalib.get(name);
+			} else {
+				System.err.println(name + "not found!!");
 			}
 		}
 		
@@ -998,6 +1020,12 @@ public class Simlab implements ScriptEngineFactory {
 	public int print(simlab.ByValue sl) {
 		long chunk = sl.buffer;
 
+		//if( data.type != 66 ) {
+		//	System.err.println(data.buffer + "  " + data.type + "  " + data.length );
+		System.err.println(data.toString());
+		//	return 1;
+		//}
+		
 		Pointer p = data.getPointer();
 		if (data.type >= 0) {
 			int bl = (int) (data.type / 8);
@@ -1030,7 +1058,9 @@ public class Simlab implements ScriptEngineFactory {
 					System.out.println(bb.getInt(k * bl));
 				}
 			} else if (data.type == UBYTELEN || data.type == BYTELEN) {
-				if( chunk == 0 ) {
+				System.err.println( "never asked for " + data.toString() + "  " + data.buffer);
+				System.err.println(datalib.get("cview").buffer);
+				/*if( chunk == 0 ) {
 					System.out.println( new String(bb.toString()) );
 				} else {
 					byte[] bchunk = new byte[(int)chunk];
@@ -1039,7 +1069,7 @@ public class Simlab implements ScriptEngineFactory {
 						bb.get( bchunk );
 						System.out.println( new String(bchunk) );
 					}
-				}
+				}*/
 			}
 		} else {
 			if (data.type == -INTLEN) {
@@ -1110,6 +1140,7 @@ public class Simlab implements ScriptEngineFactory {
 			if (str.startsWith("\"")) {
 				// clist.add( str.getClass() );
 				String val = str.substring(1, str.length() - 1);
+				//System.err.println("eehehe " + val);
 
 				byte[] bytes = Native.toByteArray(val);
 				// Pointer ptr = nptr.getPointer( tempbuffer.position() );
@@ -1478,6 +1509,19 @@ public class Simlab implements ScriptEngineFactory {
 
 		return 0;
 	}
+	
+	public int printname() {
+		for( Entry<String,ByValue> e : datalib.entrySet() ) {
+			System.err.println( e + "  " + data.buffer + " " + data.type );
+			if( e.getValue() != null && e.getValue().equals(data) ) {
+				System.err.println("mu2");
+				System.out.println( e.getKey() );
+				return 0;
+			}
+		}
+		System.err.println("mu");
+		return 0;
+	}
 
 	public int printlen() {
 		System.out.println(data.length);
@@ -1639,7 +1683,7 @@ public class Simlab implements ScriptEngineFactory {
 		return 1;
 	}
 
-	ByteBuffer tempbuffer = ByteBuffer.allocateDirect(256);
+	ByteBuffer tempbuffer = ByteBuffer.allocateDirect(8192);
 
 	// Pointer ptr = Native.getDirectBufferPointer( tempbuffer );
 	public int parse2(simlab.ByValue sl) throws IOException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, SecurityException, NoSuchMethodException {
