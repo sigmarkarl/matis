@@ -114,7 +114,7 @@ public class Simlab implements ScriptEngineFactory {
 				} else {
 					System.err.println("null");
 				}
-				// Native.re
+				//Native.re
 			}
 		}
 		Native.register("csimlab");
@@ -176,7 +176,7 @@ public class Simlab implements ScriptEngineFactory {
 
 	public native int mod(simlab.ByValue val);
 
-	public native int set(simlab.ByValue val);
+	public synchronized native int set(simlab.ByValue val);
 
 	public native int set(simlab.ByValue val, simlab.ByValue map);
 
@@ -388,8 +388,7 @@ public class Simlab implements ScriptEngineFactory {
 
 	public int zero() {
 		if (data.type > 0) {
-			Pointer p = new Pointer(data.buffer);
-			ByteBuffer bb = p.getByteBuffer(0, data.getByteLength());
+			ByteBuffer bb = data.getPointer().getByteBuffer(0, data.getByteLength());
 			int i = 0;
 			for (; i < bb.limit(); i += 4) {
 				bb.putInt(0);
@@ -606,7 +605,7 @@ public class Simlab implements ScriptEngineFactory {
 	}
 
 	public void image(final simlab.ByValue sl, final simlab.ByValue ww, final simlab.ByValue timer, final simlab.ByValue time) {
-		final String name = sl.getPointer().getString(0);
+		final String name = sl.toString();
 		final long w = ww.buffer;
 		final long t = data.length;
 		final long h = (t / w);
@@ -1540,8 +1539,7 @@ public class Simlab implements ScriptEngineFactory {
 	public int rand() {
 		Random r = new Random();
 		if (data.type > 0) {
-			Pointer p = new Pointer(data.buffer);
-			ByteBuffer bb = p.getByteBuffer(0, data.getByteLength());
+			ByteBuffer bb = data.getPointer().getByteBuffer(0, data.getByteLength());
 
 			if (data.type == 66) {
 				DoubleBuffer db = bb.asDoubleBuffer();
@@ -1625,8 +1623,8 @@ public class Simlab implements ScriptEngineFactory {
 	}
 
 	public int interprete(final simlab.ByValue sl) throws SecurityException, NoSuchMethodException {
-		Pointer lbr = sl.getPointer();
-		String command = lbr.getString(0);
+		//Pointer lbr = sl.getPointer();
+		String command = sl.toString();
 
 		if (command.startsWith("\"")) {
 			String substr = command.substring(1, command.length() - 1);
@@ -1656,15 +1654,19 @@ public class Simlab implements ScriptEngineFactory {
 
 				List<simlab.ByValue> olist = parsePar(st);
 				Method m = getMethod(result, olist.size());
-				simlab.ByValue fnc;
-				if( Modifier.isNative( m.getModifiers() ) ) {
-					Function f = Function.getFunction("csimlab", result);
-					fnc = new simlab.ByValue(objects.size(), Byte.MIN_VALUE, f == null ? 0 : Pointer.nativeValue(f));
-				} else fnc = new simlab.ByValue(objects.size(), Byte.MIN_VALUE, 0);
-				objects.add(m);
-
-				slist.add(fnc);
-				slist.addAll(olist);
+				if( m != null ) {
+					simlab.ByValue fnc;
+					if( Modifier.isNative( m.getModifiers() ) ) {
+						Function f = Function.getFunction("csimlab", result);
+						fnc = new simlab.ByValue(objects.size(), Byte.MIN_VALUE, f == null ? 0 : Pointer.nativeValue(f));
+					} else fnc = new simlab.ByValue(objects.size(), Byte.MIN_VALUE, 0);
+					objects.add(m);
+	
+					slist.add(fnc);
+					slist.addAll(olist);
+				} else {
+					System.err.println("doh");
+				}
 			}
 
 			// char* result = strtok( command, " (_\n" );
@@ -1780,8 +1782,7 @@ public class Simlab implements ScriptEngineFactory {
 		BufferedReader oldbufferedreader = bufferedreader;
 
 		if (data.buffer != 0 && (data.type == 8 || data.type == 9)) {
-			Pointer p = new Pointer(data.buffer);
-			byte[] bb = p.getByteArray(0, data.getByteLength());
+			byte[] bb = data.getPointer().getByteArray(0, data.getByteLength());
 			reader = new InputStreamReader(new ByteArrayInputStream(bb));
 			bufferedreader = new BufferedReader(reader);
 		}
@@ -1817,7 +1818,7 @@ public class Simlab implements ScriptEngineFactory {
 		} else if (func[0].type == Byte.MIN_VALUE) {
 			m = (Method) objects.get((int) func[0].length);
 		} else {
-			final String name = new Pointer(func[0].buffer).getString(0);
+			final String name = func[0].toString();
 			m = Simlab.class.getMethod(name, simlab.ByValue.class);
 		}
 		parse(m);

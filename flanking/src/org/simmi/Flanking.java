@@ -33,6 +33,7 @@ import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
 
 public class Flanking extends JApplet {
@@ -220,25 +221,27 @@ public class Flanking extends JApplet {
 		}
 		
 		public boolean hasFlankingEnds( int left, int right, int min ) {
-			Repeat first = _repeats.get(0);
-			Repeat next = first;
-			int rlen = next.stop-next.start;
-			
-			int oold = first.start;
-			int nnew = 0;
-			
-			for( int i = 1; i < _repeats.size(); i++ ) {
-				next = _repeats.get(i);
-				nnew = next.start - first.stop;
-
+			if( _repeats.size() > 0 ) {
+				Repeat first = _repeats.get(0);
+				Repeat next = first;
+				int rlen = next.stop-next.start;
+				
+				int oold = first.start;
+				int nnew = 0;
+				
+				for( int i = 1; i < _repeats.size(); i++ ) {
+					next = _repeats.get(i);
+					nnew = next.start - first.stop;
+	
+					if( rlen >= min && oold > left && nnew > right ) return true;
+					oold = nnew;
+					first = next;
+					rlen = first.stop-first.start;
+				}
+				
+				nnew = length - next.stop;
 				if( rlen >= min && oold > left && nnew > right ) return true;
-				oold = nnew;
-				first = next;
-				rlen = first.stop-first.start;
 			}
-			
-			nnew = length - next.stop;
-			if( rlen >= min && oold > left && nnew > right ) return true;
 			
 			return false;
 		}
@@ -348,20 +351,25 @@ public class Flanking extends JApplet {
 	
 	int row = 0;
 	List<Sequence> loadFna( String urlstr ) throws IOException {
-		String[] split = urlstr.split("/");
-		String name = split[ split.length-1 ];
-		String home = System.getProperty("user.home");
-		File file = new File( home, name );
+		File file = new File( urlstr );
 		Reader reader;
-		//InputStream stream = null;
-		//ByteBuffer bb = null;
-		if( file.exists() ) {
-			reader = new FileReader( file );
-			//bb = ByteBuffer.allocate( (int)file.length() );		
+		if( !file.exists() ) {
+			String[] split = urlstr.split("/");
+			String name = split[ split.length-1 ];
+			String home = System.getProperty("user.home");
+			file = new File( home, name );
+			//InputStream stream = null;
+			//ByteBuffer bb = null;
+			if( file.exists() ) {
+				reader = new FileReader( file );
+				//bb = ByteBuffer.allocate( (int)file.length() );		
+			} else {
+				URL url = new URL( urlstr );
+				reader = new InputStreamReader( url.openStream() );
+				//bb = ByteBuffer.allocate( 1000000 );
+			}
 		} else {
-			URL url = new URL( urlstr );
-			reader = new InputStreamReader( url.openStream() );
-			//bb = ByteBuffer.allocate( 1000000 );
+			reader = new FileReader( file );
 		}
 		
 		int left = 20;
@@ -389,10 +397,14 @@ public class Flanking extends JApplet {
 		while( line != null ) {
 			if( line.startsWith(">") ) {
 				int seqlen = seq.length();
+				System.err.println("trying " + seqlen + "  " + minSeqLen );
 				if( seqlen > minSeqLen ) {
 					String[] spl = head.split("[ ]+");
 					Sequence seqobj = new Sequence( spl[0].substring(1), seqlen, seq, minRepeatNum );
-					if( seqobj.hasRepeats() && seqobj.hasFlankingEnds( left, right, minRepeatLen ) && seqobj.hasMinimumRepeatLength(minRepeatLen) /*&& seqobj.hasMinimumRepeatLength(minRepeatNum)*/ ) {
+					
+					boolean flankingEnds = seqobj.hasFlankingEnds( left, right, minRepeatLen );
+					System.err.println( flankingEnds );
+					if( seqobj.hasRepeats() && flankingEnds && seqobj.hasMinimumRepeatLength(minRepeatLen) /*&& seqobj.hasMinimumRepeatLength(minRepeatNum)*/ ) {
 						if( seqlen > max ) {
 							max = seqlen;
 							row = seqList.size();
@@ -424,16 +436,12 @@ public class Flanking extends JApplet {
 		try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (UnsupportedLookAndFeelException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -457,8 +465,11 @@ public class Flanking extends JApplet {
 
 			@Override
 			public int getColumnCount() {
-				int cc = cls.getDeclaredFields().length-2;
-				return cc;
+				Field[] ff = cls != null ? cls.getDeclaredFields() : null;
+				if( ff != null ) {
+					return Math.max( 0, ff.length-2 );
+				}
+				return 0;
 			}
 
 			@Override
@@ -485,13 +496,10 @@ public class Flanking extends JApplet {
 						}
 					}
 				} catch (IllegalArgumentException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				} catch (SecurityException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				} catch (IllegalAccessException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				return ret;
@@ -570,13 +578,15 @@ public class Flanking extends JApplet {
 		table.setModel( model );
 		scrollpane.setViewportView( table );
 		
-		TableColumn tc = table.getColumnModel().getColumn(2);
-		TableCellRenderer tcr = table.getDefaultRenderer(model.getColumnClass(2));
-		Component c = tcr.getTableCellRendererComponent(table,model.getValueAt(row,2),false,false,row,2);
-		
-		tc.setPreferredWidth( c.getPreferredSize().width );
-		
+		TableColumnModel cm = table.getColumnModel();
+		if( cm.getColumnCount() >= 3 ) {
+			TableColumn tc = table.getColumnModel().getColumn(2);
+			TableCellRenderer tcr = table.getDefaultRenderer(model.getColumnClass(2));
+			Component c = tcr.getTableCellRendererComponent(table,model.getValueAt(row,2),false,false,row,2);
+			tc.setPreferredWidth( c.getPreferredSize().width );
+		}
 		nums.len.setText( Integer.toString(seqList.size()) );
+		
 		this.repaint();
 	}
 	
@@ -585,16 +595,12 @@ public class Flanking extends JApplet {
 		try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (UnsupportedLookAndFeelException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		

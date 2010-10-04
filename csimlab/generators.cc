@@ -2,6 +2,10 @@
 
 //#include <jni.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+#include <map>
+#include <string>
 
 extern simlab data;
 
@@ -13,14 +17,30 @@ public:
 	int len;
 };
 
+extern std::map<std::string,simlab>							retlib;
 template<typename T, typename K, typename L> class c_viewer {
 public:
 	c_viewer( T b, K a, int l ) : buf(b), map(a), len(l) {};
 	virtual L operator[](int i) {
 		int ind = (int)buf[i];
 		if( ind >= 768*768 or ind < 0 ) {
-			printf("simmi %d\n", ind);
-			return map[0];
+			simlab & val = retlib["drw"];
+			printf("%d %d %lld %lld\n", ind, i, (long long)buf, (long long)val.buffer);
+			for( int k = 0; k < 768; k++ ) {
+				printf("%d %f ", k, (float)buf[k]);
+			}
+			printf("\n");
+
+			val = retlib["calc"];
+			for( int k = 0; k < 768; k++ ) {
+				printf("%d %f ", k, (float)((double*)val.buffer)[k]);
+			}
+			printf("\n");
+
+			exit(0);
+			long d = 0;
+			L v = (L)d;
+			return v;
 		}
 		return map[ ind ];
 	};
@@ -196,7 +216,7 @@ template<typename T> void t_viewer( T t, int len ) {
 		int min = len < data.length ? len : data.length;
 		int max = len > data.length ? len : data.length;
 		data.length = min == -1 ? max : min;
-	} else {
+	} /*else {
 		if( data.type == -32 ) {
 			//c_adder<T,c_simlab<int> &,int> *ca = new c_adder<T,c_simlab<int> &,int>( t, *(c_simlab<int>*)data.buffer );
 			data.buffer = (long)new c_viewer<T,c_simlab<unsigned int&> &,unsigned int&>( t, *(c_simlab<unsigned int&>*)data.buffer, len );
@@ -207,13 +227,13 @@ template<typename T> void t_viewer( T t, int len ) {
 		}
 		else if( data.type == -64 ) data.buffer = (long)new c_viewer<T,c_simlab<long long> &,long long>( t, *(c_simlab<long long>*)data.buffer, len );
 		else if( data.type == -66 ) data.buffer = (long)new c_viewer<T,c_simlab<double> &,double>( t, *(c_simlab<double>*)data.buffer, len );
-	}
+	}*/
 }
 
 JNIEXPORT int viewer( simlab addr ) {
 	if( addr.type > 0 ) {
 		if( addr.length == 0 ) {
-			if( addr.type == 32 ) {
+			/*if( addr.type == 32 ) {
 				c_const<int> cbuf( *(unsigned int*)&addr.buffer );
 				t_viewer<c_simlab<unsigned int> &>( (c_simlab<unsigned int> &)cbuf, 0 );
 			} else if( addr.type == 33 ) {
@@ -225,7 +245,7 @@ JNIEXPORT int viewer( simlab addr ) {
 			} else if( addr.type == 34 ) {
 				c_const<float> cbuf( *(float*)&addr.buffer );
 				t_viewer<c_simlab<float> &>( (c_simlab<float> &)cbuf, 0 );
-			}
+			}*/
 		} else {
 			if( addr.type == 32 ) t_viewer<unsigned int*>( (unsigned int*)addr.buffer, addr.length );
 			else if( addr.type == 33 ) t_viewer<int*>( (int*)addr.buffer, addr.length );
@@ -234,13 +254,13 @@ JNIEXPORT int viewer( simlab addr ) {
 				t_viewer<double*>( (double*)addr.buffer, addr.length );
 			}
 		}
-	} else {
+	} /*else {
 		if( addr.type == -32 ) t_viewer<c_simlab<unsigned int> &>( *(c_simlab<unsigned int>*)addr.buffer, addr.length );
 		else if( addr.type == -33 ) t_viewer<c_simlab<int> &>( *(c_simlab<int>*)addr.buffer, addr.length );
 		else if( addr.type == -34 ) t_viewer<c_simlab<float> &>( *(c_simlab<float>*)addr.buffer, addr.length );
 		else if( addr.type == -64 ) t_viewer<c_simlab<long long> &>( *(c_simlab<long long>*)addr.buffer, addr.length );
 		else if( addr.type == -66 ) t_viewer<c_simlab<double> &>( *(c_simlab<double>*)addr.buffer, addr.length );
-	}
+	}*/
 	return 1;
 }
 

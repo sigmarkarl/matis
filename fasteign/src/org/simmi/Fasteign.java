@@ -1,21 +1,26 @@
 package org.simmi;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Desktop;
-import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -42,10 +47,12 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.event.RowSorterEvent;
 import javax.swing.event.RowSorterListener;
 import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableColumnModelListener;
+import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
@@ -57,12 +64,15 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class Fasteign extends JApplet {
-	MySorter	currentSorter;
-	Image		xlimg;
-	JTable		medtable;
-	
-	static Map<String,Integer>	mmap = new HashMap<String,Integer>();
-	
+	MySorter currentSorter;
+	Image xlimg;
+	JTable medtable;
+	JTable medheadertable;
+	boolean sel = false;
+	boolean msel = false;
+
+	static Map<String, Integer> mmap = new HashMap<String, Integer>();
+
 	static {
 		mmap.put("Janúar", 1);
 		mmap.put("Febrúar", 2);
@@ -76,7 +86,7 @@ public class Fasteign extends JApplet {
 		mmap.put("Október", 10);
 		mmap.put("Nóvember", 11);
 		mmap.put("Desember", 12);
-		
+
 		mmap.put("janúar", 1);
 		mmap.put("febrúar", 2);
 		mmap.put("mars", 3);
@@ -90,7 +100,7 @@ public class Fasteign extends JApplet {
 		mmap.put("nóvember", 11);
 		mmap.put("desember", 12);
 	}
-	
+
 	class Ibud {
 		String nafn;
 		int verd;
@@ -101,12 +111,12 @@ public class Fasteign extends JApplet {
 		int herb;
 		Date dat;
 		String url;
-		
-		public Ibud( String nafn ) {
+
+		public Ibud(String nafn) {
 			this.nafn = nafn;
 		}
-		
-		public Ibud( String nafn, int verd, int fastm, int brunm, String teg, int ferm, int herb, String dat, String url ) throws ParseException {
+
+		public Ibud(String nafn, int verd, int fastm, int brunm, String teg, int ferm, int herb, String dat, String url) throws ParseException {
 			this.nafn = nafn;
 			this.verd = verd;
 			this.fastm = fastm;
@@ -114,150 +124,163 @@ public class Fasteign extends JApplet {
 			this.teg = teg;
 			this.ferm = ferm;
 			this.herb = herb;
-			this.dat = DateFormat.getDateInstance().parse( dat );
+			this.dat = DateFormat.getDateInstance().parse(dat);
 		}
-		
-		public void set( int i, Object obj ) {
+
+		public void set(int i, Object obj) {
 			try {
-				if( obj instanceof String ) {
+				if (obj instanceof String) {
 					String val = obj.toString();
 					val = val.replaceAll("\\.", "");
-					if( i == 0 ) verd = Integer.parseInt(val);
-					else if( i == 1 ) fastm = Integer.parseInt(val);
-					else if( i == 2 ) brunm = Integer.parseInt(val);
-					else if( i == 3 ) teg = val;
-					else if( i == 4 ) ferm = Integer.parseInt(val);
-					else if( i == 5 ) herb = Integer.parseInt(val);
-					else if( i == 6 ) {
+					if (i == 0)
+						verd = Integer.parseInt(val);
+					else if (i == 1)
+						fastm = Integer.parseInt(val);
+					else if (i == 2)
+						brunm = Integer.parseInt(val);
+					else if (i == 3)
+						teg = val;
+					else if (i == 4)
+						ferm = Integer.parseInt(val);
+					else if (i == 5)
+						herb = Integer.parseInt(val);
+					else if (i == 6) {
 						String[] split = val.split(" ");
-						if( split.length >= 3 && mmap.containsKey(split[1]) ) {
-							int year = Integer.parseInt( split[2] );
-							int month = mmap.get( split[1] );
-							int day = Integer.parseInt( split[0] );
+						if (split.length >= 3 && mmap.containsKey(split[1])) {
+							int year = Integer.parseInt(split[2]);
+							int month = mmap.get(split[1]);
+							int day = Integer.parseInt(split[0]);
 							Calendar cal = Calendar.getInstance();
-							cal.set(year, month-1, day);
+							cal.set(year, month - 1, day);
 							dat = cal.getTime();
 						}
-						
+
 					}
-				} //else dat = (Date)obj;
-			} catch( Exception e ) {
+				} // else dat = (Date)obj;
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
-		
+
+		public String getUrlString() {
+			return url;
+		}
+
 		public String toString() {
 			return nafn + "\t" + verd + "\t" + fastm + "\t" + brunm + "\t" + teg + "\t" + ferm + "\t" + herb + "\t" + dat;
 		}
 	}
-	
-	public boolean stuff( String urlstr ) throws IOException, InterruptedException {
-		URL url = new URL( urlstr );
+
+	public boolean stuff(String urlstr) throws IOException, InterruptedException {
+		URL url = new URL(urlstr);
 		InputStream stream = url.openStream();
-		
-		String str = "";		
-		byte[]	bb = new byte[1024];
-		int r = stream.read( bb );
-		while( r > 0 ) {
-			str += new String( bb, 0, r );
-			r = stream.read( bb );
+
+		String str = "";
+		byte[] bb = new byte[1024];
+		int r = stream.read(bb);
+		while (r > 0) {
+			str += new String(bb, 0, r);
+			r = stream.read(bb);
 		}
-		
+
 		stream.close();
-		
-		String[] buds = {"estate-verd","estate-fasteignamat","estate-brunabotamat","estate-teg_eign","estate-fermetrar","estate-fjoldi_herb","estate-sent_dags"};
-		
+
+		String[] buds = { "estate-verd", "estate-fasteignamat", "estate-brunabotamat", "estate-teg_eign", "estate-fermetrar", "estate-fjoldi_herb", "estate-sent_dags" };
+
 		int count = 0;
-		
+
 		String[] vals = str.split("fast-nidurstada clearfix");
 		System.err.println(vals.length);
 		String h2 = "<h2 style=\"margin-bottom: 0.91em; font-size:1.5em;\">";
-		for( String val : vals ) {
+		for (String val : vals) {
 			int ind = val.indexOf("<a href=\"");
-			int stop = val.indexOf("\"", ind+10);
-			
-			String sub = val.substring(ind+9, stop);
-			if( sub.contains("/mm/fasteignir") ) {
-				url = new URL( "http://www.mbl.is"+sub );
+			int stop = val.indexOf("\"", ind + 10);
+
+			String sub = val.substring(ind + 9, stop);
+			if (sub.contains("/mm/fasteignir")) {
+				String suburlstr = "http://www.mbl.is" + sub;
+				url = new URL(suburlstr);
 				stream = url.openStream();
-				
-				str = "";		
-				r = stream.read( bb );
-				while( r > 0 ) {
-					str += new String( bb, 0, r, "ISO-8859-1" );
-					r = stream.read( bb );
+
+				str = "";
+				r = stream.read(bb);
+				while (r > 0) {
+					str += new String(bb, 0, r, "ISO-8859-1");
+					r = stream.read(bb);
 				}
 				stream.close();
-				
+
 				ind = str.indexOf(h2);
-				stop = str.indexOf("</h2>",ind);
-				String ibud = str.substring( ind+h2.length(), stop ).trim();
-				Ibud ib = new Ibud( ibud );
-				iblist.add( ib );
+				stop = str.indexOf("</h2>", ind);
+				String ibud = str.substring(ind + h2.length(), stop).trim();
+				Ibud ib = new Ibud(ibud);
+				ib.url = suburlstr;
+				iblist.add(ib);
 				count++;
 				int i = 0;
-				for( String bud : buds ) {
+				for (String bud : buds) {
 					ind = str.indexOf(bud);
 					int start = str.indexOf("fst-rvalue\">", ind);
 					stop = str.indexOf("</td>", start);
-					String sval = str.substring(start+12, stop).trim();
-					
-					ib.set( i++, sval );
+					String sval = str.substring(start + 12, stop).trim();
+
+					ib.set(i++, sval);
 				}
 			}
-			
+
 			Thread.sleep(200);
 		}
-		
+
 		return count == 25;
 	}
-	
-	public void calc( String urlstr ) {
+
+	public void calc(String urlstr) {
 		try {
-			//String base = "http://www.mbl.is/mm/fasteignir/leit.html?simmi;svaedi=101_101&tegund=fjolbyli&tegund=einbyli&tegund=haedir&fermetrar_fra=70&fermetrar_til=150&herbergi_fra=&herbergi_til=&verd_fra=10&verd_til=40&gata=&lysing=";
-			//String base = "http://www.mbl.is/mm/fasteignir/leit.html?simmi;svaedi=200_200&svaedi=201_201&svaedi=202_202&svaedi=203_203&tegund=fjolbyli&fermetrar_fra=70&fermetrar_til=150&herbergi_fra=&herbergi_til=&verd_fra=10&verd_til=40&gata=&lysing=";
-			//String base = "http://www.mbl.is/mm/fasteignir/leit.html?simmi;svaedi=108_108&tegund=fjolbyli&fermetrar_fra=70&fermetrar_til=150&herbergi_fra=&herbergi_til=&verd_fra=10&verd_til=40&gata=&lysing=";
-			
+			// String base =
+			// "http://www.mbl.is/mm/fasteignir/leit.html?simmi;svaedi=101_101&tegund=fjolbyli&tegund=einbyli&tegund=haedir&fermetrar_fra=70&fermetrar_til=150&herbergi_fra=&herbergi_til=&verd_fra=10&verd_til=40&gata=&lysing=";
+			// String base =
+			// "http://www.mbl.is/mm/fasteignir/leit.html?simmi;svaedi=200_200&svaedi=201_201&svaedi=202_202&svaedi=203_203&tegund=fjolbyli&fermetrar_fra=70&fermetrar_til=150&herbergi_fra=&herbergi_til=&verd_fra=10&verd_til=40&gata=&lysing=";
+			// String base =
+			// "http://www.mbl.is/mm/fasteignir/leit.html?simmi;svaedi=108_108&tegund=fjolbyli&fermetrar_fra=70&fermetrar_til=150&herbergi_fra=&herbergi_til=&verd_fra=10&verd_til=40&gata=&lysing=";
+
 			int i = 0;
-			while( true ) {
-				if( !stuff( urlstr.replace("offset", "offset="+i) ) ) break;
+			while (true) {
+				if (!stuff(urlstr.replace("offset", "offset=" + i)))
+					break;
 				i += 25;
-				//break;
 			}
-			
-			for( Ibud ib : iblist ) {
-				System.err.println( ib );
+
+			for (Ibud ib : iblist) {
+				System.err.println(ib);
 			}
 		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
-	
-	public class MyFilter extends RowFilter<TableModel,Integer> {
-		String			filterText;
-		int				fInd = 0;
-		Set<String> 	cropped = new HashSet<String>();
-		TableModel		leftModel;
-		
-		public MyFilter( TableModel leftModel ) {
+
+	public class MyFilter extends RowFilter<TableModel, Integer> {
+		String filterText;
+		int fInd = 0;
+		Set<String> cropped = new HashSet<String>();
+		TableModel leftModel;
+
+		public MyFilter(TableModel leftModel) {
 			super();
 			this.leftModel = leftModel;
 		}
-		
-		public boolean include( javax.swing.RowFilter.Entry<? extends TableModel, ? extends Integer> entry ) {
-			String gval = (String)leftModel.getValueAt(entry.getIdentifier(), 0);
-			String val = fInd == 0 ? gval : (String)leftModel.getValueAt(entry.getIdentifier(), 1);
+
+		public boolean include(javax.swing.RowFilter.Entry<? extends TableModel, ? extends Integer> entry) {
+			String gval = (String) leftModel.getValueAt(entry.getIdentifier(), 0);
+			String val = fInd == 0 ? gval : (String) leftModel.getValueAt(entry.getIdentifier(), 1);
 			if (filterText != null) {
 				if (val != null) {
 					boolean b = val.matches(filterText);
-					//if( b ) System.err.println( val + "  " + filterText + "  " + b );
+					// if( b ) System.err.println( val + "  " + filterText +
+					// "  " + b );
 					return b;
 				}
 				return false;
@@ -269,43 +292,52 @@ public class Fasteign extends JApplet {
 			return true;
 		}
 	};
-	
+
 	public class MySorter extends TableRowSorter<TableModel> {
-		public MySorter( TableModel model ) {
-			super( model );
+		public MySorter(TableModel model) {
+			super(model);
 		}
-		
+
 		public int convertRowIndexToModel(int index) {
-			return currentSorter.convertRowIndexToModelSuper(index);
+			if (currentSorter != null) {
+				return currentSorter.convertRowIndexToModelSuper(index);
+			}
+			return index;
 		}
 
 		public int convertRowIndexToView(int index) {
-			return currentSorter.convertRowIndexToViewSuper(index);
+			if (currentSorter != null) {
+				return currentSorter.convertRowIndexToViewSuper(index);
+			}
+			return index;
 		}
-		
+
 		public int convertRowIndexToModelSuper(int index) {
-			return super.convertRowIndexToModel( index );
+			return super.convertRowIndexToModel(index);
 		}
 
 		public int convertRowIndexToViewSuper(int index) {
-			return super.convertRowIndexToView( index );
+			return super.convertRowIndexToView(index);
 		}
 
 		public void setRowFilter(MyFilter filter) {
-			super.setRowFilter( filter );
+			super.setRowFilter(filter);
 		}
 	}
-	
-	public void createModels( final JTable table, final JTable ptable ) {
+
+	public void createModels(final JTable table, final JTable ptable) {
 		TableModel model = new TableModel() {
 			@Override
-			public void addTableModelListener(TableModelListener l) {}
+			public void addTableModelListener(TableModelListener l) {
+			}
 
 			@Override
 			public Class<?> getColumnClass(int columnIndex) {
-				if( columnIndex == 0 ) return String.class;
-				else if( columnIndex == 3 ) return Date.class;
-				return Integer.class; 
+				if (columnIndex == 0)
+					return String.class;
+				else if (columnIndex == 3)
+					return Date.class;
+				return Integer.class;
 			}
 
 			@Override
@@ -315,7 +347,7 @@ public class Fasteign extends JApplet {
 
 			@Override
 			public String getColumnName(int columnIndex) {
-				switch( columnIndex ) {
+				switch (columnIndex) {
 				case 0:
 					return "Gata";
 				case 1:
@@ -336,8 +368,8 @@ public class Fasteign extends JApplet {
 
 			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
-				Ibud ib = iblist.get( rowIndex );
-				switch( columnIndex ) {
+				Ibud ib = iblist.get(rowIndex);
+				switch (columnIndex) {
 				case 0:
 					return ib.nafn;
 				case 1:
@@ -357,28 +389,31 @@ public class Fasteign extends JApplet {
 			}
 
 			@Override
-			public void removeTableModelListener(TableModelListener l) {}
+			public void removeTableModelListener(TableModelListener l) {
+			}
 
 			@Override
-			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {}
+			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+			}
 		};
-		table.setModel( model );
-		final MySorter	rowSorter = new MySorter( model );
-		table.setRowSorter( rowSorter );
-		
-		rowSorter.addRowSorterListener( new RowSorterListener() {
+		table.setModel(model);
+		final MySorter rowSorter = new MySorter(model);
+		table.setRowSorter(rowSorter);
+
+		rowSorter.addRowSorterListener(new RowSorterListener() {
 			@Override
 			public void sorterChanged(RowSorterEvent e) {
 				currentSorter = rowSorter;
 				ptable.repaint();
 			}
 		});
-		
+
 		currentSorter = rowSorter;
-		
-		TableModel	pmodel = new TableModel() {
+
+		TableModel pmodel = new TableModel() {
 			@Override
-			public void addTableModelListener(TableModelListener l) {}
+			public void addTableModelListener(TableModelListener l) {
+			}
 
 			@Override
 			public Class<?> getColumnClass(int columnIndex) {
@@ -392,21 +427,21 @@ public class Fasteign extends JApplet {
 
 			@Override
 			public String getColumnName(int columnIndex) {
-				switch( columnIndex ) {
-					case 0:
-						return "Verð";
-					case 1:
-						return "Fasteignamat";
-					case 2:
-						return "Brunabótamat";
-					case 3:
-						return "Fermetraverð";
-					case 4:
-						return "Fermetraverð fasteignamats";
-					case 5:
-						return "Verð/fasteignamat";
-					default:
-						return "";
+				switch (columnIndex) {
+				case 0:
+					return "Verð";
+				case 1:
+					return "Fasteignamat";
+				case 2:
+					return "Brunabótamat";
+				case 3:
+					return "Fermetraverð";
+				case 4:
+					return "Fermetraverð fasteignamats";
+				case 5:
+					return "Verð/fasteignamat";
+				default:
+					return "";
 				}
 			}
 
@@ -418,20 +453,20 @@ public class Fasteign extends JApplet {
 			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
 				Ibud ib = iblist.get(rowIndex);
-				if( columnIndex == 0 ) {
-					return (double)ib.verd;
-				} else if( columnIndex == 1 ) {
-					return (double)ib.fastm;
-				} else if( columnIndex == 2 ) {
-					return (double)ib.brunm;
-				} else if( columnIndex == 3 ) {
-					return (double)ib.verd/(double)ib.ferm;
-				} else if( columnIndex == 4 ) {
-					return (double)ib.fastm/(double)ib.ferm;
-				} else if( columnIndex == 5 ) {
-					return (double)ib.verd/(double)ib.fastm;
+				if (columnIndex == 0) {
+					return (double) ib.verd;
+				} else if (columnIndex == 1) {
+					return (double) ib.fastm;
+				} else if (columnIndex == 2) {
+					return (double) ib.brunm;
+				} else if (columnIndex == 3) {
+					return (double) ib.verd / (double) ib.ferm;
+				} else if (columnIndex == 4) {
+					return (double) ib.fastm / (double) ib.ferm;
+				} else if (columnIndex == 5) {
+					return (double) ib.verd / (double) ib.fastm;
 				}
-				
+
 				return null;
 			}
 
@@ -442,32 +477,30 @@ public class Fasteign extends JApplet {
 
 			@Override
 			public void removeTableModelListener(TableModelListener l) {
-				
+
 			}
 
 			@Override
 			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-				
+
 			}
 		};
-		ptable.setModel( pmodel );
-		final MySorter	prowSorter = new MySorter( pmodel );
-		ptable.setRowSorter( prowSorter );
+		ptable.setModel(pmodel);
+		final MySorter prowSorter = new MySorter(pmodel);
+		ptable.setRowSorter(prowSorter);
 
-		prowSorter.addRowSorterListener( new RowSorterListener() {
+		prowSorter.addRowSorterListener(new RowSorterListener() {
 			@Override
 			public void sorterChanged(RowSorterEvent e) {
 				currentSorter = prowSorter;
 				table.repaint();
 			}
 		});
-		
-		//medtable.tableChanged( new TableModelEvent( medtable.getModel() ) );
-		medtable.setModel( new TableModel() {
+
+		// medtable.tableChanged( new TableModelEvent( medtable.getModel() ) );
+		medtable.setModel(new TableModel() {
 			@Override
 			public void addTableModelListener(TableModelListener l) {
-				// TODO Auto-generated method stub
-				
 			}
 
 			@Override
@@ -492,81 +525,174 @@ public class Fasteign extends JApplet {
 
 			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
-				TableModel	pmodel = ptable.getModel();
-				if( pmodel != null ) {
-					double 	retval = 0.0;
-					int		r = ptable.getRowCount();
-					for( int i = 0; i < r; i++ ) {
-						double val = (Double)ptable.getValueAt( i, columnIndex );
-						retval += val;
+				TableModel pmodel = ptable.getModel();
+				if (pmodel != null) {
+					int[] rr = ptable.getSelectedRows();
+					if( rr.length > 1 ) {
+						int r = rr.length;
+						if( rowIndex == 0 ) {
+							double retval = 0.0;
+							for (int i = 0; i < r; i++) {
+								double val = (Double) ptable.getValueAt(rr[i], columnIndex);
+								if( val > 0 && val != Double.POSITIVE_INFINITY ) {
+									retval += val;
+								} else r--;
+							}
+							if( r > 0 ) return retval / r;
+						} else {
+							List<Double>	ld = new ArrayList<Double>();
+							for (int i = 0; i < r; i++) {
+								double d = (Double) ptable.getValueAt(rr[i], columnIndex);
+								if( d > 0 ) ld.add( d );
+							}
+							Collections.sort( ld );
+							
+							if( ld.size() % 2 == 0 ) {
+								return (ld.get( ld.size()/2-1 ) + ld.get( ld.size()/2 )) / 2;
+							} else {
+								return ld.get( ld.size()/2 );
+							}
+						}
+					} else {
+						int r = ptable.getRowCount();
+						if( rowIndex == 0 ) {
+							double retval = 0.0;
+							for (int i = 0; i < r; i++) {
+								double val = (Double) ptable.getValueAt(i, columnIndex);
+								if( val > 0 && val != Double.POSITIVE_INFINITY ) {
+									retval += val;
+								} else r--;
+							}
+							if( r > 0 ) return retval / r;
+						} else {
+							List<Double>	ld = new ArrayList<Double>();
+							for (int i = 0; i < r; i++) {
+								double d = (Double) ptable.getValueAt(i, columnIndex);
+								if( d > 0 ) ld.add( d );
+							}
+							Collections.sort( ld );
+							
+							if( ld.size() % 2 == 0 ) {
+								return (ld.get( ld.size()/2-1 ) + ld.get( ld.size()/2 )) / 2;
+							} else {
+								return ld.get( ld.size()/2 );
+							}
+						}
 					}
-					return retval/r;
 				}
-				
+
 				return -1.0;
 			}
 
 			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
-				// TODO Auto-generated method stub
 				return false;
 			}
 
 			@Override
 			public void removeTableModelListener(TableModelListener l) {
-				// TODO Auto-generated method stub
-				
 			}
 
 			@Override
 			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-				// TODO Auto-generated method stub
-				
+			}
+		});
+
+		medheadertable.setModel(new TableModel() {
+			@Override
+			public int getRowCount() {
+				return 2;
+			}
+
+			@Override
+			public int getColumnCount() {
+				return 1;
+			}
+
+			@Override
+			public String getColumnName(int columnIndex) {
+				return "Reiknað";
+			}
+
+			@Override
+			public Class<?> getColumnClass(int columnIndex) {
+				return String.class;
+			}
+
+			@Override
+			public boolean isCellEditable(int rowIndex, int columnIndex) {
+				return false;
+			}
+
+			@Override
+			public Object getValueAt(int rowIndex, int columnIndex) {
+				return rowIndex == 0 ? "Meðal" : "Miðgildi";
+			}
+
+			@Override
+			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+			}
+
+			@Override
+			public void addTableModelListener(TableModelListener l) {
+			}
+
+			@Override
+			public void removeTableModelListener(TableModelListener l) {
 			}
 		});
 	}
-	
+
 	public void excelExport() throws IOException {
 		File f = File.createTempFile("tmp", ".xlsx");
 		XSSFWorkbook wb = new XSSFWorkbook();
 		XSSFSheet sheet = wb.createSheet("Fasteignir");
 		int i = 0;
-		for( Ibud ib : iblist ) {
-			XSSFRow row = sheet.createRow( i++ );
+		for (Ibud ib : iblist) {
+			XSSFRow row = sheet.createRow(i++);
 			int c = 0;
 			XSSFCell cell = row.createCell(c++);
-			cell.setCellValue( ib.nafn );
+			cell.setCellValue(ib.nafn);
 			cell = row.createCell(c++);
-			cell.setCellValue( ib.verd );
+			cell.setCellValue(ib.verd);
 			cell = row.createCell(c++);
-			cell.setCellValue( ib.fastm );
+			cell.setCellValue(ib.fastm);
 			cell = row.createCell(c++);
-			cell.setCellValue( ib.brunm );
+			cell.setCellValue(ib.brunm);
 			cell = row.createCell(c++);
-			cell.setCellValue( ib.teg );
+			cell.setCellValue(ib.teg);
 			cell = row.createCell(c++);
-			cell.setCellValue( ib.ferm );
+			cell.setCellValue(ib.ferm);
 			cell = row.createCell(c++);
-			cell.setCellValue( ib.herb );
+			cell.setCellValue(ib.herb);
 			cell = row.createCell(c++);
-			cell.setCellValue( ib.dat );
+			cell.setCellValue(ib.dat);
 		}
-		wb.write( new FileOutputStream(f) );
-		Desktop.getDesktop().open( f );
+		wb.write(new FileOutputStream(f));
+		Desktop.getDesktop().open(f);
 	}
-	
+
 	public Fasteign() {
 		URL url = this.getClass().getResource("/xlsx.png");
 		try {
 			xlimg = ImageIO.read(url);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
-	
-	List<Ibud>	iblist = new ArrayList<Ibud>();
-	String		base = "http://www.mbl.is/mm/fasteignir/leit.html?offset;svaedi=&tegund=&fermetrar_fra=&fermetrar_til=&herbergi_fra=&herbergi_til=&verd_fra=5&verd_til=100&gata=&lysing=";
+
+	public void stuff(int i) throws IOException, URISyntaxException {
+		Ibud ib = iblist.get(i);
+		String uristr = ib.getUrlString();
+		if (uristr != null) {
+			URI uri = new URI(uristr);
+			Desktop.getDesktop().browse(uri);
+		}
+	}
+
+	List<Ibud> iblist = new ArrayList<Ibud>();
+	String base = "http://www.mbl.is/mm/fasteignir/leit.html?offset;svaedi=&tegund=&fermetrar_fra=&fermetrar_til=&herbergi_fra=&herbergi_til=&verd_fra=5&verd_til=100&gata=&lysing=";
+
 	public void init() {
 		try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
@@ -580,19 +706,22 @@ public class Fasteign extends JApplet {
 			e.printStackTrace();
 		}
 		
-		this.setLayout( new BorderLayout() );
-		
-		JComponent	topcomp = new JComponent() {
-			
+		this.setBackground( Color.white );
+		this.getContentPane().setBackground( Color.white );
+
+		this.setLayout(new BorderLayout());
+
+		JComponent topcomp = new JComponent() {
+
 		};
-		topcomp.setLayout( new FlowLayout() );
-		
-		JLabel 			title = new JLabel("Hvað á íbúðin að kosta?");
-		topcomp.add( title );
-		
-		JLabel 			loc = new JLabel("Veldu svæði:");
-		topcomp.add( loc );
-		final JComboBox		loccomb = new JComboBox();
+		topcomp.setLayout(new FlowLayout());
+
+		JLabel title = new JLabel("Hvað á íbúðin að kosta?");
+		topcomp.add(title);
+
+		JLabel loc = new JLabel("Veldu svæði:");
+		topcomp.add(loc);
+		final JComboBox loccomb = new JComboBox();
 		loccomb.addItem("101 Miðbær");
 		loccomb.addItem("103 Kringlan/Hvassaleiti");
 		loccomb.addItem("104 Vogar");
@@ -601,36 +730,36 @@ public class Fasteign extends JApplet {
 		loccomb.addItem("108 Austurbær");
 		loccomb.addItem("109 Bakkar/Seljahverfi");
 		loccomb.addItem("110 Árbær/Selás");
-		topcomp.add( loccomb );
-		
-		JLabel 			typ = new JLabel("Veldu tegund:");
-		topcomp.add( typ );
-		final JComboBox		typcomb = new JComboBox();
+		topcomp.add(loccomb);
+
+		JLabel typ = new JLabel("Veldu tegund:");
+		topcomp.add(typ);
+		final JComboBox typcomb = new JComboBox();
 		typcomb.addItem("Fjölbýli");
 		typcomb.addItem("Einbýli");
 		typcomb.addItem("Hæðir");
 		typcomb.addItem("Parhús/Raðhús");
-		topcomp.add( typcomb );
-		
-		JLabel 			big = new JLabel("Veldu stærð:");
-		topcomp.add( big );
-		final JTextField		bigfield = new JTextField("100");
-		topcomp.add( bigfield );
-		
-		JLabel 			bigdiff = new JLabel("+/-");
-		topcomp.add( bigdiff );
-		final JTextField		bigdifffield = new JTextField("30");
-		topcomp.add( bigdifffield );
-		
-		JComponent	botcomp = new JComponent() {
-			
+		topcomp.add(typcomb);
+
+		JLabel big = new JLabel("Veldu stærð:");
+		topcomp.add(big);
+		final JTextField bigfield = new JTextField("100");
+		topcomp.add(bigfield);
+
+		JLabel bigdiff = new JLabel("+/-");
+		topcomp.add(bigdiff);
+		final JTextField bigdifffield = new JTextField("30");
+		topcomp.add(bigdifffield);
+
+		JComponent botcomp = new JComponent() {
+
 		};
-		botcomp.setLayout( new FlowLayout() );
-		
+		botcomp.setLayout(new FlowLayout());
+
 		final JProgressBar pgbar = new JProgressBar();
-		botcomp.add( pgbar );
-		
-		JButton	excelbutton = new JButton( new AbstractAction() {
+		botcomp.add(pgbar);
+
+		JButton excelbutton = new JButton(new AbstractAction() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				try {
@@ -640,107 +769,382 @@ public class Fasteign extends JApplet {
 				}
 			}
 		});
-		excelbutton.setIcon( new ImageIcon(xlimg.getScaledInstance(24,24, Image.SCALE_SMOOTH)) );
-		botcomp.add( excelbutton );
+		excelbutton.setIcon(new ImageIcon(xlimg.getScaledInstance(24, 24, Image.SCALE_SMOOTH)));
+		botcomp.add(excelbutton);
+
+		final JTable table = new JTable() {			
+			public void setRowSelectionInterval(int r1, int r2) {
+				sel = false;
+				super.setRowSelectionInterval(r1, r2);
+			}
+
+			public void setColumnSelectionInterval(int c1, int c2) {
+				sel = false;
+				super.setColumnSelectionInterval(c1, c2);
+			}
+
+			public void addRowSelectionInterval(int r1, int r2) {
+				sel = false;
+				super.addRowSelectionInterval(r1, r2);
+			}
+
+			public void addColumnSelectionInterval(int c1, int c2) {
+				sel = false;
+				super.addColumnSelectionInterval(c1, c2);
+			}
+		};
 		
-		final JTable		table = new JTable();
-		final JTable		ptable = new JTable();
-		ptable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
+		final JTable ptable = new JTable() {
+			public void setRowSelectionInterval(int r1, int r2) {
+				sel = true;
+				super.setRowSelectionInterval(r1, r2);
+			}
+
+			public void setColumnSelectionInterval(int c1, int c2) {
+				sel = true;
+				super.setColumnSelectionInterval(c1, c2);
+			}
+
+			public void addRowSelectionInterval(int r1, int r2) {
+				sel = true;
+				super.addRowSelectionInterval(r1, r2);
+			}
+
+			public void addColumnSelectionInterval(int c1, int c2) {
+				sel = true;
+				super.addColumnSelectionInterval(c1, c2);
+			}
+		};
+
+		table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				boolean ss = sel;
+				sel = true;
+				if (ss) {
+					int[] rr = table.getSelectedRows();
+					if (rr != null && rr.length > 0) {
+						for (int r : rr) {
+							if (r == rr[0])
+								ptable.setRowSelectionInterval(r, r);
+							else
+								ptable.addRowSelectionInterval(r, r);
+							sel = true;
+						}
+					}
+				}
+			}
+		});
 		
-		JButton			button = new JButton( new AbstractAction("Leita") {
+		table.getColumnModel().getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				boolean ss = sel;
+				sel = true;
+				if (ss) {
+					int[] rr = table.getSelectedRows();
+					if (rr != null && rr.length > 0) {
+						for (int r : rr) {
+							if (r == rr[0])
+								ptable.setRowSelectionInterval(r, r);
+							else
+								ptable.addRowSelectionInterval(r, r);
+							sel = true;
+						}
+					}
+				}
+			}
+		});
+
+		ptable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				boolean ss = sel;
+				sel = false;
+				if (!ss) {
+					int[] rr = ptable.getSelectedRows();
+					if( rr.length > 1 ) medtable.tableChanged( new TableModelEvent( medtable.getModel() ) );
+					if (rr != null && rr.length > 0) {
+						for (int r : rr) {
+							if (r == rr[0])
+								table.setRowSelectionInterval(r, r);
+							else
+								table.addRowSelectionInterval(r, r);
+							sel = false;
+						}
+					}
+				}
+			}
+		});
+		
+		ptable.getColumnModel().getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				boolean ss = sel;
+				sel = false;
+				if (!ss) {
+					int[] rr = ptable.getSelectedRows();
+					if (rr != null && rr.length > 0) {
+						for (int r : rr) {
+							if (r == rr[0])
+								table.setRowSelectionInterval(r, r);
+							else
+								table.addRowSelectionInterval(r, r);
+							sel = false;
+						}
+					}
+				}
+			}
+		});
+		// ptable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
+
+		table.addMouseListener(new MouseAdapter() {
+			public void mousePressed(MouseEvent e) {
+				sel = true;
+				if (e.getClickCount() == 2) {
+					int i = table.convertRowIndexToModel(table.getSelectedRow());
+					try {
+						stuff(i);
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					} catch (URISyntaxException e1) {
+						e1.printStackTrace();
+					}
+				}
+			}
+		});
+
+		ptable.addMouseListener(new MouseAdapter() {
+			public void mousePressed(MouseEvent e) {
+				sel = false;
+				if (e.getClickCount() == 2) {
+					int i = ptable.convertRowIndexToModel(ptable.getSelectedRow());
+					try {
+						stuff(i);
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					} catch (URISyntaxException e1) {
+						e1.printStackTrace();
+					}
+				}
+			}
+		});
+		
+		ptable.getColumnModel().addColumnModelListener(new TableColumnModelListener() {
+			public void columnAdded(TableColumnModelEvent e) {}
+
+			public void columnMarginChanged(ChangeEvent e) {
+				Enumeration<TableColumn> tcs = ptable.getColumnModel().getColumns();
+				int i = 0;
+				while (tcs.hasMoreElements()) {
+					TableColumn tc = tcs.nextElement();
+					medtable.getColumnModel().getColumn(i++).setPreferredWidth(tc.getPreferredWidth());
+				}
+			}
+
+			public void columnMoved(TableColumnModelEvent e) {
+				medtable.moveColumn(e.getFromIndex(), e.getToIndex());
+			}
+
+			public void columnRemoved(TableColumnModelEvent e) {}
+
+			public void columnSelectionChanged(ListSelectionEvent e) {}
+		});
+
+		JButton button = new JButton(new AbstractAction("Leita") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				String loc = loccomb.getSelectedItem().toString();
 				String[] split = loc.split(" ");
 				String pnr = split[0];
-				String val = base.replace("svaedi=", "svaedi="+pnr+"_"+pnr);
+				String val = base.replace("svaedi=", "svaedi=" + pnr + "_" + pnr);
 				String teg = typcomb.getSelectedItem().toString().toLowerCase();
 				teg = teg.replace("æ", "ae");
 				teg = teg.replace("ö", "o");
 				teg = teg.replace("ý", "y");
-				val = val.replace("tegund=", "tegund="+teg);
+				val = val.replace("tegund=", "tegund=" + teg);
 				String diffstr = bigdifffield.getText();
-				int diff = Integer.parseInt( diffstr );
-				int ferm = Integer.parseInt( bigfield.getText() );
-				val = val.replace("fermetrar_fra=", "fermetrar_fra="+(ferm-diff));
-				val = val.replace("fermetrar_til=", "fermetrar_til="+(ferm+diff));
-				
+				int diff = Integer.parseInt(diffstr);
+				int ferm = Integer.parseInt(bigfield.getText());
+				val = val.replace("fermetrar_fra=", "fermetrar_fra=" + (ferm - diff));
+				val = val.replace("fermetrar_til=", "fermetrar_til=" + (ferm + diff));
+
 				final String tstr = val;
-				pgbar.setIndeterminate( true );
+				pgbar.setIndeterminate(true);
 				Thread t = new Thread() {
 					public void run() {
-						calc( tstr );
-						createModels( table, ptable );
-						pgbar.setIndeterminate( false );
+						calc(tstr);
+						createModels(table, ptable);
+						pgbar.setIndeterminate(false);
 					}
 				};
 				t.start();
 			}
 		});
-		topcomp.add( button );
-		
-		this.add( topcomp, BorderLayout.NORTH );
-		this.add( botcomp, BorderLayout.SOUTH );
-		
-		JSplitPane	splitpane = new JSplitPane();
-		JScrollPane	scrollpane = new JScrollPane();
-		JScrollPane	pricepane = new JScrollPane();
-		
-		scrollpane.setViewportView( table );
-		pricepane.setViewportView( ptable );
-		
-		ptable.getColumnModel().addColumnModelListener( new TableColumnModelListener() {
+		topcomp.add(button);
+
+		this.add(topcomp, BorderLayout.NORTH);
+		// this.add( botcomp, BorderLayout.SOUTH );
+
+		JSplitPane splitpane = new JSplitPane();
+		JScrollPane scrollpane = new JScrollPane();
+		JScrollPane pricepane = new JScrollPane();		
+		scrollpane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+
+		// scrollpane.setViewportView( table );
+		pricepane.setViewportView(ptable);
+		pricepane.setRowHeaderView(table);
+		scrollpane.setViewport(pricepane.getRowHeader());
+		pricepane.getViewport().setBackground( Color.white );
+		scrollpane.getViewport().setBackground( Color.white );
+
+		ptable.getColumnModel().addColumnModelListener(new TableColumnModelListener() {
 			@Override
-			public void columnSelectionChanged(ListSelectionEvent e) {}
-			
+			public void columnSelectionChanged(ListSelectionEvent e) {
+			}
+
 			@Override
-			public void columnRemoved(TableColumnModelEvent e) {}
-			
+			public void columnRemoved(TableColumnModelEvent e) {
+			}
+
 			@Override
-			public void columnMoved(TableColumnModelEvent e) {}
-			
+			public void columnMoved(TableColumnModelEvent e) {
+			}
+
 			@Override
 			public void columnMarginChanged(ChangeEvent e) {
-				Enumeration<TableColumn> tcs = table.getColumnModel().getColumns();
+				Enumeration<TableColumn> tcs = ptable.getColumnModel().getColumns();
 				int i = 0;
 				while (tcs.hasMoreElements()) {
 					TableColumn tc = tcs.nextElement();
-					//topTable.getColumnModel().getColumn(i++).setPreferredWidth(tc.getPreferredWidth());
+					// topTable.getColumnModel().getColumn(i++).setPreferredWidth(tc.getPreferredWidth());
 				}
-				
 
-					/*public void columnMoved(TableColumnModelEvent e) {
-						topTable.moveColumn(e.getFromIndex(), e.getToIndex());
-					}
-
-					public void columnRemoved(TableColumnModelEvent e) {}
-
-					public void columnSelectionChanged(ListSelectionEvent e) {
-					}*/
+				/*
+				 * public void columnMoved(TableColumnModelEvent e) {
+				 * topTable.moveColumn(e.getFromIndex(), e.getToIndex()); }
+				 * 
+				 * public void columnRemoved(TableColumnModelEvent e) {}
+				 * 
+				 * public void columnSelectionChanged(ListSelectionEvent e) { }
+				 */
 			}
-			
+
 			@Override
-			public void columnAdded(TableColumnModelEvent e) {}
+			public void columnAdded(TableColumnModelEvent e) {
+			}
 		});
-		
-		medtable = new JTable();
-		medtable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
-		JScrollPane	medscroll = new JScrollPane( medtable );
-		medtable.setTableHeader( null );
-		medscroll.setPreferredSize( new Dimension(100,45) );
-		
-		JComponent	comp = new JComponent() {
-			
+
+		// Dimension d = new Dimension(100,40);
+
+		medheadertable = new JTable() {
+			public void setRowSelectionInterval(int r1, int r2) {
+				sel = true;
+				super.setRowSelectionInterval(r1, r2);
+			}
+
+			public void setColumnSelectionInterval(int c1, int c2) {
+				sel = true;
+				super.setColumnSelectionInterval(c1, c2);
+			}
+
+			public void addRowSelectionInterval(int r1, int r2) {
+				sel = true;
+				super.addRowSelectionInterval(r1, r2);
+			}
+
+			public void addColumnSelectionInterval(int c1, int c2) {
+				sel = true;
+				super.addColumnSelectionInterval(c1, c2);
+			}
 		};
-		comp.setLayout( new BorderLayout() );
-		comp.add( pricepane );
-		comp.add( medscroll, BorderLayout.SOUTH );
-		
-		splitpane.setLeftComponent( scrollpane );
-		splitpane.setRightComponent( comp );
-		
+		// medheadertable.setPreferredSize( d );
+		medtable = new JTable() {
+			public void setRowSelectionInterval(int r1, int r2) {
+				sel = false;
+				super.setRowSelectionInterval(r1, r2);
+			}
+
+			public void setColumnSelectionInterval(int c1, int c2) {
+				sel = false;
+				super.setColumnSelectionInterval(c1, c2);
+			}
+
+			public void addRowSelectionInterval(int r1, int r2) {
+				sel = false;
+				super.addRowSelectionInterval(r1, r2);
+			}
+
+			public void addColumnSelectionInterval(int c1, int c2) {
+				sel = false;
+				super.addColumnSelectionInterval(c1, c2);
+			}
+		};
+
+		medtable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				boolean ss = msel;
+				msel = true;
+				if (ss) {
+					int[] rr = medtable.getSelectedRows();
+					if (rr != null && rr.length > 0) {
+						for (int r : rr) {
+							if (r == rr[0])
+								medheadertable.setRowSelectionInterval(r, r);
+							else
+								medheadertable.addRowSelectionInterval(r, r);
+							msel = true;
+						}
+					}
+				}
+			}
+		});
+
+		medheadertable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				boolean ss = msel;
+				msel = false;
+				if (!ss) {
+					int[] rr = medheadertable.getSelectedRows();
+					if (rr != null && rr.length > 0) {
+						for (int r : rr) {
+							if (r == rr[0])
+								medtable.setRowSelectionInterval(r, r);
+							else
+								medtable.addRowSelectionInterval(r, r);
+							msel = false;
+						}
+					}
+				}
+			}
+		});
+
+		// medtable.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
+		JScrollPane medscroll = new JScrollPane();
+		// medtable.setTableHeader( null );
+		// medscroll.setPreferredSize( d );
+
+		JComponent comp = new JComponent() {
+		};
+		comp.setLayout(new BorderLayout());
+		comp.add(pricepane);
+		comp.add(medtable, BorderLayout.SOUTH);
+
+		JComponent pcomp = new JComponent() {
+		};
+		pcomp.setLayout(new BorderLayout());
+		pcomp.add(scrollpane);
+		pcomp.add(medheadertable, BorderLayout.SOUTH);
+
+		this.add(botcomp, BorderLayout.SOUTH);
+
+		splitpane.setLeftComponent(pcomp);
+		splitpane.setRightComponent(comp);
+
 		this.add(splitpane);
-		
-		//calc();
+
+		// calc();
 	}
 }
