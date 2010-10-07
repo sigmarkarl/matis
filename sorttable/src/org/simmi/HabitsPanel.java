@@ -111,6 +111,7 @@ public class HabitsPanel extends JComponent {
 	JTable							colHeaderTable;
 	boolean							sel = false;
 	
+	String 							lang;
 	Set<String>						allskmt;
 	Map<String,Map<String,String>>	skmt;
 	
@@ -653,9 +654,10 @@ public class HabitsPanel extends JComponent {
 		}
 	}
 	
-	public HabitsPanel( String lang, final FriendsPanel fp, final List<Object[]>	stuff, final List<Recipe>	recipes, final Map<String,Integer>	foodInd, Set<String> allskmt, Map<String,Map<String,String>> skmt ) {
+	public HabitsPanel( final String lang, final FriendsPanel fp, final List<Object[]>	stuff, final List<Recipe>	recipes, final Map<String,Integer>	foodInd, Set<String> allskmt, Map<String,Map<String,String>> skmt ) {
 		super();
 		
+		this.lang = lang;
 		this.allskmt = allskmt;
 		this.skmt = skmt;
 		
@@ -676,19 +678,28 @@ public class HabitsPanel extends JComponent {
 		malCombo = new JComboBox();
 		malCombo.setPreferredSize( prefSize );
 		malCombo.setMinimumSize( prefSize );
-		malCombo.addItem("Morgunmatur");
-		malCombo.addItem("Millimáltíð1");
-		malCombo.addItem("Hádegismatur");
-		malCombo.addItem("Millimáltíð2");
-		malCombo.addItem("Kvöldmatur");
-		malCombo.addItem("Millimáltíð3");
+		if( lang.equals("IS") ) {
+			malCombo.addItem("Morgunmatur");
+			malCombo.addItem("Millimáltíð1");
+			malCombo.addItem("Hádegismatur");
+			malCombo.addItem("Millimáltíð2");
+			malCombo.addItem("Kvöldmatur");
+			malCombo.addItem("Millimáltíð3");
+		} else {
+			malCombo.addItem("Breakfast");
+			malCombo.addItem("Between 1");
+			malCombo.addItem("Lunch");
+			malCombo.addItem("Between 2");
+			malCombo.addItem("Dinnter");
+			malCombo.addItem("Between 3");
+		}
 		
 		try {
 			datepicker = new JXDatePicker();
 		} catch( Exception e ) {
 			e.printStackTrace();
 		}
-		englabel = new JLabel( "Orka í vali: " );
+		englabel = new JLabel( lang.equals("IS") ? "Orka í vali: " : "Energy in selection" );
 		
 		Dimension d = new Dimension( 300, 25 );
 		englabel.setPreferredSize( d );
@@ -698,7 +709,7 @@ public class HabitsPanel extends JComponent {
 		};
 		//datepicker.setMonthView(new JXM)*/
 		
-		JButton	sendfriend = new JButton( new AbstractAction("Senda völdum vinum") {
+		JButton	sendfriend = new JButton( new AbstractAction(lang.equals("IS") ? "Senda völdum vinum" : "Send to selected friends") {
 			public void actionPerformed(ActionEvent e) {
 				try {
 					sendToFriend( fp.currentUserId, fp.getSelectedFriendsIds() );
@@ -810,8 +821,8 @@ public class HabitsPanel extends JComponent {
 					Graphics2D g2 = (Graphics2D)g;
 					g2.setRenderingHint( RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON );
 					
-					String str = "Dragðu fæðutegundir úr tölfunni";
-					String nstr = "til vinstri hingað";
+					String str = lang.equals("IS") ? "Dragðu fæðutegundir úr tölfunni" : "Drag food from the table";
+					String nstr = lang.equals("IS") ? "til vinstri hingað" : "to the left to here";
 					int strw = g.getFontMetrics().stringWidth( str );
 					int nstrw = g.getFontMetrics().stringWidth( nstr );
 					g.setColor( Color.lightGray );
@@ -1059,13 +1070,23 @@ public class HabitsPanel extends JComponent {
 				//cal.setTimeInMillis( time );
 				//return cal.get( Calendar.WEEK_OF_YEAR ) + "";
 				
-				if( arg1 == 0 ) return "Sunnudagur";
-				else if( arg1 == 1 ) return "Mánudagur";
-				else if( arg1 == 2 ) return "Þriðjudagur";
-				else if( arg1 == 3 ) return "Miðvikudagur";
-				else if( arg1 == 4 ) return "Fimmtudagur";
-				else if( arg1 == 5 ) return "Föstudagur";
-				else if( arg1 == 6 ) return "Laugardagur";
+				if( lang.equals("IS") ) {
+					if( arg1 == 0 ) return "Sunnudagur";
+					else if( arg1 == 1 ) return "Mánudagur";
+					else if( arg1 == 2 ) return "Þriðjudagur";
+					else if( arg1 == 3 ) return "Miðvikudagur";
+					else if( arg1 == 4 ) return "Fimmtudagur";
+					else if( arg1 == 5 ) return "Föstudagur";
+					else if( arg1 == 6 ) return "Laugardagur";
+				} else {
+					if( arg1 == 0 ) return "Sunday";
+					else if( arg1 == 1 ) return "Monday";
+					else if( arg1 == 2 ) return "Tuesday";
+					else if( arg1 == 3 ) return "Wednesday";
+					else if( arg1 == 4 ) return "Thursday";
+					else if( arg1 == 5 ) return "Friday";
+					else if( arg1 == 6 ) return "Saturday";
+				}
 				
 				return "";
 			}
@@ -1092,18 +1113,33 @@ public class HabitsPanel extends JComponent {
 					int mday = cal.get( Calendar.DAY_OF_MONTH );
 					int mnum = cal.get( Calendar.MONTH );
 					
-					if( mnum == 0 ) return mday + ". janúar";
-					else if( mnum == 1 ) return mday + ". febrúar";
-					else if( mnum == 2 ) return mday + ". mars";
-					else if( mnum == 3 ) return mday + ". apríl";
-					else if( mnum == 4 ) return mday + ". maí";
-					else if( mnum == 5 ) return mday + ". júní";
-					else if( mnum == 6 ) return mday + ". júlí";
-					else if( mnum == 7 ) return mday + ". ágúst";
-					else if( mnum == 8 ) return mday + ". september";
-					else if( mnum == 9 ) return mday + ". október";
-					else if( mnum == 10 ) return mday + ". nóvember";
-					else if( mnum == 11 ) return mday + ". desember";
+					if( lang.equals("IS") ) {
+						if( mnum == 0 ) return mday + ". janúar";
+						else if( mnum == 1 ) return mday + ". febrúar";
+						else if( mnum == 2 ) return mday + ". mars";
+						else if( mnum == 3 ) return mday + ". apríl";
+						else if( mnum == 4 ) return mday + ". maí";
+						else if( mnum == 5 ) return mday + ". júní";
+						else if( mnum == 6 ) return mday + ". júlí";
+						else if( mnum == 7 ) return mday + ". ágúst";
+						else if( mnum == 8 ) return mday + ". september";
+						else if( mnum == 9 ) return mday + ". október";
+						else if( mnum == 10 ) return mday + ". nóvember";
+						else if( mnum == 11 ) return mday + ". desember";
+					} else {
+						if( mnum == 0 ) return mday + ". january";
+						else if( mnum == 1 ) return mday + ". february";
+						else if( mnum == 2 ) return mday + ". mars";
+						else if( mnum == 3 ) return mday + ". april";
+						else if( mnum == 4 ) return mday + ". may";
+						else if( mnum == 5 ) return mday + ". june";
+						else if( mnum == 6 ) return mday + ". july";
+						else if( mnum == 7 ) return mday + ". august";
+						else if( mnum == 8 ) return mday + ". september";
+						else if( mnum == 9 ) return mday + ". oktober";
+						else if( mnum == 10 ) return mday + ". november";
+						else if( mnum == 11 ) return mday + ". december";
+					}
 				//}
 				//cal.setTimeInMillis( time+arg1*Timer.ONE_DAY );
 				//String str = CompatUtilities.getDateString( cal, arg0 == 1 );
@@ -1398,13 +1434,23 @@ public class HabitsPanel extends JComponent {
 				//cal.setTimeInMillis( time );
 				//return cal.get( Calendar.WEEK_OF_YEAR ) + "";
 				
-				if( arg1 == 0 ) return "Sunnudagur";
-				else if( arg1 == 1 ) return "Mánudagur";
-				else if( arg1 == 2 ) return "Þriðjudagur";
-				else if( arg1 == 3 ) return "Miðvikudagur";
-				else if( arg1 == 4 ) return "Fimmtudagur";
-				else if( arg1 == 5 ) return "Föstudagur";
-				else if( arg1 == 6 ) return "Laugardagur";
+				if( lang.equals("IS") ) {
+					if( arg1 == 0 ) return "Sunnudagur";
+					else if( arg1 == 1 ) return "Mánudagur";
+					else if( arg1 == 2 ) return "Þriðjudagur";
+					else if( arg1 == 3 ) return "Miðvikudagur";
+					else if( arg1 == 4 ) return "Fimmtudagur";
+					else if( arg1 == 5 ) return "Föstudagur";
+					else if( arg1 == 6 ) return "Laugardagur";
+				} else {
+					if( arg1 == 0 ) return "Sunday";
+					else if( arg1 == 1 ) return "Monday";
+					else if( arg1 == 2 ) return "Tuesday";
+					else if( arg1 == 3 ) return "Wednesday";
+					else if( arg1 == 4 ) return "Thursday";
+					else if( arg1 == 5 ) return "Friday";
+					else if( arg1 == 6 ) return "Saturday";
+				}
 				
 				return "";
 			}
@@ -1531,7 +1577,7 @@ public class HabitsPanel extends JComponent {
 				cal.setTimeInMillis( time );
 				int week = cal.get( Calendar.WEEK_OF_YEAR );
 				
-				return "Máltíð - " + week + ". vika";
+				return lang.equals("IS") ? "Máltíð - " + week + ". vika" : "Food for - " + week + ". week";
 			}
 
 			public int getRowCount() {

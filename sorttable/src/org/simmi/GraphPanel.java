@@ -184,11 +184,11 @@ public class GraphPanel extends JTabbedPane {
 						enj = stuffYou(row, "Orka", "kJ");
 						enc = stuffYou(row, "Orka", "kcal");
 					} else {
-						alc = stuffYou(row, "ALC");
-						prt = stuffYou(row, "PROCNT");
-						cbh = stuffYou(row, "CHOCDF");
-						fat = stuffYou(row, "FAT");
-						fib = stuffYou(row, "FIB");
+						alc = stuffYou(row, "Alcohol");
+						prt = stuffYou(row, "Protein");
+						cbh = stuffYou(row, "Carbohydrate");
+						fat = stuffYou(row, "Total lipid");
+						fib = stuffYou(row, "Fiber");
 					}
 					
 					double alco = alc*29.0;
@@ -222,12 +222,12 @@ public class GraphPanel extends JTabbedPane {
 							g2.drawString(kjStr, 15+strw, this.getHeight()/9 );
 						}
 					} else {
-						double ff = stuffYou( row, "ENERC_KJ" );
+						double ff = stuffYou( row, "Energy", "kJ" );
 						if( ff > 0 ) {
 							g2.drawString(ff+" kJ", 10, this.getHeight()/10 );
 						}
 						
-						ff = stuffYou( row, "ENERC_KCAL" );
+						ff = stuffYou( row, "Energy", "kcal" );
 						if( ff > 0 ) {
 							g2.drawString(ff+" kcal", 10, this.getHeight()/7 );
 						}
@@ -416,11 +416,11 @@ public class GraphPanel extends JTabbedPane {
 						enj = stuffYou(row, "Orka", "kJ");
 						enc = stuffYou(row, "Orka", "kcal");
 					} else {
-						alc = stuffYou(row, "ALC");
-						prt = stuffYou(row, "PROCNT");
-						cbh = stuffYou(row, "CHOCDF");
-						fat = stuffYou(row, "FAT");
-						fib = stuffYou(row, "FIB");
+						alc = stuffYou(row, "Alcohol");
+						prt = stuffYou(row, "Protein");
+						cbh = stuffYou(row, "Carbohydrate");
+						fat = stuffYou(row, "Total lipid");
+						fib = stuffYou(row, "Fiber");
 					}
 					double sum = alc + prt + cbh + fat + fib;
 					
@@ -751,7 +751,7 @@ public class GraphPanel extends JTabbedPane {
 			cnames = new String[] {"Alcohol", "Protein", "Carbohydrades", "Fat", "Dietary fiber", "Ash", "Water"};
 		}
 		
-		SkifuGraph perc = new SkifuGraph( "Hlutföll", comb, cnames, tables );
+		SkifuGraph perc = new SkifuGraph( lang.equals("IS") ? "Hlutföll" : "Ratio", lang, comb, cnames, tables );
 		
 		vitaminv = new VitaminPanel( true, leftTable, this, rdsPanel, lang );
 		vitaminf = new VitaminPanel( false, leftTable, this, rdsPanel, lang );

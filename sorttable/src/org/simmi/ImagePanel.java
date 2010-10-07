@@ -43,8 +43,9 @@ public class ImagePanel extends JComponent {
 	int					orientation;
 	JProgressBar		progressbar;
 	String				imgUrl = null;
+	String				lang;
 	
-	public ImagePanel( final JTable leftTable ) {
+	public ImagePanel( final JTable leftTable, String lang ) {
 		super();
 		this.addMouseListener( new MouseAdapter() {
 			public void mousePressed( MouseEvent e ) {
@@ -63,6 +64,7 @@ public class ImagePanel extends JComponent {
 		});
 		this.leftTable = leftTable;
 		
+		this.lang = lang;
 		imageNames = new HashSet<String>();
 		imageCache = new HashMap<String,Image>();
 		imageNameCache = new HashMap<String,String>();
@@ -77,14 +79,13 @@ public class ImagePanel extends JComponent {
 				line = br.readLine();
 			}
 		} catch (IOException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 		
 		progressbar = new JProgressBar();
 		progressbar.setVisible( false );
 		progressbar.setIndeterminate( true );
-		progressbar.setString("Sæki mynd");
+		progressbar.setString(lang.equals("IS") ? "Sæki mynd" : "Fetch image");
 		progressbar.setValue( 0 );
 		progressbar.setStringPainted( true );
 		this.add( progressbar );
@@ -157,10 +158,10 @@ public class ImagePanel extends JComponent {
 			
 			g.setColor( Color.lightGray );
 			if( b ) {
-				String str = "Engin mynd";
+				String str = lang.equals("IS") ? "Engin mynd" : "No image";
 				drawString( g, str, 0 );
 			} else {
-				String str = "Engin mynd\nSmelltu hér til að sækja mynd á google";
+				String str = lang.equals("IS") ? "Engin mynd\nSmelltu hér til að sækja mynd á google" : "No image\nClick here to fetch on google";
 				drawString( g, str, 0 );
 			}
 		} else if( imgUrl != null ) {

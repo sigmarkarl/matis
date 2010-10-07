@@ -21,6 +21,7 @@ import javax.swing.JTable;
 public class SkifuGraph extends JComponent {
 	JTable		table, leftTable, topTable;
 	String		title;
+	String		lang;
 	String[]	columnNames;
 	String[]	isNames;
 	Color[]		darker = {	new Color( 200, 100, 100 ), new Color( 100, 200, 100 ), new Color( 100, 100, 200 ), 
@@ -33,11 +34,12 @@ public class SkifuGraph extends JComponent {
 	List<Boolean>	using;
 	int w, h;
 	
-	public SkifuGraph( String title, final String[] columnNames, String[] isNames, JTable[] tables ) {
+	public SkifuGraph( String title, String lang, final String[] columnNames, String[] isNames, JTable[] tables ) {
 		super();
 		this.title = title;
 		this.columnNames = columnNames;
 		this.isNames = isNames;
+		this.lang = lang;
 		
 		table = tables[0];
 		leftTable = tables[1];
@@ -310,7 +312,7 @@ public class SkifuGraph extends JComponent {
 				g2.drawLine((19*w)/20, h-((1)*h)/25-hh/2, (19*w)/20+hh, h-((1)*h)/25-hh/2+hh);
 				g2.drawLine((19*w)/20, h-((1)*h)/25-hh/2+hh, (19*w)/20+hh, h-((1	)*h)/25-hh/2);
 			}				
-			String str = "Afgangur";
+			String str = lang.equals("IS") ? "Afgangur" : "Rest";
 			int strw = g2.getFontMetrics().stringWidth(str);
 			g2.drawString(str, (19*w)/20-strw-hh/2, this.getHeight()-((i-6)*this.getHeight())/25+hh/4 );
 		}

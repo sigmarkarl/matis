@@ -625,7 +625,7 @@ public class SortTable extends JApplet {
 	}
 
 	public void loadStuff() {
-		lang = "IS";
+		lang = "EN";
 		/*
 		 * String loc = this.getParameter("loc"); if( loc != null ) { lang =
 		 * loc; }
@@ -1206,8 +1206,11 @@ public class SortTable extends JApplet {
 				foodTypes.add((String) objs[1]);
 		}
 
-		topLeftCombo.addItem("Allar fæðutegundir");
-		topLeftCombo.addItem("Uppskriftir");
+		final String allfood = lang.equals("IS") ? "Allar fæðutegundir" : "All food groups";
+		final String recipes = lang.equals("IS") ? "Uppskriftir" : "Recipes";
+		
+		topLeftCombo.addItem(allfood);
+		topLeftCombo.addItem(recipes);
 		for (String ft : foodTypes) {
 			topLeftCombo.addItem(ft.length() > 64 ? ft.substring(0, 64) + "..." : ft);
 		}
@@ -1223,7 +1226,7 @@ public class SortTable extends JApplet {
 			public void itemStateChanged(ItemEvent e) {
 				String item = (String) combo.getSelectedItem();
 				item = item.substring(0, Math.min(100, item.length()));
-				if (item.equals("Allar fæðutegundir")) {
+				if (item.equals(allfood)) {
 					filter.filterText = null;
 					filter.fInd = 0;
 
@@ -1289,7 +1292,7 @@ public class SortTable extends JApplet {
 					}
 					g.setColor(Color.gray);
 					
-					String leit = "leit í " + (stuff.size()-2) + " fæðutegundum";
+					String leit = lang.equals("IS") ? "leit í " + (stuff.size()-2) + " fæðutegundum" : "search " + (stuff.size()-2) + " food entries";
 					int strw = g.getFontMetrics().stringWidth(leit);
 					int x = (this.getWidth() - strw) / 2;
 					g.drawString(leit, x, 20);
@@ -1304,10 +1307,10 @@ public class SortTable extends JApplet {
 		leftComponent.add(leftScrollPane);
 		leftComponent.add(field, BorderLayout.SOUTH);
 
-		imgPanel = new ImagePanel(leftTable);
+		imgPanel = new ImagePanel(leftTable, lang);
 		tabbedPane = new JTabbedPane(JTabbedPane.BOTTOM, JTabbedPane.SCROLL_TAB_LAYOUT);
 
-		FriendsPanel fp = new FriendsPanel(sessionKey, currentUser);
+		FriendsPanel fp = new FriendsPanel(sessionKey, currentUser, lang);
 		friendsPanel = fp;
 
 		try {
@@ -2021,9 +2024,9 @@ public class SortTable extends JApplet {
 				tabbedPane.addTab("Friends", vinicon, fp);
 			//tabbedPane.addTab("Rds", rdsicon, rdsPanel);
 			tabbedPane.addTab("Eating and training", maticon, eat);
-			tabbedPane.addTab("Cost of buying", buy);
+			//tabbedPane.addTab("Cost of buying", buy);
 
-			tabbedPane.setEnabledAt(tabbedPane.getTabCount() - 1, false);
+			//tabbedPane.setEnabledAt(tabbedPane.getTabCount() - 1, false);
 		}
 
 		table.setModel(model);
@@ -2116,27 +2119,29 @@ public class SortTable extends JApplet {
 		
 		JPopupMenu		popup = new JPopupMenu();
 		URL				xurl = this.getClass().getResource("/xlsx.png");
-		ImageProducer 	ims = (ImageProducer)xurl.getContent();
-		Image 		img = (ims != null ? this.createImage( ims ).getScaledInstance(16, 16, Image.SCALE_SMOOTH) : null);
-		popup.add( new AbstractAction("Opna val í Excel", img != null ? new ImageIcon(img) : null ) {
-			public void actionPerformed(ActionEvent ae) {
-				try {
-					openExcel();
-				} catch (IOException e) {
-					e.printStackTrace();
-				} catch (SecurityException e) {
-					e.printStackTrace();
-				} catch (IllegalArgumentException e) {
-					e.printStackTrace();
-				} catch (NoSuchMethodException e) {
-					e.printStackTrace();
-				} catch (IllegalAccessException e) {
-					e.printStackTrace();
-				} catch (InvocationTargetException e) {
-					e.printStackTrace();
+		if( xurl != null ) {
+			ImageProducer 	ims = (ImageProducer)xurl.getContent();
+			Image 		img = (ims != null ? this.createImage( ims ).getScaledInstance(16, 16, Image.SCALE_SMOOTH) : null);
+			popup.add( new AbstractAction("Opna val í Excel", img != null ? new ImageIcon(img) : null ) {
+				public void actionPerformed(ActionEvent ae) {
+					try {
+						openExcel();
+					} catch (IOException e) {
+						e.printStackTrace();
+					} catch (SecurityException e) {
+						e.printStackTrace();
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (NoSuchMethodException e) {
+						e.printStackTrace();
+					} catch (IllegalAccessException e) {
+						e.printStackTrace();
+					} catch (InvocationTargetException e) {
+						e.printStackTrace();
+					}
 				}
-			}
-		});
+			});
+		}
 		table.setComponentPopupMenu( popup );
 
 		splitPane.setBorder(new EmptyBorder(0, 0, 0, 0));
