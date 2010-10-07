@@ -90,7 +90,7 @@ public class MyPanel extends JComponent {
 		arr[3].setValue( q );
 	}
 	
-	public MyPanel( Image	image, ImageIcon 	icon ) {
+	public MyPanel( Image	image, ImageIcon 	icon, String lang ) {
 		super();
 		
 		myimage = image;
@@ -98,34 +98,34 @@ public class MyPanel extends JComponent {
 		rotatebutton = new JButton( icon );
 		rotatebutton.setBounds( 9,9,32,32 );
 		
-		namelabel = new JLabel( "Nafn:" );
+		namelabel = new JLabel( lang.equals("IS") ? "Nafn:" : "Name:" );
 		namefield = new JTextField();
-		agelabel = new JLabel( "Aldur:" );
+		agelabel = new JLabel( lang.equals("IS") ? "Aldur:" : "Age" );
 		agefield = new JSpinner( new SpinnerNumberModel(40,1,100,1) );
-		weightlabel = new JLabel( "Þyngd:" );
+		weightlabel = new JLabel( lang.equals("IS") ? "Þyngd:" : "Weight" );
 		weightfield = new JFormattedTextField( NumberFormat.getNumberInstance() );
-		heightlabel = new JLabel( "Hæð:" );
+		heightlabel = new JLabel( lang.equals("IS") ? "Hæð:" : "Height" );
 		heightfield = new JFormattedTextField( NumberFormat.getNumberInstance() );
-		sexlabel = new JLabel( "Kyn:" );
-		sexfield = new JComboBox( new String[] {"Karl","Kona"} );
+		sexlabel = new JLabel( lang.equals("IS") ? "Kyn:" : "Gender" );
+		sexfield = new JComboBox( lang.equals("IS") ? new String[] {"Karl","Kona"} : new String[] {"Male","Female"} );
 		
-		restlabel = new JLabel("Hreyfing (klst.)");
+		restlabel = new JLabel(lang.equals("IS") ? "Hreyfing (klst.)" : "Action (hours)");
 		
 		SpinnerNumberModel restspmod = new SpinnerNumberModel(24,0,24,1);
 		SpinnerNumberModel easyspmod = new SpinnerNumberModel(0,0,24,1);
 		SpinnerNumberModel medspmod = new SpinnerNumberModel(0,0,24,1);
 		SpinnerNumberModel hardspmod = new SpinnerNumberModel(0,0,24,1);
 		
-		rest = new JLabel("Hvíld:");
+		rest = new JLabel(lang.equals("IS") ? "Hvíld:" : "Rest");
 		resthours = new JSpinner( restspmod );
 		
-		easy = new JLabel("Létt hreyfing:");
+		easy = new JLabel(lang.equals("IS") ? "Létt hreyfing:" : "Light action");
 		easyhours = new JSpinner( easyspmod );
 		
-		medium = new JLabel("Miðlungs hreyfing:");
+		medium = new JLabel(lang.equals("IS") ? "Miðlungs hreyfing:" : "Medium action");
 		mediumhours = new JSpinner( medspmod );
 		
-		hard = new JLabel("Mikil hreyfing:");
+		hard = new JLabel(lang.equals("IS") ? "Mikil hreyfing:" : "Heavy action");
 		hardhours = new JSpinner( hardspmod );
 		
 		final JSpinner[]	sp = {resthours,easyhours,mediumhours,hardhours};

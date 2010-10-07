@@ -60,7 +60,7 @@ public class FriendsPanel extends SimSplitPane {
 	private final String apiKey = "d8993947d6a37b4bf754d2a578025c31";
 	private final String secret = "c9577f5b3a6c03abb63ebdadb39feea5";
 	
-	String currentUser = "Velja höfund";
+	String currentUser;
 	String currentUserId = "0";
 	
 	List<Object[]>	friendList = new ArrayList<Object[]>();
@@ -73,7 +73,7 @@ public class FriendsPanel extends SimSplitPane {
 	TableModel	nullmodel;
 	
 	String		sessionKey;
-	
+	String		lang;
 	MyPanel		mypanel;
 	
 	public String sign(String[][] params) throws IOException {
@@ -127,7 +127,7 @@ public class FriendsPanel extends SimSplitPane {
                 loginUrl) == null) {
             throw new IOException("Authorizatoin declined");
         }*/
-		if( JOptionPane.showConfirmDialog(FriendsPanel.this, "Vinsamlegast skráðu þig inná Facebook", "Facebook innskráning", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION ) return token;
+		if( JOptionPane.showConfirmDialog(FriendsPanel.this, lang.equals("IS") ? "Vinsamlegast skráðu þig inná Facebook" : "Log in to Facebook", lang.equals("IS") ? "Facebook innskráning" : "Facebook login", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION ) return token;
 
         return null;
     }
@@ -510,7 +510,7 @@ public class FriendsPanel extends SimSplitPane {
 		if( xml != null ) parseFriendsXml( xml );
 	}
 	
-	public void selectMe( final MyPanel mypanel, int r ) {
+	public void selectMe( final MyPanel mypanel, int r ) {		
 		if( r != -1 ) {
 			Object o = table.getValueAt(r, 1);
 			if( o != null && o instanceof String ) {
@@ -548,10 +548,11 @@ public class FriendsPanel extends SimSplitPane {
 	}
 	
 	char[]	cbuf = new char[50000];
-	public FriendsPanel( String sessionKey0, final String currentUser ) {
+	public FriendsPanel( String sessionKey0, final String currentUser, final String lang ) {
 		super();
 		this.setDividerLocation( 500 );
 		
+		this.currentUser = lang.equals("IS") ? "Velja höfund" : "Choose author";
 		this.sessionKey = sessionKey0;
 		this.setBackground( Color.white );
 		
@@ -627,13 +628,22 @@ public class FriendsPanel extends SimSplitPane {
 				return 6;
 			}
 
-			public String getColumnName(int arg0) {				
-				if( arg0 == 0 ) return "Val";
-				else if( arg0 == 1 ) return "Nafn";
-				else if( arg0 == 2 ) return "Fæðingardagur";
-				else if( arg0 == 3 ) return "Kyn";
-				else if( arg0 == 4 ) return "Mynd";
-				else if( arg0 == 5 ) return "Notandi";
+			public String getColumnName(int arg0) {
+				if( lang.equals("IS") ) {
+					if( arg0 == 0 ) return "Val";
+					else if( arg0 == 1 ) return "Nafn";
+					else if( arg0 == 2 ) return "Fæðingardagur";
+					else if( arg0 == 3 ) return "Kyn";
+					else if( arg0 == 4 ) return "Mynd";
+					else if( arg0 == 5 ) return "Notandi";
+				} else {
+					if( arg0 == 0 ) return "Choice";
+					else if( arg0 == 1 ) return "Name";
+					else if( arg0 == 2 ) return "DOB";
+					else if( arg0 == 3 ) return "Gender";
+					else if( arg0 == 4 ) return "Image";
+					else if( arg0 == 5 ) return "User";
+				}
 				return "";
 			}
 
@@ -680,7 +690,7 @@ public class FriendsPanel extends SimSplitPane {
 			
 			img = bimg;
 		}
-		mypanel = new MyPanel( img, icon );		
+		mypanel = new MyPanel( img, icon, lang );		
 		table.addMouseListener( new MouseAdapter() {
 			public void mousePressed( MouseEvent me ) {
 				if( me.getClickCount() == 2 ) {
@@ -691,7 +701,7 @@ public class FriendsPanel extends SimSplitPane {
 		});
 		
 		JPopupMenu popup = new JPopupMenu();
-		Action action = new AbstractAction("Velja mig") {
+		Action action = new AbstractAction(lang.equals("IS") ? "Velja mig" : "Select as current user") {
 			public void actionPerformed(ActionEvent e) {
 				int r = table.getSelectedRow();
 				selectMe( mypanel, r );
@@ -699,7 +709,7 @@ public class FriendsPanel extends SimSplitPane {
 		};
 		popup.add( action );
 		popup.addSeparator();
-		action = new AbstractAction("Sýna Alla") {
+		action = new AbstractAction(lang.equals("IS") ? "Sýna alla" : "Show all") {
 			public void actionPerformed(ActionEvent e) {
 				for( int i : table.getSelectedRows() ) {
 					int k = table.convertRowIndexToModel(i);
@@ -724,7 +734,7 @@ public class FriendsPanel extends SimSplitPane {
 			}
 		};
 		popup.add( action );
-		action = new AbstractAction("Viðsnúa vali") {
+		action = new AbstractAction(lang.equals("IS") ? "Viðsnúa vali" : "Swap selection") {
 			public void actionPerformed(ActionEvent e) {
 				int[] rows = table.getSelectedRows();
 				table.selectAll();
@@ -735,7 +745,7 @@ public class FriendsPanel extends SimSplitPane {
 		};
 		popup.add( action );
 		popup.addSeparator();
-		popup.add( new AbstractAction("Bjóða völdum vinum") {
+		popup.add( new AbstractAction(lang.equals("IS") ? "Bjóða völdum vinum" : "Invite selected friends") {
 			public void actionPerformed(ActionEvent e) {
 				List<String>	id = new ArrayList<String>();
 				for( Object[] obj : friendList ) {
@@ -743,9 +753,9 @@ public class FriendsPanel extends SimSplitPane {
 				}
 				
 				if( id.size() > 0 ) {
-					JOptionPane.showMessageDialog(FriendsPanel.this, "Vinum hefur verið boðið að nota Matísgem");
+					JOptionPane.showMessageDialog(FriendsPanel.this, lang.equals("IS") ? "Vinum hefur verið boðið að nota Matísgem" : "Friends have been invited to use this program");
 				} else {
-					JOptionPane.showMessageDialog(FriendsPanel.this, "Enginn vinur sem ekki er notandi Matísgem hefur verið valinn");
+					JOptionPane.showMessageDialog(FriendsPanel.this, lang.equals("IS") ? "Enginn vinur sem ekki er notandi Matísgem hefur verið valinn" : "No program user has been selected");
 				}
 			}
 		});
@@ -771,8 +781,8 @@ public class FriendsPanel extends SimSplitPane {
 					Graphics2D g2 = (Graphics2D)g;
 					g2.setRenderingHint( RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON );
 					
-					String str = "Hægri smelltu til að";
-					String nstr = "fá upp vallista";
+					String str = lang.equals("IS") ? "Hægri smelltu til að" : "Right-click to get a";
+					String nstr = lang.equals("IS") ? "fá upp vallista" : "list of choices";
 					int strw = g.getFontMetrics().stringWidth( str );
 					int nstrw = g.getFontMetrics().stringWidth( nstr );
 					g.setColor( Color.lightGray );

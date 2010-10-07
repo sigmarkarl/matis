@@ -71,6 +71,7 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
 public class RecipePanel extends JSplitPane {
@@ -87,6 +88,7 @@ public class RecipePanel extends JSplitPane {
 	JComboBox 			skmtCombo;
 	int					clearCombo = -1;
 	char[]				cbuf = new char[2048];
+	String				lang;
 	
 	public static Map<String,String>	getUnitVal( String stuff, Map<String,Map<String,String>> skmt ) {
 		Map<String,String>	values = null;
@@ -191,8 +193,8 @@ public class RecipePanel extends JSplitPane {
 		}
 		
 		public Recipe( String author ) {
-			this.name = "Velja nafn";
-			this.group = "Velja hóp";
+			this.name = lang.equals("IS") ? "Velja nafn" : "Choose name";
+			this.group = lang.equals("IS") ? "Velja hóp" : "Choose group";
 			this.author = author;
 			
 			ingredients = new ArrayList<RecipeIngredient>();
@@ -503,6 +505,7 @@ public class RecipePanel extends JSplitPane {
 		super( JSplitPane.VERTICAL_SPLIT );
 		this.setDividerLocation( 300 );
 		this.setOneTouchExpandable( true );
+		this.lang = lang;
 		
 		theTable = table;
 		theLeftTable = leftTable;
@@ -992,7 +995,7 @@ public class RecipePanel extends JSplitPane {
 					Graphics2D g2 = (Graphics2D)g;
 					g2.setRenderingHint( RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON );
 	
-					String str = "Settu inn upplýsingar um uppskriftina hér";
+					String str = lang.equals("IS") ? "Settu inn upplýsingar um uppskriftina hér" : "Put recipe information here";
 					int strw = g.getFontMetrics().stringWidth( str );
 					g.setColor( Color.lightGray );
 					g.drawString(str, (this.getWidth()-strw)/2, this.getHeight()/2-5);
@@ -1003,8 +1006,8 @@ public class RecipePanel extends JSplitPane {
 		
 		final JTabbedPane			recipeInfoPane = new JTabbedPane();
 		recipeInfoPane.setTabPlacement( JTabbedPane.RIGHT );
-		recipeInfoPane.addTab("Skoða", recipeInfoScroll);
-		recipeInfoPane.addTab("Breyta", null);
+		recipeInfoPane.addTab(lang.equals("IS") ? "Skoða" : "View", recipeInfoScroll);
+		recipeInfoPane.addTab(lang.equals("IS") ? "Breyta" : "Change", null);
 		recipeInfoPane.addChangeListener( new ChangeListener() {
 			public void stateChanged(ChangeEvent e) {
 				if( recipeInfoPane.getSelectedIndex() == 0 ) {
@@ -1031,8 +1034,8 @@ public class RecipePanel extends JSplitPane {
 					Graphics2D g2 = (Graphics2D)g;
 					g2.setRenderingHint( RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON );
 
-					String str = "Dragðu fæðutegundir úr tölfunni";
-					String nstr = "til vinstri hingað";
+					String str = lang.equals("IS") ? "Dragðu fæðutegundir úr tölfunni" : "Drag food from food table";
+					String nstr = lang.equals("IS") ? "til vinstri hingað" : "on the left to here";
 					int strw = g.getFontMetrics().stringWidth( str );
 					int nstrw = g.getFontMetrics().stringWidth( nstr );
 					g.setColor( Color.lightGray );
@@ -1121,7 +1124,9 @@ public class RecipePanel extends JSplitPane {
 		recipeDetailTable.setAutoCreateRowSorter( true );		
 		recipeDetailTable.setModel( recipeDetailModel );
 		recipeDetailTable.setDropMode2( DropMode.INSERT_ROWS );
-		recipeDetailTable.getColumn("Eining").setCellRenderer( renderer );
+		
+		TableColumn unitcolumn = lang.equals("IS") ? recipeDetailTable.getColumn("Eining") : recipeDetailTable.getColumn("Unit");;
+		unitcolumn.setCellRenderer( renderer );
 		DropTarget dropTarget = new DropTarget() {
 			public boolean isActive() {
 				return true;

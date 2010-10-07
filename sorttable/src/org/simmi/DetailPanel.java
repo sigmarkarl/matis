@@ -1,6 +1,5 @@
 package org.simmi;
 
-import java.applet.Applet;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Image;
@@ -9,7 +8,6 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImageProducer;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URL;
@@ -198,13 +196,32 @@ public class DetailPanel extends SimSplitPane {
 		imgPanel.add( button );
 		
 		groupMap = new HashMap<String,String>();
-		groupMap.put("1", "Annað");
-		groupMap.put("2", "Fituleysanleg vítamín");
-		groupMap.put("3", "Vatnsleysanleg vítamín");
-		groupMap.put("4", "Steinefni");
-		groupMap.put("5", "Snefilsteinefni");
-		groupMap.put("6", "Fitusýrur");
-		groupMap.put("7", "Nítröt");
+		if( lang.equals("IS") ) {
+			groupMap.put("1", "Annað");
+			groupMap.put("2", "Fituleysanleg vítamín");
+			groupMap.put("3", "Vatnsleysanleg vítamín");
+			groupMap.put("4", "Steinefni");
+			groupMap.put("5", "Snefilsteinefni");
+			groupMap.put("6", "Fitusýrur");
+			groupMap.put("7", "Nítröt");
+		} else {
+			groupMap.put("1", "Sugar");
+			groupMap.put("2", "Sugar");
+			groupMap.put("5", "Ash");
+			groupMap.put("6", "Ash");
+			groupMap.put("7", "Fat soluble vitamin");
+			groupMap.put("8", "Water soluble vitamin");
+			groupMap.put("9", "Fatty acids");
+			groupMap.put("10", "Fatty acids");
+			groupMap.put("11", "Fatty acids");
+			groupMap.put("12", "Fatty acids");
+			groupMap.put("13", "Fatty acids");
+			groupMap.put("14", "Fatty acids");
+			groupMap.put("15", "Fatty acids");
+			groupMap.put("16", "Amino acids");
+			groupMap.put("17", "Amino acids");
+			groupMap.put("18", "Amino acids");			
+		}
 		
 		showColumn = new ArrayList<Boolean>();
 		for( int i = 0; i < stuff.get(0).length-2; i++ ) {
@@ -267,7 +284,7 @@ public class DetailPanel extends SimSplitPane {
 		}
 		
 		JPopupMenu popup = new JPopupMenu();
-		Action action = new AbstractAction("Sýna Alla") {
+		Action action = new AbstractAction(lang.equals("IS") ? "Sýna alla" : "Show all") {
 			public void actionPerformed(ActionEvent e) {
 				for( int i : detailTable.getSelectedRows() ) {
 					int k = detailTable.convertRowIndexToModel(i);
@@ -281,7 +298,7 @@ public class DetailPanel extends SimSplitPane {
 		};
 		//if( lang.equals("EN") ) action.
 		popup.add( action );
-		action = new AbstractAction("Fela Alla") {
+		action = new AbstractAction(lang.equals("IS") ? "Fela alla" : "Hide all") {
 			public void actionPerformed(ActionEvent e) {
 				for( int i : detailTable.getSelectedRows() ) {
 					int k = detailTable.convertRowIndexToModel(i);
@@ -294,7 +311,7 @@ public class DetailPanel extends SimSplitPane {
 			}
 		};
 		popup.add( action );
-		action = new AbstractAction("Viðsnúa Vali") {
+		action = new AbstractAction(lang.equals("IS") ? "Viðsnúa vali" : "Swap selection") {
 			public void actionPerformed(ActionEvent e) {
 				int[] rows = detailTable.getSelectedRows();
 				detailTable.selectAll();
@@ -338,9 +355,9 @@ public class DetailPanel extends SimSplitPane {
 					else if( columnIndex == 1 ) return "Group";
 					else if( columnIndex == 2 ) return "Unit";
 					else if( columnIndex == 3 ) return "Measure";
-					else if( columnIndex == 4 ) return "Rds";
-					else if( columnIndex == 5 ) return "Rds %";
-					return "Show Column";
+					else if( columnIndex == 4 ) return "Suggested daily req";
+					else if( columnIndex == 5 ) return "Sugg daily req %";
+					return "Show column";
 				}
 			}
 	
@@ -351,32 +368,63 @@ public class DetailPanel extends SimSplitPane {
 			public Object getValueAt(int rowIndex, int columnIndex) {
 				if( columnIndex == 0 ) return ngroupList.get( rowIndex );
 				else if( columnIndex == 1 ) {
-					String ind = ngroupGroups.get( rowIndex );
-					if( ind.equals("1") ) {
-						String colVal = ngroupList.get( rowIndex );
-						if( colVal.startsWith("Orka") || colVal.equals("Fita") || colVal.equals("Prótein") || colVal.equals("Kolvetni") || colVal.equals("Alkóhól") ) {
-							return "Orkuefni";
-						}
-					}
-					
-					if( groupMap.containsKey(ind) ) {
-						String ret = groupMap.get( ind );
-						if( ret.equals("Annað") ) {
-							String efni = ngroupList.get( rowIndex );
-							if( efni.contains("fitus") || efni.contains("Fjöl") || efni.contains("trans") ) {
-								return "Fitusýrur";
-							} else if( efni.contains("sykur") || efni.contains("Sykrur") || efni.contains("Trefjar") ) {
+					if( lang.equals("IS") ) {
+						String ind = ngroupGroups.get( rowIndex );
+						if( ind.equals("1") ) {
+							String colVal = ngroupList.get( rowIndex );
+							if( colVal.startsWith("Orka") || colVal.equals("Fita") || colVal.equals("Prótein") || colVal.equals("Kolvetni") || colVal.equals("Alkóhól") ) {
 								return "Orkuefni";
-							} else if( efni.contains("Vatn") ) {
-								return "Vatn";
-							} else if( efni.contains("Kólesteról") ) {
-								return "Fituefni";
-							} else if( efni.contains("Steinefni") ) {
-								return "Steinefni";
 							}
 						}
-						return ret;
-					} else return "Óþekkt";
+						
+						if( groupMap.containsKey(ind) ) {
+							String ret = groupMap.get( ind );
+							if( ret.equals("Annað") ) {
+								String efni = ngroupList.get( rowIndex );
+								if( efni.contains("fitus") || efni.contains("Fjöl") || efni.contains("trans") ) {
+									return "Fitusýrur";
+								} else if( efni.contains("sykur") || efni.contains("Sykrur") || efni.contains("Trefjar") ) {
+									return "Orkuefni";
+								} else if( efni.contains("Vatn") ) {
+									return "Vatn";
+								} else if( efni.contains("Kólesteról") ) {
+									return "Fituefni";
+								} else if( efni.contains("Steinefni") ) {
+									return "Steinefni";
+								}
+							}
+							return ret;
+						} else return "Óþekkt";
+					} else {
+						String ind = ngroupGroups.get( rowIndex );
+						int val = Integer.parseInt(ind);
+						if( val < 1000 ) {
+							String colVal = ngroupList.get( rowIndex );
+							if( colVal.startsWith("Energy") || colVal.equals("Fat") || colVal.equals("Protein") || colVal.equals("Carbohydrates") || colVal.equals("Alcohol") ) {
+								return "Energy";
+							}
+						}
+						
+						String floor = Integer.toString(val/1000);
+						if( groupMap.containsKey(floor) ) {
+							String ret = groupMap.get( floor );
+							if( ret.equals("Other") ) {
+								String efni = ngroupList.get( rowIndex );
+								if( efni.contains("Fatty") || efni.contains("Fjöl") || efni.contains("trans") ) {
+									return "Fatty acids";
+								} else if( efni.contains("sugar") || efni.contains("Sykrur") || efni.contains("Fiber") ) {
+									return "Energy";
+								} else if( efni.contains("Water") ) {
+									return "Water";
+								} else if( efni.contains("Cholestrol") ) {
+									return "Fat";
+								} else if( efni.contains("Ash") ) {
+									return "Ash";
+								}
+							}
+							return ret;
+						} else return "Unknown";
+					}
 				} else if( columnIndex == 2 ) {
 					Object[]	obj = stuff.get(1);
 					return obj[ rowIndex+2 ];
@@ -500,24 +548,26 @@ public class DetailPanel extends SimSplitPane {
 			}
 		});
 		detailScroll.setViewportView( detailTable );
-		TableColumn col = detailTable.getColumn("Sýna dálk");
+		TableColumn col = lang.equals("IS") ? detailTable.getColumn("Sýna dálk") : detailTable.getColumn("Show column");
 		if( col != null ) {
 			col.setMaxWidth( 100 );
 		}
 		
 		popup.addSeparator();
 		URL				xurl = this.getClass().getResource("/xlsx.png");
-		ImageProducer 	ims = (ImageProducer)xurl.getContent();
-		Image 		img = (ims != null ? this.createImage( ims ).getScaledInstance(16, 16, Image.SCALE_SMOOTH) : null);
-		popup.add( new AbstractAction("Opna val í Excel", img != null ? new ImageIcon(img) : null ) {
-			public void actionPerformed(ActionEvent e) {
-				try {
-					sortTable.openExcel( detailTable, leftTable );
-				} catch (IOException e1) {
-					e1.printStackTrace();
+		if( xurl != null ) {
+			ImageProducer 	ims = (ImageProducer)xurl.getContent();
+			Image 		img = (ims != null ? this.createImage( ims ).getScaledInstance(16, 16, Image.SCALE_SMOOTH) : null);
+			popup.add( new AbstractAction(lang.equals("IS") ? "Opna val í Excel" : "Open selection in Excel", img != null ? new ImageIcon(img) : null ) {
+				public void actionPerformed(ActionEvent e) {
+					try {
+						sortTable.openExcel( detailTable, leftTable );
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
 				}
-			}
-		});
+			});
+		}
 		table.setComponentPopupMenu( popup );
 		
 		for( int rowIndex = 0; rowIndex < detailModel.getRowCount(); rowIndex++ ) {
