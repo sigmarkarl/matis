@@ -3,6 +3,7 @@
 //#include <jni.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <map>
 #include <string>
@@ -24,9 +25,10 @@ public:
 	virtual L operator[](int i) {
 		int ind = (int)buf[i];
 		if( ind >= 768*768 or ind < 0 ) {
-			simlab & val = retlib["drw"];
-			printf("%d %d %lld %lld\n", ind, i, (long long)buf, (long long)val.buffer);
-			for( int k = 0; k < 768; k++ ) {
+			//simlab & val = retlib["drw"];
+			printf("%d %d %lld\n", ind, i, (long long)buf);
+			printf( "okpok %d %lld %d %d\n", ind, (long long)buf, (int)sizeof(L), (int)sizeof(map[0]) );
+			/*for( int k = 0; k < 768; k++ ) {
 				printf("%d %f ", k, (float)buf[k]);
 			}
 			printf("\n");
@@ -37,12 +39,18 @@ public:
 			}
 			printf("\n");
 
-			exit(0);
+			exit(0);*/
 			long d = 0;
 			L v = (L)d;
 			return v;
 		}
 		return map[ ind ];
+		//printf( "okpok %d %lld %d %d\n", ind, (long long)buf, (int)sizeof(L), (int)sizeof(map[0]) );
+
+		//map[ ind ] = 0;
+		//long d = 0;//map[ ind ];
+		//L v = (L)d;
+		//return v;
 	};
 	T	buf;
 	K	map;
@@ -202,14 +210,18 @@ extern "C" JNIEXPORT int indexer() {
 	return 0;
 }
 
-template<typename T> void t_viewer( T t, int len ) {
+template<typename T> void t_viewer( T t, int len, void* buffer ) {
 	if( data.type > 0 ) {
 		if( data.type == 32 ) data.buffer = (long)new c_viewer<T,unsigned int*,unsigned int&>( t, (unsigned int*)data.buffer, len );
 		else if( data.type == 33 ) {
-			printf( "hoho %d %d\n", (int)t[0], *(int*)data.buffer );
-			data.buffer = (long)new c_viewer<T,int*,int&>( t, (int*)data.buffer, len );
+			//printf( "hoho %d %d\n", (int)t[0], *(int*)data.buffer );
+			c_viewer<T,int*,int&>	cv( t, (int*)data.buffer, len );
+			memcpy( buffer, &cv, sizeof( cv ) );
+			data.buffer = (long)buffer;
 		}
 		else if( data.type == 34 ) data.buffer = (long)new c_viewer<T,float*,float&>( t, (float*)data.buffer, len );
+		//else if( data.type == 64 ) data.buffer = (long)new c_viewer<T,unsigned long long*,unsigned long long&>( t, (unsigned long long*)data.buffer, len );
+		else if( data.type == 65 ) data.buffer = (long)new c_viewer<T,long long*,long long&>( t, (long long*)data.buffer, len );
 		else if( data.type == 66 ) data.buffer = (long)new c_viewer<T,double*,double&>( t, (double*)data.buffer, len );
 
 		data.type *= -1;
@@ -230,7 +242,7 @@ template<typename T> void t_viewer( T t, int len ) {
 	}*/
 }
 
-JNIEXPORT int viewer( simlab addr ) {
+JNIEXPORT int viewer( simlab addr, simlab membuffer ) {
 	if( addr.type > 0 ) {
 		if( addr.length == 0 ) {
 			/*if( addr.type == 32 ) {
@@ -247,11 +259,12 @@ JNIEXPORT int viewer( simlab addr ) {
 				t_viewer<c_simlab<float> &>( (c_simlab<float> &)cbuf, 0 );
 			}*/
 		} else {
-			if( addr.type == 32 ) t_viewer<unsigned int*>( (unsigned int*)addr.buffer, addr.length );
-			else if( addr.type == 33 ) t_viewer<int*>( (int*)addr.buffer, addr.length );
-			else if( addr.type == 64 ) t_viewer<long long*>( (long long*)addr.buffer, addr.length );
+			if( addr.type == 32 ) t_viewer<unsigned int*>( (unsigned int*)addr.buffer, addr.length, (void*)membuffer.buffer );
+			else if( addr.type == 33 ) t_viewer<int*>( (int*)addr.buffer, addr.length, (void*)membuffer.buffer );
+			//else if( addr.type == 64 ) t_viewer<unsigned long long*>( (unsigned long long*)addr.buffer, addr.length, (void*)membuffer.buffer );
+			else if( addr.type == 65 ) t_viewer<long long*>( (long long*)addr.buffer, addr.length, (void*)membuffer.buffer );
 			else if( addr.type == 66 ) {
-				t_viewer<double*>( (double*)addr.buffer, addr.length );
+				t_viewer<double*>( (double*)addr.buffer, addr.length, (void*)membuffer.buffer );
 			}
 		}
 	} /*else {

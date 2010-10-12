@@ -2790,12 +2790,17 @@ JNIEXPORT int sqr() {
 	if( data.length == 0 ) {
 		if( data.type == 32 ) {
 			t_sqr( (unsigned int*)&data.buffer, 1 );
+		} else if( data.type == 33 ) {
+			t_sqr( (int*)&data.buffer, 1 );
 		} else if( data.type == 34 ) {
 			t_sqr( (float*)&data.buffer, 1 );
+		}  else if( data.type == 66 ) {
+			t_sqr( (double*)&data.buffer, 1 );
 		}
 	} else if( data.type == 66 ) t_sqr( (double*)data.buffer, data.length );
 	else if( data.type == 34 ) t_sqr( (float*)data.buffer, data.length );
-	else if( data.type == 32 ) t_sqr( (int*)data.buffer, data.length );
+	else if( data.type == 33 ) t_sqr( (int*)data.buffer, data.length );
+	else if( data.type == 32 ) t_sqr( (unsigned int*)data.buffer, data.length );
 	else if( data.type == 8 ) t_sqr( (char*)data.buffer, data.length );
 
 	return 0;
@@ -3716,11 +3721,12 @@ JNIEXPORT int identity() {
 }
 
 JNIEXPORT int idx() {
+	//printf( "hoho %d %d %d %d\n", (int)data.buffer, (int)data.type, (int)data.length, (int)sizeof(long) );
 	if( data.length == 0 ) t_index<int*,int>( (int*)&data.buffer, 1 );
 	else if( data.type < 0 ) {
-		//if( data.type == -66 ) t_index<c_simlab<double&>&,double>( *(c_simlab<double&>*)data.buffer, data.length );
-		//else if( data.type == -34 ) t_index<c_simlab<float&>&,float>( *(c_simlab<float&>*)data.buffer, data.length );
-		//else if( data.type == -32 ) t_index<c_simlab<int&>&,int>( *(c_simlab<int&>*)data.buffer, data.length );
+		if( data.type == -66 ) t_index<c_simlab<double&>&,double>( *(c_simlab<double&>*)data.buffer, data.length );
+		else if( data.type == -34 ) t_index<c_simlab<float&>&,float>( *(c_simlab<float&>*)data.buffer, data.length );
+		else if( data.type == -32 ) t_index<c_simlab<int&>&,int>( *(c_simlab<int&>*)data.buffer, data.length );
 	} else {
 		if( data.type == 96 ) t_index<long double*,long double>( (long double*)data.buffer, data.length );
 		else if( data.type == 66 ) t_index<double*,double>( (double*)data.buffer, data.length );
@@ -3774,7 +3780,8 @@ JNIEXPORT int simlab_ceil() {
 
 JNIEXPORT int simlab_floor() {
 	if( data.type == 66 ) t_floor( (double*)data.buffer, data.length );
-	if( data.type == 34 ) t_floor( (float*)data.buffer, data.length );
+	else if( data.type == 34 ) t_floor( (float*)data.buffer, data.length );
+
 	return 0;
 }
 
@@ -4672,7 +4679,8 @@ JNIEXPORT int trans( simlab cl, simlab rl ) {
 		else if( data.type == 66 ) t_trans<double*,double>( (double*)data.buffer, data.length, c, r );
 		else if( data.type == 64 ) t_trans<long long*,long long>( (long long*)data.buffer, data.length, c, r );
 		else if( data.type == 34 ) t_trans<float*,float>( (float*)data.buffer, data.length, c, r );
-		else if( data.type == 32 ) t_trans<int*,int>( (int*)data.buffer, data.length, c, r );
+		else if( data.type == 33 ) t_trans<int*,int>( (int*)data.buffer, data.length, c, r );
+		else if( data.type == 32 ) t_trans<unsigned int*,unsigned int>( (unsigned int*)data.buffer, data.length, c, r );
 		else if( data.type == 24 ) t_transmem( (char*)data.buffer, data.length, c, r, 3 );
 		else if( data.type == 16 ) t_trans<short*,short>( (short*)data.buffer, data.length, c, r );
 		else if( data.type == 9 ) t_trans<char*,char>( (char*)data.buffer, data.length, c, r );
@@ -4920,7 +4928,7 @@ JNIEXPORT int dual() {
 }
 
 
-#ifdef WIN
+/*#ifdef WIN
 #ifdef GL
 int bSetupPixelFormat(HDC hdc) {
     PIXELFORMATDESCRIPTOR pfd, *ppfd;
@@ -4955,7 +4963,7 @@ int bSetupPixelFormat(HDC hdc) {
     return TRUE;
 }
 #endif
-RECT	r;
+/*RECT	r;
 LRESULT CALLBACK MainWndProc( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam ) {
 	HDC				ghDC;
 	HGLRC			ghRC;
@@ -4993,7 +5001,7 @@ LRESULT CALLBACK MainWndProc( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			if (ghDC)
 				ReleaseDC(hwnd, ghDC);
 			ghRC = 0;
-			ghDC = 0;*/
+			ghDC = 0;*
 			printf("close\n");
 			DestroyWindow(hwnd);
 			PostQuitMessage(0);
@@ -5003,7 +5011,7 @@ LRESULT CALLBACK MainWndProc( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			/*if (ghRC)
 			    wglDeleteContext(ghRC);
 			if (ghDC)
-			    ReleaseDC(hwnd, ghDC);*/
+			    ReleaseDC(hwnd, ghDC);*
         	printf("destroy\n");
         	//DestroyWindow(hwnd);
 			PostQuitMessage(0);
@@ -5031,11 +5039,11 @@ LRESULT CALLBACK MainWndProc( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 					break;
 				case VK_DOWN:
 					latinc -= 0.5F;
-					break;*/
+					break;*
 			}
     }
     return DefWindowProc(hwnd, uMsg, wParam, lParam);;
-}
+}*
 
 JNIEXPORT int thread( simlab cmd ) {
 	//LPTHREAD_START_ROUTINE threadRoutine = (LPTHREAD_START_ROUTINE)GetProcAddress( hmodule, cmd );
@@ -5131,7 +5139,7 @@ JNIEXPORT int window( simlab name ) {
         IMAGE_ICON,
         GetSystemMetrics(SM_CXSMICON),
         GetSystemMetrics(SM_CYSMICON),
-        LR_DEFAULTCOLOR);*/
+        LR_DEFAULTCOLOR);*
 
     RegisterClassEx(&wcx);
 
@@ -5180,7 +5188,7 @@ JNIEXPORT int showwindow( int showhide ) {
     //UpdateWindow(currentWnd);
 
 	return current;
-}
+}*/
 
 JNIEXPORT int indexof( simlab val ) {
 	if( data.type == 66 ) {

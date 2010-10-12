@@ -1,11 +1,11 @@
 #include "simlab.h"
-#include <boost/random.hpp>
+//#include <boost/random.hpp>
 
-typedef boost::minstd_rand base_generator_type;
+//typedef boost::minstd_rand base_generator_type;
 
 extern simlab data;
 
-void t_rand( double* buffer, long length, double start, double stop ) {
+/*void t_rand( double* buffer, long length, double start, double stop ) {
 	base_generator_type 													generator;
 	boost::uniform_real<>													uni_dist(start, stop);
 	boost::variate_generator<base_generator_type&, boost::uniform_real<> > 	uni(generator, uni_dist);
@@ -30,4 +30,4 @@ JNIEXPORT int rndm( simlab start, simlab stop ) {
 	else if( data.type == 66 ) t_rand( (double*)data.buffer, data.length, 0.0, 1.0 );
 
 	return 0;
-}
+}*/
