@@ -26,8 +26,8 @@ public:
 		int ind = (int)buf[i];
 		if( ind >= 768*768 or ind < 0 ) {
 			//simlab & val = retlib["drw"];
-			printf("%d %d %lld\n", ind, i, (long long)buf);
-			printf( "okpok %d %lld %d %d\n", ind, (long long)buf, (int)sizeof(L), (int)sizeof(map[0]) );
+			//printf("%d %d %lld\n", ind, i, (long long)buf);
+			//printf( "okpok %d %lld %d %d\n", ind, (long long)buf, (int)sizeof(L), (int)sizeof(map[0]) );
 			/*for( int k = 0; k < 768; k++ ) {
 				printf("%d %f ", k, (float)buf[k]);
 			}
@@ -220,7 +220,7 @@ template<typename T> void t_viewer( T t, int len, void* buffer ) {
 			data.buffer = (long)buffer;
 		}
 		else if( data.type == 34 ) data.buffer = (long)new c_viewer<T,float*,float&>( t, (float*)data.buffer, len );
-		//else if( data.type == 64 ) data.buffer = (long)new c_viewer<T,unsigned long long*,unsigned long long&>( t, (unsigned long long*)data.buffer, len );
+		else if( data.type == 64 ) data.buffer = (long)new c_viewer<T,unsigned long long*,unsigned long long&>( t, (unsigned long long*)data.buffer, len );
 		else if( data.type == 65 ) data.buffer = (long)new c_viewer<T,long long*,long long&>( t, (long long*)data.buffer, len );
 		else if( data.type == 66 ) data.buffer = (long)new c_viewer<T,double*,double&>( t, (double*)data.buffer, len );
 
@@ -261,7 +261,7 @@ JNIEXPORT int viewer( simlab addr, simlab membuffer ) {
 		} else {
 			if( addr.type == 32 ) t_viewer<unsigned int*>( (unsigned int*)addr.buffer, addr.length, (void*)membuffer.buffer );
 			else if( addr.type == 33 ) t_viewer<int*>( (int*)addr.buffer, addr.length, (void*)membuffer.buffer );
-			//else if( addr.type == 64 ) t_viewer<unsigned long long*>( (unsigned long long*)addr.buffer, addr.length, (void*)membuffer.buffer );
+			else if( addr.type == 64 ) t_viewer<unsigned long long*>( (unsigned long long*)addr.buffer, addr.length, (void*)membuffer.buffer );
 			else if( addr.type == 65 ) t_viewer<long long*>( (long long*)addr.buffer, addr.length, (void*)membuffer.buffer );
 			else if( addr.type == 66 ) {
 				t_viewer<double*>( (double*)addr.buffer, addr.length, (void*)membuffer.buffer );
