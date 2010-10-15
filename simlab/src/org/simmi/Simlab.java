@@ -1,5 +1,6 @@
 package org.simmi;
 
+import java.awt.BorderLayout;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
@@ -63,10 +64,15 @@ import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.TargetDataLine;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
+import javax.swing.table.TableModel;
 
 import org.simmi.Simlab.simlab.ByValue;
 
@@ -385,6 +391,17 @@ public class Simlab implements ScriptEngineFactory {
 
 		return pval;
 	}
+	
+	private long allocateDouble( int size ) {
+		ByteBuffer bb = ByteBuffer.allocateDirect(size*8);
+		bb.order(ByteOrder.nativeOrder());
+
+		Pointer p = Native.getDirectBufferPointer(bb);
+		long pval = Pointer.nativeValue(p);
+		buffers.put(pval, bb);
+
+		return pval;
+	}
 
 	public int viewer(final simlab.ByValue s) {
 		long pval = allocateDirect(100);
@@ -454,7 +471,7 @@ public class Simlab implements ScriptEngineFactory {
 			ByteBuffer bb = data.getByteBuffer();
 			int i = 0;
 			for (; i < bb.limit(); i += 4) {
-				bb.putInt(0);
+				bb.putInt(i, 0);
 			}
 			for (; i < bb.limit() - 4; i++) {
 				bb.put((byte) 0);
@@ -672,8 +689,8 @@ public class Simlab implements ScriptEngineFactory {
 		}
 	}
 
-	public void image(final simlab.ByValue sl, final simlab.ByValue ww, final simlab.ByValue timer, final simlab.ByValue time) {
-		final String name = sl.getTheString();
+	public void image(final simlab.ByValue ww, final simlab.ByValue ... timer) {
+		final String name = "";//sl.getTheString();
 		final long w = ww.buffer;
 		final long t = data.length;
 		final long h = (t / w);
@@ -692,63 +709,67 @@ public class Simlab implements ScriptEngineFactory {
 			public void run() {
 				JFrame frame = new JFrame(name);
 				frame.setSize(800, 600);
-				final SimComp c = new SimComp(name, bi, slptr, (int) w, (int) h);
+				final ImageComp c = new ImageComp(name, bi, slptr, (int) w, (int) h);
 				frame.add(c);
 				// datalib.put(name, current);
 				compmap.put(data.buffer, c);
 
 				frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-				final Timer tmr = new Timer((int) time.buffer, new ActionListener() {
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						try {
-							Simlab.this.run(timer);
-						} catch (IllegalArgumentException e1) {
-							e1.printStackTrace();
-						} catch (IllegalAccessException e1) {
-							e1.printStackTrace();
-						} catch (InvocationTargetException e1) {
-							e1.printStackTrace();
+				if( timer.length > 1 ) {
+					long time = timer[1].buffer;
+				
+					final Timer tmr = new Timer((int) time, new ActionListener() {
+						@Override
+						public void actionPerformed(ActionEvent e) {
+							try {
+								Simlab.this.run(timer[0]);
+							} catch (IllegalArgumentException e1) {
+								e1.printStackTrace();
+							} catch (IllegalAccessException e1) {
+								e1.printStackTrace();
+							} catch (InvocationTargetException e1) {
+								e1.printStackTrace();
+							}
+							c.reload();
 						}
-						c.reload();
-					}
-				});
-
-				frame.addWindowListener(new WindowListener() {
-					@Override
-					public void windowOpened(WindowEvent e) {
-					}
-
-					@Override
-					public void windowIconified(WindowEvent e) {
-					}
-
-					@Override
-					public void windowDeiconified(WindowEvent e) {
-					}
-
-					@Override
-					public void windowDeactivated(WindowEvent e) {
-						tmr.stop();
-					}
-
-					@Override
-					public void windowClosing(WindowEvent e) {
-					}
-
-					@Override
-					public void windowClosed(WindowEvent e) {
-						tmr.stop();
-					}
-
-					@Override
-					public void windowActivated(WindowEvent e) {
-					}
-				});
+					});
+	
+					frame.addWindowListener(new WindowListener() {
+						@Override
+						public void windowOpened(WindowEvent e) {
+						}
+	
+						@Override
+						public void windowIconified(WindowEvent e) {
+						}
+	
+						@Override
+						public void windowDeiconified(WindowEvent e) {
+						}
+	
+						@Override
+						public void windowDeactivated(WindowEvent e) {
+							tmr.stop();
+						}
+	
+						@Override
+						public void windowClosing(WindowEvent e) {
+						}
+	
+						@Override
+						public void windowClosed(WindowEvent e) {
+							tmr.stop();
+						}
+	
+						@Override
+						public void windowActivated(WindowEvent e) {
+						}
+					});
+					// tmr.set
+					tmr.start();
+				}
 				frame.setVisible(true);
-				// tmr.set
-				tmr.start();
 			}
 		});
 	}
@@ -893,18 +914,18 @@ public class Simlab implements ScriptEngineFactory {
 	}
 
 	public void update(String name, final long w) {
-		SimComp sc = compmap.get(name);
+		ImageComp sc = (ImageComp)compmap.get(name);
 		sc.h = (int) ((sc.h * sc.w) / w);
 		sc.w = (int) w;
 		sc.bi = new BufferedImage(sc.w, sc.h, BufferedImage.TYPE_INT_RGB);
 		sc.reload();
 	}
 
-	public void trans(final simlab.ByValue... sl) {
+	/*public void trans( final simlab.ByValue... sl ) {
 		long w = 0;// sl[0].buffer.getValue().longValue();
 		crnt(data);
 		jcmdstr("trans " + w);
-		SimComp sc = compmap.get(data.buffer);
+		ImageComp sc = (ImageComp)compmap.get(data.buffer);
 		if (sc != null) {
 			if (data.type == 32L) {
 				if (w > 0) {
@@ -918,7 +939,7 @@ public class Simlab implements ScriptEngineFactory {
 			}
 			sc.reload();
 		}
-	}
+	}*/
 
 	public int nil() {
 		data.buffer = 0;
@@ -1570,11 +1591,18 @@ public class Simlab implements ScriptEngineFactory {
 			 * }
 			 */
 
-			for (long key : compmap.keySet()) {
+			if( compmap.containsKey(data.buffer) ) {
+				SimComp sc = compmap.get(data.buffer);
+				if( sc != null ) {
+					sc.reload();
+				}
+			}
+			
+			/*for (long key : compmap.keySet()) {
 				SimComp sc = compmap.get(key);
 				if (sc != null)
 					sc.reload();
-			}
+			}*/
 
 			/*
 			 * ByteBuffer buf = ByteBuffer.allocateDirect(6); buf.put(0, 's');
@@ -1728,6 +1756,50 @@ public class Simlab implements ScriptEngineFactory {
 		}
 
 		return 0;
+	}
+	
+	public int load() {
+		if( data.type == 8 || data.type == 9 ) {
+			String str = data.getTheString();
+			String[] spl = str.split("\n");
+			String[] nspl = spl[0].split("[\t ]+");
+			
+			int size = spl.length*nspl.length;
+			long pval = allocateDouble( size );
+			data.buffer = pval;
+			data.type = DOUBLELEN;
+			data.length = size;
+			
+			DoubleBuffer dd = buffers.get(pval).asDoubleBuffer();
+			for( String sp : spl ) {
+				nspl = sp.split("[\t ]+");
+				for( String nsp : nspl ) {
+					dd.put( Double.parseDouble(nsp) );
+				}
+			}
+		}
+		
+		return 0;
+	}
+	
+	public int table( final simlab.ByValue t ) {
+		final int c = (int)t.buffer;
+		final int r = (int)(data.length / c);
+		
+		SwingUtilities.invokeLater(new Runnable() {
+			@Override
+			public void run() {
+				JFrame frame = new JFrame("");
+				frame.setSize(800, 600);
+				TableComp	tc = new TableComp("", data.clone(), c, r);
+				frame.add(tc);
+				compmap.put(data.buffer, tc);
+				frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+				frame.setVisible( true );
+			}
+		});
+		
+		return 1;
 	}
 
 	public int system(final simlab.ByValue s) throws IOException {
@@ -1988,15 +2060,114 @@ public class Simlab implements ScriptEngineFactory {
 	}
 
 	Simple engine = new Simple();
+	
+	interface SimComp {
+		public void reload();
+	}
+	
+	class TableComp extends JComponent implements SimComp {
+		JScrollPane	scrollpane;
+		JTable		table;
+		String		name;
+		int			r,c;
+		simlab.ByValue	sl;
+		
+		public TableComp() {
+			super();
+		}
+		
+		public TableComp(String name, simlab.ByValue ptr, int w, int h) {
+			this.name = name;
+			this.sl = ptr;
+			this.c = w;
+			this.r = h;
+			
+			final ByteBuffer bb = sl.getByteBuffer(); 
+			table = new JTable();
+			table.setAutoCreateRowSorter( true );
+			table.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
+			table.setModel( new TableModel() {
+				@Override
+				public int getRowCount() {
+					return r;
+				}
 
-	class SimComp extends JComponent {
+				@Override
+				public int getColumnCount() {
+					return c;
+				}
+
+				@Override
+				public String getColumnName(int columnIndex) {
+					return Integer.toString(columnIndex);
+				}
+
+				@Override
+				public Class<?> getColumnClass(int columnIndex) {
+					if( sl.type == DOUBLELEN ) return Double.class;
+					else if( sl.type == INTLEN ) return Integer.class;
+		
+					return String.class;
+				}
+
+				@Override
+				public boolean isCellEditable(int rowIndex, int columnIndex) {
+					return true;
+				}
+
+				@Override
+				public Object getValueAt(int rowIndex, int columnIndex) {
+					if( sl.type == DOUBLELEN ) return bb.getDouble( rowIndex*getColumnCount() + columnIndex );
+					else if( sl.type == INTLEN ) return bb.getInt( rowIndex*getColumnCount() + columnIndex );
+					return null;
+				}
+
+				@Override
+				public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+					if( sl.type == DOUBLELEN ) bb.putDouble( rowIndex*getColumnCount() + columnIndex, (Double)aValue );
+					else if( sl.type == INTLEN ) bb.putInt( rowIndex*getColumnCount() + columnIndex, (Integer)aValue );
+				}
+
+				@Override
+				public void addTableModelListener(TableModelListener l) {
+					// TODO Auto-generated method stub
+					
+				}
+
+				@Override
+				public void removeTableModelListener(TableModelListener l) {
+					// TODO Auto-generated method stub
+					
+				}
+				
+			});
+			scrollpane = new JScrollPane( table );
+			
+			this.setLayout( new BorderLayout() );
+			this.add( scrollpane );
+		}
+
+		public void paintComponent(Graphics g) {
+			super.paintComponent(g);
+		}
+
+		public void reload() {
+			table.tableChanged( new TableModelEvent( table.getModel() ) );
+		}
+
+		public void repaint() {
+			super.repaint();
+		}
+	};
+
+	class ImageComp extends JComponent implements SimComp {
 		String name;
 		BufferedImage bi;
-		simlab.ByValue ptr;
+		private simlab.ByValue ptr;
 		int w;
 		int h;
 
-		public SimComp(String name, BufferedImage bi, simlab.ByValue ptr, int w, int h) {
+		public ImageComp(String name, BufferedImage bi, simlab.ByValue ptr, int w, int h) {
 			this.name = name;
 			this.bi = bi;
 			this.ptr = ptr;
@@ -2014,6 +2185,7 @@ public class Simlab implements ScriptEngineFactory {
 		public void reload() {
 			int t = w * h;
 			// int[] ib = ptr.getIntArray(0, t);
+			System.err.println("ptr" + ptr.length + "  " + ptr.type);
 			IntBuffer ib = ptr.getByteBuffer().asIntBuffer();
 			if (ib.limit() < t) {
 				System.err.println("imgsize error " + ib.limit() + "  " + ptr.getByteLength());
