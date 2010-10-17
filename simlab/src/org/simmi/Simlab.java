@@ -280,6 +280,38 @@ public class Simlab implements ScriptEngineFactory {
 			type = typ;
 			buffer = ptr;
 		}
+		
+		public double getDouble() {
+			if( length == 0 && type == 66) {
+				return Double.longBitsToDouble(buffer);
+			} else if( type == 66 ) {
+				return buffers.get(buffer).asDoubleBuffer().get(0);
+			} else if( type == 65 ) {
+				return (double)buffers.get(buffer).asLongBuffer().get(0);
+			} else if( type == 34 ) {
+				return (double)buffers.get(buffer).asFloatBuffer().get(0);
+			} else if( type == 33 ) {
+				return (double)buffers.get(buffer).asIntBuffer().get(0);
+			}
+			
+			return buffer;
+		}		
+		
+		public long getLong() {
+			if( length == 0 && type == 66) {
+				return (long)Double.longBitsToDouble(buffer);
+			} else if( type == 66 ) {
+				return (long)buffers.get(buffer).asDoubleBuffer().get(0);
+			} else if( type == 65 ) {
+				return buffers.get(buffer).asLongBuffer().get(0);
+			} else if( type == 34 ) {
+				return (long)buffers.get(buffer).asFloatBuffer().get(0);
+			} else if( type == 33 ) {
+				return (long)buffers.get(buffer).asIntBuffer().get(0);
+			}
+			
+			return buffer;
+		}
 
 		public int getByteLength() {
 			if (type < 8)
@@ -312,6 +344,17 @@ public class Simlab implements ScriptEngineFactory {
 				buffers.put(buffer, bb);
 			}
 
+			return bb;
+		}
+		
+		public Buffer getBuffer() {
+			ByteBuffer bb = getByteBuffer();
+			if( type == 66 ) return bb.asDoubleBuffer();
+			else if( type == 65 ) return bb.asLongBuffer();
+			else if( type == 34 ) return bb.asFloatBuffer();
+			else if( type == 33 ) return bb.asIntBuffer();
+			else if( type == 17 ) return bb.asShortBuffer();
+			
 			return bb;
 		}
 
@@ -712,7 +755,14 @@ public class Simlab implements ScriptEngineFactory {
 				final ImageComp c = new ImageComp(name, bi, slptr, (int) w, (int) h);
 				frame.add(c);
 				// datalib.put(name, current);
-				compmap.put(data.buffer, c);
+				Set<SimComp>	compset;
+				if( compmap.containsKey( data.buffer ) ) {
+					compset = compmap.get(data.buffer);
+				} else {
+					compset = new HashSet<SimComp>();
+					compmap.put( data.buffer, compset );
+				}
+				compset.add(c);
 
 				frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
@@ -1592,9 +1642,10 @@ public class Simlab implements ScriptEngineFactory {
 			 */
 
 			if( compmap.containsKey(data.buffer) ) {
-				SimComp sc = compmap.get(data.buffer);
-				if( sc != null ) {
-					sc.reload();
+				for( SimComp sc : compmap.get(data.buffer) ) {
+					if( sc != null ) {
+						sc.reload();
+					}
 				}
 			}
 			
@@ -1793,7 +1844,16 @@ public class Simlab implements ScriptEngineFactory {
 				frame.setSize(800, 600);
 				TableComp	tc = new TableComp("", data.clone(), c, r);
 				frame.add(tc);
-				compmap.put(data.buffer, tc);
+				
+				Set<SimComp>	compset;
+				if( compmap.containsKey( data.buffer ) ) {
+					compset = compmap.get( data.buffer );
+				} else {
+					compset = new HashSet<SimComp>();
+					compmap.put( data.buffer, compset );
+				}
+				compset.add(tc);
+				
 				frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 				frame.setVisible( true );
 			}
@@ -2086,6 +2146,7 @@ public class Simlab implements ScriptEngineFactory {
 			table = new JTable();
 			table.setAutoCreateRowSorter( true );
 			table.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
+			table.setColumnSelectionAllowed( true );
 			table.setModel( new TableModel() {
 				@Override
 				public int getRowCount() {
@@ -2117,15 +2178,15 @@ public class Simlab implements ScriptEngineFactory {
 
 				@Override
 				public Object getValueAt(int rowIndex, int columnIndex) {
-					if( sl.type == DOUBLELEN ) return bb.getDouble( rowIndex*getColumnCount() + columnIndex );
-					else if( sl.type == INTLEN ) return bb.getInt( rowIndex*getColumnCount() + columnIndex );
+					if( sl.type == DOUBLELEN ) return bb.getDouble( (int)((DOUBLELEN/8)*(rowIndex*getColumnCount() + columnIndex)) );
+					else if( sl.type == INTLEN ) return bb.getInt( (int)((INTLEN/8)*(rowIndex*getColumnCount() + columnIndex)) );
 					return null;
 				}
 
 				@Override
 				public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-					if( sl.type == DOUBLELEN ) bb.putDouble( rowIndex*getColumnCount() + columnIndex, (Double)aValue );
-					else if( sl.type == INTLEN ) bb.putInt( rowIndex*getColumnCount() + columnIndex, (Integer)aValue );
+					if( sl.type == DOUBLELEN ) bb.putDouble( (int)((DOUBLELEN/8)*(rowIndex*getColumnCount() + columnIndex)), (Double)aValue );
+					else if( sl.type == INTLEN ) bb.putInt( (int)((INTLEN/8)*(rowIndex*getColumnCount() + columnIndex)), (Integer)aValue );
 				}
 
 				@Override
@@ -2159,6 +2220,50 @@ public class Simlab implements ScriptEngineFactory {
 			super.repaint();
 		}
 	};
+	
+	class ChartComp extends JComponent implements SimComp {
+		String name;
+		private simlab.ByValue ptr;
+		int w;
+		int h;
+
+		public ChartComp(String name, BufferedImage bi, simlab.ByValue ptr, int w, int h) {
+			this.name = name;
+			this.ptr = ptr;
+			this.w = w;
+			this.h = h;
+		}
+
+		public void paintComponent(Graphics g) {
+			super.paintComponent(g);
+			Graphics2D g2 = (Graphics2D) g;
+			g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+			Buffer b = ptr.getBuffer();
+			if( b instanceof DoubleBuffer ) {
+				DoubleBuffer db = (DoubleBuffer)b;
+				//max()
+				for( int i = 0; i < db.limit(); i++ ) {
+					//max
+				}
+			}
+		}
+
+		public void reload() {
+			int t = w * h;
+			// int[] ib = ptr.getIntArray(0, t);
+			//System.err.println("ptr" + ptr.length + "  " + ptr.type);
+			IntBuffer ib = ptr.getByteBuffer().asIntBuffer();
+			if (ib.limit() < t) {
+				System.err.println("imgsize error " + ib.limit() + "  " + ptr.getByteLength());
+			} else {
+				for (int i = 0; i < t; i++) {
+					// if( i%13 == 0 ) System.err.println( ib[i] );
+					//bi.setRGB((int) (i % w), (int) (i / w), ib.get(i));
+				}
+				repaint();
+			}
+		}
+	};
 
 	class ImageComp extends JComponent implements SimComp {
 		String name;
@@ -2185,7 +2290,7 @@ public class Simlab implements ScriptEngineFactory {
 		public void reload() {
 			int t = w * h;
 			// int[] ib = ptr.getIntArray(0, t);
-			System.err.println("ptr" + ptr.length + "  " + ptr.type);
+			//System.err.println("ptr" + ptr.length + "  " + ptr.type);
 			IntBuffer ib = ptr.getByteBuffer().asIntBuffer();
 			if (ib.limit() < t) {
 				System.err.println("imgsize error " + ib.limit() + "  " + ptr.getByteLength());
@@ -2203,7 +2308,7 @@ public class Simlab implements ScriptEngineFactory {
 		}
 	};
 
-	Map<Long, SimComp> compmap = new HashMap<Long, SimComp>();
+	Map<Long, Set<SimComp>> compmap = new HashMap<Long, Set<SimComp>>();
 
 	public class Simple implements ScriptEngine {
 		@Override
