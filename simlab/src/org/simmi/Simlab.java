@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PipedReader;
 import java.io.PipedWriter;
+import java.io.PrintStream;
 import java.io.Reader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -189,6 +190,8 @@ public class Simlab implements ScriptEngineFactory {
 
 	public native int poly(simlab.ByValue val, simlab.ByValue pw);
 
+	public native int transmem(simlab.ByValue m, simlab.ByValue vc);
+	
 	public native int trans(simlab.ByValue val, simlab.ByValue val2);
 
 	public native int conv(simlab.ByValue convee, simlab.ByValue chunk, simlab.ByValue c_chunk);
@@ -221,6 +224,11 @@ public class Simlab implements ScriptEngineFactory {
 
 	public native int intersect(final simlab.ByValue s);
 
+	public native int reorder( final simlab.ByValue ro );
+	public native int invidx();
+	public native int sortidx();
+	public native int transidx( final simlab.ByValue c, final simlab.ByValue r );
+	public native int permute( final simlab.ByValue c, final simlab.ByValue start );
 	public native int idx();
 
 	public native int indexer();
@@ -258,6 +266,14 @@ public class Simlab implements ScriptEngineFactory {
 		public static class ByValue extends simlab implements Structure.ByValue {
 			public ByValue() {
 				super();
+			}
+			
+			public ByValue( long cnst ) {
+				super( 0, LONGLEN, cnst );
+			}
+			
+			public ByValue( double cnst ) {
+				super( 0, DOUBLELEN, Double.doubleToRawLongBits(cnst) );
 			}
 
 			public ByValue(long len, long typ, long ptr) {
@@ -298,16 +314,20 @@ public class Simlab implements ScriptEngineFactory {
 		}		
 		
 		public long getLong() {
-			if( length == 0 && type == 66) {
+			if( length > 0 ) {
+				if( type == 66 ) {
+					return (long)buffers.get(buffer).asDoubleBuffer().get(0);
+				} else if( type == 65 ) {
+					return buffers.get(buffer).asLongBuffer().get(0);
+				} else if( type == 34 ) {
+					return (long)buffers.get(buffer).asFloatBuffer().get(0);
+				} else if( type == 33 ) {
+					return (long)buffers.get(buffer).asIntBuffer().get(0);
+				}
+			}
+			
+			if( type == 66 ) {
 				return (long)Double.longBitsToDouble(buffer);
-			} else if( type == 66 ) {
-				return (long)buffers.get(buffer).asDoubleBuffer().get(0);
-			} else if( type == 65 ) {
-				return buffers.get(buffer).asLongBuffer().get(0);
-			} else if( type == 34 ) {
-				return (long)buffers.get(buffer).asFloatBuffer().get(0);
-			} else if( type == 33 ) {
-				return (long)buffers.get(buffer).asIntBuffer().get(0);
 			}
 			
 			return buffer;
@@ -359,6 +379,7 @@ public class Simlab implements ScriptEngineFactory {
 		}
 
 		public simlab.ByValue clone() {
+			//allocateDirect( 10 );
 			return new simlab.ByValue(length, type, buffer);
 		}
 
@@ -445,6 +466,13 @@ public class Simlab implements ScriptEngineFactory {
 
 		return pval;
 	}
+	
+	File currentDir = null;
+	public int cd( final simlab.ByValue dir ) {
+		currentDir = new File( dir.getTheString() );
+		
+		return 1;
+	}
 
 	public int viewer(final simlab.ByValue s) {
 		long pval = allocateDirect(100);
@@ -507,6 +535,10 @@ public class Simlab implements ScriptEngineFactory {
 		}
 
 		return 1;
+	}
+	
+	public int reverse( final simlab.ByValue s ) {
+		return flip( s );
 	}
 
 	public int zero() {
@@ -620,9 +652,23 @@ public class Simlab implements ScriptEngineFactory {
 	public int sin() {
 		return simlab_sin(nulldata);
 	}
+	
+	//public int permute( final simlab.ByValue)
+	
+	public int transidx( final simlab.ByValue c ) {
+		crnt(data);
+		transidx(c, nulldata);
+		data = getdata();
+		
+		return 1;
+	}
 
 	public int trans(simlab.ByValue v) {
-		return trans(v, nulldata);
+		crnt(data);
+		trans(v, nulldata);
+		data = getdata();
+		
+		return 1;
 	}
 
 	public void record() {
@@ -1025,7 +1071,8 @@ public class Simlab implements ScriptEngineFactory {
 			URL url = new URL(val);
 			stream = url.openStream();
 		} catch (MalformedURLException murle) {
-			stream = new FileInputStream(val);
+			if( currentDir == null ) stream = new FileInputStream(val);
+			else stream = new FileInputStream( new File( currentDir, val ) );
 		}
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -1051,15 +1098,17 @@ public class Simlab implements ScriptEngineFactory {
 		return 1;
 	}
 
-	public void write(final String s) {
+	public void write(final simlab.ByValue s) {
 		try {
 			// URL url = new URL( s );
 			// URLConnection c = url.openConnection();
 			// c.setDoOutput( true );
 			// OutputStream out = c.getOutputStream();
-			FileOutputStream out = new FileOutputStream(s);
-			simlab ps = getdata();
-			byte[] bb = ps.getByteArray(0, (int) ps.length);
+			FileOutputStream out;
+			if( currentDir != null ) out = new FileOutputStream( new File( currentDir, s.getTheString() ) );
+			else out = new FileOutputStream(s.getTheString());
+			byte[] bb = data.getByteArray(0, data.getByteLength());
+			//byte[] bb = ps.getByteArray(0, (int) ps.length);
 			out.write(bb);
 			out.close();
 		} catch (MalformedURLException e) {
@@ -1228,8 +1277,19 @@ public class Simlab implements ScriptEngineFactory {
 
 		return 1;
 	}
+	
+	public int print() {
+		if (data.type == UBYTELEN || data.type == BYTELEN) {
+			String pstr = data.getTheString();
+			System.out.println( pstr );
+		} else {
+			print( new simlab.ByValue( data.length ) );
+		}
+		
+		return 0;
+	}
 
-	public int print(simlab.ByValue sl) {
+	public int print(final simlab.ByValue sl) {
 		long chunk = sl.buffer;
 
 		// if( data.type != 66 ) {
@@ -1363,6 +1423,24 @@ public class Simlab implements ScriptEngineFactory {
 				// LongByReference lbr = new Longbyre
 				simlab.ByValue nsl = new simlab.ByValue(bb.limit(), BYTELEN, pval);
 				olist.add(nsl);
+			/*} else if (str.startsWith("-")) {
+				simlab.ByValue nsl = null;
+				try {
+					long l = Long.parseLong(str);
+					nsl = new simlab.ByValue(0, LONGLEN, -l);
+				} catch (Exception e) {
+				}
+
+				if (nsl == null) {
+					try {
+						double d = Double.parseDouble(str);
+						nsl = new simlab.ByValue(0, DOUBLELEN, Double.doubleToRawLongBits(-d));
+					} catch (Exception e) {
+					}
+				}
+				
+				if (nsl != null)
+					olist.add(nsl);*/
 			} else if (str.startsWith("[")) {
 				List<Double> d_vec = new ArrayList<Double>();
 
@@ -1763,6 +1841,22 @@ public class Simlab implements ScriptEngineFactory {
 		System.err.println("mu");
 		return 0;
 	}
+	
+	public int len() {
+		data.buffer = data.length;
+		data.length = 0;
+		data.type = 65;
+		
+		return 0;
+	}
+	
+	public int getthetype() {
+		data.buffer = data.type;
+		data.length = 0;
+		data.type = 65;
+		
+		return 0;
+	}
 
 	public int printlen() {
 		System.out.println(data.length);
@@ -1777,9 +1871,86 @@ public class Simlab implements ScriptEngineFactory {
 
 		return 0;
 	}
+	
+	public int shuffleidx() {
+		crnt( data );
+		idx();
+		data = getdata();
+		shuffle();
+		
+		return 0;
+	}
+	
+	public int shuffle() {
+		shuffle( new simlab.ByValue(data.length) );
+		
+		return 0;
+	}
+	
+	Random r = new Random();
+	public int shuffle( final simlab.ByValue chunk ) {
+		int ch = (int)chunk.getLong();
+		
+		if( data.type/8 == 8 ) {
+			LongBuffer lb = data.getByteBuffer().asLongBuffer();
+			for( int u = 0; u < data.length; u+=ch ) {
+				for( int i = u; i < u+ch; i++ ) {
+					int k = (int)(r.nextDouble()*data.length);
+					long tmp = lb.get(i);
+					lb.put(i, lb.get(k));
+					lb.put(k, tmp);
+				}
+			}
+		} else if( data.type/8 == 4 ) {
+			IntBuffer ib = data.getByteBuffer().asIntBuffer();
+			for( int u = 0; u < data.length; u+=ch ) {
+				for( int i = u; i < u+ch; i++ ) {
+					int k = (int)(r.nextDouble()*data.length);
+					int tmp = ib.get(i);
+					ib.put(i, ib.get(k));
+					ib.put(k, tmp);
+				}
+			}
+		} else if( data.type/8 == 2 ) {
+			ShortBuffer sb = data.getByteBuffer().asShortBuffer();
+			for( int u = 0; u < data.length; u+=ch ) {
+				for( int i = u; i < u+ch; i++ ) {
+					int k = (int)(r.nextDouble()*data.length);
+					short tmp = sb.get(i);
+					sb.put(i, sb.get(k));
+					sb.put(k, tmp);
+				}
+			}
+		} else if( data.type/8 == 1 ) {
+			ByteBuffer bb = data.getByteBuffer();
+			for( int u = 0; u < data.length; u+=ch ) {
+				for( int i = u; i < u+ch; i++ ) {
+					int k = (int)(r.nextDouble()*data.length);
+					byte tmp = bb.get(i);
+					bb.put(i, bb.get(k));
+					bb.put(k, tmp);
+				}
+			}
+		} else {
+			int s = (int)(data.type/8);
+			ByteBuffer bb = data.getByteBuffer();
+			int sch = s*ch;
+			byte[] bs = new byte[s];
+			for( int u = 0; u < data.length; u+=sch ) {
+				for( int i = u; i < u+sch; i++ ) {
+					int k = (int)(r.nextDouble()*data.length);
+					bb.get(bs);
+					//bb.position();
+					//bb.put(i, bb.get(k));
+					//bb.put(k, tmp);
+				}
+			}
+		}
+		
+		return 1;
+	}
 
 	public int rand() {
-		Random r = new Random();
 		if (data.type > 0) {
 			ByteBuffer bb = data.getByteBuffer();
 
@@ -1807,6 +1978,49 @@ public class Simlab implements ScriptEngineFactory {
 		}
 
 		return 0;
+	}
+	
+	public int dump() throws IOException {
+		dump( datalib.get("one") );
+		
+		return 0;
+	}
+	
+	public int dump( final simlab.ByValue sl ) throws IOException {
+		int cval = (int)sl.getLong();
+		ByteArrayOutputStream	baos = new ByteArrayOutputStream();
+		PrintStream ps = new PrintStream( baos );
+		ByteBuffer	bb = data.getByteBuffer();
+		for( int r = 0; r < data.length/cval; r++ ) {
+			for( int c = 0; c < cval; c++ ) {
+				if( data.type == DOUBLELEN ) {
+					ps.printf( "%e\t", bb.asDoubleBuffer().get(r*cval+c) );
+				} else if( data.type == LONGLEN || data.type == ULONGLEN ) {
+					ps.printf( "%f\t", bb.asLongBuffer().get(r*cval+c) );
+				} else if( data.type == FLOATLEN ) {
+					ps.printf( "%f\t", bb.asFloatBuffer().get(r*cval+c) );
+				} else if( data.type == UINTLEN || data.type == INTLEN ) {
+					ps.printf( "%d\t", bb.asIntBuffer().get(r*cval+c) );
+				}
+			}
+			ps.println();
+		}
+		ps.flush();
+		
+		byte[] ba = baos.toByteArray();
+		long pval = allocateDirect( ba.length );
+		bb = buffers.get( pval );
+		for( byte b : ba ) {
+			bb.put( b );
+		}
+		data.length = ba.length;
+		data.type = 8;
+		data.buffer = pval;
+		
+		ps.close();
+		baos.close();
+		
+		return 1;
 	}
 	
 	public int load() {
@@ -1879,25 +2093,29 @@ public class Simlab implements ScriptEngineFactory {
 
 	public int jinit() {
 		datalib.put("null", nulldata);
-		datalib.put("bit", new simlab.ByValue(0, 64, 1));
-		datalib.put("duo", new simlab.ByValue(0, 64, 2));
-		datalib.put("quad", new simlab.ByValue(0, 64, 4));
-		datalib.put("ubyte", new simlab.ByValue(0, 64, 8));
-		datalib.put("byte", new simlab.ByValue(0, 64, 9));
-		datalib.put("ushort", new simlab.ByValue(0, 64, 16));
-		datalib.put("short", new simlab.ByValue(0, 64, 17));
-		datalib.put("uint", new simlab.ByValue(0, 64, 32));
-		datalib.put("int", new simlab.ByValue(0, 64, 33));
-		datalib.put("float", new simlab.ByValue(0, 64, 34));
-		datalib.put("ulong", new simlab.ByValue(0, 64, 64));
-		datalib.put("long", new simlab.ByValue(0, 64, 65));
-		datalib.put("double", new simlab.ByValue(0, 64, 66));
+		datalib.put("bit", new simlab.ByValue(0, 65, 1));
+		datalib.put("duo", new simlab.ByValue(0, 65, 2));
+		datalib.put("quad", new simlab.ByValue(0, 65, 4));
+		datalib.put("ubyte", new simlab.ByValue(0, 65, 8));
+		datalib.put("byte", new simlab.ByValue(0, 65, 9));
+		datalib.put("ushort", new simlab.ByValue(0, 65, 16));
+		datalib.put("short", new simlab.ByValue(0, 65, 17));
+		datalib.put("uint", new simlab.ByValue(0, 65, 32));
+		datalib.put("int", new simlab.ByValue(0, 65, 33));
+		datalib.put("float", new simlab.ByValue(0, 65, 34));
+		datalib.put("ulong", new simlab.ByValue(0, 65, 64));
+		datalib.put("long", new simlab.ByValue(0, 65, 65));
+		datalib.put("double", new simlab.ByValue(0, 65, 66));
 
-		datalib.put("PI", new simlab.ByValue(0, 64, Double.doubleToRawLongBits(Math.PI)));
-		datalib.put("e", new simlab.ByValue(0, 64, Double.doubleToRawLongBits(Math.E)));
+		datalib.put("PI", new simlab.ByValue(0, 65, Double.doubleToRawLongBits(Math.PI)));
+		datalib.put("e", new simlab.ByValue(0, 65, Double.doubleToRawLongBits(Math.E)));
 
 		datalib.put("true", new simlab.ByValue(0, 1, 1));
 		datalib.put("false", new simlab.ByValue(0, 1, 0));
+		
+		datalib.put("nil", new simlab.ByValue(0, 65, 0));
+		datalib.put("one", new simlab.ByValue(0, 65, 1));
+		datalib.put("two", new simlab.ByValue(0, 65, 2));
 
 		return 0;
 	}
