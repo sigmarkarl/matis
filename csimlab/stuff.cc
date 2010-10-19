@@ -1945,6 +1945,18 @@ template <typename T> void t_flip( T* buffer, int length, int chunk ) {
 	}
 }
 
+void t_flipmem( char* buffer, int memlen, int length, int chunk ) {
+	char	tmp[ memlen ];
+	for( int i = 0; i < length; i+=chunk ) {
+		char* nbuffer = &buffer[i*memlen];
+		for( int k = 0; k < chunk/2; k++ ) {
+			memcpy( tmp, &nbuffer[k*memlen], memlen );
+			memcpy( &nbuffer[k*memlen], &nbuffer[(chunk-1-k)*memlen], memlen );
+			memcpy( &nbuffer[(chunk-1-k)*memlen], tmp, memlen );
+		}
+	}
+}
+
 template <typename T,typename K> void t_shift( T buffer, long length, long chunk, long shift ) {
 	shift %= chunk;
 	if( shift < 0 ) shift = chunk + shift;
@@ -4574,26 +4586,38 @@ JNIEXPORT int idct() {
 	return current;
 }
 
-JNIEXPORT int permute( int c, int start ) {
-	simlab* data = (simlab*)current;
+JNIEXPORT int permute( simlab sl_c, simlab sl_start ) {
+	int c = sl_c.buffer;
+	int start = sl_start.buffer;
 
-	if( data->type == 66 ) t_permute( (double*)data->buffer, data->length, c, start );
-	else if( data->type == 34 ) t_permute( (float*)data->buffer, data->length, c, start );
-	else if( data->type == 32 ) t_permute( (int*)data->buffer, data->length, c, start );
+	if( data.type == 66 ) t_permute( (double*)data.buffer, data.length, c, start );
+	else if( data.type == 65 ) t_permute( (long long*)data.buffer, data.length, c, start );
+	else if( data.type == 64 ) t_permute( (unsigned long long*)data.buffer, data.length, c, start );
+	else if( data.type == 34 ) t_permute( (float*)data.buffer, data.length, c, start );
+	else if( data.type == 33 ) t_permute( (int*)data.buffer, data.length, c, start );
+	else if( data.type == 32 ) t_permute( (unsigned int*)data.buffer, data.length, c, start );
 
 	return current;
 }
 
 JNIEXPORT int invidx() {
 	if( data.type == 66 ) t_invidx( (double*)data.buffer, data.length );
-	else if( data.type == 32 ) t_invidx( (int*)data.buffer, data.length );
+	else if( data.type == 65 ) t_invidx( (long long*)data.buffer, data.length );
+	else if( data.type == 64 ) t_invidx( (unsigned long long*)data.buffer, data.length );
+	else if( data.type == 34 ) t_invidx( (float*)data.buffer, data.length );
+	else if( data.type == 33 ) t_invidx( (int*)data.buffer, data.length );
+	else if( data.type == 32 ) t_invidx( (unsigned int*)data.buffer, data.length );
 
 	return 0;
 }
 
 JNIEXPORT int sortidx() {
 	if( data.type == 66 ) t_sortidx( (double*)data.buffer, data.length );
-	else if( data.type == 32 ) t_sortidx( (int*)data.buffer, data.length );
+	else if( data.type == 65 ) t_sortidx( (long long*)data.buffer, data.length );
+	else if( data.type == 64 ) t_sortidx( (unsigned long long*)data.buffer, data.length );
+	else if( data.type == 34 ) t_sortidx( (float*)data.buffer, data.length );
+	else if( data.type == 33 ) t_sortidx( (int*)data.buffer, data.length );
+	else if( data.type == 32 ) t_sortidx( (unsigned int*)data.buffer, data.length );
 
 	return 0;
 }
@@ -4605,7 +4629,11 @@ JNIEXPORT int transidx( simlab cl, simlab rl ) {
 	if( r == 0 ) r = data.length/c;
 
 	if( data.type == 66 ) t_transidx( (double*)data.buffer, data.length, c, r );
-	else if( data.type == 32 ) t_transidx( (int*)data.buffer, data.length, c, r );
+	else if( data.type == 65 ) t_transidx( (long long*)data.buffer, data.length, c, r );
+	else if( data.type == 64 ) t_transidx( (unsigned long long*)data.buffer, data.length, c, r );
+	else if( data.type == 34 ) t_transidx( (float*)data.buffer, data.length, c, r );
+	else if( data.type == 33 ) t_transidx( (int*)data.buffer, data.length, c, r );
+	else if( data.type == 32 ) t_transidx( (unsigned int*)data.buffer, data.length, c, r );
 
 	return 0;
 }
@@ -4664,11 +4692,29 @@ JNIEXPORT int transold( simlab cl, simlab rl ) {
 	return current;
 }
 
+JNIEXPORT int transmem( simlab mem, simlab cl ) {
+	int bl = bytelength( data.type, data.length );
+	int m = mem.buffer;
+	int l = bl/m;
+	int c = cl.buffer;
+	if( c < 0 ) c = l/(-c);
+	int r = l/c;
+
+	printf( "%d %d %d %d\n", l, c, r, (int)mem.buffer );
+	t_transmem( (char*)data.buffer, l, c, r, mem.buffer );
+
+	return 2;
+}
+
 JNIEXPORT int trans( simlab cl, simlab rl ) {
+	printf("%d %d %d\n", (int)cl.buffer, (int)rl.buffer, (int)data.length );
+
 	int c = cl.buffer;
 	if( c < 0 ) c = data.length/(-c);
 	int r = rl.buffer;
 	if( r == 0 ) r = data.length/c;
+
+	printf("oktokst\n");
 
 	//printf("%d\n", sizeof(long double) );
 	if( data.type < 0 ) {
@@ -4693,6 +4739,9 @@ JNIEXPORT int trans( simlab cl, simlab rl ) {
 		else if( data.type == 5 ) t_transbits<unsigned long long>( *(unsigned char**)&data.buffer, data.length, data.type, 5, c, r );
 		else if( data.type == 6 ) t_transbits<unsigned int>( *(unsigned char**)&data.buffer, data.length, data.type, 3, c, r );
 		else if( data.type == 7 ) t_transbits<unsigned long long>( *(unsigned char**)&data.buffer, data.length, data.type, 7, c, r );
+		else {
+
+		}
 	}
 
 	return current;
@@ -5312,9 +5361,16 @@ JNIEXPORT int flip( simlab chunk ) {
 
 	if( chunk.buffer == 0 ) chunk.buffer = data.length;
 	if( data.type == 66 ) t_flip( (double*)data.buffer, data.length, chunk.buffer );
+	else if( data.type == 65 ) t_flip( (long long*)data.buffer, data.length, chunk.buffer );
+	else if( data.type == 64 ) t_flip( (unsigned long long*)data.buffer, data.length, chunk.buffer );
 	else if( data.type == 34 ) t_flip( (float*)data.buffer, data.length, chunk.buffer );
-	else if( data.type == 32 ) t_flip( (int*)data.buffer, data.length, chunk.buffer );
-	else if( data.type == 8 ) t_flip( (char*)data.buffer, data.length, chunk.buffer );
+	else if( data.type == 33 ) t_flip( (int*)data.buffer, data.length, chunk.buffer );
+	else if( data.type == 32 ) t_flip( (unsigned int*)data.buffer, data.length, chunk.buffer );
+	else if( data.type == 9 ) t_flip( (char*)data.buffer, data.length, chunk.buffer );
+	else if( data.type == 8 ) t_flip( (unsigned char*)data.buffer, data.length, chunk.buffer );
+	else if( data.type > 7 ) {
+		t_flipmem( (char*)data.buffer, (int)(data.type/8), (int)data.length, (int)chunk.buffer );
+	}
 
 	return 0;
 }
