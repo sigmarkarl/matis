@@ -101,30 +101,65 @@ template <typename T, typename K, typename U> void t_order( T buffer, long lengt
 	if( length == vallen ) {
 		while( i < vallen && l < vallen ) {
 			int k = value[l];
-			if( k > l ) {
+			while( k > l ) {
 				k = value[k];
-				while( k > l ) {
-					k = value[k];
-				}
-				if( k == l ) {
-					U	to = buffer[(int)l];
-					k = value[l];
-					U	ti = buffer[(int)k];
+			}
+			if( k == l ) {
+				U	to = buffer[(int)l];
+				k = value[l];
+				U	ti = buffer[(int)k];
 
-					while( k != l ) {
-						buffer[(int)k] = to;
-						to = ti;
-						k = value[k];
-						ti = buffer[(int)k];
-						i++;
-					}
+				while( k != l ) {
 					buffer[(int)k] = to;
+					to = ti;
+					k = value[k];
+					ti = buffer[(int)k];
 					i++;
 				}
+				buffer[(int)k] = to;
+				i++;
 			}
 			l++;
 		}
 	} else {
+		while( i < vallen && l < vallen ) {
+			int k = value[l];
+			while( k > l ) {
+				k = value[k];
+			}
+			if( k == l ) {
+				U	to = buffer[(int)l];
+				k = value[l];
+				U	ti = buffer[(int)k];
+
+				while( k != l ) {
+					buffer[(int)k] = to;
+					to = ti;
+					k = value[k];
+					ti = buffer[(int)k];
+					i++;
+				}
+				buffer[(int)k] = to;
+
+				for( int u = vallen; u < length; u+=vallen ) {
+					U	to = buffer[(int)l+u];
+					k = value[l];
+					U	ti = buffer[(int)k+u];
+
+					while( k != l ) {
+						buffer[(int)k+u] = to;
+						to = ti;
+						k = value[k];
+						ti = buffer[(int)k+u];
+					}
+					buffer[(int)k+u] = to;
+				}
+
+				i++;
+			}
+			l++;
+		}
+
 		/*while( i < m-2 && l < m ) {
 			double k = fmod( (l*r), m );
 			double t = fmod( (l*c), m );
@@ -309,16 +344,16 @@ template<template<typename T, typename K, typename U> class c_func> void order( 
 		else if( value.type == -32 ) suborder< c_func, c_simlab<unsigned int>& >( *((c_simlab<unsigned int>*)value.buffer), data.length );
 		else if( value.type == -16 ) suborder< c_func, c_simlab<short>& >( *((c_simlab<short>*)value.buffer), data.length );
 	} else {
-		if( value.type == 66 ) suborder< c_func, double* >( (double*)value.buffer, data.length );
-		else if( value.type == 65 ) suborder< c_func, long long* >( (long long*)value.buffer, data.length );
-		else if( value.type == 64 ) suborder< c_func, unsigned long long* >( (unsigned long long*)value.buffer, data.length );
-		else if( value.type == 34 ) suborder< c_func, float* >( (float*)value.buffer, data.length );
-		else if( value.type == 33 ) suborder< c_func, int* >( (int*)value.buffer, data.length );
-		else if( value.type == 32 ) suborder< c_func, unsigned int* >( (unsigned int*)value.buffer, data.length );
-		else if( value.type == 17 ) suborder< c_func, short* >( (short*)value.buffer, data.length );
-		else if( value.type == 16 ) suborder< c_func, unsigned short* >( (unsigned short*)value.buffer, data.length );
-		else if( value.type == 9 ) suborder< c_func, char* >( (char*)value.buffer, data.length );
-		else if( value.type == 8 ) suborder< c_func, unsigned char* >( (unsigned char*)value.buffer, data.length );
+		if( value.type == 66 ) suborder< c_func, double* >( (double*)value.buffer, value.length );
+		else if( value.type == 65 ) suborder< c_func, long long* >( (long long*)value.buffer, value.length );
+		else if( value.type == 64 ) suborder< c_func, unsigned long long* >( (unsigned long long*)value.buffer, value.length );
+		else if( value.type == 34 ) suborder< c_func, float* >( (float*)value.buffer, value.length );
+		else if( value.type == 33 ) suborder< c_func, int* >( (int*)value.buffer, value.length );
+		else if( value.type == 32 ) suborder< c_func, unsigned int* >( (unsigned int*)value.buffer, value.length );
+		else if( value.type == 17 ) suborder< c_func, short* >( (short*)value.buffer, value.length );
+		else if( value.type == 16 ) suborder< c_func, unsigned short* >( (unsigned short*)value.buffer, value.length );
+		else if( value.type == 9 ) suborder< c_func, char* >( (char*)value.buffer, value.length );
+		else if( value.type == 8 ) suborder< c_func, unsigned char* >( (unsigned char*)value.buffer, value.length );
 	}
 }
 

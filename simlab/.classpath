@@ -3,5 +3,6 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="linux-amd64.jar"/>
+	<classpathentry kind="lib" path="/opt/lwjgl_applet-2.6/applet/basic/lwjgl.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

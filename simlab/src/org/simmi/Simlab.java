@@ -1,6 +1,8 @@
 package org.simmi;
 
 import java.awt.BorderLayout;
+import java.awt.Canvas;
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
@@ -28,6 +30,7 @@ import java.io.Reader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -75,6 +78,8 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
 
+import org.lwjgl.LWJGLException;
+import org.lwjgl.opengl.Display;
 import org.simmi.Simlab.simlab.ByValue;
 
 import com.sun.jna.Function;
@@ -91,7 +96,7 @@ public class Simlab implements ScriptEngineFactory {
 			boolean iswin = Platform.isWindows();
 
 			String filename;
-			if (!iswin)
+			if( !iswin )
 				filename = "libcsimlab.so";
 			else
 				filename = "csimlab.dll";
@@ -132,7 +137,6 @@ public class Simlab implements ScriptEngineFactory {
 	public Map<String, simlab.ByValue> datalib = new HashMap<String, simlab.ByValue>();
 	public simlab.ByValue data = new simlab.ByValue();
 	public simlab.ByValue nulldata = new simlab.ByValue(0, 0, 0);
-	public List<Object> objects = new ArrayList<Object>();
 
 	public static native int jcmd(simlab.ByValue sl);
 
@@ -191,7 +195,7 @@ public class Simlab implements ScriptEngineFactory {
 	public native int poly(simlab.ByValue val, simlab.ByValue pw);
 
 	public native int transmem(simlab.ByValue m, simlab.ByValue vc);
-	
+
 	public native int trans(simlab.ByValue val, simlab.ByValue val2);
 
 	public native int conv(simlab.ByValue convee, simlab.ByValue chunk, simlab.ByValue c_chunk);
@@ -222,13 +226,20 @@ public class Simlab implements ScriptEngineFactory {
 
 	public native int simmi(simlab.ByValue s);
 
+	public native int sort(simlab.ByValue s, simlab.ByValue w);
+
 	public native int intersect(final simlab.ByValue s);
 
-	public native int reorder( final simlab.ByValue ro );
+	public native int reorder(final simlab.ByValue ro);
+
 	public native int invidx();
+
 	public native int sortidx();
-	public native int transidx( final simlab.ByValue c, final simlab.ByValue r );
-	public native int permute( final simlab.ByValue c, final simlab.ByValue start );
+
+	public native int transidx(final simlab.ByValue c, final simlab.ByValue r);
+
+	public native int permute(final simlab.ByValue c, final simlab.ByValue start);
+
 	public native int idx();
 
 	public native int indexer();
@@ -260,6 +271,7 @@ public class Simlab implements ScriptEngineFactory {
 		return 0;
 	}
 
+	static public List<Object> objects = new ArrayList<Object>();
 	static Map<Long, ByteBuffer> buffers = new HashMap<Long, ByteBuffer>();
 
 	public static class simlab extends Structure implements Cloneable {
@@ -267,13 +279,22 @@ public class Simlab implements ScriptEngineFactory {
 			public ByValue() {
 				super();
 			}
-			
-			public ByValue( long cnst ) {
-				super( 0, LONGLEN, cnst );
+
+			public ByValue(long cnst) {
+				super(0, LONGLEN, cnst);
 			}
-			
-			public ByValue( double cnst ) {
-				super( 0, DOUBLELEN, Double.doubleToRawLongBits(cnst) );
+
+			public ByValue(double cnst) {
+				super(0, DOUBLELEN, Double.doubleToRawLongBits(cnst));
+			}
+
+			public ByValue(String str) {
+				/*
+				 * byte[] bb = str.getBytes(); long pval =
+				 * Simlab.this.allocateDirect(bb.length); ByteBuffer bff =
+				 * buffers.get( pval ); for( byte b : bb ) { bff.put( b ); }
+				 * super( 0, BYTELEN, pval );
+				 */
 			}
 
 			public ByValue(long len, long typ, long ptr) {
@@ -297,39 +318,56 @@ public class Simlab implements ScriptEngineFactory {
 			buffer = ptr;
 		}
 		
-		public double getDouble() {
-			if( length == 0 && type == 66) {
-				return Double.longBitsToDouble(buffer);
-			} else if( type == 66 ) {
-				return buffers.get(buffer).asDoubleBuffer().get(0);
-			} else if( type == 65 ) {
-				return (double)buffers.get(buffer).asLongBuffer().get(0);
-			} else if( type == 34 ) {
-				return (double)buffers.get(buffer).asFloatBuffer().get(0);
-			} else if( type == 33 ) {
-				return (double)buffers.get(buffer).asIntBuffer().get(0);
+		public boolean isJavaObject() {
+			return type == Byte.MIN_VALUE;
+		}
+
+		public Object getJavaObject() {
+			if (type == Byte.MIN_VALUE) {
+				return objects.get((int) length);
 			}
-			
-			return buffer;
-		}		
+
+			return null;
+		}
 		
+		public double getRealValue() {
+			if( type == 66 ) return getDouble();
+			return getLong();
+		}
+
+		public double getDouble() {
+			if (length == 0 && type == 66) {
+				return Double.longBitsToDouble(buffer);
+			} else if (type == 66) {
+				return buffers.get(buffer).asDoubleBuffer().get(0);
+			} else if (type == 65) {
+				return (double) buffers.get(buffer).asLongBuffer().get(0);
+			} else if (type == 34) {
+				return (double) buffers.get(buffer).asFloatBuffer().get(0);
+			} else if (type == 33) {
+				return (double) buffers.get(buffer).asIntBuffer().get(0);
+			}
+
+			return buffer;
+		}
+
 		public long getLong() {
-			if( length > 0 ) {
-				if( type == 66 ) {
-					return (long)buffers.get(buffer).asDoubleBuffer().get(0);
-				} else if( type == 65 ) {
+			if (length > 0) {
+				if (type == 66) {
+					return (long) buffers.get(buffer).asDoubleBuffer().get(0);
+				} else if (type == 65) {
 					return buffers.get(buffer).asLongBuffer().get(0);
-				} else if( type == 34 ) {
-					return (long)buffers.get(buffer).asFloatBuffer().get(0);
-				} else if( type == 33 ) {
-					return (long)buffers.get(buffer).asIntBuffer().get(0);
+				} else if (type == 34) {
+					return (long) buffers.get(buffer).asFloatBuffer().get(0);
+				} else if (type == 33) {
+					return (long) buffers.get(buffer).asIntBuffer().get(0);
 				}
 			}
-			
-			if( type == 66 ) {
-				return (long)Double.longBitsToDouble(buffer);
+
+			if (type == 66) {
+				return (long) Double.longBitsToDouble(buffer);
 			}
-			
+
 			return buffer;
 		}
 
@@ -366,20 +404,25 @@ public class Simlab implements ScriptEngineFactory {
 
 			return bb;
 		}
-		
+
 		public Buffer getBuffer() {
 			ByteBuffer bb = getByteBuffer();
-			if( type == 66 ) return bb.asDoubleBuffer();
-			else if( type == 65 ) return bb.asLongBuffer();
-			else if( type == 34 ) return bb.asFloatBuffer();
-			else if( type == 33 ) return bb.asIntBuffer();
-			else if( type == 17 ) return bb.asShortBuffer();
-			
+			if (type == 66)
+				return bb.asDoubleBuffer();
+			else if (type == 65)
+				return bb.asLongBuffer();
+			else if (type == 34)
+				return bb.asFloatBuffer();
+			else if (type == 33)
+				return bb.asIntBuffer();
+			else if (type == 17)
+				return bb.asShortBuffer();
+
 			return bb;
 		}
 
 		public simlab.ByValue clone() {
-			//allocateDirect( 10 );
+			// allocateDirect( 10 );
 			return new simlab.ByValue(length, type, buffer);
 		}
 
@@ -401,12 +444,13 @@ public class Simlab implements ScriptEngineFactory {
 			// System.err.println("tostring " + buffer + "  " + type + "  " +
 			// length);
 			if ((type == 8 || type == 9) && buffer != 0 && length > 0) {
-				s = Native.getDirectBufferPointer( getByteBuffer() ).getString(0);
+				s = Native.getDirectBufferPointer(getByteBuffer()).getString(0);
 				// ).getString(0);
-				/*ByteBuffer bb = getByteBuffer();
-				byte[] dst = new byte[bb.limit()];
-				bb.get(dst);
-				s = new String(dst, 0, dst.length - 1);*/
+				/*
+				 * ByteBuffer bb = getByteBuffer(); byte[] dst = new
+				 * byte[bb.limit()]; bb.get(dst); s = new String(dst, 0,
+				 * dst.length - 1);
+				 */
 			} else
 				s = buffer + " " + type + " " + length;
 
@@ -455,9 +499,9 @@ public class Simlab implements ScriptEngineFactory {
 
 		return pval;
 	}
-	
-	private long allocateDouble( int size ) {
-		ByteBuffer bb = ByteBuffer.allocateDirect(size*8);
+
+	private long allocateDouble(int size) {
+		ByteBuffer bb = ByteBuffer.allocateDirect(size * 8);
 		bb.order(ByteOrder.nativeOrder());
 
 		Pointer p = Native.getDirectBufferPointer(bb);
@@ -466,11 +510,12 @@ public class Simlab implements ScriptEngineFactory {
 
 		return pval;
 	}
-	
+
 	File currentDir = null;
-	public int cd( final simlab.ByValue dir ) {
-		currentDir = new File( dir.getTheString() );
-		
+
+	public int cd(final simlab.ByValue dir) {
+		currentDir = new File(dir.getTheString());
+
 		return 1;
 	}
 
@@ -505,7 +550,6 @@ public class Simlab implements ScriptEngineFactory {
 		obj = theclass.newInstance();
 		data.buffer = 0;
 		data.length = objects.size();
-		;
 		data.type = Byte.MIN_VALUE;
 		objects.add(obj);
 
@@ -529,16 +573,45 @@ public class Simlab implements ScriptEngineFactory {
 					lObj.add(v.buffer == 1);
 				}
 			}
-			Object obj = objects.get((int) data.length);
-			Method meth = obj.getClass().getMethod(methodName, lClass.toArray(new Class[0]));
-			meth.invoke(obj, lObj.toArray());
+			Object obj = data.getJavaObject();
+			if (obj != null) {
+				Method meth = obj.getClass().getMethod(methodName, lClass.toArray(new Class[0]));
+				meth.invoke(obj, lObj.toArray());
+			}
 		}
 
 		return 1;
 	}
+
+	public int reverse(final simlab.ByValue s) {
+		return flip(s);
+	}
 	
-	public int reverse( final simlab.ByValue s ) {
-		return flip( s );
+	public int tolower() {
+		if( (data.type == 8 || data.type == 9) ) {
+			String low = data.getTheString().toLowerCase();
+			byte[] lowbytes = low.getBytes();
+			ByteBuffer	bb = data.getByteBuffer();	
+			System.err.println( lowbytes.length + "  " + bb.limit() );
+			bb.position(0);
+			bb.put( lowbytes, 0, Math.min( lowbytes.length, bb.limit() ) );
+		}
+		
+		return 0;
+	}
+	
+	public int subsetsum( final simlab.ByValue sl ) {
+		if( data.type > 66 ) {
+			
+		} else {
+			if( 8%sl.type == 2 ) {
+				double val = sl.getDouble();
+			} else {
+				long val = sl.getLong();
+			}
+		}
+		
+		return 1;
 	}
 
 	public int zero() {
@@ -562,7 +635,6 @@ public class Simlab implements ScriptEngineFactory {
 	 */
 
 	ByteBuffer bb;
-	Set<Buffer> bset = new HashSet<Buffer>();
 
 	public int loadimage() throws IOException {
 		/*
@@ -641,33 +713,78 @@ public class Simlab implements ScriptEngineFactory {
 		return new AudioFormat(sampleRate, sampleSizeInBits, channels, signed, bigEndian);
 	}
 
-	public int shift(simlab.ByValue v) {
-		return shift(v, nulldata);
+	public int join(final simlab.ByValue v) {
+		int databytelen = data.getByteLength();
+		int size = v.getByteLength() + databytelen;
+		long pval = allocateDirect(size);
+		ByteBuffer bb = buffers.get(pval);
+		int i = 0;
+		ByteBuffer pb = data.getByteBuffer();
+		for (; i < databytelen; i++) {
+			bb.put(i, pb.get(i));
+		}
+		pb = v.getByteBuffer();
+		for (; i < size; i++) {
+			bb.put(i, pb.get(i - databytelen));
+		}
+
+		data.buffer = pval;
+		data.length += v.getByteLength() / (data.type / 8);
+
+		return 1;
+	}
+
+	public int shift(final simlab.ByValue v) {
+		crnt(data);
+		shift(v, nulldata);
+		data = getdata();
+
+		return 1;
 	}
 
 	public int flip() {
-		return flip(nulldata);
+		crnt(data);
+		flip(nulldata);
+		data = getdata();
+
+		return 1;
 	}
 
 	public int sin() {
 		return simlab_sin(nulldata);
 	}
-	
-	//public int permute( final simlab.ByValue)
-	
-	public int transidx( final simlab.ByValue c ) {
+
+	// public int permute( final simlab.ByValue)
+
+	public int transidx(final simlab.ByValue c) {
 		crnt(data);
 		transidx(c, nulldata);
 		data = getdata();
-		
+
 		return 1;
 	}
 
-	public int trans(simlab.ByValue v) {
+	public int sort() {
+		crnt(data);
+		sort(nulldata, nulldata);
+		data = getdata();
+
+		return 0;
+	}
+
+	public int sort(final simlab.ByValue v) {
+		crnt(data);
+		sort(v, nulldata);
+		data = getdata();
+
+		return 1;
+	}
+
+	public int trans(final simlab.ByValue v) {
 		crnt(data);
 		trans(v, nulldata);
 		data = getdata();
-		
+
 		return 1;
 	}
 
@@ -777,9 +894,167 @@ public class Simlab implements ScriptEngineFactory {
 			e.printStackTrace();
 		}
 	}
+	
+	public int surface( final simlab.ByValue ww, final simlab.ByValue... timer ) {
+		final String name = "";
+		final simlab.ByValue slptr = data.clone();
+		SwingUtilities.invokeLater(new Runnable() {
+			@Override
+			public void run() {
+				JFrame frame = new JFrame(name);
+				frame.setSize(800, 600);
+				final SurfaceComp c = new SurfaceComp(name, slptr, (int) ww.getLong(), 0, 0);
+				c.setSize(800, 600);
+				c.setFocusable(true);
+				c.requestFocus();
+				//c.setIgnoreRepaint(true);
+				frame.add(c);
+				// datalib.put(name, current);
+				Set<SimComp> compset;
+				if (compmap.containsKey(data.buffer)) {
+					compset = compmap.get(data.buffer);
+				} else {
+					compset = new HashSet<SimComp>();
+					compmap.put(data.buffer, compset);
+				}
+				compset.add(c);
 
-	public void image(final simlab.ByValue ww, final simlab.ByValue ... timer) {
-		final String name = "";//sl.getTheString();
+				frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+				if (timer.length > 1) {
+					long time = timer[1].buffer;
+
+					final Timer tmr = new Timer((int) time, new ActionListener() {
+						@Override
+						public void actionPerformed(ActionEvent e) {
+							try {
+								Simlab.this.run(timer[0]);
+							} catch (IllegalArgumentException e1) {
+								e1.printStackTrace();
+							} catch (IllegalAccessException e1) {
+								e1.printStackTrace();
+							} catch (InvocationTargetException e1) {
+								e1.printStackTrace();
+							}
+							c.reload();
+						}
+					});
+
+					frame.addWindowListener(new WindowListener() {
+						@Override
+						public void windowOpened(WindowEvent e) {}
+
+						@Override
+						public void windowIconified(WindowEvent e) {}
+
+						@Override
+						public void windowDeiconified(WindowEvent e) {}
+
+						@Override
+						public void windowDeactivated(WindowEvent e) {
+							tmr.stop();
+						}
+
+						@Override
+						public void windowClosing(WindowEvent e) {}
+
+						@Override
+						public void windowClosed(WindowEvent e) {
+							tmr.stop();
+						}
+
+						@Override
+						public void windowActivated(WindowEvent e) {}
+					});
+					// tmr.set
+					tmr.start();
+				}
+				frame.setVisible(true);
+			}
+		});
+		
+		return 1 + timer.length;
+	}
+
+	public int plot(final simlab.ByValue ww, final simlab.ByValue... timer) {
+		final String name = "";
+		final simlab.ByValue slptr = data.clone();
+		SwingUtilities.invokeLater(new Runnable() {
+			@Override
+			public void run() {
+				JFrame frame = new JFrame(name);
+				frame.setSize(800, 600);
+				final ChartComp c = new ChartComp(name, slptr, (int) ww.getLong(), 0, 0);
+				frame.add(c);
+				// datalib.put(name, current);
+				Set<SimComp> compset;
+				if (compmap.containsKey(data.buffer)) {
+					compset = compmap.get(data.buffer);
+				} else {
+					compset = new HashSet<SimComp>();
+					compmap.put(data.buffer, compset);
+				}
+				compset.add(c);
+
+				frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+				if (timer.length > 1) {
+					long time = timer[1].buffer;
+
+					final Timer tmr = new Timer((int) time, new ActionListener() {
+						@Override
+						public void actionPerformed(ActionEvent e) {
+							try {
+								Simlab.this.run(timer[0]);
+							} catch (IllegalArgumentException e1) {
+								e1.printStackTrace();
+							} catch (IllegalAccessException e1) {
+								e1.printStackTrace();
+							} catch (InvocationTargetException e1) {
+								e1.printStackTrace();
+							}
+							c.reload();
+						}
+					});
+
+					frame.addWindowListener(new WindowListener() {
+						@Override
+						public void windowOpened(WindowEvent e) {}
+
+						@Override
+						public void windowIconified(WindowEvent e) {}
+
+						@Override
+						public void windowDeiconified(WindowEvent e) {}
+
+						@Override
+						public void windowDeactivated(WindowEvent e) {
+							tmr.stop();
+						}
+
+						@Override
+						public void windowClosing(WindowEvent e) {}
+
+						@Override
+						public void windowClosed(WindowEvent e) {
+							tmr.stop();
+						}
+
+						@Override
+						public void windowActivated(WindowEvent e) {}
+					});
+					// tmr.set
+					tmr.start();
+				}
+				frame.setVisible(true);
+			}
+		});
+
+		return 1 + timer.length;
+	}
+
+	public int image(final simlab.ByValue ww, final simlab.ByValue... timer) {
+		final String name = "";// sl.getTheString();
 		final long w = ww.buffer;
 		final long t = data.length;
 		final long h = (t / w);
@@ -801,20 +1076,20 @@ public class Simlab implements ScriptEngineFactory {
 				final ImageComp c = new ImageComp(name, bi, slptr, (int) w, (int) h);
 				frame.add(c);
 				// datalib.put(name, current);
-				Set<SimComp>	compset;
-				if( compmap.containsKey( data.buffer ) ) {
+				Set<SimComp> compset;
+				if (compmap.containsKey(data.buffer)) {
 					compset = compmap.get(data.buffer);
 				} else {
 					compset = new HashSet<SimComp>();
-					compmap.put( data.buffer, compset );
+					compmap.put(data.buffer, compset);
 				}
 				compset.add(c);
 
 				frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-				if( timer.length > 1 ) {
+				if (timer.length > 1) {
 					long time = timer[1].buffer;
-				
+
 					final Timer tmr = new Timer((int) time, new ActionListener() {
 						@Override
 						public void actionPerformed(ActionEvent e) {
@@ -830,34 +1105,34 @@ public class Simlab implements ScriptEngineFactory {
 							c.reload();
 						}
 					});
-	
+
 					frame.addWindowListener(new WindowListener() {
 						@Override
 						public void windowOpened(WindowEvent e) {
 						}
-	
+
 						@Override
 						public void windowIconified(WindowEvent e) {
 						}
-	
+
 						@Override
 						public void windowDeiconified(WindowEvent e) {
 						}
-	
+
 						@Override
 						public void windowDeactivated(WindowEvent e) {
 							tmr.stop();
 						}
-	
+
 						@Override
 						public void windowClosing(WindowEvent e) {
 						}
-	
+
 						@Override
 						public void windowClosed(WindowEvent e) {
 							tmr.stop();
 						}
-	
+
 						@Override
 						public void windowActivated(WindowEvent e) {
 						}
@@ -868,6 +1143,8 @@ public class Simlab implements ScriptEngineFactory {
 				frame.setVisible(true);
 			}
 		});
+
+		return 1 + timer.length;
 	}
 
 	public int rugl(final simlab.ByValue sl) {
@@ -876,8 +1153,8 @@ public class Simlab implements ScriptEngineFactory {
 		for (int i = 0; i < slist.size(); i++) {
 			simlab.ByValue sb = slist.get(i);
 			if (sb.type == Byte.MIN_VALUE) {
-				Object o = objects.get((int) sb.length);
-				if (o instanceof Method && ((Method) o).getName().equals("fetch")) {
+				Object o = sb.getJavaObject();
+				if (o != null && o instanceof Method && ((Method) o).getName().equals("fetch")) {
 					System.err.println("rugl " + slist.get(i + 1).getTheString());
 				}
 			}
@@ -896,7 +1173,7 @@ public class Simlab implements ScriptEngineFactory {
 		// Pointer p = runner.getThePointer();
 
 		if (runner.type == Byte.MIN_VALUE) {
-			List<simlab.ByValue> slist = (List<simlab.ByValue>) objects.get((int) runner.length);
+			List<simlab.ByValue> slist = (List<simlab.ByValue>) runner.getJavaObject();
 			int i = 0;
 			while (i < slist.size()) {
 				simlab.ByValue sl = slist.get(i);
@@ -904,7 +1181,7 @@ public class Simlab implements ScriptEngineFactory {
 
 				boolean nat = Modifier.isNative(m.getModifiers());
 
-				//System.err.println("run " + m.getName());
+				// System.err.println("run " + m.getName());
 				/*
 				 * if (sl.type == Byte.MIN_VALUE) { Method m = (Method)
 				 * objects.get((int) sl.length); System.err.println("method " +
@@ -1010,32 +1287,22 @@ public class Simlab implements ScriptEngineFactory {
 	}
 
 	public void update(String name, final long w) {
-		ImageComp sc = (ImageComp)compmap.get(name);
+		ImageComp sc = (ImageComp) compmap.get(name);
 		sc.h = (int) ((sc.h * sc.w) / w);
 		sc.w = (int) w;
 		sc.bi = new BufferedImage(sc.w, sc.h, BufferedImage.TYPE_INT_RGB);
 		sc.reload();
 	}
 
-	/*public void trans( final simlab.ByValue... sl ) {
-		long w = 0;// sl[0].buffer.getValue().longValue();
-		crnt(data);
-		jcmdstr("trans " + w);
-		ImageComp sc = (ImageComp)compmap.get(data.buffer);
-		if (sc != null) {
-			if (data.type == 32L) {
-				if (w > 0) {
-					sc.w = (int) ((sc.h * sc.w) / w);
-					sc.h = (int) w;
-				} else {
-					sc.h = (int) ((sc.h * sc.w) / -w);
-					sc.w = (int) -w;
-				}
-				sc.bi = new BufferedImage(sc.w, sc.h, BufferedImage.TYPE_INT_RGB);
-			}
-			sc.reload();
-		}
-	}*/
+	/*
+	 * public void trans( final simlab.ByValue... sl ) { long w = 0;//
+	 * sl[0].buffer.getValue().longValue(); crnt(data); jcmdstr("trans " + w);
+	 * ImageComp sc = (ImageComp)compmap.get(data.buffer); if (sc != null) { if
+	 * (data.type == 32L) { if (w > 0) { sc.w = (int) ((sc.h * sc.w) / w); sc.h
+	 * = (int) w; } else { sc.h = (int) ((sc.h * sc.w) / -w); sc.w = (int) -w; }
+	 * sc.bi = new BufferedImage(sc.w, sc.h, BufferedImage.TYPE_INT_RGB); }
+	 * sc.reload(); } }
+	 */
 
 	public int nil() {
 		data.buffer = 0;
@@ -1056,12 +1323,18 @@ public class Simlab implements ScriptEngineFactory {
 		return 0;
 	}
 
-	public void str(final String s) {
-		byte[] buffer = s.getBytes();
-		bb = ByteBuffer.allocateDirect(buffer.length);
-		bset.add(bb);
+	public int str(final simlab.ByValue s) {
+		byte[] buffer = s.getTheString().getBytes();
+		long pval = allocateDirect( buffer.length );
+		ByteBuffer bb = buffers.get( pval );
 		bb.put(buffer);
-		jcrnt(bb, 8, buffer.length);
+		
+		data.buffer = pval;
+		data.type = 9;
+		data.length = buffer.length;
+		//jcrnt(bb, 8, buffer.length);
+		
+		return 1;
 	}
 
 	public int read(final simlab.ByValue sl) throws IOException {
@@ -1071,8 +1344,10 @@ public class Simlab implements ScriptEngineFactory {
 			URL url = new URL(val);
 			stream = url.openStream();
 		} catch (MalformedURLException murle) {
-			if( currentDir == null ) stream = new FileInputStream(val);
-			else stream = new FileInputStream( new File( currentDir, val ) );
+			if (currentDir == null)
+				stream = new FileInputStream(val);
+			else
+				stream = new FileInputStream(new File(currentDir, val));
 		}
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -1105,10 +1380,12 @@ public class Simlab implements ScriptEngineFactory {
 			// c.setDoOutput( true );
 			// OutputStream out = c.getOutputStream();
 			FileOutputStream out;
-			if( currentDir != null ) out = new FileOutputStream( new File( currentDir, s.getTheString() ) );
-			else out = new FileOutputStream(s.getTheString());
+			if (currentDir != null)
+				out = new FileOutputStream(new File(currentDir, s.getTheString()));
+			else
+				out = new FileOutputStream(s.getTheString());
 			byte[] bb = data.getByteArray(0, data.getByteLength());
-			//byte[] bb = ps.getByteArray(0, (int) ps.length);
+			// byte[] bb = ps.getByteArray(0, (int) ps.length);
 			out.write(bb);
 			out.close();
 		} catch (MalformedURLException e) {
@@ -1277,15 +1554,15 @@ public class Simlab implements ScriptEngineFactory {
 
 		return 1;
 	}
-	
+
 	public int print() {
 		if (data.type == UBYTELEN || data.type == BYTELEN) {
 			String pstr = data.getTheString();
-			System.out.println( pstr );
+			System.out.println(pstr);
 		} else {
-			print( new simlab.ByValue( data.length ) );
+			print(new simlab.ByValue(data.length));
 		}
-		
+
 		return 0;
 	}
 
@@ -1346,6 +1623,25 @@ public class Simlab implements ScriptEngineFactory {
 				 * chunk) { //int k = i; bb.get( bchunk ); System.out.println(
 				 * new String(bchunk) ); } }
 				 */
+			} else if( data.type > 66 ) {
+				if( 8%data.type == 2 ) {
+					//data.getByteBuffer().get
+				} else {
+					byte[] bbv = new byte[(int)(data.getByteLength()/data.length)];
+					for (int i = 0; i < data.length; i += chunk) {
+						int k = i;
+						for( ; k < Math.min(i+chunk,data.length) - 1; k++ ) {
+							bb.position( (int)(k*bbv.length) );
+							bb.get( bbv );
+							BigInteger bi = new BigInteger( bbv );
+							System.out.print( bi+"\t" );
+						}
+						bb.position( (int)(k*bbv.length) );
+						bb.get( bbv );
+						BigInteger bi = new BigInteger( bbv );
+						System.out.println( bi+"\n" );
+					}
+				}
 			}
 		} else {
 			/*
@@ -1423,24 +1719,17 @@ public class Simlab implements ScriptEngineFactory {
 				// LongByReference lbr = new Longbyre
 				simlab.ByValue nsl = new simlab.ByValue(bb.limit(), BYTELEN, pval);
 				olist.add(nsl);
-			/*} else if (str.startsWith("-")) {
-				simlab.ByValue nsl = null;
-				try {
-					long l = Long.parseLong(str);
-					nsl = new simlab.ByValue(0, LONGLEN, -l);
-				} catch (Exception e) {
-				}
-
-				if (nsl == null) {
-					try {
-						double d = Double.parseDouble(str);
-						nsl = new simlab.ByValue(0, DOUBLELEN, Double.doubleToRawLongBits(-d));
-					} catch (Exception e) {
-					}
-				}
-				
-				if (nsl != null)
-					olist.add(nsl);*/
+				/*
+				 * } else if (str.startsWith("-")) { simlab.ByValue nsl = null;
+				 * try { long l = Long.parseLong(str); nsl = new
+				 * simlab.ByValue(0, LONGLEN, -l); } catch (Exception e) { }
+				 * 
+				 * if (nsl == null) { try { double d = Double.parseDouble(str);
+				 * nsl = new simlab.ByValue(0, DOUBLELEN,
+				 * Double.doubleToRawLongBits(-d)); } catch (Exception e) { } }
+				 * 
+				 * if (nsl != null) olist.add(nsl);
+				 */
 			} else if (str.startsWith("[")) {
 				List<Double> d_vec = new ArrayList<Double>();
 
@@ -1454,8 +1743,8 @@ public class Simlab implements ScriptEngineFactory {
 				int len = str.length();
 				while (str.charAt(len - 1) != ']') {
 					// sscanf( result, "%e", &fval );
-					val = str.substring(1);
-					fval = Float.parseFloat(val);
+					// val = str.substring(1);
+					fval = Float.parseFloat(str);
 					d_vec.add((double) fval);
 					str = st.nextToken(endStr);
 					len = str.length();
@@ -1622,9 +1911,49 @@ public class Simlab implements ScriptEngineFactory {
 
 	public static boolean debug = true;
 
-	public void cmd(simlab.ByValue sl) {
+	public int cmd(final simlab.ByValue sl) {
 		String s = sl.getTheString();
+		return command(s);
+	}
+	
+	private void runMethod( Method m, List<simlab.ByValue> olist ) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+		boolean nv = Modifier.isNative(m.getModifiers());
+		if (nv)
+			crnt(data);
+		if (m.getParameterTypes().length > 0 && m.getParameterTypes()[0] == simlab.ByValue[].class) {
+			m.invoke(Simlab.this, new Object[] { olist.toArray(new simlab.ByValue[0]) });
+		} else if (m.getParameterTypes().length > 1 && m.getParameterTypes()[1] == simlab.ByValue[].class) {
+			List<simlab.ByValue> list = olist.subList(1, olist.size());
+			/*
+			 * if( list.size() == 0 ) { Object[] stuff = new
+			 * Object[] { new simlab.ByValue[0] };
+			 * m.invoke(Simlab.this, olist.get(0), new
+			 * simlab.ByValue[0] ); } else { Object[] stuff = new
+			 * Object[] { list.toArray(new simlab.ByValue[0]) };
+			 * m.invoke(Simlab.this, olist.get(0), list.toArray(new
+			 * simlab.ByValue[0])); }
+			 */
+			m.invoke(Simlab.this, olist.get(0), list.toArray(new simlab.ByValue[0]));
+		} else if (olist.size() == 0) {
+			m.invoke(Simlab.this);
+		} else if (olist.size() == 1) {
+			m.invoke(Simlab.this, olist.get(0));
+		} else if (olist.size() == 2) {
+			m.invoke(Simlab.this, olist.get(0), olist.get(1));
+		} else if (olist.size() == 3) {
+			m.invoke(Simlab.this, olist.get(0), olist.get(1), olist.get(2));
+		} else if (olist.size() == 4) {
+			m.invoke(Simlab.this, olist.get(0), olist.get(1), olist.get(2), olist.get(3));
+		}
+		if (nv) {
+			simlab.ByValue sb = getdata();
+			data.buffer = sb.buffer;
+			data.type = sb.type;
+			data.length = sb.length;
+		}
+	}
 
+	private int command(String s) {
 		StringTokenizer st = new StringTokenizer(s);
 		if (st.hasMoreTokens()) {
 			String fname = st.nextToken(" (_\n");
@@ -1645,9 +1974,12 @@ public class Simlab implements ScriptEngineFactory {
 
 				if (m == null) {
 					simlab.ByValue slval = datalib.get(fname);
-					data.buffer = slval.buffer;
-					data.type = slval.type;
-					data.length = slval.length;
+					if (slval != null) {
+						data.buffer = slval.buffer;
+						data.type = slval.type;
+						data.length = slval.length;
+					} else
+						System.out.println("No function: " + fname);
 				} else {
 					/*
 					 * } else if( olist.size() == 1 ) { m =
@@ -1658,41 +1990,28 @@ public class Simlab implements ScriptEngineFactory {
 					// simlab.ByValue[ olist.size() ] ) };
 					// if( where ) data = getdata();
 					// where = false;
-					boolean nv = Modifier.isNative(m.getModifiers());
-
-					if (nv)
-						crnt(data);
-					if (m.getParameterTypes().length > 0 && m.getParameterTypes()[0] == simlab.ByValue[].class) {
-						m.invoke(Simlab.this, new Object[] { olist.toArray(new simlab.ByValue[0]) });
-					} else if (m.getParameterTypes().length > 1 && m.getParameterTypes()[1] == simlab.ByValue[].class) {
-						List<simlab.ByValue> list = olist.subList(1, olist.size());
-						/*
-						 * if( list.size() == 0 ) { Object[] stuff = new
-						 * Object[] { new simlab.ByValue[0] };
-						 * m.invoke(Simlab.this, olist.get(0), new
-						 * simlab.ByValue[0] ); } else { Object[] stuff = new
-						 * Object[] { list.toArray(new simlab.ByValue[0]) };
-						 * m.invoke(Simlab.this, olist.get(0), list.toArray(new
-						 * simlab.ByValue[0])); }
-						 */
-						m.invoke(Simlab.this, olist.get(0), list.toArray(new simlab.ByValue[0]));
-					} else if (olist.size() == 0) {
-						m.invoke(Simlab.this);
-					} else if (olist.size() == 1) {
-						m.invoke(Simlab.this, olist.get(0));
-					} else if (olist.size() == 2) {
-						m.invoke(Simlab.this, olist.get(0), olist.get(1));
-					} else if (olist.size() == 3) {
-						m.invoke(Simlab.this, olist.get(0), olist.get(1), olist.get(2));
-					} else if (olist.size() == 4) {
-						m.invoke(Simlab.this, olist.get(0), olist.get(1), olist.get(2), olist.get(3));
+					
+					if( data.isJavaObject() && data.getJavaObject() instanceof List ) {
+						long oldbuf = data.buffer;
+						long oldtyp = data.type;
+						long oldlen = data.length;
+						
+						List<simlab.ByValue>	lsb = (List<simlab.ByValue>)data.getJavaObject();
+						for( simlab.ByValue sb : lsb ) {
+							data.buffer = sb.buffer;
+							data.type = sb.type;
+							data.length = sb.length;
+							
+							runMethod( m, olist );
+						}
+						
+						data.buffer = oldbuf;
+						data.type = oldtyp;
+						data.length = oldlen;
+					} else {
+						runMethod( m, olist );
 					}
-					if (nv) {
-						simlab.ByValue sb = getdata();
-						data.buffer = sb.buffer;
-						data.type = sb.type;
-						data.length = sb.length;
-					}
+					
 					// if (m.getName().contains("conv")) {}
 				}
 			} catch (SecurityException e) {
@@ -1719,19 +2038,18 @@ public class Simlab implements ScriptEngineFactory {
 			 * }
 			 */
 
-			if( compmap.containsKey(data.buffer) ) {
-				for( SimComp sc : compmap.get(data.buffer) ) {
-					if( sc != null ) {
+			if (compmap.containsKey(data.buffer)) {
+				for (SimComp sc : compmap.get(data.buffer)) {
+					if (sc != null) {
 						sc.reload();
 					}
 				}
 			}
-			
-			/*for (long key : compmap.keySet()) {
-				SimComp sc = compmap.get(key);
-				if (sc != null)
-					sc.reload();
-			}*/
+
+			/*
+			 * for (long key : compmap.keySet()) { SimComp sc =
+			 * compmap.get(key); if (sc != null) sc.reload(); }
+			 */
 
 			/*
 			 * ByteBuffer buf = ByteBuffer.allocateDirect(6); buf.put(0, 's');
@@ -1747,6 +2065,8 @@ public class Simlab implements ScriptEngineFactory {
 			 * cmd( sl );
 			 */
 		}
+
+		return 1;
 	}
 
 	private int bytelength(long type, long length) {
@@ -1841,20 +2161,20 @@ public class Simlab implements ScriptEngineFactory {
 		System.err.println("mu");
 		return 0;
 	}
-	
+
 	public int len() {
 		data.buffer = data.length;
 		data.length = 0;
 		data.type = 65;
-		
+
 		return 0;
 	}
-	
+
 	public int getthetype() {
 		data.buffer = data.type;
 		data.length = 0;
 		data.type = 65;
-		
+
 		return 0;
 	}
 
@@ -1866,86 +2186,141 @@ public class Simlab implements ScriptEngineFactory {
 
 	public int printval(final simlab.ByValue... sl) {
 		if (data.length > 0) {
+			
 		} else {
+			
 		}
 
 		return 0;
 	}
 	
+	public int bigidx() {		
+		ByteBuffer bb = data.getByteBuffer();
+		long blen = data.getByteLength()/data.length;
+		for( int i = 0; i < data.length; i++ ) {
+			BigInteger val = BigInteger.valueOf(i);
+			byte[] ba = val.toByteArray();
+			bb.position( (int)(i*blen+blen-ba.length) );
+			bb.put( ba );
+		}
+		
+		return 0;
+	}
+
 	public int shuffleidx() {
-		crnt( data );
+		crnt(data);
 		idx();
 		data = getdata();
 		shuffle();
-		
+
 		return 0;
 	}
-	
+
 	public int shuffle() {
-		shuffle( new simlab.ByValue(data.length) );
-		
+		shuffle(new simlab.ByValue(data.length));
+
 		return 0;
 	}
-	
+
 	Random r = new Random();
-	public int shuffle( final simlab.ByValue chunk ) {
-		int ch = (int)chunk.getLong();
-		
-		if( data.type/8 == 8 ) {
+
+	public int shuffle(final simlab.ByValue chunk) {
+		int ch = (int) chunk.getLong();
+
+		if (data.type / 8 == 8) {
 			LongBuffer lb = data.getByteBuffer().asLongBuffer();
-			for( int u = 0; u < data.length; u+=ch ) {
-				for( int i = u; i < u+ch; i++ ) {
-					int k = (int)(r.nextDouble()*data.length);
+			for (int u = 0; u < data.length; u += ch) {
+				for (int i = u; i < u + ch; i++) {
+					int k = (int) (r.nextDouble() * data.length);
 					long tmp = lb.get(i);
 					lb.put(i, lb.get(k));
 					lb.put(k, tmp);
 				}
 			}
-		} else if( data.type/8 == 4 ) {
+		} else if (data.type / 8 == 4) {
 			IntBuffer ib = data.getByteBuffer().asIntBuffer();
-			for( int u = 0; u < data.length; u+=ch ) {
-				for( int i = u; i < u+ch; i++ ) {
-					int k = (int)(r.nextDouble()*data.length);
+			for (int u = 0; u < data.length; u += ch) {
+				for (int i = u; i < u + ch; i++) {
+					int k = (int) (r.nextDouble() * data.length);
 					int tmp = ib.get(i);
 					ib.put(i, ib.get(k));
 					ib.put(k, tmp);
 				}
 			}
-		} else if( data.type/8 == 2 ) {
+		} else if (data.type / 8 == 2) {
 			ShortBuffer sb = data.getByteBuffer().asShortBuffer();
-			for( int u = 0; u < data.length; u+=ch ) {
-				for( int i = u; i < u+ch; i++ ) {
-					int k = (int)(r.nextDouble()*data.length);
+			for (int u = 0; u < data.length; u += ch) {
+				for (int i = u; i < u + ch; i++) {
+					int k = (int) (r.nextDouble() * data.length);
 					short tmp = sb.get(i);
 					sb.put(i, sb.get(k));
 					sb.put(k, tmp);
 				}
 			}
-		} else if( data.type/8 == 1 ) {
+		} else if (data.type / 8 == 1) {
 			ByteBuffer bb = data.getByteBuffer();
-			for( int u = 0; u < data.length; u+=ch ) {
-				for( int i = u; i < u+ch; i++ ) {
-					int k = (int)(r.nextDouble()*data.length);
+			for (int u = 0; u < data.length; u += ch) {
+				for (int i = u; i < u + ch; i++) {
+					int k = (int) (r.nextDouble() * data.length);
 					byte tmp = bb.get(i);
 					bb.put(i, bb.get(k));
 					bb.put(k, tmp);
 				}
 			}
 		} else {
-			int s = (int)(data.type/8);
+			int s = (int) (data.type / 8);
 			ByteBuffer bb = data.getByteBuffer();
-			int sch = s*ch;
+			int sch = s * ch;
 			byte[] bs = new byte[s];
-			for( int u = 0; u < data.length; u+=sch ) {
-				for( int i = u; i < u+sch; i++ ) {
-					int k = (int)(r.nextDouble()*data.length);
+			for (int u = 0; u < data.length; u += sch) {
+				for (int i = u; i < u + sch; i++) {
+					int k = (int) (r.nextDouble() * data.length);
 					bb.get(bs);
-					//bb.position();
-					//bb.put(i, bb.get(k));
-					//bb.put(k, tmp);
+					// bb.position();
+					// bb.put(i, bb.get(k));
+					// bb.put(k, tmp);
 				}
 			}
 		}
+
+		return 1;
+	}
+	
+	public int split( final simlab.ByValue sl ) {
+		Buffer	bb = data.getBuffer();
+		int size = 0;
+		if( bb instanceof DoubleBuffer ) {
+			double rv = sl.getRealValue();
+			DoubleBuffer	db = (DoubleBuffer)bb;
+			
+			int len = 0;
+			int olen = 0;
+			List<simlab.ByValue>	lsl = new ArrayList<Simlab.simlab.ByValue>();
+			for( int i = 0; i < db.limit(); i++ ) {
+				if( db.get(i) == rv ) {
+					simlab.ByValue asl = new simlab.ByValue(len-olen, data.type, data.buffer+olen*8);
+					lsl.add( asl );
+					olen = len+1;
+				}
+				len++;
+			}
+			
+			if( len-olen > 0 ) {
+				simlab.ByValue asl = new simlab.ByValue(len-olen, data.type, data.buffer+olen*8);
+				lsl.add( asl );
+			}
+			
+			data.type = Byte.MIN_VALUE;
+			data.length = objects.size();
+			data.buffer = 0;
+			objects.add( lsl );
+		}
+		
+		return 1;
+	}
+	
+	public int remove( final simlab.ByValue sl ) {
+		//String str = sl.getTheString();
 		
 		return 1;
 	}
@@ -1979,100 +2354,105 @@ public class Simlab implements ScriptEngineFactory {
 
 		return 0;
 	}
-	
+
 	public int dump() throws IOException {
-		dump( datalib.get("one") );
-		
+		dump(datalib.get("one"));
+
 		return 0;
 	}
-	
-	public int dump( final simlab.ByValue sl ) throws IOException {
-		int cval = (int)sl.getLong();
-		ByteArrayOutputStream	baos = new ByteArrayOutputStream();
-		PrintStream ps = new PrintStream( baos );
-		ByteBuffer	bb = data.getByteBuffer();
-		for( int r = 0; r < data.length/cval; r++ ) {
-			for( int c = 0; c < cval; c++ ) {
-				if( data.type == DOUBLELEN ) {
-					ps.printf( "%e\t", bb.asDoubleBuffer().get(r*cval+c) );
-				} else if( data.type == LONGLEN || data.type == ULONGLEN ) {
-					ps.printf( "%f\t", bb.asLongBuffer().get(r*cval+c) );
-				} else if( data.type == FLOATLEN ) {
-					ps.printf( "%f\t", bb.asFloatBuffer().get(r*cval+c) );
-				} else if( data.type == UINTLEN || data.type == INTLEN ) {
-					ps.printf( "%d\t", bb.asIntBuffer().get(r*cval+c) );
+
+	public int dump(final simlab.ByValue sl) throws IOException {
+		int cval = (int) sl.getLong();
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		PrintStream ps = new PrintStream(baos);
+		ByteBuffer bb = data.getByteBuffer();
+		for (int r = 0; r < data.length / cval; r++) {
+			for (int c = 0; c < cval; c++) {
+				if (data.type == DOUBLELEN) {
+					ps.printf("%e\t", bb.asDoubleBuffer().get(r * cval + c));
+				} else if (data.type == LONGLEN || data.type == ULONGLEN) {
+					ps.printf("%f\t", bb.asLongBuffer().get(r * cval + c));
+				} else if (data.type == FLOATLEN) {
+					ps.printf("%f\t", bb.asFloatBuffer().get(r * cval + c));
+				} else if (data.type == UINTLEN || data.type == INTLEN) {
+					ps.printf("%d\t", bb.asIntBuffer().get(r * cval + c));
 				}
 			}
 			ps.println();
 		}
 		ps.flush();
-		
+
 		byte[] ba = baos.toByteArray();
-		long pval = allocateDirect( ba.length );
-		bb = buffers.get( pval );
-		for( byte b : ba ) {
-			bb.put( b );
+		long pval = allocateDirect(ba.length);
+		bb = buffers.get(pval);
+		for (byte b : ba) {
+			bb.put(b);
 		}
 		data.length = ba.length;
 		data.type = 8;
 		data.buffer = pval;
-		
+
 		ps.close();
 		baos.close();
-		
+
 		return 1;
 	}
-	
+
 	public int load() {
-		if( data.type == 8 || data.type == 9 ) {
+		if (data.type == 8 || data.type == 9) {
 			String str = data.getTheString();
 			String[] spl = str.split("\n");
 			String[] nspl = spl[0].split("[\t ]+");
-			
-			int size = spl.length*nspl.length;
-			long pval = allocateDouble( size );
+
+			int size = spl.length * nspl.length;
+			long pval = allocateDouble(size);
 			data.buffer = pval;
 			data.type = DOUBLELEN;
 			data.length = size;
-			
+
 			DoubleBuffer dd = buffers.get(pval).asDoubleBuffer();
-			for( String sp : spl ) {
+			for (String sp : spl) {
 				nspl = sp.split("[\t ]+");
-				for( String nsp : nspl ) {
-					dd.put( Double.parseDouble(nsp) );
+				for (String nsp : nspl) {
+					double d = 0.0;
+					try {
+						d = Double.parseDouble(nsp);
+					} catch (NumberFormatException e) {
+					}
+					dd.put(d);
 				}
 			}
 		}
-		
+
 		return 0;
 	}
-	
-	public int table( final simlab.ByValue t ) {
-		final int c = (int)t.buffer;
-		final int r = (int)(data.length / c);
-		
+
+	public int table(final simlab.ByValue t) {
+		final int c = (int) t.buffer;
+		final int r = (int) (data.length / c);
+
 		SwingUtilities.invokeLater(new Runnable() {
 			@Override
 			public void run() {
 				JFrame frame = new JFrame("");
 				frame.setSize(800, 600);
-				TableComp	tc = new TableComp("", data.clone(), c, r);
+				TableComp tc = new TableComp("", data.clone(), c, r);
 				frame.add(tc);
-				
-				Set<SimComp>	compset;
-				if( compmap.containsKey( data.buffer ) ) {
-					compset = compmap.get( data.buffer );
+
+				Set<SimComp> compset;
+				if (compmap.containsKey(data.buffer)) {
+					compset = compmap.get(data.buffer);
 				} else {
 					compset = new HashSet<SimComp>();
-					compmap.put( data.buffer, compset );
+					compmap.put(data.buffer, compset);
 				}
 				compset.add(tc);
-				
+
 				frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-				frame.setVisible( true );
+				frame.setVisible(true);
 			}
 		});
-		
+
 		return 1;
 	}
 
@@ -2112,7 +2492,7 @@ public class Simlab implements ScriptEngineFactory {
 
 		datalib.put("true", new simlab.ByValue(0, 1, 1));
 		datalib.put("false", new simlab.ByValue(0, 1, 0));
-		
+
 		datalib.put("nil", new simlab.ByValue(0, 65, 0));
 		datalib.put("one", new simlab.ByValue(0, 65, 1));
 		datalib.put("two", new simlab.ByValue(0, 65, 2));
@@ -2245,7 +2625,7 @@ public class Simlab implements ScriptEngineFactory {
 		while (i < slist.size()) {
 			simlab.ByValue sl = slist.get(i);
 			if (sl.type == Byte.MIN_VALUE) {
-				Method mm = (Method) objects.get((int) sl.length);
+				Method mm = (Method) sl.getJavaObject();
 			} else if (sl.type == 8 || sl.type == 9) {
 				System.err.println(sl.getTheString());
 			} else {
@@ -2324,7 +2704,7 @@ public class Simlab implements ScriptEngineFactory {
 		if (func.length == 0 || func[0].type == 0) {
 			m = Simlab.class.getMethod("cmd", simlab.ByValue.class);
 		} else if (func[0].type == Byte.MIN_VALUE) {
-			m = (Method) objects.get((int) func[0].length);
+			m = (Method) func[0].getJavaObject();
 		} else {
 			final String name = func[0].getTheString();
 			m = Simlab.class.getMethod(name, simlab.ByValue.class);
@@ -2338,34 +2718,34 @@ public class Simlab implements ScriptEngineFactory {
 	}
 
 	Simple engine = new Simple();
-	
+
 	interface SimComp {
 		public void reload();
 	}
-	
+
 	class TableComp extends JComponent implements SimComp {
-		JScrollPane	scrollpane;
-		JTable		table;
-		String		name;
-		int			r,c;
-		simlab.ByValue	sl;
-		
+		JScrollPane scrollpane;
+		JTable table;
+		String name;
+		int r, c;
+		simlab.ByValue sl;
+
 		public TableComp() {
 			super();
 		}
-		
+
 		public TableComp(String name, simlab.ByValue ptr, int w, int h) {
 			this.name = name;
 			this.sl = ptr;
 			this.c = w;
 			this.r = h;
-			
-			final ByteBuffer bb = sl.getByteBuffer(); 
+
+			final ByteBuffer bb = sl.getByteBuffer();
 			table = new JTable();
-			table.setAutoCreateRowSorter( true );
-			table.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
-			table.setColumnSelectionAllowed( true );
-			table.setModel( new TableModel() {
+			table.setAutoCreateRowSorter(true);
+			table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+			table.setColumnSelectionAllowed(true);
+			table.setModel(new TableModel() {
 				@Override
 				public int getRowCount() {
 					return r;
@@ -2383,9 +2763,11 @@ public class Simlab implements ScriptEngineFactory {
 
 				@Override
 				public Class<?> getColumnClass(int columnIndex) {
-					if( sl.type == DOUBLELEN ) return Double.class;
-					else if( sl.type == INTLEN ) return Integer.class;
-		
+					if (sl.type == DOUBLELEN)
+						return Double.class;
+					else if (sl.type == INTLEN)
+						return Integer.class;
+
 					return String.class;
 				}
 
@@ -2396,34 +2778,38 @@ public class Simlab implements ScriptEngineFactory {
 
 				@Override
 				public Object getValueAt(int rowIndex, int columnIndex) {
-					if( sl.type == DOUBLELEN ) return bb.getDouble( (int)((DOUBLELEN/8)*(rowIndex*getColumnCount() + columnIndex)) );
-					else if( sl.type == INTLEN ) return bb.getInt( (int)((INTLEN/8)*(rowIndex*getColumnCount() + columnIndex)) );
+					if (sl.type == DOUBLELEN)
+						return bb.getDouble((int) ((DOUBLELEN / 8) * (rowIndex * getColumnCount() + columnIndex)));
+					else if (sl.type == INTLEN)
+						return bb.getInt((int) ((INTLEN / 8) * (rowIndex * getColumnCount() + columnIndex)));
 					return null;
 				}
 
 				@Override
 				public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-					if( sl.type == DOUBLELEN ) bb.putDouble( (int)((DOUBLELEN/8)*(rowIndex*getColumnCount() + columnIndex)), (Double)aValue );
-					else if( sl.type == INTLEN ) bb.putInt( (int)((INTLEN/8)*(rowIndex*getColumnCount() + columnIndex)), (Integer)aValue );
+					if (sl.type == DOUBLELEN)
+						bb.putDouble((int) ((DOUBLELEN / 8) * (rowIndex * getColumnCount() + columnIndex)), (Double) aValue);
+					else if (sl.type == INTLEN)
+						bb.putInt((int) ((INTLEN / 8) * (rowIndex * getColumnCount() + columnIndex)), (Integer) aValue);
 				}
 
 				@Override
 				public void addTableModelListener(TableModelListener l) {
 					// TODO Auto-generated method stub
-					
+
 				}
 
 				@Override
 				public void removeTableModelListener(TableModelListener l) {
 					// TODO Auto-generated method stub
-					
+
 				}
-				
+
 			});
-			scrollpane = new JScrollPane( table );
-			
-			this.setLayout( new BorderLayout() );
-			this.add( scrollpane );
+			scrollpane = new JScrollPane(table);
+
+			this.setLayout(new BorderLayout());
+			this.add(scrollpane);
 		}
 
 		public void paintComponent(Graphics g) {
@@ -2431,55 +2817,187 @@ public class Simlab implements ScriptEngineFactory {
 		}
 
 		public void reload() {
-			table.tableChanged( new TableModelEvent( table.getModel() ) );
+			table.tableChanged(new TableModelEvent(table.getModel()));
 		}
 
 		public void repaint() {
 			super.repaint();
 		}
 	};
-	
+
+	static Color[] clrs = { new Color(200, 0, 0), new Color(0, 200, 0), new Color(0, 0, 200), new Color(200, 200, 0), new Color(200, 0, 200), new Color(0, 200, 200) };
 	class ChartComp extends JComponent implements SimComp {
 		String name;
 		private simlab.ByValue ptr;
 		int w;
 		int h;
+		int chunk;
+		Color[] colors;
+		// int fw = 100;
+		int f = 50;
 
-		public ChartComp(String name, BufferedImage bi, simlab.ByValue ptr, int w, int h) {
+		public ChartComp(String name, simlab.ByValue ptr, int c, int w, int h) {
 			this.name = name;
 			this.ptr = ptr;
 			this.w = w;
 			this.h = h;
+			this.chunk = c;
+
+			colors = new Color[(int) (ptr.length / chunk)];
+			for (int i = 0; i < colors.length; i++) {
+				colors[i] = clrs[i];
+			}
+
+			reload();
 		}
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		PrintStream ps = new PrintStream(baos);
+		double vmin, vmax;
 
 		public void paintComponent(Graphics g) {
 			super.paintComponent(g);
 			Graphics2D g2 = (Graphics2D) g;
 			g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 			Buffer b = ptr.getBuffer();
-			if( b instanceof DoubleBuffer ) {
-				DoubleBuffer db = (DoubleBuffer)b;
-				//max()
-				for( int i = 0; i < db.limit(); i++ ) {
-					//max
+			int ggw = this.getWidth();
+			int ggh = this.getHeight();
+			g2.setColor(Color.white);
+			g2.fillRect(0, 0, ggw, ggh);
+			int gw = ggw - 3 * f;
+			int gh = ggh - 2 * f;
+			if (b instanceof DoubleBuffer) {
+				g2.setColor(Color.black);
+				g2.drawLine(2 * f, gh + f, gw + 2 * f, gh + f);
+				g2.drawLine(2 * f, f, 2 * f, gh + f);
+				DoubleBuffer db = (DoubleBuffer) b;
+				for (int d = 0; d < db.limit(); d += chunk) {
+					g2.setColor(colors[d / chunk]);
+					for (int i = 0; i < chunk - 1; i++) {
+						double val = db.get(d + i);
+						double val2 = db.get(d + i + 1);
+						int x1 = (i * gw) / (chunk - 1);
+						int x2 = ((i + 1) * gw) / (chunk - 1);
+						int y1 = (int) (gh * (1.0 - (val - vmin) / (vmax - vmin)));
+						int y2 = (int) (gh * (1.0 - (val2 - vmin) / (vmax - vmin)));
+						g2.drawLine(2 * f + x1, f + y1, 2 * f + x2, f + y2);
+					}
 				}
 			}
+			ps.printf("%.3f", (float) vmin);
+			String vminstr = baos.toString();
+			ps.flush();
+			baos.reset();
+			ps.printf("%.3f", (float) vmax);
+			String vmaxstr = baos.toString();
+			ps.flush();
+			baos.reset();
+
+			g2.setColor(Color.black);
+			g2.drawString(vminstr, 2 * f - g2.getFontMetrics().stringWidth(vminstr), gh + f);
+			g2.drawString(vmaxstr, 2 * f - g2.getFontMetrics().stringWidth(vmaxstr), f);
+
+			String[] erm = new String[] { "A0201 (3089, 38%)", "A6802 (1434, 28%)", "B1501 (978, 18%)", "B5401 (255, 32%)", "B4402 (119, 37%)" };
+			for (int i = 0; i < colors.length; i++) {
+				g2.setColor(colors[erm.length - i - 1]);
+				g2.fillRoundRect(3 * ggw / 4, 125 + 25 * i, 20, 20, 5, 5);
+				g2.setColor(Color.black);
+				g2.drawString(erm[i], 3 * ggw / 4 + 25, 145 + 25 * i);
+			}
+			// g2.fillRect(100, 100, 100, 100);
 		}
 
 		public void reload() {
-			int t = w * h;
-			// int[] ib = ptr.getIntArray(0, t);
-			//System.err.println("ptr" + ptr.length + "  " + ptr.type);
-			IntBuffer ib = ptr.getByteBuffer().asIntBuffer();
-			if (ib.limit() < t) {
-				System.err.println("imgsize error " + ib.limit() + "  " + ptr.getByteLength());
-			} else {
-				for (int i = 0; i < t; i++) {
-					// if( i%13 == 0 ) System.err.println( ib[i] );
-					//bi.setRGB((int) (i % w), (int) (i / w), ib.get(i));
+			Buffer b = ptr.getBuffer();
+			if (b instanceof DoubleBuffer) {
+				DoubleBuffer db = (DoubleBuffer) b;
+				vmin = Double.POSITIVE_INFINITY;
+				vmax = Double.NEGATIVE_INFINITY;
+				for (int d = 0; d < db.limit(); d++) {
+					double val = db.get(d);
+					if (val < vmin)
+						vmin = val;
+					if (val > vmax)
+						vmax = val;
 				}
-				repaint();
 			}
+			System.err.println(vmin + "  " + vmax);
+			repaint();
+		}
+	};
+	
+	class SurfaceComp extends Canvas implements SimComp {
+		String name;
+		private simlab.ByValue ptr;
+		int w;
+		int h;
+		int chunk;
+		Color[] colors;
+		// int fw = 100;
+		int f = 50;
+		SurfaceDraw	sd;
+		boolean started = false;
+
+		public SurfaceComp(String name, simlab.ByValue ptr, int c, int w, int h) {
+			this.name = name;
+			this.ptr = ptr;
+			this.w = w;
+			this.h = h;
+			this.chunk = c;
+			
+			sd = new SurfaceDraw( c );
+
+			reload();
+		}
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		PrintStream ps = new PrintStream(baos);
+		double vmin, vmax;
+
+		public void paint(Graphics g) {
+			System.err.println( this.getWidth() + " " + this.getHeight() );
+			if( !started && isShowing() ) {
+				try {
+					Display.setParent(this);
+					Display.create();
+				} catch (LWJGLException e) {
+					e.printStackTrace();
+				}
+				started = true;
+			}
+			
+			super.paint( g );
+			if( started ) sd.draw();
+		}
+
+		public void reload() {
+			if( !started && this.isShowing() ) {
+				try {
+					Display.setParent(this);
+					Display.create();
+				} catch (LWJGLException e) {
+					e.printStackTrace();
+				}
+				started = true;
+			}
+			
+			Buffer b = ptr.getBuffer();
+			if (b instanceof DoubleBuffer) {
+				DoubleBuffer db = (DoubleBuffer) b;
+				vmin = Double.POSITIVE_INFINITY;
+				vmax = Double.NEGATIVE_INFINITY;
+				for (int d = 0; d < db.limit(); d++) {
+					double val = db.get(d);
+					if (val < vmin)
+						vmin = val;
+					if (val > vmax)
+						vmax = val;
+				}
+			}
+			//repaint();
+			
+			if( started ) sd.draw();
 		}
 	};
 
@@ -2508,7 +3026,7 @@ public class Simlab implements ScriptEngineFactory {
 		public void reload() {
 			int t = w * h;
 			// int[] ib = ptr.getIntArray(0, t);
-			//System.err.println("ptr" + ptr.length + "  " + ptr.type);
+			// System.err.println("ptr" + ptr.length + "  " + ptr.type);
 			IntBuffer ib = ptr.getByteBuffer().asIntBuffer();
 			if (ib.limit() < t) {
 				System.err.println("imgsize error " + ib.limit() + "  " + ptr.getByteLength());
@@ -2536,7 +3054,7 @@ public class Simlab implements ScriptEngineFactory {
 
 		@Override
 		public Object eval(String script) throws ScriptException {
-			return null;
+			return Simlab.this.command(script);
 		}
 
 		@Override
@@ -2674,11 +3192,14 @@ public class Simlab implements ScriptEngineFactory {
 				PipedReader pr = new PipedReader(pw);
 				// BufferedReader br = new BufferedReader( pr );
 				engine.eval(pr);
-			}
-			if (console == null || args.length > 0) {
-				engine.eval(new InputStreamReader(System.in));
 			} else {
-				engine.eval(console.reader());
+				if (args.length > 0) {
+					engine.eval(args[0]);
+				} else if (console == null) {
+					engine.eval(new InputStreamReader(System.in));
+				} else {
+					engine.eval(console.reader());
+				}
 			}
 		} catch (ScriptException e) {
 			e.printStackTrace();
