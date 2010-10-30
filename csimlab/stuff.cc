@@ -5547,7 +5547,11 @@ JNIEXPORT int sort( simlab cnk, simlab with ) {
 			for( int i = 0; i < data.length; i+=chunk ) {
 				std::sort( ((double*)data.buffer)+i, ((double*)data.buffer)+i+chunk );
 			}
-		} if( data.type == 64 ) {
+		} else if( data.type == 65 ) {
+			for( int i = 0; i < data.length; i+=chunk ) {
+				std::sort( ((long long*)data.buffer)+i, ((long long*)data.buffer)+i+chunk );
+			}
+		} else if( data.type == 64 ) {
 			for( int i = 0; i < data.length; i+=chunk ) {
 				std::sort( ((unsigned long long*)data.buffer)+i, ((unsigned long long*)data.buffer)+i+chunk );
 			}
@@ -5555,9 +5559,13 @@ JNIEXPORT int sort( simlab cnk, simlab with ) {
 			for( int i = 0; i < data.length; i+=chunk ) {
 				std::sort( ((float*)data.buffer)+i, ((float*)data.buffer)+i+chunk );
 			}
-		} else if( data.type == 32 ) {
+		} else if( data.type == 33 ) {
 			for( int i = 0; i < data.length; i+=chunk ) {
 				std::sort( ((int*)data.buffer)+i, ((int*)data.buffer)+i+chunk );
+			}
+		} else if( data.type == 32 ) {
+			for( int i = 0; i < data.length; i+=chunk ) {
+				std::sort( ((unsigned int*)data.buffer)+i, ((unsigned int*)data.buffer)+i+chunk );
 			}
 		} else if( data.type == 16 ) {
 			for( int i = 0; i < data.length; i+=chunk ) {
