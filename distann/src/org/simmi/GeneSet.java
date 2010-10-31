@@ -7,9 +7,12 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -18,6 +21,179 @@ public class GeneSet {
 	 * @param args
 	 * @throws IOException 
 	 */
+	
+	static Map<Character,Character>	sidechainpolarity = new HashMap<Character,Character>();
+	static Map<Character,Integer>	sidechaincharge = new HashMap<Character,Integer>();
+	static Map<Character,Double>	hydropathyindex = new HashMap<Character,Double>();
+	static Map<Character,Double>	aamass = new HashMap<Character,Double>();
+	static Map<Character,Double>	isoelectricpoint = new HashMap<Character,Double>();
+	//abundance
+	//aliphatic - aromatic
+	//size
+	//sortcoeff
+	
+	static class Erm implements Comparable<Erm> {
+		double	d;
+		char	c;
+		
+		Erm( double d, char c ) {
+			this.d = d;
+			this.c = c;
+		}
+
+		@Override
+		public int compareTo(Erm o) {
+			double mis = d - o.d;
+			
+			return mis > 0 ? 1 : (mis < 0 ? -1 : 0);
+		}
+	};
+	static List<Erm>	uff = new ArrayList<Erm>();
+	static List<Erm>	uff2 = new ArrayList<Erm>();
+	static List<Erm>	uff3 = new ArrayList<Erm>();
+	static List<Erm>	mass = new ArrayList<Erm>();
+	static List<Erm>	isoel = new ArrayList<Erm>();
+	
+	static {
+		sidechainpolarity.put('A', 'n');
+		sidechainpolarity.put('R', 'P');
+		sidechainpolarity.put('N', 'P');
+		sidechainpolarity.put('D', 'P');
+		sidechainpolarity.put('C', 'n');
+		sidechainpolarity.put('E', 'P');
+		sidechainpolarity.put('Q', 'P');
+		sidechainpolarity.put('G', 'n');
+		sidechainpolarity.put('H', 'P');
+		sidechainpolarity.put('I', 'n');
+		sidechainpolarity.put('L', 'n');
+		sidechainpolarity.put('K', 'P');
+		sidechainpolarity.put('M', 'n');
+		sidechainpolarity.put('F', 'n');
+		sidechainpolarity.put('P', 'n');
+		sidechainpolarity.put('S', 'P');
+		sidechainpolarity.put('T', 'P');
+		sidechainpolarity.put('W', 'n');
+		sidechainpolarity.put('Y', 'P');
+		sidechainpolarity.put('V', 'n');
+		
+		sidechaincharge.put('A', 0);
+		sidechaincharge.put('R', 1);
+		sidechaincharge.put('N', 0);
+		sidechaincharge.put('D', -1);
+		sidechaincharge.put('C', 0);
+		sidechaincharge.put('E', -1);
+		sidechaincharge.put('Q', 0);
+		sidechaincharge.put('G', 0);
+		sidechaincharge.put('H', 0);
+		sidechaincharge.put('I', 0);
+		sidechaincharge.put('L', 0);
+		sidechaincharge.put('K', 1);
+		sidechaincharge.put('M', 0);
+		sidechaincharge.put('F', 0);
+		sidechaincharge.put('P', 0);
+		sidechaincharge.put('S', 0);
+		sidechaincharge.put('T', 0);
+		sidechaincharge.put('W', 0);
+		sidechaincharge.put('Y', 0);
+		sidechaincharge.put('V', 0);
+		
+		hydropathyindex.put('A', 1.8);
+		hydropathyindex.put('R', -4.5);
+		hydropathyindex.put('N', -3.5);
+		hydropathyindex.put('D', -3.5);
+		hydropathyindex.put('C', 2.5);
+		hydropathyindex.put('E', -3.5);
+		hydropathyindex.put('Q', -3.5);
+		hydropathyindex.put('G', -0.4);
+		hydropathyindex.put('H', -3.2);
+		hydropathyindex.put('I', 4.5);
+		hydropathyindex.put('L', 3.8);
+		hydropathyindex.put('K', -3.9);
+		hydropathyindex.put('M', 1.9);
+		hydropathyindex.put('F', 2.8);
+		hydropathyindex.put('P', -1.6);
+		hydropathyindex.put('S', -0.8);
+		hydropathyindex.put('T', -0.7);
+		hydropathyindex.put('W', -0.9);
+		hydropathyindex.put('Y', -1.3);
+		hydropathyindex.put('V', 4.2);
+		
+		aamass.put('A', 89.09404 );
+		aamass.put('C', 121.15404 );
+		aamass.put('D', 133.10384 );
+		aamass.put('E', 147.13074 );
+		aamass.put('F', 165.19184 );
+		aamass.put('G', 75.06714 );
+		aamass.put('H', 155.15634 );
+		aamass.put('I', 131.17464 );
+		aamass.put('K', 146.18934 );
+		aamass.put('L', 131.17464 );
+		aamass.put('M', 149.20784 );
+		aamass.put('N', 132.11904 );
+		aamass.put('O', 100.0 );
+		aamass.put('P', 115.13194 );
+		aamass.put('Q', 146.14594 );
+		aamass.put('R', 174.20274 );
+		aamass.put('S', 105.09344 );
+		aamass.put('T', 119.12034 );
+		aamass.put('U', 168.053 );
+		aamass.put('V', 117.14784 );
+		aamass.put('W', 204.22844 );
+		aamass.put('Y', 181.19124 );
+		
+		isoelectricpoint.put('A', 6.01 );
+		isoelectricpoint.put('C', 5.05 );
+		isoelectricpoint.put('D', 2.85 );
+		isoelectricpoint.put('E', 3.15 );
+		isoelectricpoint.put('F', 5.49 );
+		isoelectricpoint.put('G', 6.06 );
+		isoelectricpoint.put('H', 7.6 );
+		isoelectricpoint.put('I', 6.05 );
+		isoelectricpoint.put('K', 9.6 );
+		isoelectricpoint.put('L', 6.01 );
+		isoelectricpoint.put('M', 5.74 );
+		isoelectricpoint.put('N', 5.41 );
+		isoelectricpoint.put('O', 21.0 );
+		isoelectricpoint.put('P', 6.3 );
+		isoelectricpoint.put('Q', 5.65 );
+		isoelectricpoint.put('R', 10.76 );
+		isoelectricpoint.put('S', 5.68 );
+		isoelectricpoint.put('T', 5.6 );
+		isoelectricpoint.put('U', 20.0 );
+		isoelectricpoint.put('V', 6.0 );
+		isoelectricpoint.put('W', 5.89 );
+		isoelectricpoint.put('Y', 5.64 );
+		
+		for( char c : hydropathyindex.keySet() ) {
+			double d = hydropathyindex.get(c);
+			uff.add( new Erm( d, c ) );
+		}
+		Collections.sort( uff );
+		
+		for( char c : sidechainpolarity.keySet() ) {
+			double d = sidechainpolarity.get(c);
+			uff2.add( new Erm( d, c ) );
+		}
+		Collections.sort( uff2 );
+		
+		for( char c : sidechaincharge.keySet() ) {
+			double d = sidechaincharge.get(c);
+			uff3.add( new Erm( d, c ) );
+		}
+		Collections.sort( uff3 );
+		
+		for( char c : aamass.keySet() ) {
+			double d = aamass.get(c);
+			mass.add( new Erm( d, c ) );
+		}
+		Collections.sort( mass );
+		
+		for( char c : isoelectricpoint.keySet() ) {
+			double d = isoelectricpoint.get(c);
+			isoel.add( new Erm( d, c ) );
+		}
+		Collections.sort( isoel );
+	}
 	
 	static Map<String,String>		swapmap = new HashMap<String,String>();
 	public static void func1( String[] names, File dir ) throws IOException {
@@ -195,11 +371,9 @@ public class GeneSet {
 		ps.close();
 	}
 	
-	public static void func2( String[] stuff, File dir, File dir2 ) throws IOException {
-		Map<String,String>	aas = new HashMap<String,String>();
+	static Map<String,String>	aas = new HashMap<String,String>();
+	public static void loci2aasequence( String[] stuff, File dir2 ) throws IOException {
 		for( String st : stuff ) {
-			System.err.println("Unknown genes in " + swapmap.get(st+".out"));
-			
 			File aa = new File( dir2, st+".fsa" );
 			BufferedReader br = new BufferedReader( new FileReader(aa) );
 			String line = br.readLine();
@@ -207,7 +381,7 @@ public class GeneSet {
 			String ac = "";
 			while( line != null ) {
 				if( line.startsWith(">") ) {
-					if( ac.length() > 0 ) aas.put(name, ac);
+					if( ac.length() > 0 ) aas.put(swapmap.get(st+".out")+" "+name, ac);
 					
 					ac = "";
 					name = line.substring(1).split(" ")[0];
@@ -215,11 +389,18 @@ public class GeneSet {
 				line = br.readLine();
 			}
 			br.close();
+		}
+	}
+	
+	public static void printnohits( String[] stuff, File dir, File dir2 ) throws IOException {
+		loci2aasequence(stuff, dir2);
+		for( String st : stuff ) {
+			System.err.println("Unknown genes in " + swapmap.get(st+".out"));
 			
 			File ba = new File( dir, st+".out" );
-			br = new BufferedReader( new FileReader(ba) );
-			line = br.readLine();
-			//String name = null;
+			BufferedReader br = new BufferedReader( new FileReader(ba) );
+			String line = br.readLine();
+			String name = null;
 			//String ac = null;
 			while( line != null ) {
 				if( line.startsWith("Query=") ) {
@@ -377,7 +558,7 @@ public class GeneSet {
 	}
 	
 	static Map<String,String>	lociMap = new HashMap<String,String>();
-	public static void func5( String[] stuff, File dir ) throws IOException {
+	public static void loci2gene( String[] stuff, File dir ) throws IOException {
 		//Map<String,String>	aas = new HashMap<String,String>();
 		for( String st : stuff ) {			
 			File ba = new File( dir, st+".out" );
@@ -391,7 +572,7 @@ public class GeneSet {
 				
 				String prename = swapmap.get(st+".out")+" "+name;
 				if( line.contains("No hits") ) {
-					lociMap.put( prename, "No match" );
+					lociMap.put( prename, "No match\t"+aas.get(prename) );
 					//System.err.println( prename + "\tNo match" );
 				}
 				
@@ -405,6 +586,57 @@ public class GeneSet {
 			}
 			br.close();
 		}
+	}
+	
+	public static void aahist( File f1, File f2 ) throws IOException {
+		Map<Character,Long>	aa1map = new HashMap<Character,Long>();
+		Map<Character,Long>	aa2map = new HashMap<Character,Long>();
+		
+		long t1 = 0;
+		FileReader fr = new FileReader( f1 );
+		BufferedReader br = new BufferedReader( fr );
+		String line = br.readLine();
+		while( line != null ) {
+			if( !line.startsWith(">") ) {
+				for( int i = 0; i < line.length(); i++ ) {
+					char c = line.charAt(i);
+					if( aa1map.containsKey(c) ) {
+						aa1map.put( c, aa1map.get(c)+1L );
+					} else aa1map.put( c, 1L );
+					
+					t1++;
+				}
+			}
+			line = br.readLine();
+		}
+		br.close();
+		
+		long t2 = 0;
+		fr = new FileReader( f2 );
+		br = new BufferedReader( fr );
+		line = br.readLine();
+		while( line != null ) {
+			if( !line.startsWith(">") ) {
+				for( int i = 0; i < line.length(); i++ ) {
+					char c = line.charAt(i);
+					if( aa2map.containsKey(c) ) {
+						aa2map.put( c, aa2map.get(c)+1L );
+					} else aa2map.put( c, 1L );
+					
+					t2++;
+				}
+			}
+			line = br.readLine();
+		}
+		br.close();
+		
+		
+		for( Erm e : mass ) {
+			char c = e.c;
+			if( aa1map.containsKey( c ) ) {
+				System.err.println( e.d + "\t" + c + "\t" + (aa1map.get(c)/(double)t1) + "\t" + (aa2map.containsKey(c) ? (aa2map.get(c)/(double)t2) : "-") );
+			}
+		}	
 	}
 	
 	public static void main(String[] args) {
@@ -424,8 +656,13 @@ public class GeneSet {
 			//func1( names, dir );
 			//func2( stuff, dir, dir2 );
 			//func3( stuff, dir2 );
-			func5( stuff, dir );
-			func4( dir2, stuff );
+			
+			//loci2aasequence(stuff, dir2);
+			//loci2gene( stuff, dir );
+			//func4( dir2, stuff );
+			
+			aahist( new File("/home/sigmar/thermus/out/aa2.fsa"), new File("/home/sigmar/nc.aa") );
+			//aahist( new File("/home/sigmar/thermus/out/aa2.fsa"), new File("/home/sigmar/thermus/hb27.aa") );
 		} catch( Exception e ) {
 			e.printStackTrace();
 		}
