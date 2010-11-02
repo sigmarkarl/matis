@@ -31,6 +31,23 @@ public class GeneSet {
 	//aliphatic - aromatic
 	//size
 	//sortcoeff
+
+	static class StrSort implements Comparable<StrSort> {
+		double	d;
+		String	s;
+		
+		StrSort( double d, String s ) {
+			this.d = d;
+			this.s = s;
+		}
+
+		@Override
+		public int compareTo(StrSort o) {
+			double mis = o.d - d;
+			
+			return mis > 0 ? 1 : (mis < 0 ? -1 : 0);
+		}
+	};
 	
 	static class Erm implements Comparable<Erm> {
 		double	d;
@@ -204,7 +221,7 @@ public class GeneSet {
 		System.setErr( ps );
 		
 		for( String name : names ) {
-			File 			f = new File( dir, name );
+			File 			f = new File( dir, "new2_"+name );
 			Set<String>		set = new HashSet<String>();
 			
 			FileReader		fr = new FileReader( f );
@@ -237,9 +254,11 @@ public class GeneSet {
 		
 		Set<String>	nameset = null;
 		
-		/*for( String gname : allset ) {
+		for( String gname : allset ) {
 			System.err.println( gname + "\t" + allgenes.get(gname) );
-		}*/
+		}
+		
+		boolean info = true;
 		
 		for( String aname : names ) {
 			allset = new HashSet<String>( allgenes.keySet() );
@@ -249,8 +268,10 @@ public class GeneSet {
 				allset.removeAll( geneset.get(tname) );
 			}
 			System.err.println( "Genes found only in " + swapmap.get(aname) + "\t" + allset.size() );
-			for( String gname : allset ) {
-				System.err.println( gname + "\t" + allgenes.get(gname) );
+			if( info ) {
+				for( String gname : allset ) {
+					System.err.println( gname + "\t" + allgenes.get(gname) );
+				}
 			}
 		}
 		
@@ -268,8 +289,10 @@ public class GeneSet {
 				reset.add( swapmap.get(name) );
 			}
 			System.err.println( "Genes only in all off " + reset + "\t" + allset.size() );
-			for( String gname : allset ) {
-				System.err.println( gname + "\t" + allgenes.get(gname) );
+			if( info ) {
+				for( String gname : allset ) {
+					System.err.println( gname + "\t" + allgenes.get(gname) );
+				}
 			}
 		}
 		
@@ -296,8 +319,10 @@ public class GeneSet {
 					reset.add( swapmap.get(name) );
 				}
 				System.err.println( "Genes only in all of " + reset + "\t" + allset.size() );
-				for( String gname : allset ) {
-					System.err.println( gname + "\t" + allgenes.get(gname) );
+				if( info ) {
+					for( String gname : allset ) {
+						System.err.println( gname + "\t" + allgenes.get(gname) );
+					}
 				}
 			}
 		}
@@ -325,8 +350,10 @@ public class GeneSet {
 					reset.add( swapmap.get(name) );
 				}*/
 				System.err.println( "Genes only in all of " + reset + "\t" + allset.size() );
-				for( String gname : allset ) {
-					System.err.println( gname + "\t" + allgenes.get(gname) );
+				if( info ) {
+					for( String gname : allset ) {
+						System.err.println( gname + "\t" + allgenes.get(gname) );
+					}
 				}
 			}
 		}
@@ -359,8 +386,10 @@ public class GeneSet {
 					}
 					
 					System.err.println( "Genes only in all of " + reset + "\t" + allset.size() );
-					for( String gname : allset ) {
-						System.err.println( gname + "\t" + allgenes.get(gname) );
+					if( info ) {
+						for( String gname : allset ) {
+							System.err.println( gname + "\t" + allgenes.get(gname) );
+						}
 					}
 				}
 			}
@@ -397,18 +426,18 @@ public class GeneSet {
 		for( String st : stuff ) {
 			System.err.println("Unknown genes in " + swapmap.get(st+".out"));
 			
-			File ba = new File( dir, st+".out" );
+			File ba = new File( dir, "new2_"+st+".out" );
 			BufferedReader br = new BufferedReader( new FileReader(ba) );
 			String line = br.readLine();
 			String name = null;
 			//String ac = null;
 			while( line != null ) {
-				if( line.startsWith("Query=") ) {
-					name = line.substring(7).split(" ")[0];
+				if( line.startsWith("Query= ") ) {
+					name = line.substring(8).split(" ")[0];
 				}
 				
 				if( line.contains("No hits") ) {
-					System.err.println( name + "\t" + aas.get(name) );
+					System.err.println( name + "\t" + aas.get(swapmap.get(st+".out")+" "+name) );
 				}
 				
 				line = br.readLine();
@@ -417,7 +446,7 @@ public class GeneSet {
 		}
 	}
 	
-	public static void func3( String[] names, File dir ) throws IOException {
+	public static void createConcatFsa( String[] names, File dir ) throws IOException {
 		FileWriter	fw = new FileWriter( new File( dir, "all.fsa" ) );
 		for( String name : names ) {
 			File 			f = new File( dir, name+".fsa" );
@@ -450,21 +479,30 @@ public class GeneSet {
 						if( trim.startsWith("scoto") ) {
 							String val = trim.substring( 0, trim.indexOf('#')-1 );
 							all.add( val );
-						}						
+						}
 						line = br.readLine();
 					}
 					
-					boolean cont = false;
+					Set<String> cont = null;
+					Set<Set<String>>	rem = null;
 					for( Set<String>	check : total ) {
 						for( String aval : all ) {
 							if( check.contains(aval) ) {
-								cont = true;
-								check.addAll( all );
-								break;
+								if( cont == null ) {
+									cont = check;
+									check.addAll( all );
+									break;
+								} else {
+									cont.addAll( check );
+									if( rem == null ) rem = new HashSet<Set<String>>();
+									rem.add( check );
+									break;
+								}
 							}
 						}
 					}
-					if( !cont ) total.add( all );
+					if( rem != null ) total.removeAll( rem );
+					if( cont == null ) total.add( all );
 					
 					if( line == null ) break;
 				}
@@ -508,6 +546,11 @@ public class GeneSet {
 		
 		PrintStream ps = new PrintStream( new FileOutputStream("/home/sigmar/out.out") );
 		System.setErr( ps );
+		
+		System.err.println( "Total gene sets: " + total.size() );
+		System.err.println();
+		
+		List<StrSort>	sortmap = new ArrayList<StrSort>();
 		for( Set<String> set : clusterMap.keySet() ) {
 			Set<Map<String,Set<String>>>	setmap = clusterMap.get( set );
 			
@@ -518,7 +561,106 @@ public class GeneSet {
 					i += genes.size();
 				}
 			}
-			System.err.println( "Included in : " + set.size() + " scotos " + set + " containing: " + setmap.size() + "set of genes\ttotal of " + i + " loci" );
+			sortmap.add( new StrSort( setmap.size(), "Included in : " + set.size() + " scotos\t" + set + "\tcontaining: " + setmap.size() + " set of genes\ttotal of " + i + " loci" ) );
+			//System.err.println( "Included in : " + set.size() + " scotos " + set + " containing: " + setmap.size() + " set of genes\ttotal of " + i + " loci" );
+		}
+		
+		Collections.sort( sortmap );
+		for( StrSort ss : sortmap ) {
+			System.err.println( ss.s );
+		}
+		System.err.println();
+		System.err.println();
+		
+		
+		
+		
+		for( Set<String> set : clusterMap.keySet() ) {
+			Set<Map<String,Set<String>>>	setmap = clusterMap.get( set );
+			
+			int i = 0;
+			for( Map<String,Set<String>>	map : setmap ) {
+				for( String s: map.keySet() ) {
+					Set<String>	genes = map.get(s);
+					i += genes.size();
+				}
+			}
+			
+			List<Map<String,Set<String>>>	maplist = new ArrayList<Map<String,Set<String>>>();
+			for( Map<String,Set<String>>	map : setmap ) {
+				maplist.add( map );
+			}
+			
+			Set<Integer>	kfound = new HashSet<Integer>();
+			String ermstr = "Included in : " + set.size() + " scotos\t" + set + "\tcontaining: " + setmap.size() + " set of genes";
+			for( i = 0; i < maplist.size(); i++ ) {
+				//if( !kfound.contains(i) ) {
+					Set<String>	ss = new HashSet<String>();
+					Map<String,Set<String>>	map = maplist.get(i);
+					for( String s: map.keySet() ) {
+						for( String s2 : map.get(s) ) {
+							ss.add( s2.substring(0, s2.indexOf('_', 10)) );
+						}
+					}
+					
+					if( ss.size() > 1 ) {						
+						Set<Integer>	innerkfound = new HashSet<Integer>();
+						for( int k = i+1; k < maplist.size(); k++ ) {
+							if( !kfound.contains(k) ) {
+								Set<String>	ss2 = new HashSet<String>();
+								map = maplist.get(k);
+								for( String s: map.keySet() ) {
+									for( String s2 : map.get(s) ) {
+										ss2.add( s2.substring(0, s2.indexOf('_', 10)) );
+									}
+								}
+								if( ss.containsAll( ss2 ) && ss2.containsAll( ss ) ) {
+									kfound.add( k );
+									innerkfound.add( k );
+								}
+							}
+						}
+						
+						if( innerkfound.size() > 0 ) {
+							innerkfound.add( i );
+							if( ermstr != null ) {
+								System.err.println( ermstr );
+								ermstr = null;
+							}
+							System.err.println( "Preserved clusters " + innerkfound );
+							for( int k : innerkfound ) {
+								Map<String,Set<String>>	sm = maplist.get(k);
+								Set<String>	geneset = new HashSet<String>();
+								for( String s : sm.keySet() ) {
+									Set<String>	sout = sm.get(s);
+									for( String loci : sout ) {
+										String gene = lociMap.get(loci);
+										if( gene == null ) gene = aas.get( loci );
+										geneset.add(gene.replace('\t', ' '));
+									}
+								}
+								System.err.println( "\t"+geneset );
+							}
+						}
+					}
+			}
+		}
+		
+		
+		
+		
+		
+		for( Set<String> set : clusterMap.keySet() ) {
+			Set<Map<String,Set<String>>>	setmap = clusterMap.get( set );
+			
+			int i = 0;
+			for( Map<String,Set<String>>	map : setmap ) {
+				for( String s: map.keySet() ) {
+					Set<String>	genes = map.get(s);
+					i += genes.size();
+				}
+			}
+			System.err.println( "Included in : " + set.size() + " scotos\t" + set + "\tcontaining: " + setmap.size() + " set of genes\ttotal of " + i + " loci" );
 			
 			i = 0;
 			for( Map<String,Set<String>>	map : setmap ) {
@@ -561,13 +703,13 @@ public class GeneSet {
 	public static void loci2gene( String[] stuff, File dir ) throws IOException {
 		//Map<String,String>	aas = new HashMap<String,String>();
 		for( String st : stuff ) {			
-			File ba = new File( dir, st+".out" );
+			File ba = new File( dir, "new2_"+st+".out" );
 			BufferedReader br = new BufferedReader( new FileReader(ba) );
 			String line = br.readLine();
 			String name = null;
 			while( line != null ) {
 				if( line.startsWith("Query= ") ) {
-					name = line.substring(7).split(" ")[0];
+					name = line.substring(8).split(" ")[0];
 				}
 				
 				String prename = swapmap.get(st+".out")+" "+name;
@@ -585,6 +727,61 @@ public class GeneSet {
 				line = br.readLine();
 			}
 			br.close();
+		}
+	}
+	
+	public static void aahist( File f1, File f2, int val ) throws IOException {
+		Map<String,Long>	aa1map = new HashMap<String,Long>();
+		Map<String,Long>	aa2map = new HashMap<String,Long>();
+		
+		long t1 = 0;
+		FileReader fr = new FileReader( f1 );
+		BufferedReader br = new BufferedReader( fr );
+		String line = br.readLine();
+		while( line != null ) {
+			if( !line.startsWith(">") ) {
+				for( int i = 0; i < line.length()-val+1; i++ ) {
+					String c = line.substring(i, i+val);
+					if( aa1map.containsKey(c) ) {
+						aa1map.put( c, aa1map.get(c)+1L );
+					} else aa1map.put( c, 1L );
+					
+					t1++;
+				}
+			}
+			line = br.readLine();
+		}
+		br.close();
+		
+		long t2 = 0;
+		fr = new FileReader( f2 );
+		br = new BufferedReader( fr );
+		line = br.readLine();
+		while( line != null ) {
+			if( !line.startsWith(">") ) {
+				for( int i = 0; i < line.length()-val+1; i++ ) {
+					String c = line.substring(i, i+val);
+					if( aa2map.containsKey(c) ) {
+						aa2map.put( c, aa2map.get(c)+1L );
+					} else aa2map.put( c, 1L );
+					
+					t2++;
+				}
+			}
+			line = br.readLine();
+		}
+		br.close();
+		
+		System.err.println( t1 + "\t" + t2 );
+		for( int i = 0; i < Math.pow(isoel.size(), val); i++ ) {
+			String e = "";
+			for( int k = 0; k < val; k++ ) {
+				e += isoel.get( (i/(int)Math.pow(isoel.size(), val-(k+1)))%isoel.size() ).c;
+			}
+			
+			if( aa1map.containsKey( e ) ) {
+				System.err.println( e + "\t" + (aa1map.get(e)) + "\t" + (aa2map.containsKey(e) ? (aa2map.get(e)) : "-") );
+			}
 		}
 	}
 	
@@ -631,7 +828,7 @@ public class GeneSet {
 		br.close();
 		
 		
-		for( Erm e : mass ) {
+		for( Erm e : isoel ) {
 			char c = e.c;
 			if( aa1map.containsKey( c ) ) {
 				System.err.println( e.d + "\t" + c + "\t" + (aa1map.get(c)/(double)t1) + "\t" + (aa2map.containsKey(c) ? (aa2map.get(c)/(double)t2) : "-") );
@@ -642,8 +839,8 @@ public class GeneSet {
 	public static void main(String[] args) {
 		String[]	stuff = {"aa1","aa2","aa4","aa6","aa7","aa8"};
 		String[]	names = {"aa1.out","aa2.out","aa4.out","aa6.out","aa7.out","aa8.out"};
-		File dir = new File("/home/sigmar/thermus/results/");
-		File dir2 = new File("/home/sigmar/thermus/out/");
+		File 		dir = new File("/home/sigmar/thermus/results/");
+		File 		dir2 = new File("/home/sigmar/thermus/out/");
 		
 		swapmap.put("aa1.out", "scoto_346");
 		swapmap.put("aa2.out", "scoto_2101");
@@ -654,14 +851,17 @@ public class GeneSet {
 		
 		try {
 			//func1( names, dir );
-			//func2( stuff, dir, dir2 );
-			//func3( stuff, dir2 );
+			//printnohits( stuff, dir, dir2 );
+			//createConcatFsa( stuff, dir2 );
 			
 			//loci2aasequence(stuff, dir2);
 			//loci2gene( stuff, dir );
 			//func4( dir2, stuff );
 			
-			aahist( new File("/home/sigmar/thermus/out/aa2.fsa"), new File("/home/sigmar/nc.aa") );
+			//aahist( new File("/home/sigmar/tp.aa"), new File("/home/sigmar/nc.aa") );
+			aahist( new File("/home/sigmar/thermus/out/aa2.fsa"), new File("/home/sigmar/nc.aa"), 3 );
+			//aahist( new File("/home/sigmar/thermus/hb27.aa"), new File("/home/sigmar/tp.aa") );
+			//aahist( new File("/home/sigmar/thermus/hb27.aa"), new File("/home/sigmar/thermus/out/aa2.fsa") );
 			//aahist( new File("/home/sigmar/thermus/out/aa2.fsa"), new File("/home/sigmar/thermus/hb27.aa") );
 		} catch( Exception e ) {
 			e.printStackTrace();
