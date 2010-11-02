@@ -828,7 +828,7 @@ public class Fasteign extends JApplet {
 		final JProgressBar pgbar = new JProgressBar();
 		botcomp.add(pgbar);
 		JComponent c = new JComponent() {};
-		c.setPreferredSize( new Dimension(500,30) );
+		c.setPreferredSize( new Dimension(100,30) );
 		botcomp.add( c );
 
 		JButton excelbutton = new JButton(new AbstractAction() {
