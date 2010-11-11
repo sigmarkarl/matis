@@ -216,6 +216,7 @@ public class GeneSet {
 	public static void func1( String[] names, File dir ) throws IOException {
 		Map<String,String>		allgenes = new HashMap<String,String>();
 		Map<String,Set<String>>	geneset = new HashMap<String,Set<String>>();
+		Map<String,Set<String>>	geneloc = new HashMap<String,Set<String>>();
 		
 		PrintStream ps = new PrintStream("/home/sigmar/iron.giant");
 		System.setErr( ps );
@@ -226,6 +227,8 @@ public class GeneSet {
 			
 			FileReader		fr = new FileReader( f );
 			BufferedReader 	br = new BufferedReader( fr );
+			String 	query = null;
+			String	evalue = null;
 			String line = br.readLine();
 			while( line != null ) {
 				String trim = line.trim();
@@ -236,6 +239,22 @@ public class GeneSet {
 					if( !allgenes.containsKey( split[1] ) || allgenes.get( split[1] ) == null ) {
 						allgenes.put( split[1], split.length > 1 ? split[2].trim() : null );
 					}
+					
+					Set<String>	locset = null;
+					if( geneloc.containsKey( split[1] ) ) {
+						locset = geneloc.get(split[1]);
+					} else {
+						locset = new HashSet<String>();
+						geneloc.put(split[1], locset);
+					}
+					locset.add( swapmap.get(name)+"_"+query + " " + evalue );
+					
+					query = null;
+				} else if( trim.startsWith("Query=") ) {
+					query = trim.substring(6).trim().split("[ ]+")[0];
+				} else if( query != null && trim.startsWith("ref|") || trim.startsWith("sp|") || trim.startsWith("pdb|") || trim.startsWith("dbj|") || trim.startsWith("gb|") || trim.startsWith("emb|") ) {
+					String[] split = trim.split("[\t ]+");
+					evalue = split[split.length-1];
 				}
 				
 				line = br.readLine();
@@ -255,7 +274,7 @@ public class GeneSet {
 		Set<String>	nameset = null;
 		
 		for( String gname : allset ) {
-			System.err.println( gname + "\t" + allgenes.get(gname) );
+			System.err.println( gname + "\t" + allgenes.get(gname) + "\t" + geneloc.get(gname) );
 		}
 		
 		boolean info = true;
@@ -270,7 +289,7 @@ public class GeneSet {
 			System.err.println( "Genes found only in " + swapmap.get(aname) + "\t" + allset.size() );
 			if( info ) {
 				for( String gname : allset ) {
-					System.err.println( gname + "\t" + allgenes.get(gname) );
+					System.err.println( gname + "\t" + allgenes.get(gname) + "\t" + geneloc.get(gname) );
 				}
 			}
 		}
@@ -291,7 +310,7 @@ public class GeneSet {
 			System.err.println( "Genes only in all off " + reset + "\t" + allset.size() );
 			if( info ) {
 				for( String gname : allset ) {
-					System.err.println( gname + "\t" + allgenes.get(gname) );
+					System.err.println( gname + "\t" + allgenes.get(gname) + "\t" + geneloc.get(gname) );
 				}
 			}
 		}
@@ -321,7 +340,7 @@ public class GeneSet {
 				System.err.println( "Genes only in all of " + reset + "\t" + allset.size() );
 				if( info ) {
 					for( String gname : allset ) {
-						System.err.println( gname + "\t" + allgenes.get(gname) );
+						System.err.println( gname + "\t" + allgenes.get(gname) + "\t" + geneloc.get(gname) );
 					}
 				}
 			}
@@ -352,7 +371,7 @@ public class GeneSet {
 				System.err.println( "Genes only in all of " + reset + "\t" + allset.size() );
 				if( info ) {
 					for( String gname : allset ) {
-						System.err.println( gname + "\t" + allgenes.get(gname) );
+						System.err.println( gname + "\t" + allgenes.get(gname) + "\t" + geneloc.get(gname) );
 					}
 				}
 			}
@@ -388,7 +407,7 @@ public class GeneSet {
 					System.err.println( "Genes only in all of " + reset + "\t" + allset.size() );
 					if( info ) {
 						for( String gname : allset ) {
-							System.err.println( gname + "\t" + allgenes.get(gname) );
+							System.err.println( gname + "\t" + allgenes.get(gname) + "\t" + geneloc.get(gname) );
 						}
 					}
 				}
@@ -753,6 +772,8 @@ public class GeneSet {
 		}
 		br.close();
 		
+		//Runtime.getRuntime().availableProcessors()
+		
 		long t2 = 0;
 		fr = new FileReader( f2 );
 		br = new BufferedReader( fr );
@@ -772,16 +793,56 @@ public class GeneSet {
 		}
 		br.close();
 		
-		System.err.println( t1 + "\t" + t2 );
-		for( int i = 0; i < Math.pow(isoel.size(), val); i++ ) {
+		//System.err.println( t1 + "\t" + t2 );
+		int na1 = 0;
+		int na2 = 0;
+		int nab = 0;
+		int u = 0;
+		double dt = 0.0;
+		Set<String>	notfound = new HashSet<String>();
+		Set<String>	notfound2 = new HashSet<String>();
+		for( int i = 0; i < Math.pow(uff.size(), val); i++ ) {
 			String e = "";
 			for( int k = 0; k < val; k++ ) {
-				e += isoel.get( (i/(int)Math.pow(isoel.size(), val-(k+1)))%isoel.size() ).c;
+				e += uff.get( (i/(int)Math.pow(uff.size(), val-(k+1)))%uff.size() ).c;
 			}
 			
-			if( aa1map.containsKey( e ) ) {
-				System.err.println( e + "\t" + (aa1map.get(e)) + "\t" + (aa2map.containsKey(e) ? (aa2map.get(e)) : "-") );
+			if( aa1map.containsKey( e ) || aa2map.containsKey( e ) ) {
+				boolean b1 = aa1map.containsKey(e);
+				boolean b2 = aa2map.containsKey(e);
+				
+				if( !b1 ) {
+					if( val == 3 ) notfound.add(e);
+					na1++;
+				}
+				if( !b2 ) {
+					if( val == 3 ) notfound2.add(e);
+					na2++;
+				}
+				
+				double dval = (b1 ? aa1map.get(e)/(double)t1 : 0.0) - (b2 ? aa2map.get(e)/(double)t2 : 0.0);
+				dval *= dval;
+				dt += dval;
+				u++;
+				
+				//System.err.println( e + "\t" + (aa1map.get(e)) + "\t" + (aa2map.containsKey(e) ? (aa2map.get(e)) : "-") );
+			} else {
+				if( val == 3 ) {
+					notfound.add(e);
+					notfound2.add(e);
+				}
+				nab++;
 			}
+		}
+		System.err.println( "MSE: " + (dt/u) + " for " + val );
+		System.err.println( "Not found in 1: " + na1 + ", Not found in 2: " + na2 + ", found in neither: " + nab );
+		
+		for( String ns : notfound ) {
+			System.err.println(ns);
+		}
+		System.err.println();
+		for( String ns : notfound2 ) {
+			System.err.println(ns);
 		}
 	}
 	
@@ -836,7 +897,153 @@ public class GeneSet {
 		}	
 	}
 	
+	public static void newstuff() throws IOException {
+		Map<String,Set<String>>	famap = new HashMap<String,Set<String>>();
+		Map<String,String>	idmap = new HashMap<String,String>();
+		File f = new File("/home/sigmar/groupmap.txt");
+		BufferedReader br = new BufferedReader( new FileReader(f) );
+		String line = br.readLine();
+		while( line != null ) {
+			String[] split = line.split("\t");
+			if( split.length > 1 ) {
+				idmap.put( split[1], split[0] );
+				
+				String[] subsplit = split[0].split("_");
+				Set<String>	fam = null;
+				if( famap.containsKey(subsplit[0]) ) {
+					fam = famap.get(subsplit[0]);
+				} else {
+					fam = new HashSet<String>();
+					famap.put(subsplit[0], fam);
+				}
+				fam.add( split[0] );
+			}
+			
+			line = br.readLine();
+		}
+		br.close();
+		
+		Set<String>	remap = new HashSet<String>();
+		Set<String>	almap = new HashSet<String>();
+		for( String erm : famap.keySet() ) {
+			if( erm.startsWith("Trep") || erm.startsWith("Borr") || erm.startsWith("Spir") ) {
+				remap.add( erm );
+				almap.addAll( famap.get(erm) );
+			}
+		}
+		for( String key : remap ) famap.remove(key);
+		famap.put("TrepSpirBorr", almap);
+		
+		f = new File("/home/sigmar/group_21.dat");
+		Map<Set<String>,Set<String>>	common = new HashMap<Set<String>,Set<String>>();
+		/*File[] files = f.listFiles( new FilenameFilter() {
+			@Override
+			public boolean accept(File dir, String name) {
+				if( name.startsWith("group") && name.endsWith(".dat") ) {
+					return true;
+				}
+				return false;
+			}
+		});*/
+		
+		Set<String>	all = new HashSet<String>();
+		br = new BufferedReader( new FileReader( f ) );
+		line = br.readLine();
+		while( line != null ) {
+			String[] split = line.split("[\t]+");
+			if( split.length >= 3 ) {
+				Set<String>	erm = new HashSet<String>();
+				for( int i = 2; i < split.length; i++ ) {
+					erm.add( idmap.get(split[i].substring(0, split[i].indexOf('.') )) );
+					//erm.add( split[i].substring(0, split[i].indexOf('.') ) );
+				}
+				
+				Set<String>	incommon = null;
+				if( common.containsKey(erm) ) {
+					incommon = common.get(erm);
+				} else {
+					incommon = new HashSet<String>();
+					common.put( erm, incommon );
+				}
+				incommon.add( line );
+				
+				if( erm.size() >= 22 ) {
+					int start = line.indexOf("696cf959d443a23e53786f1eae8eb6c9");
+					
+					if( start > 0 ) {
+						int end = line.indexOf('\t', start);
+						//if( end == -1 ) end = line.indexOf('\n', start);
+						if( end == -1 ) end = line.length();
+						all.add( line.substring(start, end) );
+					} else { 
+						System.err.println();
+					}
+				}
+			}
+			
+			line = br.readLine();
+		}
+		br.close();
+		
+		f = new File("/home/sigmar/0.fsa");
+		br = new BufferedReader( new FileReader(f) );
+		line = br.readLine();
+		while( line != null ) {
+			if( all.contains(line.substring(1)) ) {
+				System.err.println( line );
+				line = br.readLine();
+				while( line != null && !line.startsWith(">") ) {
+					System.err.println( line );
+					line = br.readLine();
+				}
+			} else line = br.readLine();
+		}
+		br.close();
+		
+		System.err.println("total groups "+common.size());
+		for( Set<String> keycommon : common.keySet() ) {
+			Set<String>	incommon = common.get(keycommon);
+			System.err.println( incommon.size() + "  " + keycommon.size() + "  " + keycommon );
+		}
+		
+		int total = 0;
+		System.err.println("boundary crossing groups");
+		for( Set<String> keycommon : common.keySet() ) {
+			Set<String>	incommon = common.get(keycommon);
+			
+			boolean s = true;
+			for( String fam : famap.keySet() ) {
+				Set<String>	famset = famap.get( fam );
+				if( famset.containsAll( keycommon ) ) {
+					s = false;
+					break;
+				}
+			}
+			if( s ) {
+				System.err.println( incommon.size() + "  " + keycommon.size() + "  " + keycommon );
+				total++;
+			}
+		}
+		System.err.println( "for the total of " + total );
+		
+		/*System.err.println( all.size() );
+		for( String astr : all ) {
+			System.err.println( astr );
+		}*/
+	}
+	
 	public static void main(String[] args) {
+		//System.err.println( Runtime.getRuntime().availableProcessors() );
+		//init( args );
+		
+		try {
+			newstuff();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private static void init( String[] args ) {
 		String[]	stuff = {"aa1","aa2","aa4","aa6","aa7","aa8"};
 		String[]	names = {"aa1.out","aa2.out","aa4.out","aa6.out","aa7.out","aa8.out"};
 		File 		dir = new File("/home/sigmar/thermus/results/");
@@ -858,9 +1065,34 @@ public class GeneSet {
 			//loci2gene( stuff, dir );
 			//func4( dir2, stuff );
 			
+			//aahist( new File("/home/sigmar/thermus/out/all.fsa"), new File("/home/sigmar/alls.fsa"), 1 );
+			//aahist( new File("/home/sigmar/thermus/out/all.fsa"), new File("/home/sigmar/alls.fsa"), 2 );
+			//aahist( new File("/home/sigmar/thermus/out/all.fsa"), new File("/home/sigmar/alls.fsa"), 3 );
+			//aahist( new File("/home/sigmar/thermus/out/all.fsa"), new File("/home/sigmar/alls.fsa"), 4 );
+			//aahist( new File("/home/sigmar/thermus/out/all.fsa"), new File("/home/sigmar/alls.fsa"), 5 );
+			
 			//aahist( new File("/home/sigmar/tp.aa"), new File("/home/sigmar/nc.aa") );
-			aahist( new File("/home/sigmar/thermus/out/aa2.fsa"), new File("/home/sigmar/nc.aa"), 3 );
-			//aahist( new File("/home/sigmar/thermus/hb27.aa"), new File("/home/sigmar/tp.aa") );
+			/*aahist( new File("/home/sigmar/thermus/out/all.fsa"), new File("/home/sigmar/nc.aa"), 1 );
+			aahist( new File("/home/sigmar/thermus/out/all.fsa"), new File("/home/sigmar/nc.aa"), 2 );
+			aahist( new File("/home/sigmar/thermus/out/all.fsa"), new File("/home/sigmar/nc.aa"), 3 );
+			aahist( new File("/home/sigmar/thermus/out/all.fsa"), new File("/home/sigmar/nc.aa"), 4 );
+			aahist( new File("/home/sigmar/thermus/out/all.fsa"), new File("/home/sigmar/nc.aa"), 5 );
+			
+			System.err.println();
+			
+			aahist( new File("/home/sigmar/thermus/out/aa2.fsa"), new File("/home/sigmar/tp.aa"), 1 );
+			aahist( new File("/home/sigmar/thermus/out/aa2.fsa"), new File("/home/sigmar/tp.aa"), 2 );
+			aahist( new File("/home/sigmar/thermus/out/aa2.fsa"), new File("/home/sigmar/tp.aa"), 3 );
+			aahist( new File("/home/sigmar/thermus/out/aa2.fsa"), new File("/home/sigmar/tp.aa"), 4 );
+			aahist( new File("/home/sigmar/thermus/out/aa2.fsa"), new File("/home/sigmar/tp.aa"), 5 );
+			
+			System.err.println();
+			//aahist( new File("/home/sigmar/thermus/out/aa2.fsa"), new File("/home/sigmar/nc.aa"), 6 );
+			aahist( new File("/home/sigmar/thermus/hb27.aa"), new File("/home/sigmar/tp.aa"), 1 );
+			aahist( new File("/home/sigmar/thermus/hb27.aa"), new File("/home/sigmar/tp.aa"), 2 );
+			aahist( new File("/home/sigmar/thermus/hb27.aa"), new File("/home/sigmar/tp.aa"), 3 );
+			aahist( new File("/home/sigmar/thermus/hb27.aa"), new File("/home/sigmar/tp.aa"), 4 );
+			aahist( new File("/home/sigmar/thermus/hb27.aa"), new File("/home/sigmar/tp.aa"), 5 );*/
 			//aahist( new File("/home/sigmar/thermus/hb27.aa"), new File("/home/sigmar/thermus/out/aa2.fsa") );
 			//aahist( new File("/home/sigmar/thermus/out/aa2.fsa"), new File("/home/sigmar/thermus/hb27.aa") );
 		} catch( Exception e ) {
