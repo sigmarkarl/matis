@@ -1,14 +1,18 @@
 package com.matis.eurofir.webservices;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,18 +23,23 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.xml.sax.SAXException;
 
+import com.matis.eurofir.webservices.Ws.PseudoResult;
+
 public class EuroFIRWebService {
-	public static PrintStream	ostream = System.out;
+	public static PrintWriter	ostream = new PrintWriter( System.out );
+	//public static Object		conn;	
 	static String				cdataStr = "<![CDATA[";
 	static String				cstopStr = "]]>";
 	//static String				passi = "jP4dj4";
 	//static String				passi = "drsmorc.311";
 	
-	public static void parse( String val ) throws SecurityException, NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchAlgorithmException {
+	public static void parse( PseudoResult rs, String val, PrintWriter ostream ) throws SecurityException, NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchAlgorithmException {
 		//String envbody = "<env:Body>";
 		//int body = val.indexOf(envbody) + envbody.length();
 		
 		//val = val.replaceAll("[\\r\\n\\f\\t]", "");
+		
+		rsinuse = rs;
 		
 		String 	startStr = "<eur:";
 		int 	start = val.indexOf(startStr)+startStr.length();
@@ -131,13 +140,20 @@ public class EuroFIRWebService {
 		}*/
 	}
 	
+	static PseudoResult rsinuse = null;
 	public static void GetFoodInformation( String api_userid, String api_permission, String fdql_sentence, String version, String api_signature ) {
 		try {
 			ByteArrayInputStream	bais = new ByteArrayInputStream( fdql_sentence.getBytes() );
 			String 					sql = FDQL.fdqlToSql( bais );
 			ostream.print( "<![CDATA[" );
 			ostream.print( "<EuroFIRServiceFDTPResponse xmlns=\"http://eurofir.webservice.namespace\">\n" );
-			getFoodFromSql(sql);
+			
+			if( rsinuse != null ) {
+				rsinuse.init( sql );
+				getFoodFromSql( rsinuse, ostream );
+				rsinuse.close();
+			}
+			
 			ostream.print( "</EuroFIRServiceFDTPResponse>" );
 			ostream.print( "]]>\n" );
 		} catch (ParserConfigurationException e) {
@@ -153,23 +169,13 @@ public class EuroFIRWebService {
 		}
 	}
 
-	private static void getFoodFromSql(String sql) throws ClassNotFoundException, SQLException {
-		Ws.header( ostream );
-		
-		//Class.forName("com.mysql.jdbc.Driver");
-		//String connectionUrl = "jdbc:mysql://localhost:3306/isgem"; //?useUnicode=yes&characterEncoding=UTF-8";
-		//Connection conn = DriverManager.getConnection(connectionUrl, "root", passi );
-		
-		Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=ISGEM2;user=simmi;password=mirodc30;";
-		Connection conn = DriverManager.getConnection(connectionUrl);
-		
-		Ws.body( conn, sql, ostream );
-		conn.close();
+	private static void getFoodFromSql(PseudoResult rs, PrintWriter ostream) throws ClassNotFoundException, SQLException {
+		Ws.header( ostream );		
+		Ws.body( rs, ostream );
 		Ws.footer( ostream );
 	}
 	
-	public static void getFoodFDTP( String[] ids ) throws ClassNotFoundException, SQLException {
+	public static void getFoodFDTP( String[] ids, PrintWriter ostream ) throws ClassNotFoundException, SQLException {
 		/*String lastCon = "(fd.OriginalFoodCode = '"+ids[0]+"'";
 		for( int i = 1; i < ids.length; i++ ) {
 			lastCon += " or fd.OriginalFoodCode = '"+ids[i]+"'";
@@ -184,28 +190,90 @@ public class EuroFIRWebService {
 		
 		Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
 		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=ISGEM2;user=simmi;password=mirodc30;";
-		Connection conn = DriverManager.getConnection(connectionUrl);
+		final Connection conn = DriverManager.getConnection(connectionUrl);
+		
+		PseudoResult rs = new PseudoResult() {
+			PreparedStatement	ps;
+			ResultSet			rs;
+			
+			@Override
+			public boolean next() {
+				try {
+					return rs.next();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+				return false;
+			}
+
+			@Override
+			public String getString(String col) {
+				try {
+					return rs.getString( col );
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+				return null;
+			}
+
+			@Override
+			public void init(String sql) {
+				try {
+					ps = conn.prepareStatement(sql);
+					rs = ps.executeQuery();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+				
+				//foodSub( p, rs );
+			}
+			
+			@Override
+			public void close() {
+				try {
+					rs.close();
+					ps.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+		};
 		
 		ostream.println("<Foods>");
 		for( String id : ids ) {
 			String lastCon = "fd.OriginalFoodCode = '"+id+"'";
 			String sql = "SELECT cv.OriginalFoodCode,fd.LangualCodes,fd.FoodGroupIS1,fd.FoodGroupIS2,fd.OriginalFoodName,fd.EnglishFoodName,co.EuroFIRComponentIdentifier,cv.OriginalComponentCode,co.OriginalComponentName,co.EnglishComponentName,cv.Unit,'W' as MatrixUnit,cv.AcquisitionType,cv.DateOfGeneration,cv.MethodType,cv.MethodIndicator,cv.MethodParameter,cv.SelectedValue,cv.ValueType,cv.N,cv.Minimum,cv.Maximum,cv.StandardDeviation,cv.QI_Eurofir,cv.Remarks,rf.Citation,rf.ReferenceType,rf.AcquisitionType as rAcquisitionType,rf.WWW from Food fd, ComponentValue cv, Component co, Reference rf where fd.OriginalFoodCode = cv.OriginalFoodCode AND co.OriginalComponentCode = cv.OriginalComponentCode AND rf.ReferenceID = cv.ValueReferenceFK AND "+lastCon;
-			Ws.food( conn, sql, ostream );
+			rs.init( sql );
+			Ws.foodSub( ostream, rs );
+			rs.close();
 		}
 		ostream.println("</Foods>");
 		conn.close();
 		Ws.footer( ostream );
 	}
 	
-	static byte[]	bb = new byte[8096];
-	public static void parseStream( InputStream stream ) throws IOException, SecurityException, IllegalArgumentException, NoSuchAlgorithmException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-		String str = "";
+	//static byte[]	bb = new byte[8096];
+	public static void parseStream( PseudoResult rs, InputStream stream, PrintWriter ostream ) throws IOException, SecurityException, IllegalArgumentException, NoSuchAlgorithmException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+		InputStreamReader isr = new InputStreamReader(stream, "UTF-8" );
+		BufferedReader br = new BufferedReader( isr );
+		
+		StringBuilder sb = new StringBuilder();
+		String line = br.readLine();
+		while( line != null ) {
+			sb.append( line );
+			sb.append( '\n' );
+			line = br.readLine();
+		}
+		br.close();
+		
+		/*String str = "";
 		int r = stream.read( bb );
 		while( r > 0 ) {
 			str += new String( bb, 0, r, "UTF8" );
 			r = stream.read( bb );
-		}
-		parse( str );
+		}*/
+		
+		parse( rs, sb.toString(), ostream );
 	}
 	
 	/**
@@ -214,7 +282,7 @@ public class EuroFIRWebService {
 	public static void main(String[] args) {
 		if( args.length > 0 ) {
 			try {
-				getFoodFDTP( args[0].split(",") );
+				getFoodFDTP( args[0].split(","), new PrintWriter( System.out ) );
 			} catch (ClassNotFoundException e) {
 				e.printStackTrace();
 			} catch (SQLException e) {
@@ -223,7 +291,60 @@ public class EuroFIRWebService {
 		} else {
 			try {
 				InputStream stream = System.in;
-				parseStream( stream );
+				
+				
+				Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+				String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=ISGEM2;user=simmi;password=mirodc30;";
+				final Connection connection = DriverManager.getConnection(connectionUrl);
+				
+				PseudoResult rs = new PseudoResult() {
+					PreparedStatement	ps;
+					ResultSet			rs;
+					
+					@Override
+					public boolean next() {
+						try {
+							return rs.next();
+						} catch (SQLException e) {
+							e.printStackTrace();
+						}
+						return false;
+					}
+
+					@Override
+					public String getString(String col) {
+						try {
+							return rs.getString( col );
+						} catch (SQLException e) {
+							e.printStackTrace();
+						}
+						return null;
+					}
+
+					@Override
+					public void init(String sql) {
+						try {
+							ps = connection.prepareStatement(sql);
+							rs = ps.executeQuery();
+						} catch (SQLException e) {
+							e.printStackTrace();
+						}
+						
+						//foodSub( p, rs );
+					}
+					
+					@Override
+					public void close() {
+						try {
+							rs.close();
+							ps.close();
+						} catch (SQLException e) {
+							e.printStackTrace();
+						}
+					}
+				};				
+				parseStream( rs, stream, new PrintWriter(System.out) );
+				connection.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			} catch (SecurityException e) {
@@ -237,6 +358,10 @@ public class EuroFIRWebService {
 			} catch (InvocationTargetException e) {
 				e.printStackTrace();
 			} catch (NoSuchAlgorithmException e) {
+				e.printStackTrace();
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			} catch (SQLException e) {
 				e.printStackTrace();
 			}
 		}
