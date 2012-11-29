@@ -1,6 +1,6 @@
 package com.matis.eurofir.webservices;
 
-import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -12,8 +12,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import com.sun.jmx.remote.util.OrderClassLoaders;
-
 public class Ws {
 	public static void main( String[] args ) {
 		new Ws().FoodXML( args[0] );
@@ -23,16 +21,29 @@ public class Ws {
 		return val == null || val.equals("null");
 	}
 	
-	public static void header( PrintStream p ) {
+	public static void header( PrintWriter p ) {
 		Calendar toDay = Calendar.getInstance();
 		String xar = Integer.toString( toDay.get( Calendar.YEAR ) );
 		String xman = Integer.toString( toDay.get( Calendar.MONTH )+1 );
 		String xdag = Integer.toString( toDay.get( Calendar.DAY_OF_MONTH ) );
 		String xtoday = xar + "-" + (xman.length() == 1 ? "0"+xman : xman) + "-" + xdag;
 		
-		p.println("<EuroFIRFoodDataTransportPackage name=\"EuroFIR Food Transport Package Markup Language\" version=\"1.3\" versiondate=\"2008-04-25\" sentdate=\""+xtoday+"\" service=\"0\">");
+		p.println("<EuroFIRFoodDataTransportPackage name=\"EuroFIR Food Transport Package Markup Language\" version=\"1.4\" versiondate=\"2008-04-25\" sentdate=\""+xtoday+"\" service=\"0\">");
 		p.println("<StandardVocabularies>");
 		
+		p.println("<StandardVocabulary system=\"LanguaL\" position=\"http://www.langual.org/xml/langual2009.xml\" />");
+		p.println("<StandardVocabulary system=\"componentidentifier\" position=\"http://techweb.eurofir.org/xml/EuroFIR_Component_Thesaurus_version_1.2.xml\" />");
+		p.println("<StandardVocabulary system=\"unit\" position=\"http://techweb.eurofir.org/xml/EuroFIR_Unit_Thesaurus_version_1.1.xml\" />");
+		p.println("<StandardVocabulary system=\"matrixunit\" position=\"http://techweb.eurofir.org/xml/EuroFIR_Matrix_Unit_Thesaurus_version_1.1.xml\" />");
+		p.println("<StandardVocabulary system=\"methodtype\" position=\"http://techweb.eurofir.org/xml/EuroFIR_Method_Type_Thesaurus_version_1.1.xml\" />");
+		p.println("<StandardVocabulary system=\"methodindicator\" position=\"http://techweb.eurofir.org/xml/EuroFIR_Method_Indicator_Thesaurus_version_1.1.xml\" />");
+		p.println("<StandardVocabulary system=\"valuetype\" position=\"http://techweb.eurofir.org/xml/EuroFIR_Value_Type_Thesaurus_version_1.1.xml\" />");
+		p.println("<StandardVocabulary system=\"acquisitiontype\" position=\"http://techweb.eurofir.org/xml/EuroFIR_Acquisition_Type_Thesaurus_version_1.1.xml\" />");
+		p.println("<StandardVocabulary system=\"referencetype\" position=\"http://techweb.eurofir.org/xml/EuroFIR_Reference_Type_Thesaurus_version_1.1.xml\" />");
+		p.println("<StandardVocabulary system=\"language\" position=\"http://www.loc.gov/standards/iso639-2/ISO-639-2_8859-1.txt\" />");
+		p.println("<StandardVocabulary system=\"country\" position=\"http://www.iso.org/iso/iso_3166-1_list_en.zip\" />");
+		
+		/*
 		p.println("<StandardVocabulary system=\"LanguaL\" position=\"http://www.langual.org/xml/langual.xml\" />"); 
 		p.println("<StandardVocabulary system=\"component\" position=\"http://www.eurofir.org/xml/scheme/EuroFIR_Component_Thesaurus_version_1.0.xml\" />"); 
 		p.println("<StandardVocabulary system=\"unit\" position=\"http://www.eurofir.org/xml/scheme/EuroFIR_Matrix_Unit_Thesaurus_version_1.0.xml\" />");
@@ -44,6 +55,7 @@ public class Ws {
 		p.println("<StandardVocabulary system=\"publicationtype\" position=\"http://www.eurofir.org/xml/scheme/EuroFIR_Reference_Type_Thesaurus_version_1.0.xml\" />");
 		p.println("<StandardVocabulary system=\"language\" position=\"http://www.loc.gov/standards/iso639-2/ISO-639-2_8859-1.txt\" />");
 		p.println("<StandardVocabulary system=\"country\" position=\"http://www.iso.org/iso/iso_3166-1_list_en.zip\" />");
+		*/
 		
 		p.println("</StandardVocabularies>");
 		
@@ -74,207 +86,229 @@ public class Ws {
         p.println("</Content>");
 	}
 	
-	public static void footer( PrintStream p ) {
+	public static void footer( PrintWriter p ) {
 		p.println("</EuroFIRFoodDataTransportPackage>");
 	}
 	
-	public static void body( Connection conn, String sql, PrintStream p ) {
+	public static void body( PseudoResult rs, PrintWriter p ) {
 		p.println("<Foods>");
-		food( conn, sql, p );
+		foodSub( p, rs );
 		p.println("</Foods>");
 	}
 	
-	public static void food( Connection conn, String sql, PrintStream p ) {
-		try {			
+	public interface PseudoResult {
+		public boolean next();
+		public String getString( String col );
+		public void init( String sql );
+		public void close();
+	}
+	
+	/*public static void food( Connection conn, String sql, PrintWriter p ) {
+		try {	
 			PreparedStatement 	ps = conn.prepareStatement(sql);
-			ResultSet 			rs = ps.executeQuery();
-			String				oldname = "";
-			boolean				hascomponents = true;
-			boolean				hasreferences = true;
+			final ResultSet 	rsl = ps.executeQuery();
 			
-			Map<String,Float>	energyMap = new HashMap<String,Float>();
-			Set<String>			energySet = new HashSet<String>();
-			
-			energySet.add( "PROT" );
-			energySet.add( "FAT" );
-			energySet.add( "ALC" );
-			energySet.add( "CHOT" );
-			energySet.add( "FIBT" );
-			
-			while( rs.next() ) {
-				String name = rs.getString("OriginalFoodCode");
-				String langual = rs.getString("LangualCodes");
-				boolean sameold = oldname.equals(name);
-				
-				if( !sameold ) {
-					energyMap.clear();
-					if( !oldname.equals("") ) {
-						p.println("</Components>");
-						p.println("</Food>");
+			PseudoResult rs = new PseudoResult() {
+				@Override
+				public boolean next() {
+					try {
+						return rsl.next();
+					} catch (SQLException e) {
+						e.printStackTrace();
 					}
-					p.println("<Food>");
-	                p.println("<FoodDescription>");
-	                p.println("<FoodIdentifiers>");
-	                p.println("<FoodIdentifier system=\"origfdcd\">");
-	                p.println("<Identifier>"+name+"</Identifier>");
-	                p.println("</FoodIdentifier>");
-	                if( langual != null && langual.length() > 0 ) {
-		                p.println("<FoodIdentifier system=\"LanguaL\">");
-		                String[] split = langual.split("[ ]+");
-		                for( String lang : split ) {
-		                	p.println("<Identifier>"+lang+"</Identifier>");
-		                }
-		                p.println("</FoodIdentifier>");
-	                }
-	                p.println("</FoodIdentifiers>");
-	                
-	                try {
-	                	String ff1 = rs.getString("FoodGroupIS1");
-	                	String ff2 = rs.getString("FoodGroupIS2");
-	                	p.println("<FoodClasses>");
-	                	p.println("<FoodClass system=\"origgpcd\">"+ff1+"."+ff2+"</FoodClass>");
-	                	p.println("</FoodClasses>");
-	                } catch( SQLException sqlex ) {
-	                	
-	                }
-	
-	                p.println("<FoodNames>");
-	                try {
-	                	String is = rs.getString("OriginalFoodName");
-	                	p.println("<FoodName language=\"is\">"+is+"</FoodName>");
-	                } catch( SQLException sqlex ) {
-	                	
-	                }
-	                
-	                try {
-	                	String en = rs.getString("EnglishFoodName");
-	                	p.println("<FoodName language=\"en\">"+en+"</FoodName>");
-	                } catch( SQLException sqlex ) {
-	                	
-	                }
-	                p.println("</FoodNames>");
-	                
-	                p.println("<Remarks></Remarks>");
-	                p.println("</FoodDescription>");
-	                
-	                if( hascomponents ) p.println("<Components>");
+					return false;
 				}
-                
-				if( hascomponents ) {
-	                //p.println("<Components>");
-	                String eurocd = rs.getString("EuroFIRComponentIdentifier");
-					String origcd = rs.getString("OriginalComponentCode");
-					String origcpnm = rs.getString("OriginalComponentName");
-					String engcpnm = rs.getString("EnglishComponentName");
-					String unit = rs.getString("Unit");
-					String matrixUnit = rs.getString("MatrixUnit");
-					String acquisitionType = rs.getString("AcquisitionType");
-					String dateGenerated = rs.getString("DateOfGeneration");
-					String methodType = rs.getString("MethodType");
-					String methodIndicator = rs.getString("MethodIndicator");
-					String methodParameter = rs.getString("MethodParameter");
-					String valueType = rs.getString("ValueType");
-					String selectedValue = rs.getString("SelectedValue");
-					String numberOfAnalyses = rs.getString("N");
-					String minimum = rs.getString("Minimum");
-					String maximum = rs.getString("Maximum");
-					String standardDeviation = rs.getString("StandardDeviation");
-					String qualityIndex = rs.getString("QI_Eurofir");
-					String remarks = rs.getString("Remarks");
-					
-					p.println("<Component>");
-					
-					eurocd = nullStr(eurocd) ? "" : eurocd.trim();
-					origcd = nullStr(origcd) ? "" : origcd.trim();
-					origcpnm = nullStr(origcpnm) ? "" : origcpnm.trim();
-					engcpnm = nullStr(engcpnm) ? "" : engcpnm.trim();
-					
-					unit = nullStr(unit) ? "" : unit;
-					matrixUnit = nullStr(matrixUnit) ? "" : matrixUnit;
-					dateGenerated = nullStr(dateGenerated) ? "" : dateGenerated.substring(0, 10);
-					methodType = nullStr(methodType) ? "" : methodType;
-					methodIndicator = nullStr(methodIndicator) ? "" : methodIndicator;
-					methodParameter = nullStr(methodParameter) ? "" : methodParameter;
-					
-					if( selectedValue.startsWith("<") ) selectedValue = "less than "+selectedValue.substring(1);
-					
-	                p.println("<ComponentIdentifiers>");
-	                p.println("<ComponentIdentifier system=\"ecompid\">"+eurocd+"</ComponentIdentifier>");	                
-	                p.println("<ComponentIdentifier system=\"origcpcd\">"+origcd+"</ComponentIdentifier>");	                
-	                p.println("<ComponentIdentifier system=\"origcpnm\">"+origcpnm+"</ComponentIdentifier>");
-	                p.println("<ComponentIdentifier system=\"engcpnam\">"+engcpnm+"</ComponentIdentifier>");
-	                p.println("</ComponentIdentifiers>");
-	                
-	                p.println("<Values>");
-	                p.println("<Value unit=\""+unit+"\" matrixunit=\""+matrixUnit+"\" dategenerated=\""+dateGenerated+"\" methodtype=\""+methodType+"\" methodindicator=\""+methodIndicator+"\" methodparameter=\""+methodParameter+"\">");
-	                valueType = nullStr(valueType) ? "" : valueType;
-	                String selVal = selectedValue.trim();
-	                if( selVal.endsWith(",") ) selVal = selVal.substring(0, selVal.length()-1);
-	                selVal = selVal.replace(',', '.');
-	                p.println("<SelectedValue valuetype=\""+valueType+"\" acquisitionType=\""+(acquisitionType==null?"":acquisitionType)+"\">"+selVal+"</SelectedValue>");
-	                
-	                float fVal = 0;
-	                try {
-	                	fVal = Float.parseFloat(selVal);
-	                } catch( Exception e ) {
-	                	
-	                }
-	                if( energySet.contains(eurocd) ) energyMap.put(eurocd, fVal);
-	                
-	                minimum = nullStr(minimum) ? "<Minimum/>" : "<Minimum>"+minimum.replace(',', '.')+"</Minimum>";
-	                p.println(minimum);
-	                maximum = nullStr(maximum) ? "<Maximum/>" : "<Maximum>"+maximum.replace(',', '.')+"</Maximum>";
-	                p.println(maximum);
-	                standardDeviation = nullStr(standardDeviation) ? "<StandardDeviation/>" : "<StandardDeviation>"+standardDeviation+"</StandardDeviation>";
-	                p.println(standardDeviation);
-	                numberOfAnalyses = nullStr(numberOfAnalyses) ? "<NumberOfAnalyticalPortions/>" : "<NumberOfAnalyticalPortions>"+numberOfAnalyses+"</NumberOfAnalyticalPortions>";
-	                p.println(numberOfAnalyses);
-	                qualityIndex = nullStr(qualityIndex) ? "<QualityIndex/>" : "<QualityIndex>"+qualityIndex+"</QualityIndex>";
-	                p.println( qualityIndex );
-	                remarks = nullStr(remarks) ? "<Remarks/>" : "<Remarks>"+remarks+"</Remarks>";
-	                p.println(remarks);
-	                //p.println("<QualityIndex>"+qualityIndex+"</QualityIndex>");
-	                //p.println("<Remarks>"+remarks+"</Remarks>");
-	
-	                if( hasreferences ) {
-	                	String referenceType = rs.getString("ReferenceType");
-	                	String rAcquisitionType = rs.getString("rAcquisitionType");
-	                	String link = rs.getString("WWW");
-	                	String citation = rs.getString("Citation");
-	                	
-		                p.println("<References>");
-		                p.println("<ValueReference referencetype=\""+referenceType+"\" acquisitiontype=\""+rAcquisitionType+"\""+((link==null||link.length()==0)?">":" link=\""+link+"\">")+citation.replace('&', 'o')+"</ValueReference>");
-		                p.println("<MethodReference referencetype=\""+referenceType+"\" acquisitiontype=\""+rAcquisitionType+"\""+((link==null||link.length()==0)?" />":" link=\""+link+"\" />"));
-		                p.println("</References>");
-	                }
-	                
-	                p.println("</Value>");
-	                p.println("</Values>");
-	                p.println("</Component>");
-	                
-	                if( energyMap.size() == 5 ) {
-	                	float kcalVal = energyMap.get("PROT")*4 + energyMap.get("FAT")*9 + energyMap.get("CHOT")*4 + energyMap.get("FIBT")*2 + energyMap.get("ALC")*7;
-	                	float kjVal = energyMap.get("PROT")*17 + energyMap.get("FAT")*37 + energyMap.get("CHOT")*17 + energyMap.get("FIBT")*8 + energyMap.get("ALC")*29;
-	                	energyCalc( p, Float.toString(kcalVal), "kcal" );
-	                	energyCalc( p, Float.toString(kjVal), "kJ" );
-	                	energyMap.clear();
-	                }
-				}
-				oldname = name;
-			}
-			if( !oldname.equals("") ) {
-				p.println("</Components>");
-				p.println("</Food>");
-			}
+
+				@Override
+				public String getString(String col) {
+					try {
+						return rsl.getString( col );
+					} catch (SQLException e) {
+						e.printStackTrace();
+					}
+					return null;
+				}	
+			};
 			
-			rs.close();
+			foodSub( p, rs );
+			
+			rsl.close();
 			ps.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+	}*/
+	
+	public static void foodSub( PrintWriter p, PseudoResult rs ) {
+		String				oldname = "";
+		boolean				hascomponents = true;
+		boolean				hasreferences = true;
+		
+		Map<String,Float>	energyMap = new HashMap<String,Float>();
+		Set<String>			energySet = new HashSet<String>();
+		
+		energySet.add( "PROT" );
+		energySet.add( "FAT" );
+		energySet.add( "ALC" );
+		energySet.add( "CHOT" );
+		energySet.add( "FIBT" );
+		
+		while( rs.next() ) {
+			String name = rs.getString("OriginalFoodCode");
+			String langual = rs.getString("LangualCodes");
+			boolean sameold = oldname.equals(name);
+			
+			if( !sameold ) {
+				energyMap.clear();
+				if( !oldname.equals("") ) {
+					p.println("</Components>");
+					p.println("</Food>");
+				}
+				p.println("<Food>");
+                p.println("<FoodDescription>");
+                p.println("<FoodIdentifiers>");
+                p.println("<FoodIdentifier system=\"origfdcd\">");
+                p.println("<Identifier>"+name+"</Identifier>");
+                p.println("</FoodIdentifier>");
+                if( langual != null && langual.length() > 0 ) {
+	                p.println("<FoodIdentifier system=\"LanguaL\">");
+	                String[] split = langual.split("[ ]+");
+	                for( String lang : split ) {
+	                	p.println("<Identifier>"+lang+"</Identifier>");
+	                }
+	                p.println("</FoodIdentifier>");
+                }
+                p.println("</FoodIdentifiers>");
+                
+                String ff1 = rs.getString("FoodGroupIS1");
+                String ff2 = rs.getString("FoodGroupIS2");
+                p.println("<FoodClasses>");
+                p.println("<FoodClass system=\"origgpcd\">"+ff1+"."+ff2+"</FoodClass>");
+                p.println("</FoodClasses>");
+
+                p.println("<FoodNames>");
+                String is = rs.getString("OriginalFoodName");
+                p.println("<FoodName language=\"is\">"+is+"</FoodName>");
+                
+                String en = rs.getString("EnglishFoodName");
+                p.println("<FoodName language=\"en\">"+en+"</FoodName>");
+                p.println("</FoodNames>");
+                
+                p.println("<Remarks></Remarks>");
+                p.println("</FoodDescription>");
+                
+                if( hascomponents ) p.println("<Components>");
+			}
+            
+			if( hascomponents ) {
+                //p.println("<Components>");
+                String eurocd = rs.getString("EuroFIRComponentIdentifier");
+				String origcd = rs.getString("OriginalComponentCode");
+				String origcpnm = rs.getString("OriginalComponentName");
+				String engcpnm = rs.getString("EnglishComponentName");
+				String unit = rs.getString("Unit");
+				String matrixUnit = rs.getString("MatrixUnit");
+				String acquisitionType = rs.getString("AcquisitionType");
+				String dateGenerated = rs.getString("DateOfGeneration");
+				String methodType = rs.getString("MethodType");
+				String methodIndicator = rs.getString("MethodIndicator");
+				String methodParameter = rs.getString("MethodParameter");
+				String valueType = rs.getString("ValueType");
+				String selectedValue = rs.getString("SelectedValue");
+				String numberOfAnalyses = rs.getString("N");
+				String minimum = rs.getString("Minimum");
+				String maximum = rs.getString("Maximum");
+				String standardDeviation = rs.getString("StandardDeviation");
+				String qualityIndex = rs.getString("QI_Eurofir");
+				String remarks = rs.getString("Remarks");
+				
+				p.println("<Component>");
+				
+				eurocd = nullStr(eurocd) ? "" : eurocd.trim();
+				origcd = nullStr(origcd) ? "" : origcd.trim();
+				origcpnm = nullStr(origcpnm) ? "" : origcpnm.trim();
+				engcpnm = nullStr(engcpnm) ? "" : engcpnm.trim();
+				
+				unit = nullStr(unit) ? "" : unit;
+				matrixUnit = nullStr(matrixUnit) ? "" : matrixUnit;
+				dateGenerated = nullStr(dateGenerated) ? "" : dateGenerated.substring(0, 10);
+				methodType = nullStr(methodType) ? "" : methodType;
+				methodIndicator = nullStr(methodIndicator) ? "" : methodIndicator;
+				methodParameter = nullStr(methodParameter) ? "" : methodParameter;
+				
+				if( selectedValue.startsWith("<") ) selectedValue = "less than "+selectedValue.substring(1);
+				
+                p.println("<ComponentIdentifiers>");
+                p.println("<ComponentIdentifier system=\"ecompid\">"+eurocd+"</ComponentIdentifier>");	                
+                p.println("<ComponentIdentifier system=\"origcpcd\">"+origcd+"</ComponentIdentifier>");	                
+                p.println("<ComponentIdentifier system=\"origcpnm\">"+origcpnm+"</ComponentIdentifier>");
+                p.println("<ComponentIdentifier system=\"engcpnam\">"+engcpnm+"</ComponentIdentifier>");
+                p.println("</ComponentIdentifiers>");
+                
+                p.println("<Values>");
+                p.println("<Value unit=\""+unit+"\" matrixunit=\""+matrixUnit+"\" dategenerated=\""+dateGenerated+"\" methodtype=\""+methodType+"\" methodindicator=\""+methodIndicator+"\" methodparameter=\""+methodParameter+"\">");
+                valueType = nullStr(valueType) ? "" : valueType;
+                String selVal = selectedValue.trim();
+                if( selVal.endsWith(",") ) selVal = selVal.substring(0, selVal.length()-1);
+                selVal = selVal.replace(',', '.');
+                p.println("<SelectedValue valuetype=\""+valueType+"\" acquisitionType=\""+(acquisitionType==null?"":acquisitionType)+"\">"+selVal+"</SelectedValue>");
+                
+                float fVal = 0;
+                try {
+                	fVal = Float.parseFloat(selVal);
+                } catch( Exception e ) {
+                	
+                }
+                if( energySet.contains(eurocd) ) energyMap.put(eurocd, fVal);
+                
+                minimum = nullStr(minimum) ? "<Minimum/>" : "<Minimum>"+minimum.replace(',', '.')+"</Minimum>";
+                p.println(minimum);
+                maximum = nullStr(maximum) ? "<Maximum/>" : "<Maximum>"+maximum.replace(',', '.')+"</Maximum>";
+                p.println(maximum);
+                standardDeviation = nullStr(standardDeviation) ? "<StandardDeviation/>" : "<StandardDeviation>"+standardDeviation+"</StandardDeviation>";
+                p.println(standardDeviation);
+                numberOfAnalyses = nullStr(numberOfAnalyses) ? "<NumberOfAnalyticalPortions/>" : "<NumberOfAnalyticalPortions>"+numberOfAnalyses+"</NumberOfAnalyticalPortions>";
+                p.println(numberOfAnalyses);
+                qualityIndex = nullStr(qualityIndex) ? "<QualityIndex/>" : "<QualityIndex>"+qualityIndex+"</QualityIndex>";
+                p.println( qualityIndex );
+                remarks = nullStr(remarks) ? "<Remarks/>" : "<Remarks>"+remarks+"</Remarks>";
+                p.println(remarks);
+                //p.println("<QualityIndex>"+qualityIndex+"</QualityIndex>");
+                //p.println("<Remarks>"+remarks+"</Remarks>");
+
+                if( hasreferences ) {
+                	String referenceType = rs.getString("ReferenceType");
+                	String rAcquisitionType = rs.getString("rAcquisitionType");
+                	String link = rs.getString("WWW");
+                	String citation = rs.getString("Citation");
+                	
+	                p.println("<References>");
+	                p.println("<ValueReference referencetype=\""+referenceType+"\" acquisitiontype=\""+rAcquisitionType+"\""+((link==null||link.length()==0)?">":" link=\""+link+"\">")+citation.replace('&', 'o')+"</ValueReference>");
+	                p.println("<MethodReference referencetype=\""+referenceType+"\" acquisitiontype=\""+rAcquisitionType+"\""+((link==null||link.length()==0)?" />":" link=\""+link+"\" />"));
+	                p.println("</References>");
+                }
+                
+                p.println("</Value>");
+                p.println("</Values>");
+                p.println("</Component>");
+                
+                if( energyMap.size() == 5 ) {
+                	float kcalVal = energyMap.get("PROT")*4 + energyMap.get("FAT")*9 + energyMap.get("CHOT")*4 + energyMap.get("FIBT")*2 + energyMap.get("ALC")*7;
+                	float kjVal = energyMap.get("PROT")*17 + energyMap.get("FAT")*37 + energyMap.get("CHOT")*17 + energyMap.get("FIBT")*8 + energyMap.get("ALC")*29;
+                	energyCalc( p, Float.toString(kcalVal), "kcal" );
+                	energyCalc( p, Float.toString(kjVal), "kJ" );
+                	energyMap.clear();
+                }
+			}
+			oldname = name;
+		}
+		if( !oldname.equals("") ) {
+			p.println("</Components>");
+			p.println("</Food>");
+		}
 	}
 	
-	public static void energyCalc( PrintStream p, String selVal, String unit ) {
+	public static void energyCalc( PrintWriter p, String selVal, String unit ) {
 		p.println("<Component>");
 		
 		String eurocd = "ENRGC";
@@ -333,7 +367,7 @@ public class Ws {
 		else if( fnr.length() == 2 ) fnr = "00"+fnr;
 		else if( fnr.length() == 3 ) fnr = "0"+fnr;
 		
-		PrintStream	p = System.out;
+		PrintWriter	p = new PrintWriter( System.out );
 		header( p );
 		
         p.println("<Foods>");

@@ -14,8 +14,7 @@ public class Authentication {
 	static String	apiKey = "0123456789ABCDEFGHJK";
 	static String	secret = "0123456789ABCDEFGHJKLMNOPQRSTUVXYZ!@#$%^";
 	
-	public Authentication() {
-	}
+	public Authentication() {}
 	
 	public static void test( String sign ) throws NoSuchAlgorithmException {
 		String[]	testargs = {"simmi","joi"};
