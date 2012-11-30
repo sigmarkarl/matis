@@ -26,7 +26,7 @@ import org.xml.sax.SAXException;
 import com.matis.eurofir.webservices.Ws.PseudoResult;
 
 public class EuroFIRWebService {
-	public static PrintWriter	ostream = new PrintWriter( System.out );
+	public static PrintWriter	ostream; // = new PrintWriter( System.out );
 	//public static Object		conn;	
 	static String				cdataStr = "<![CDATA[";
 	static String				cstopStr = "]]>";
@@ -40,6 +40,7 @@ public class EuroFIRWebService {
 		//val = val.replaceAll("[\\r\\n\\f\\t]", "");
 		
 		rsinuse = rs;
+		EuroFIRWebService.ostream = ostream;
 		
 		String 	startStr = "<eur:";
 		int 	start = val.indexOf(startStr)+startStr.length();
@@ -143,25 +144,19 @@ public class EuroFIRWebService {
 	static PseudoResult rsinuse = null;
 	public static void GetFoodInformation( String api_userid, String api_permission, String fdql_sentence, String version, String api_signature ) {
 		try {
-			ByteArrayInputStream	bais = new ByteArrayInputStream( fdql_sentence.getBytes() );
-			String 					sql = FDQL.fdqlToSql( bais );
+			//ByteArrayInputStream	bais = new ByteArrayInputStream( fdql_sentence.getBytes() );
+			//String 					sql = FDQL.fdqlToSql( bais );
 			ostream.print( "<![CDATA[" );
 			ostream.print( "<EuroFIRServiceFDTPResponse xmlns=\"http://eurofir.webservice.namespace\">\n" );
 			
 			if( rsinuse != null ) {
-				rsinuse.init( sql );
+				rsinuse.init( fdql_sentence );
 				getFoodFromSql( rsinuse, ostream );
 				rsinuse.close();
 			}
 			
 			ostream.print( "</EuroFIRServiceFDTPResponse>" );
 			ostream.print( "]]>\n" );
-		} catch (ParserConfigurationException e) {
-			e.printStackTrace();
-		} catch (SAXException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
@@ -217,11 +212,14 @@ public class EuroFIRWebService {
 			}
 
 			@Override
-			public void init(String sql) {
+			public void init(String fdql) {
 				try {
+					ByteArrayInputStream	bais = new ByteArrayInputStream( fdql.getBytes() );
+					String 					sql = FDQL.fdqlToSql( bais );
+					
 					ps = conn.prepareStatement(sql);
 					rs = ps.executeQuery();
-				} catch (SQLException e) {
+				} catch (SQLException | ParserConfigurationException | SAXException | IOException e) {
 					e.printStackTrace();
 				}
 				

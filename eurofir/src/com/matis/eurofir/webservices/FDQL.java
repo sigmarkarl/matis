@@ -4,8 +4,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,6 +21,10 @@ import org.xml.sax.ext.DefaultHandler2;
 
 public class FDQL extends DefaultHandler2 {
 	String 	sql = "";
+	
+	String 	sql1 = "";
+	String 	sql2 = "";
+	String 	sql3 = "";
 	
 	boolean	inSelect = false;
 	boolean inWhere = false;
@@ -333,6 +339,21 @@ public class FDQL extends DefaultHandler2 {
 		parser.parse( is, fdql );
 		
 		return fdql.sql;
+	}
+	
+	public static List<String> fdqlToSqls( InputStream is ) throws ParserConfigurationException, SAXException, IOException {
+		SAXParserFactory 	factory = SAXParserFactory.newInstance();
+		SAXParser			parser = factory.newSAXParser();
+		
+		FDQL fdql = new FDQL();
+		parser.parse( is, fdql );
+		
+		List<String> lsql = new ArrayList<String>();
+		if( fdql.sql1.length() > 0 ) lsql.add( fdql.sql1 );
+		if( fdql.sql2.length() > 0 ) lsql.add( fdql.sql2 );
+		if( fdql.sql3.length() > 0 ) lsql.add( fdql.sql3 );
+	
+		return lsql;
 	}
 	
 	/**
