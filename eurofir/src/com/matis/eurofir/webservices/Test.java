@@ -69,7 +69,10 @@ public class Test {
 						}
 					}
 				};
-				EuroFIRWebService.parseStream( rs, stream, new PrintWriter( System.out ) );
+				PrintWriter pw = new PrintWriter( System.out );
+				EuroFIRWebService.parseStream( rs, stream, pw );
+				pw.flush();
+				pw.close();
 			} catch (SecurityException e) {
 				e.printStackTrace();
 			} catch (IllegalArgumentException e) {
