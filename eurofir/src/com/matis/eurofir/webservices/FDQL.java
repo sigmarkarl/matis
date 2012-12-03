@@ -22,9 +22,13 @@ import org.xml.sax.ext.DefaultHandler2;
 public class FDQL extends DefaultHandler2 {
 	String 	sql = "";
 	
-	String 	sql1 = "";
-	String 	sql2 = "";
-	String 	sql3 = "";
+	static String 	foodsql = "";
+	static String 	componentsql = "";
+	static String 	compvalsql = "";
+	
+	String	foodcond = "";
+	String	compcond = "";
+	String	compvalcond = "";
 	
 	boolean	inSelect = false;
 	boolean inWhere = false;
@@ -55,6 +59,7 @@ public class FDQL extends DefaultHandler2 {
 	
 	Map<String,String>	tableNameMap = new HashMap<String,String>();
 	Map<String,String>	columnTableMap = new HashMap<String,String>();
+	Map<String,Set<String>>	tableColumnMap = new HashMap<String,Set<String>>();
 	
 	static Map<String,String[]>	fieldMap = new HashMap<String,String[]>();
 	
@@ -75,7 +80,7 @@ public class FDQL extends DefaultHandler2 {
 		fieldMap.put( "isFoodName", isFoodName );
 	}
 	
-	public FDQL() throws IOException {
+	public FDQL( Map<String,Set<String>>	tableColumnMap ) throws IOException {
 		InputStream 	inputStream = FDQL.class.getResourceAsStream("/tables.txt");
 		BufferedReader	reader = new BufferedReader( new InputStreamReader(inputStream) );
 		String line = reader.readLine();
@@ -88,6 +93,7 @@ public class FDQL extends DefaultHandler2 {
 			
 			line = reader.readLine();
 		}
+		this.tableColumnMap = tableColumnMap;
 	}
 	
 	private void readTableColumns( String tableName ) throws IOException {
@@ -205,6 +211,81 @@ public class FDQL extends DefaultHandler2 {
 				 } else fromStr += "Component co";
 			 }
 		 }
+		 
+		 
+		 
+		 if( allTables.contains("Food") ) {
+			 if( allTables.contains("Components") ) {
+				 
+			 } else if( allTables.contains("Components") ) {
+				 
+			 }
+		 } else if( allTables.contains("Components") ) {
+			 
+		 } else if( allTables.contains("ComponentValues") ) {
+			 
+		 }
+		 
+		 if( allTables.contains("Food") ) {
+			 foodsql = "select ";
+			 if( allTables.contains("ComponentValues") ) foodsql += "OriginalFoodCode";
+			 for( String field : fields ) {
+				 Set<String> columns = tableColumnMap.get("Food");
+				 if( columns.contains( field ) ) {
+					 if( foodsql.length() > 7 ) foodsql += ",";
+					 foodsql += field;
+				 }
+			 }
+			 foodsql += " from Food";
+			 if( foodcond.length() > 0 ) foodsql += " where "+foodcond;
+		 }
+		 if( allTables.contains("Components") ) {
+			 componentsql = "select ";
+			 if( allTables.contains("ComponentValues") ) componentsql += "OriginalComponentCode";
+			 for( String field : fields ) {
+				 Set<String> columns = tableColumnMap.get("Components");
+				 if( columns.contains( field ) ) {
+					 if( componentsql.length() > 7 ) componentsql += ",";
+					 componentsql += field;
+				 }
+			 }
+			 componentsql += " from Component";
+			 if( compcond.length() > 0 ) componentsql += " where "+compcond;
+		 }
+		 if( allTables.contains("ComponentValues") ) {
+			 compvalsql = "select ";
+			 if( allTables.contains("Food") ) compvalsql += "OriginalFoodCode";
+			 if( allTables.contains("Components") ) {
+				 if( compvalsql.length() > 7 ) compvalsql += ",";
+				 compvalsql += "OriginalFoodCode";
+			 }
+			 for( String field : fields ) {
+				 Set<String> columns = tableColumnMap.get("ComponentValues");
+				 if( columns.contains( field ) ) {
+					 if( compvalsql.length() > 7 ) compvalsql += ",";
+					 compvalsql += field;
+				 }
+			 }
+			 compvalsql += " from ComponentValues";
+			 if( compvalcond.length() > 0 ) compvalsql += " where "+compvalcond;
+		 }
+		 /*Set<String>	tables = new HashSet<String>();
+		 for( String field : fields ) {
+			 String	selectedTable = null;
+			 for( String table : tableColumnMap.keySet() ) {
+				 Set<String> columns = tableColumnMap.get(table);
+				 
+				 if( columns.contains( field ) ) {
+					 if( selectedTable != null ) {
+						 selectedTable = null;
+						 break;
+					 } else selectedTable = table;
+				 }
+			 }
+			 if( selectedTable != null ) tables.add( selectedTable );
+		 }*/
+		 
+		 
 		 
 		 if( allTables.size() > 1 ) {
 			 sql = selStr + fromStr + joinStr + firstLog + sql;
@@ -335,23 +416,30 @@ public class FDQL extends DefaultHandler2 {
 		SAXParserFactory 	factory = SAXParserFactory.newInstance();
 		SAXParser			parser = factory.newSAXParser();
 		
-		FDQL fdql = new FDQL();
+		FDQL fdql = new FDQL( null );
 		parser.parse( is, fdql );
 		
 		return fdql.sql;
 	}
 	
-	public static List<String> fdqlToSqls( InputStream is ) throws ParserConfigurationException, SAXException, IOException {
-		SAXParserFactory 	factory = SAXParserFactory.newInstance();
-		SAXParser			parser = factory.newSAXParser();
-		
-		FDQL fdql = new FDQL();
-		parser.parse( is, fdql );
-		
+	public static List<String> fdqlToSqls( InputStream is, Map<String,Set<String>> tableColumnMap ) {
+		try {
+			SAXParserFactory 	factory = SAXParserFactory.newInstance();
+			SAXParser parser = factory.newSAXParser();
+			FDQL fdql = new FDQL( tableColumnMap );
+			parser.parse( is, fdql );
+		} catch (ParserConfigurationException e) {
+			e.printStackTrace();
+		} catch (SAXException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	
 		List<String> lsql = new ArrayList<String>();
-		if( fdql.sql1.length() > 0 ) lsql.add( fdql.sql1 );
-		if( fdql.sql2.length() > 0 ) lsql.add( fdql.sql2 );
-		if( fdql.sql3.length() > 0 ) lsql.add( fdql.sql3 );
+		if( foodsql.length() > 0 ) lsql.add( foodsql );
+		if( componentsql.length() > 0 ) lsql.add( componentsql );
+		if( compvalsql.length() > 0 ) lsql.add( compvalsql );
 	
 		return lsql;
 	}

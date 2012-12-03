@@ -155,6 +155,7 @@ public class Ws {
 		
 		while( rs.next() ) {
 			String name = rs.getString("OriginalFoodCode");
+			name = nullStr(name) ? "" : name;
 			String langual = rs.getString("LangualCodes");
 			boolean sameold = oldname.equals(name);
 			
@@ -236,7 +237,7 @@ public class Ws {
 				methodIndicator = nullStr(methodIndicator) ? "" : methodIndicator;
 				methodParameter = nullStr(methodParameter) ? "" : methodParameter;
 				
-				if( selectedValue.startsWith("<") ) selectedValue = "less than "+selectedValue.substring(1);
+				if( selectedValue != null && selectedValue.startsWith("<") ) selectedValue = "less than "+selectedValue.substring(1);
 				
                 p.println("<ComponentIdentifiers>");
                 p.println("<ComponentIdentifier system=\"ecompid\">"+eurocd+"</ComponentIdentifier>");	                
@@ -248,7 +249,7 @@ public class Ws {
                 p.println("<Values>");
                 p.println("<Value unit=\""+unit+"\" matrixunit=\""+matrixUnit+"\" dategenerated=\""+dateGenerated+"\" methodtype=\""+methodType+"\" methodindicator=\""+methodIndicator+"\" methodparameter=\""+methodParameter+"\">");
                 valueType = nullStr(valueType) ? "" : valueType;
-                String selVal = selectedValue.trim();
+                String selVal = nullStr(selectedValue) ? "" : selectedValue.trim();
                 if( selVal.endsWith(",") ) selVal = selVal.substring(0, selVal.length()-1);
                 selVal = selVal.replace(',', '.');
                 p.println("<SelectedValue valuetype=\""+valueType+"\" acquisitionType=\""+(acquisitionType==null?"":acquisitionType)+"\">"+selVal+"</SelectedValue>");
@@ -281,6 +282,8 @@ public class Ws {
                 	String rAcquisitionType = rs.getString("rAcquisitionType");
                 	String link = rs.getString("WWW");
                 	String citation = rs.getString("Citation");
+                	
+                	citation = nullStr( citation ) ? "" : citation;
                 	
 	                p.println("<References>");
 	                p.println("<ValueReference referencetype=\""+referenceType+"\" acquisitiontype=\""+rAcquisitionType+"\""+((link==null||link.length()==0)?">":" link=\""+link+"\">")+citation.replace('&', 'o')+"</ValueReference>");
