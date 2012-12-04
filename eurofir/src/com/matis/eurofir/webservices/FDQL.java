@@ -98,13 +98,15 @@ public class FDQL extends DefaultHandler2 {
 	
 	private void readTableColumns( String tableName ) throws IOException {
 		InputStream 	inputStream = FDQL.class.getResourceAsStream("/"+tableName);
-		BufferedReader	reader = new BufferedReader( new InputStreamReader(inputStream) );
-		String line = reader.readLine();
-		while( line != null ) {
-			columnTableMap.put( line, tableName );
-			
-			line = reader.readLine();
-		}
+		if( inputStream != null ) {
+			BufferedReader	reader = new BufferedReader( new InputStreamReader(inputStream) );
+			String line = reader.readLine();
+			while( line != null ) {
+				columnTableMap.put( line, tableName );
+				
+				line = reader.readLine();
+			}
+		} else System.err.println( "couldnt find "+tableName );
 	}
 	
 	public void startElement (String uri, String localName, String qName, Attributes attributes) throws SAXException {		

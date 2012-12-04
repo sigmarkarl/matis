@@ -1,5 +1,6 @@
 package com.matis.eurofir.webservices;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -10,6 +11,10 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.xml.sax.SAXException;
 
 import com.matis.eurofir.webservices.Ws.PseudoResult;
 
@@ -48,11 +53,12 @@ public class Test {
 					}
 
 					@Override
-					public void init(String sql) {
+					public void init(String fdql) {
 						try {
+							String sql = FDQL.fdqlToSql( new ByteArrayInputStream( fdql.getBytes() ) );
 							ps = connection.prepareStatement(sql);
 							rs = ps.executeQuery();
-						} catch (SQLException e) {
+						} catch (SQLException | ParserConfigurationException | SAXException | IOException e) {
 							e.printStackTrace();
 						}
 						
