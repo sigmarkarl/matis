@@ -26,9 +26,10 @@ public class FDQL extends DefaultHandler2 {
 	static String 	componentsql = "";
 	static String 	compvalsql = "";
 	
-	String	foodcond = "";
-	String	compcond = "";
-	String	compvalcond = "";
+	//String	foodcond = "";
+	//String	compcond = "";
+	//String	compvalcond = "";
+	Map<String,StringBuilder>	condMap = new HashMap<String,StringBuilder>();
 	
 	boolean	inSelect = false;
 	boolean inWhere = false;
@@ -148,6 +149,10 @@ public class FDQL extends DefaultHandler2 {
 			inWhere = false;
 			
 			sql += condStr + ")";
+			/*for( String table : condMap.keySet() ) {
+				StringBuilder sb = condMap.get( table );
+				if( sb != null && sb.length() > 0 ) sb.append(")");
+			}*/
 		} else if( qName.equals("OrderByClause") ) {
 			inOrderBy = false;
 		} else if( qName.equals("FieldName") ) {
@@ -158,6 +163,7 @@ public class FDQL extends DefaultHandler2 {
 			inCondition = -inCondition;
 			if( conditionOperator.equals("IN") ) {
 				condStr += ")";
+				if( currentcond != null && currentcond.length() > 0 ) currentcond.append( ")" );
 			}
 			conditionOperator = null;
 			//if( inCondition < -1 ) sql += " "+logOp+" ";
@@ -216,7 +222,7 @@ public class FDQL extends DefaultHandler2 {
 		 
 		 
 		 
-		 if( allTables.contains("Food") ) {
+		 /*if( allTables.contains("Food") ) {
 			 if( allTables.contains("Components") ) {
 				 
 			 } else if( allTables.contains("Components") ) {
@@ -226,11 +232,11 @@ public class FDQL extends DefaultHandler2 {
 			 
 		 } else if( allTables.contains("ComponentValues") ) {
 			 
-		 }
+		 }*/
 		 
 		 if( allTables.contains("Food") ) {
 			 foodsql = "select ";
-			 if( allTables.contains("ComponentValues") ) foodsql += "OriginalFoodCode";
+			 if( allTables.contains("ComponentValue") && !fields.contains("OriginalFoodCode") ) foodsql += "OriginalFoodCode";
 			 for( String field : fields ) {
 				 Set<String> columns = tableColumnMap.get("Food");
 				 if( columns.contains( field ) ) {
@@ -239,37 +245,43 @@ public class FDQL extends DefaultHandler2 {
 				 }
 			 }
 			 foodsql += " from Food";
-			 if( foodcond.length() > 0 ) foodsql += " where "+foodcond;
+			 
+			 StringBuilder foodcond = condMap.get("Food");
+			 if( foodcond != null && foodcond.length() > 0 ) foodsql += " where "+foodcond.toString();
 		 }
-		 if( allTables.contains("Components") ) {
+		 if( allTables.contains("Component") ) {
 			 componentsql = "select ";
-			 if( allTables.contains("ComponentValues") ) componentsql += "OriginalComponentCode";
+			 if( allTables.contains("ComponentValue") && !fields.contains("OriginalComponentCode") ) componentsql += "OriginalComponentCode";
 			 for( String field : fields ) {
-				 Set<String> columns = tableColumnMap.get("Components");
+				 Set<String> columns = tableColumnMap.get("Component");
 				 if( columns.contains( field ) ) {
 					 if( componentsql.length() > 7 ) componentsql += ",";
 					 componentsql += field;
 				 }
 			 }
 			 componentsql += " from Component";
-			 if( compcond.length() > 0 ) componentsql += " where "+compcond;
+			 
+			 StringBuilder compcond = condMap.get("Component");
+			 if( compcond != null && compcond.length() > 0 ) componentsql += " where "+compcond;
 		 }
-		 if( allTables.contains("ComponentValues") ) {
+		 if( allTables.contains("ComponentValue") ) {
 			 compvalsql = "select ";
-			 if( allTables.contains("Food") ) compvalsql += "OriginalFoodCode";
-			 if( allTables.contains("Components") ) {
+			 if( allTables.contains("Food") && !fields.contains("OriginalFoodCode") ) compvalsql += "OriginalFoodCode";
+			 if( allTables.contains("Component")  && !fields.contains("OriginalComponentCode") ) {
 				 if( compvalsql.length() > 7 ) compvalsql += ",";
-				 compvalsql += "OriginalFoodCode";
+				 compvalsql += "OriginalComponentCode";
 			 }
 			 for( String field : fields ) {
-				 Set<String> columns = tableColumnMap.get("ComponentValues");
+				 Set<String> columns = tableColumnMap.get("ComponentValue");
 				 if( columns.contains( field ) ) {
 					 if( compvalsql.length() > 7 ) compvalsql += ",";
 					 compvalsql += field;
 				 }
 			 }
-			 compvalsql += " from ComponentValues";
-			 if( compvalcond.length() > 0 ) compvalsql += " where "+compvalcond;
+			 compvalsql += " from ComponentValue";
+			 
+			 StringBuilder compvalcond = condMap.get("ComponentValue");
+			 if( compvalcond != null && compvalcond.length() > 0 ) compvalsql += " where "+compvalcond;
 		 }
 		 /*Set<String>	tables = new HashSet<String>();
 		 for( String field : fields ) {
@@ -330,6 +342,7 @@ public class FDQL extends DefaultHandler2 {
 		 }
 	 }
 	 
+	 StringBuilder	currentcond;
 	 public void characters( char[] ch, int start, int length ) {
 		 if( inSelect && inFieldName > 0 ) {
 			 String field = new String(ch,start,length).trim();
@@ -350,11 +363,22 @@ public class FDQL extends DefaultHandler2 {
 				 if( nameCondition.length() > 0 ) field = nameCondition + field;
 				 if( fieldMap.containsKey(field) && fieldMap.get(field).length == 1 ) field = fieldMap.get(field)[0];
 				 
-				 field = fieldAdd( field );
+				 String addfield = fieldAdd( field );
 				 
 				 if( inCondition == 1 ) firstLog = logOp+" ";
 				 else if( inCondition > 1 ) condStr += ") "+logOp+" ";
-				 condStr = "("+condStr+field;
+				 
+				 for( String table : tableColumnMap.keySet() ) {
+					 Set<String> colset = tableColumnMap.get(table);
+					 if( colset.contains(field) ) {
+						 if( !condMap.containsKey( table ) ) {
+							 currentcond = new StringBuilder();
+							 condMap.put(table, currentcond);
+						 } else currentcond = condMap.get( table );
+						 currentcond.replace( 0, currentcond.length(), field );
+					 }
+				 }
+				 condStr = "("+condStr+addfield;
 			 } else if( conditionOperator != null ) {
 				 if( conditionOperator.length() == 0 ) {
 					 //System.err.println(inConditionValue);
@@ -363,30 +387,46 @@ public class FDQL extends DefaultHandler2 {
 						 //sql += " " + conditionOperator + " ";
 					 //} else {
 					 conditionOperator = new String(ch,start,length).trim(); 
-					 condStr += " " + conditionOperator + " ";
+					 
+					 String append = " " + conditionOperator + " ";
+					 condStr += append;
+					 if( currentcond != null ) currentcond.append( append );
 					 //}
 				 } else if( inConditionValue > 0 ) {
 					 if( conditionOperator.equals("IN") ) {
+						 String append;
 						 if( inConditionValue == 1 ) {
-							 condStr += "('"+new String(ch,start,length)+"'";
+							 append = "('"+new String(ch,start,length)+"'";
 						 } else {
-							 condStr += ",'"+new String(ch,start,length)+"'";
+							 append = ",'"+new String(ch,start,length)+"'";
 						 }
+						 condStr += append;
+						 if( currentcond != null ) currentcond.append( append );
 					 } else if( conditionOperator.equals("BETWEEN") ) {
+						 String append;
 						 if( inConditionValue == 1 ) {
-							 condStr += new String(ch,start,length)+" AND ";
+							 append = new String(ch,start,length)+" AND ";
 						 } else {
-							 condStr += new String(ch,start,length);
+							 append = new String(ch,start,length);
 						 }
+						 condStr += append;
+						 if( currentcond != null ) currentcond.append( append );
 					 } else if( conditionOperator.equals("LIKE") ) {
 						 if( inConditionValue == 1 ) {
-							 condStr += "'"+new String(ch,start,length)+"'";
+							 String append = "'"+new String(ch,start,length)+"'";
+							 condStr += append;
+							 if( currentcond != null ) currentcond.append( append );
 						 }
 					 } else {
 						 if( inConditionValue == 1 ) {
 							 String val = new String(ch,start,length);							 
-							 if( isNumeric( val ) ) condStr += val;
-							 else condStr += "'"+val+"'";
+							 if( isNumeric( val ) ) {
+								 condStr += val;
+								 if( currentcond != null ) currentcond.append( val );
+							 } else {
+								 condStr += "'"+val+"'";
+								 if( currentcond != null ) currentcond.append( "'"+val+"'" );
+							 }
 						 }
 					 }
 				 }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <jardesc>
-    <jar path="/home/sigmar/eurofir.jar"/>
+    <jar path="nutritiondb/war/WEB-INF/lib/eurofir.jar"/>
     <options buildIfNeeded="true" compress="true" descriptionLocation="/eurofir/eurofir.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
     <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
     <selectedProjects/>
