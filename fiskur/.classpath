@@ -2,17 +2,18 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/usr/share/java/jogl.jar"/>
-	<classpathentry kind="lib" path="/usr/share/java/gluegen-rt.jar"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/kingroup"/>
-	<classpathentry kind="lib" path="/opt/poi-3.6/poi-3.6-20091214.jar"/>
-	<classpathentry kind="lib" path="/opt/poi-3.6/poi-contrib-3.6-20091214.jar"/>
-	<classpathentry kind="lib" path="/opt/poi-3.6/poi-examples-3.6-20091214.jar"/>
-	<classpathentry kind="lib" path="/opt/poi-3.6/poi-ooxml-3.6-20091214.jar"/>
-	<classpathentry kind="lib" path="/opt/poi-3.6/poi-ooxml-schemas-3.6-20091214.jar"/>
-	<classpathentry kind="lib" path="/opt/poi-3.6/poi-scratchpad-3.6-20091214.jar"/>
-	<classpathentry kind="lib" path="/opt/poi-3.6/ooxml-lib/dom4j-1.6.1.jar"/>
-	<classpathentry kind="lib" path="/opt/poi-3.6/ooxml-lib/geronimo-stax-api_1.0_spec-1.0.jar"/>
-	<classpathentry kind="lib" path="/opt/poi-3.6/ooxml-lib/xmlbeans-2.3.0.jar"/>
+	<classpathentry kind="lib" path="/u0/poi-3.9/poi-3.9-20121203.jar"/>
+	<classpathentry kind="lib" path="/u0/poi-3.9/poi-examples-3.9-20121203.jar"/>
+	<classpathentry kind="lib" path="/u0/poi-3.9/poi-excelant-3.9-20121203.jar"/>
+	<classpathentry kind="lib" path="/u0/poi-3.9/poi-ooxml-3.9-20121203.jar"/>
+	<classpathentry kind="lib" path="/u0/poi-3.9/poi-ooxml-schemas-3.9-20121203.jar"/>
+	<classpathentry kind="lib" path="/u0/poi-3.9/poi-scratchpad-3.9-20121203.jar"/>
+	<classpathentry kind="lib" path="/u0/poi-3.9/ooxml-lib/dom4j-1.6.1.jar"/>
+	<classpathentry kind="lib" path="/u0/poi-3.9/ooxml-lib/stax-api-1.0.1.jar"/>
+	<classpathentry kind="lib" path="/u0/poi-3.9/ooxml-lib/xmlbeans-2.3.0.jar"/>
+	<classpathentry kind="lib" path="/u0/poi-3.9/lib/commons-codec-1.5.jar"/>
+	<classpathentry kind="lib" path="/u0/poi-3.9/lib/commons-logging-1.1.jar"/>
+	<classpathentry kind="lib" path="/u0/poi-3.9/lib/junit-3.8.1.jar"/>
+	<classpathentry kind="lib" path="/u0/poi-3.9/lib/log4j-1.2.13.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

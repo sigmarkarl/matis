@@ -88,7 +88,7 @@ public class EuroFIRWebService {
 		SortedMap<String,String>	smap = new TreeMap<String,String>();
 		for( int i = 0; i < paramNames.size(); i++ ) {
 			String paramName = paramNames.get(i);
-			if( !paramName.equals("api_signature") ) smap.put( paramNames.get(i), arguments.get(i) );
+			if( !paramName.equals("api_signature") ) smap.put( paramName, arguments.get(i) );
 			else {
 				api_signature = arguments.get(i);
 			}
@@ -215,7 +215,7 @@ public class EuroFIRWebService {
 			public void init(String fdql) {
 				try {
 					ByteArrayInputStream	bais = new ByteArrayInputStream( fdql.getBytes() );
-					String 					sql = FDQL.fdqlToSql( bais );
+					String 					sql = FDQL.fdqlToSql( bais, null );
 					
 					ps = conn.prepareStatement(sql);
 					rs = ps.executeQuery();

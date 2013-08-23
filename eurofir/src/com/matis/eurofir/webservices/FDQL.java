@@ -94,7 +94,7 @@ public class FDQL extends DefaultHandler2 {
 			
 			line = reader.readLine();
 		}
-		this.tableColumnMap = tableColumnMap;
+		if( tableColumnMap != null ) this.tableColumnMap = tableColumnMap;
 	}
 	
 	private void readTableColumns( String tableName ) throws IOException {
@@ -454,11 +454,11 @@ public class FDQL extends DefaultHandler2 {
 		 }
 	 }
 	
-	public static String fdqlToSql( InputStream is ) throws ParserConfigurationException, SAXException, IOException {
+	public static String fdqlToSql( InputStream is, Map<String,Set<String>> tableColumnMap ) throws ParserConfigurationException, SAXException, IOException {
 		SAXParserFactory 	factory = SAXParserFactory.newInstance();
 		SAXParser			parser = factory.newSAXParser();
 		
-		FDQL fdql = new FDQL( null );
+		FDQL fdql = new FDQL( tableColumnMap );
 		parser.parse( is, fdql );
 		
 		return fdql.sql;
@@ -494,7 +494,7 @@ public class FDQL extends DefaultHandler2 {
 		//InputStream is = FDQL.class.getResourceAsStream("/simple_fdql.xml");
 		InputStream is = System.in;
 		try {
-			System.out.println( FDQL.fdqlToSql( is ) );
+			System.out.println( FDQL.fdqlToSql( is, null ) );
 		} catch (ParserConfigurationException e) {
 			e.printStackTrace();
 		} catch (SAXException e) {
