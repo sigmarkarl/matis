@@ -25,7 +25,6 @@ import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -33,7 +32,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -43,10 +41,6 @@ import java.util.List;
 import java.util.Set;
 
 import javax.imageio.ImageIO;
-import javax.media.opengl.GL;
-import javax.media.opengl.GLAutoDrawable;
-import javax.media.opengl.GLCanvas;
-import javax.media.opengl.GLEventListener;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ActionMap;
@@ -134,7 +128,7 @@ public class Fiskur extends JApplet {
 	
 	JTabbedPane	sex;
 	JTabbedPane	tabbedPane;
-	SurfaceDraw	sd;
+	//SurfaceDraw	sd;
 	
 	MySorter	currentSorter;
 	
@@ -355,21 +349,14 @@ public class Fiskur extends JApplet {
 
 			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
-				// TODO Auto-generated method stub
 				return false;
 			}
 
 			@Override
-			public void removeTableModelListener(TableModelListener l) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void removeTableModelListener(TableModelListener l) {}
 
 			@Override
-			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {}
 		};
 		
 		mmodel = new TableModel() {
@@ -1235,7 +1222,6 @@ public class Fiskur extends JApplet {
 				try {
 					kintoolExport();
 				} catch (IOException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 			}
@@ -1289,12 +1275,12 @@ public class Fiskur extends JApplet {
 					fishworker.parseData( stuff, 3 );
 					fishworker.tupleList = fishworker.calcData();
 					
-					FloatBuffer	fdata = sd.dataBuffer;
+					/*FloatBuffer	fdata = sd.dataBuffer;
 					fdata.rewind();
 					for( FishWorker.Tuple tup : fishworker.tupleList ) {
 						fdata.put( (float)(tup.rank/1000.0) );
 					}
-					sd.loadData();
+					sd.loadData();*/
 					
 					reload();
 				}
@@ -1503,18 +1489,18 @@ public class Fiskur extends JApplet {
 		//ftable.setAutoCreateRowSorter(true);
 		fscrollpane.setViewportView( ftable );
 		
-		final GLCanvas matrixSurface = new GLCanvas();
+		//final GLCanvas matrixSurface = new GLCanvas();
 		table.getRowSorter().addRowSorterListener( new RowSorterListener() {
 			@Override
 			public void sorterChanged(RowSorterEvent e) {				
-				FloatBuffer	fdata = sd.dataBuffer;
+				/*FloatBuffer	fdata = sd.dataBuffer;
 				fdata.rewind();
 				for( int i = 0; i < Math.min( fdata.limit(), table.getRowCount() ); i++ ) {
 					float val = (Float)table.getValueAt(i, 3);
 					fdata.put( i, (float)((val-1.0)/2.0) );
 				}
-				sd.loadData();
-				if( tabbedPane.getTitleAt( tabbedPane.getSelectedIndex() ).equals("Surface") ) matrixSurface.display();
+				sd.loadData();*/
+				if( tabbedPane.getTitleAt( tabbedPane.getSelectedIndex() ).equals("Surface") ) ;//matrixSurface.display();
 				else if( tabbedPane.getTitleAt( tabbedPane.getSelectedIndex() ).equals("Matrix") ) {
 					//System.err.println( "refreshing matrix" );
 					//matrixTable.setModel( nullModel );
@@ -1620,18 +1606,18 @@ public class Fiskur extends JApplet {
 				int r = table.getSelectedRow();
 				
 				if( r != -1 ) {
-					sd.makeSurface();
+				/*	sd.makeSurface();
 					
 					int x = r%sd.matSize;
 					int y = r/sd.matSize;
 					
 					sd.makeSurface(x, y, x+1, y+1, true, null);
-					matrixSurface.display();
+					matrixSurface.display();*/
 				}
 			}
 		});
 
-		sd = new SurfaceDraw(25);
+		/*sd = new SurfaceDraw(25);
 		matrixSurface.addGLEventListener( new GLEventListener() {
 			
 			@Override
@@ -1739,7 +1725,7 @@ public class Fiskur extends JApplet {
 					matrixSurface.repaint();
 				}
 			}
-		});
+		});*/
 
 		nullModel = new TableModel() {
 			
