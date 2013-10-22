@@ -3,8 +3,6 @@ package com.matis.eurofir.webservices;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -188,12 +186,12 @@ public class Test {
 	};
 	
 	public Test() {
-		InputStream stream = null;// = this.getClass().getResourceAsStream("/testrequest3.xml");
-		try {
+		InputStream stream = this.getClass().getResourceAsStream("/testrequest4.xml");
+		/*try {
 			stream = new FileInputStream( "/u0/matis/eurofir/src/testrequest4.xml" );
 		} catch (FileNotFoundException e2) {
 			e2.printStackTrace();
-		}
+		}*/
 		
 		if( stream != null ) {
 			try {
@@ -257,7 +255,7 @@ public class Test {
 				pw.close();
 				
 				baos.close();
-				Files.write( Paths.get( new File("/u0/barbara5.xml").toURI() ), baos.toByteArray() );
+				Files.write( Paths.get( new File("/home/sigmar/barbara.xml").toURI() ), baos.toByteArray() );
 			} catch (SecurityException e) {
 				e.printStackTrace();
 			} catch (IllegalArgumentException e) {
