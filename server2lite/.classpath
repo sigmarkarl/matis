@@ -1,15 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="/opt/sqljdbc_2.0/enu/sqljdbc4.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/opt/sqlitejdbc/sqlitejdbc-v056.jar"/>
-	<classpathentry kind="lib" path="/usr/share/java/mysql.jar"/>
-	<classpathentry kind="lib" path="/opt/poi-3.6/poi-3.6-20091214.jar"/>
-	<classpathentry kind="lib" path="/opt/poi-3.6/poi-contrib-3.6-20091214.jar"/>
-	<classpathentry kind="lib" path="/opt/jackcess/jackcess-1.2.0.jar"/>
-	<classpathentry kind="lib" path="/usr/share/java/commons-logging.jar"/>
-	<classpathentry kind="lib" path="/usr/share/java/commons-lang.jar"/>
-	<classpathentry kind="lib" path="/opt/jna/jna.jar"/>
+	<classpathentry kind="lib" path="/poi/poi-3.10-beta2/lib/commons-codec-1.5.jar"/>
+	<classpathentry kind="lib" path="/poi/poi-3.10-beta2/lib/commons-logging-1.1.jar"/>
+	<classpathentry kind="lib" path="/poi/poi-3.10-beta2/lib/junit-4.11.jar"/>
+	<classpathentry kind="lib" path="/poi/poi-3.10-beta2/lib/log4j-1.2.13.jar"/>
+	<classpathentry kind="lib" path="/poi/poi-3.10-beta2/ooxml-lib/dom4j-1.6.1.jar"/>
+	<classpathentry kind="lib" path="/poi/poi-3.10-beta2/ooxml-lib/stax-api-1.0.1.jar"/>
+	<classpathentry kind="lib" path="/poi/poi-3.10-beta2/ooxml-lib/xmlbeans-2.3.0.jar"/>
+	<classpathentry kind="lib" path="/poi/poi-3.10-beta2/poi-3.10-beta2-20130904.jar"/>
+	<classpathentry kind="lib" path="/poi/poi-3.10-beta2/poi-examples-3.10-beta2-20130904.jar"/>
+	<classpathentry kind="lib" path="/poi/poi-3.10-beta2/poi-excelant-3.10-beta2-20130904.jar"/>
+	<classpathentry kind="lib" path="/poi/poi-3.10-beta2/poi-ooxml-3.10-beta2-20130904.jar"/>
+	<classpathentry kind="lib" path="/poi/poi-3.10-beta2/poi-ooxml-schemas-3.10-beta2-20130904.jar"/>
+	<classpathentry kind="lib" path="/poi/poi-3.10-beta2/poi-scratchpad-3.10-beta2-20130904.jar"/>
+	<classpathentry kind="lib" path="jna-4.1.0.jar"/>
+	<classpathentry kind="lib" path="jna-platform-4.1.0.jar"/>
+	<classpathentry kind="lib" path="commons-lang3-3.3.2.jar"/>
+	<classpathentry kind="lib" path="commons-lang-2.6.jar"/>
+	<classpathentry kind="lib" path="jtds-1.3.1.jar"/>
+	<classpathentry kind="lib" path="sqljdbc4.jar"/>
+	<classpathentry kind="lib" path="jackcess-2.0.6.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

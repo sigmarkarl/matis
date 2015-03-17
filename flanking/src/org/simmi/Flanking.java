@@ -261,7 +261,7 @@ public class Flanking extends JApplet {
 		}*/
 		
 		public Sequence( String name, int length, String sequence, int repNum ) {
-			int LEN = 4;
+			int LEN = 20;
 			
 			this.name = name;
 			this.length = length;
@@ -270,7 +270,7 @@ public class Flanking extends JApplet {
 			this._repeats = new ArrayList<Repeat>();
 			
 			for( int k = 0; k < sequence.length()-LEN*4; k++ ) {
-				for( int i = 2; i < 5; i++ ) {
+				for( int i = 2; i < 20; i++ ) {
 					boolean yes = true;
 					for( Repeat r : _repeats ) {
 						if( r.length != i && k >= r.start && k <= r.stop ) {
@@ -375,8 +375,8 @@ public class Flanking extends JApplet {
 		int left = 20;
 		int right = 20;
 		int minSeqLen = 100;
-		int minRepeatLen = 50;
-		int minRepeatNum = 4;
+		int minRepeatLen = 10;
+		int minRepeatNum = 3;
 		
 		if( buttons != null ) {
 			left = buttons.getLeftFlankingLength();
@@ -402,9 +402,9 @@ public class Flanking extends JApplet {
 					String[] spl = head.split("[ ]+");
 					Sequence seqobj = new Sequence( spl[0].substring(1), seqlen, seq, minRepeatNum );
 					
-					boolean flankingEnds = seqobj.hasFlankingEnds( left, right, minRepeatLen );
-					System.err.println( flankingEnds );
-					if( seqobj.hasRepeats() && flankingEnds && seqobj.hasMinimumRepeatLength(minRepeatLen) /*&& seqobj.hasMinimumRepeatLength(minRepeatNum)*/ ) {
+					//boolean flankingEnds = seqobj.hasFlankingEnds( left, right, minRepeatLen );
+					//System.err.println( flankingEnds );
+					if( seqobj.hasRepeats() /*&& flankingEnds*/ && seqobj.hasMinimumRepeatLength(minRepeatLen) /*&& seqobj.hasMinimumRepeatLength(minRepeatNum)*/ ) {
 						if( seqlen > max ) {
 							max = seqlen;
 							row = seqList.size();

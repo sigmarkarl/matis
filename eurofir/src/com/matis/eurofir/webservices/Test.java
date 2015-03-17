@@ -255,7 +255,9 @@ public class Test {
 				pw.close();
 				
 				baos.close();
-				Files.write( Paths.get( new File("/home/sigmar/barbara.xml").toURI() ), baos.toByteArray() );
+				
+				String userhome = System.getProperty("user.home");
+				Files.write( Paths.get( new File(userhome+"/barbara.xml").toURI() ), baos.toByteArray() );
 			} catch (SecurityException e) {
 				e.printStackTrace();
 			} catch (IllegalArgumentException e) {
