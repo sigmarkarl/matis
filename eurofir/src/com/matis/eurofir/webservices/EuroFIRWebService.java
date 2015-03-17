@@ -184,7 +184,7 @@ public class EuroFIRWebService {
 		//Connection conn = DriverManager.getConnection(connectionUrl, "root", passi );
 		
 		Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=ISGEM2;user=simmi;password=mirodc30;";
+		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=ISGEM2;integratedSecurity=true;";
 		final Connection conn = DriverManager.getConnection(connectionUrl);
 		
 		PseudoResult rs = new PseudoResult() {
@@ -292,7 +292,7 @@ public class EuroFIRWebService {
 				
 				
 				Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-				String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=ISGEM2;user=simmi;password=mirodc30;";
+				String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=ISGEM2;integratedSecurity=true;";
 				final Connection connection = DriverManager.getConnection(connectionUrl);
 				
 				PseudoResult rs = new PseudoResult() {

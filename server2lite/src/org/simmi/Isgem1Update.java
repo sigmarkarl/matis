@@ -22,6 +22,9 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 import com.healthmarketscience.jackcess.Database;
+import com.healthmarketscience.jackcess.Database.FileFormat;
+import com.healthmarketscience.jackcess.DatabaseBuilder;
+import com.healthmarketscience.jackcess.util.ImportUtil;
 import com.sun.jna.Platform;
 
 public class Isgem1Update {
@@ -31,19 +34,21 @@ public class Isgem1Update {
 	JDialog			dialog;
 	
 	public Isgem1Update() throws ClassNotFoundException, SQLException {
+		//Class.forName("net.sourceforge.jtds.jdbc.Driver");
 		Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=isgem2;user=simmi;password=****;";
+		//String connectionUrl = "jdbc:jtds:sqlserver://navision.rf.is:1433/isgem2";
+		String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=isgem2";
 		
-		if( Platform.isWindows() ) {
-			connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=isgem2;integratedSecurity=true;";
+		/*if( Platform.isWindows() ) {
+			connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=isgem2;integratedSecurity=false;";
 			InputStream is;
 			if( Platform.is64Bit() ) {
 				is = this.getClass().getResourceAsStream("auth/x64/sqljdbc_auth.dll");
 			} else {
 				is = this.getClass().getResourceAsStream("auth/x86/sqljdbc_auth.dll");
 			}
-		}		
-		con = DriverManager.getConnection(connectionUrl);
+		}*/
+		con = DriverManager.getConnection(connectionUrl,"simmi","mirodc30");
 		
 		SwingUtilities.invokeLater( new Runnable() {
 			@Override
@@ -103,35 +108,44 @@ public class Isgem1Update {
 	private void save() throws IOException, SQLException {
 		System.err.println( "about to write" );
 		
-		Database isdb = Database.create( new File("ISDB.mdb") );
+		Database isdb = DatabaseBuilder.create( FileFormat.V2003, new File("ISDB.mdb") );
 		
 		String sql = "select * from [ISDB].[dbo].[EFNI]";
 		PreparedStatement	ps = con.prepareStatement( sql );
 		ResultSet	rs = ps.executeQuery();
-		isdb.copyTable("efni", rs);
+		new ImportUtil.Builder(isdb, "efni").importResultSet(rs);
+		//isdb.copyTable("efni", rs);
 		rs.close();
 		ps.close();
 		
 		sql = "select * from [ISDB].[dbo].[FAEDA]";
 		ps = con.prepareStatement( sql );
 		rs = ps.executeQuery();
-		isdb.copyTable("faeda", rs);
+		new ImportUtil.Builder(isdb, "faeda").importResultSet(rs);//isdb.copyTable("faeda", rs);
 		rs.close();
 		ps.close();
 		
 		sql = "select * from [ISDB].[dbo].[HEIMILD]";
 		ps = con.prepareStatement( sql );
 		rs = ps.executeQuery();
-		isdb.copyTable("heimild", rs);
+		new ImportUtil.Builder(isdb, "heimild").importResultSet(rs);//isdb.copyTable("heimild", rs);
 		rs.close();
 		ps.close();
 		
 		sql = "select * from [ISDB].[dbo].[MAELING]";
 		ps = con.prepareStatement( sql );
 		rs = ps.executeQuery();
-		isdb.copyTable("maeling", rs);
+		new ImportUtil.Builder(isdb, "maeling").importResultSet(rs);//isdb.copyTable("maeling", rs);
 		rs.close();
 		ps.close();
+		
+		/*String sql = "select * from [ISDB].[dbo].[table]";
+		PreparedStatement	ps = con.prepareStatement( sql );
+		ResultSet	rs = ps.executeQuery();
+		new ImportUtil.Builder(isdb, "table").importResultSet(rs);
+		//isdb.copyTable("efni", rs);
+		rs.close();
+		ps.close();*/
 		
 		isdb.close();
 	}
@@ -204,12 +218,14 @@ public class Isgem1Update {
 		rs.close();
 		ps.close();
 		
+		//where OriginalFoodCode = '0571' and OriginalComponentCode = '0015'
 		sql = "select OriginalFoodCode, OriginalComponentCode, DateOfGeneration, SelectedValue, StandardDeviation, Minimum, Maximum, N, NoofPrimarySampleUnits, OriginalReferenceCode, Remarks, QI_Eurofir, null, null, DateOfAnalysisDisp from [Isgem2].[dbo].[ComponentValue] order by OriginalFoodCode, OriginalComponentCode";
 		ps = con.prepareStatement( sql );
 		rs = ps.executeQuery();
 		
 		ips = con.prepareStatement( "insert into [ISDB].[dbo].[MAELING] values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" );
 		
+		int cnt = 0;
 		String last = "";
 		float[]	fcur = null;
 		while( rs.next() ) {
@@ -242,9 +258,7 @@ public class Isgem1Update {
 			float f = 0.0f;
 			try {
 				Float.parseFloat( val );
-			} catch( Exception e ) {
-				
-			}
+			} catch( Exception e ) {}
 			fcur[i] = f;
 		
 			last = origFoodCode;
@@ -264,6 +278,40 @@ public class Isgem1Update {
 			ips.setString(13, "");
 			ips.setString(14, "");
 			ips.setString(15, "");*/
+			
+			
+			/*ips.setString(2, "");
+			ips.setDate(3, dat);
+			ips.setString(4, "");
+			ips.setString(5, "");
+			ips.setString(6, "");
+			ips.setString(7, "");
+			ips.setString(8, "");
+			ips.setString(9, "");
+			ips.setString(10, "");
+			ips.setString(11, "");//ath == null ? ath : ath.substring(0, Math.min(50, ath.length())) );
+			ips.setString(12, "");
+			ips.setString(13, "");
+			ips.setString(14, "");
+			ips.setString(15, "");//maeliar == null ? maeliar : maeliar.substring(0, Math.min(4, maeliar.length())) );*/
+			
+			System.err.println("         number: "+cnt);
+			System.err.println(origFoodCode);
+			System.err.println(origCompCode);
+			System.err.println(dat);
+			System.err.println(sel);
+			System.err.println(std);
+			System.err.println(minnst);
+			System.err.println(mest);
+			System.err.println(maeling);
+			System.err.println(syni);
+			System.err.println(heim);
+			System.err.println( ath == null ? ath : ath.substring(0, Math.min(50, ath.length())) );
+			System.err.println( gaedak);
+			System.err.println( maeliadf);
+			System.err.println( synat);
+			System.err.println( maeliar == null ? maeliar : maeliar.substring(0, Math.min(4, maeliar.length())) );
+			
 			ips.setString(1, origFoodCode);
 			ips.setString(2, origCompCode);
 			ips.setDate(3, dat);
@@ -271,7 +319,7 @@ public class Isgem1Update {
 			ips.setString(5, std);
 			ips.setString(6, minnst);
 			ips.setString(7, mest);
-			ips.setString(8, maeling);
+			ips.setString(8, "" ); //maeling );// == null ? maeling : maeling.substring(0, Math.min(50, maeling.length())));
 			ips.setString(9, syni);
 			ips.setString(10, heim);
 			ips.setString(11, ath == null ? ath : ath.substring(0, Math.min(50, ath.length())) );
@@ -280,6 +328,8 @@ public class Isgem1Update {
 			ips.setString(14, synat);
 			ips.setString(15, maeliar == null ? maeliar : maeliar.substring(0, Math.min(4, maeliar.length())) );
 			ips.execute();
+			
+			cnt++;
 		}
 		
 		ips.close();

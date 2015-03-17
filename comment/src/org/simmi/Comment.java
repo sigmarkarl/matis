@@ -1,6 +1,7 @@
 package org.simmi;
 
 import java.awt.BorderLayout;
+import java.awt.Container;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ItemEvent;
@@ -156,10 +157,8 @@ public class Comment extends JApplet {
 				try {
 					f.set( o, aValue );
 				} catch (IllegalArgumentException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				} catch (IllegalAccessException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -232,19 +231,19 @@ public class Comment extends JApplet {
 	}
 	
 	public void init() {
+		initGUI( this );
+	}
+	
+	public void initGUI( Container ct ) {
 		try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (UnsupportedLookAndFeelException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -328,7 +327,6 @@ public class Comment extends JApplet {
 					Order order = orderMap.get(currentSelection);
 					if( order != null ) save( order, rtextarea.getText(), textarea.getText() );
 				} catch (SQLException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 			}
@@ -349,16 +347,12 @@ public class Comment extends JApplet {
 			}
 		});
 		
-		JComponent comp = new JComponent() {
-			
-		};
+		JComponent comp = new JComponent() {};
 		comp.setLayout( new BorderLayout() );
 		comp.add( scrollarea );
 		comp.add( vista, BorderLayout.SOUTH );
 		
-		JComponent comp2 = new JComponent() {
-			
-		};
+		JComponent comp2 = new JComponent() {};
 		comp2.setLayout( new BorderLayout() );
 		comp2.add( scrollpane );
 		comp2.add( combo, BorderLayout.NORTH );
@@ -371,7 +365,7 @@ public class Comment extends JApplet {
 		
 		splitpane.setDividerLocation( 0.33 );
 		
-		this.add( splitpane );
+		ct.add( splitpane );
 	}
 	
 	public void destroy() {
@@ -390,7 +384,6 @@ public class Comment extends JApplet {
 		
 			PreparedStatement 	ps = con.prepareStatement(sql);
 			boolean				b = ps.execute();
-		
 			ps.close();
 			
 			order._ResultComment = rval;
@@ -406,5 +399,15 @@ public class Comment extends JApplet {
 			
 			order._OrderComment = oval;
 		}
+	}
+	
+	public static void main(String[] args) {
+		Comment comment = new Comment();
+		JFrame frame = new JFrame();
+		comment.initGUI( frame );
+		
+		frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+		frame.setSize(800, 600);
+		frame.setVisible(true);
 	}
 }

@@ -58,7 +58,7 @@ public class Authentication {
 			result += key+value;
 		}
 		
-		String ret = DigestUtils.shaHex( result );
+		String ret = DigestUtils.sha1Hex( result );
 		//System.err.println( result );
 		//System.err.println( DigestUtils.shaHex( "" ) );
 			
