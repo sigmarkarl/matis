@@ -39,6 +39,7 @@ import com.google.gwt.user.cellview.client.Column;
 import com.google.gwt.user.cellview.client.ColumnSortEvent.ListHandler;
 import com.google.gwt.user.cellview.client.TextColumn;
 import com.google.gwt.user.client.DOM;
+import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Anchor;
@@ -378,14 +379,36 @@ public class Seab implements EntryPoint {
 				console.log(dstr);
 
 				if (dstr.equals("ready")) {
-					console.log(dstr + " soso ");
-					elemental.html.Window source = myPopup;// me.getSource();
+					//me.get
+					elemental.html.Window source = myPopup;//me.getSource();
+					console.log(dstr + " soso2 ");
+					
+					String myurl = "";
+					try {
+						console.log( myPopup );
+						myurl = myPopup.getLocation().getHref();
+						console.log( "moki " + myurl + "  " + myPopup );
+					} catch( Exception e) {
+						console.log( "mokifail " );
+					}
+					
+					String surl = "";
+					try {
+						console.log( source );
+						surl = source.getLocation().getHref();
+						console.log( "moki2 " + surl + "  " + source );
+					} catch( Exception e) {
+						console.log( "moki2fail " );
+					}
+					
+					//elemental.html.Window source = myPopup;// me.getSource();
 					//console.log( myPopup.getName() );
-					console.log(dstr + " " + source);
 					//console.log(source.getName());
 
-					// evt.
+					console.log("about to post tree");
+					console.log("posting tree " + treestr);
 					if (treestr != null) {
+						console.log("posting tree");
 						source.postMessage(treestr, "*");
 						treestr = null;
 					}
@@ -406,6 +429,11 @@ public class Seab implements EntryPoint {
 				}*/
 			}
 		}, true);
+		
+		if( Window.Location.getParameterMap().keySet().contains("host") ) {
+			host = Window.Location.getParameter("host");
+			//String tree = URL.decode( enctree );
+		}
 		
 		//final String host = "ws://130.208.252.239:8887";
 		//final String prot = "[\"protocolOne\"]";
@@ -1355,6 +1383,7 @@ public class Seab implements EntryPoint {
 		});
 		buttonhp.add( statBut );
 		
+		//final Button bb = new Button();
 		Button drawTree = new Button("Draw tree");
 		drawTree.addClickHandler( new ClickHandler() {
 			@Override
@@ -1379,10 +1408,9 @@ public class Seab implements EntryPoint {
 						if( message.contains("new connection") ) {
 							
 						} else {
-							String host = Browser.getWindow().getLocation().getHost();
-							Browser.getWindow().getConsole().log( "host " + host );
 							treestr = message;
-							myPopup = Browser.getWindow().open("http://webconnectron.appspot.com/Treedraw.html?callback="+host,"TreeDraw");
+							//bb.click();
+							//click( bb.getElement() );
 							//Browser.getWindow().getConsole().log( myPopup.getLocation().getProtocol() );
 							ws.close();
 						}
@@ -1395,6 +1423,16 @@ public class Seab implements EntryPoint {
 			}
 		});
 		buttonhp.add( drawTree );
+		
+		/*bb.setVisible(false);
+		buttonhp.add( bb );
+		bb.addClickHandler( new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				final String thehost = Browser.getWindow().getLocation().getHost();
+				myPopup = Browser.getWindow().open("http://webconnectron.appspot.com/Treedraw.html?callback="+thehost,"TreeDraw","_blank");
+			}
+		});
 		
 		/*final DialogBox pp = new DialogBox( true );
 		final VerticalPanel	vsp = new VerticalPanel();
