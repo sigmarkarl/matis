@@ -90,7 +90,7 @@ public class Seab implements EntryPoint {
 
 	//static String host = "ws://127.0.0.1:8887";
 	static String host = "ws://130.208.252.239:8887";
-	
+
 	/**
 	 * Create a remote service proxy to talk to the server-side Greeting service.
 	 */
@@ -99,12 +99,12 @@ public class Seab implements EntryPoint {
 	public native WebSocket newWebSocket( String host ) /*-{
 		return new WebSocket( host );
 	}-*/;
-	
+
 	public native String getEventData( Event evt ) /*-{
 		return evt.data;
 	}-*/;
-	
-	public native void drawCogChart( JavaScriptObject arr, Element el ) /*-{	
+
+	public native void drawCogChart( JavaScriptObject arr, Element el ) /*-{
 	    var data;
 	    var options = {
 	        title: 'COG groups',
@@ -120,7 +120,7 @@ public class Seab implements EntryPoint {
 	    };
 	    //function drawChart() {
 	      data = $wnd.google.visualization.arrayToDataTable( arr );
-	
+
 	      var chart = new $wnd.google.visualization.ColumnChart( el );
 	      chart.draw(data, options);
 	    //}
@@ -133,7 +133,7 @@ public class Seab implements EntryPoint {
 //	    	chart.draw(data, options);
 //	    }
 	}-*/;
-	
+
 	public native void drawPancoreChart( JavaScriptObject arr, Element el ) /*-{
 		var data;
 	    var options = {
@@ -153,10 +153,10 @@ public class Seab implements EntryPoint {
 	      var chart = new $wnd.google.visualization.LineChart( el );
 	      chart.draw(data, options);
 	    //}
-		
+
 		//$wnd.google.load("visualization", "1", {packages:["corechart"]});
 	    //$wnd.google.setOnLoadCallback(drawChart);
-	    
+
 //	    $wnd.onresize = function() {
 //	    	el.style.width = $wnd.innerWidth;
 //	    	el.style.height = $wnd.innerHeight;
@@ -166,7 +166,7 @@ public class Seab implements EntryPoint {
 //	    	chart.draw(data, options);
 //	    }
 	}-*/;
-	
+
 	public void checkTreeItem( CheckBox cb, TreeItem ti, boolean check ) {
 		CheckBox wcb = (CheckBox)ti.getWidget();
 		if( wcb == cb ) {
@@ -179,16 +179,16 @@ public class Seab implements EntryPoint {
 			checkTreeItem(cb, subti, check);
 		}
 	}
-	
+
 	public native String atob( String dataurl ) /*-{
 		var d = atob( dataurl );
 		return d;
 	}-*/;
-	
+
 	public native ProgressElement newProgressElement() /*-{
 		return new ProgressBar();
 	}-*/;
-	
+
 	class Sequence {
 		public Sequence( String id, String name, String cazy, String ec, String go, String cog, String spec, String blast ) {
 			this.id = id;
@@ -201,7 +201,7 @@ public class Seab implements EntryPoint {
 			this.blastresult = blast;
 			req = false;
 		}
-		
+
 		public Sequence( String[] split ) {
 			id = split[0];
 			name = split[1];
@@ -226,7 +226,7 @@ public class Seab implements EntryPoint {
 			}
 			req = false;
 		}
-		
+
 		String id;
 		String name;
 		String symbol;
@@ -239,10 +239,10 @@ public class Seab implements EntryPoint {
 		boolean req;
 		int		copies;
 		String blastresult;
-		
+
 		double evalue;
 	}
-	
+
 	public String getTreeString( TreeItem tree ) {
 		String ret = "";
 		for( int i = 0; i < tree.getChildCount(); i++ ) {
@@ -259,15 +259,15 @@ public class Seab implements EntryPoint {
 		}
 		return ret;
 	}
-	
+
 	elemental.html.Window myPopup = null;
 	String treestr = null;
-	
+
 	public void reloadData( final ListBox spec, final ClickHandler click, final TreeItem ti, final TreeItem tikegg ) {
 		spec.clear();
 		ti.removeItems();
 		tikegg.removeItems();
-		
+
 		final WebSocket ws = newWebSocket( host );
 		ws.setOnmessage( new EventListener() {
 			@Override
@@ -279,14 +279,14 @@ public class Seab implements EntryPoint {
 					int h = message.indexOf("kegg:");
 					if( k == -1 ) k = message.length();
 					if( h == -1 ) h = message.length();
-					
+
 					Browser.getWindow().getConsole().log( message );
-					
+
 					String[] specsplit = message.substring(6,Math.min(k,h)).split(",");
 					for( String specstr : specsplit ) {
 						spec.addItem( specstr );
 					}
-					
+
 					if( k < message.length() ) {
 						String[] split = message.substring(k+5,h).split(",");
 						Map<String,List<String>> mlist = new HashMap<String,List<String>>();
@@ -309,7 +309,7 @@ public class Seab implements EntryPoint {
 								ls.add( sp );
 							}
 						}
-					
+
 						Browser.getWindow().getConsole().log( "msize " + mlist.size() );
 						for( String mstr : mlist.keySet() ) {
 							List<String> smlist = mlist.get(mstr);
@@ -336,7 +336,7 @@ public class Seab implements EntryPoint {
 							}
 						}
 					}
-					
+
 					if( h < message.length() ) {
 						String[] nsplit = message.substring(h+5,message.length()).split(",");
 						for( String kegg : nsplit ) {
@@ -362,7 +362,7 @@ public class Seab implements EntryPoint {
 			}
 		});
 	}
-	
+
 	/**
 	 * This is the entry point method.
 	 */
@@ -382,7 +382,7 @@ public class Seab implements EntryPoint {
 					//me.get
 					elemental.html.Window source = myPopup;//me.getSource();
 					console.log(dstr + " soso2 ");
-					
+
 					String myurl = "";
 					try {
 						console.log( myPopup );
@@ -391,7 +391,7 @@ public class Seab implements EntryPoint {
 					} catch( Exception e) {
 						console.log( "mokifail " );
 					}
-					
+
 					String surl = "";
 					try {
 						console.log( source );
@@ -400,7 +400,7 @@ public class Seab implements EntryPoint {
 					} catch( Exception e) {
 						console.log( "moki2fail " );
 					}
-					
+
 					//elemental.html.Window source = myPopup;// me.getSource();
 					//console.log( myPopup.getName() );
 					//console.log(source.getName());
@@ -429,15 +429,15 @@ public class Seab implements EntryPoint {
 				}*/
 			}
 		}, true);
-		
+
 		if( Window.Location.getParameterMap().keySet().contains("host") ) {
 			host = Window.Location.getParameter("host");
 			//String tree = URL.decode( enctree );
 		}
-		
+
 		//final String host = "ws://130.208.252.239:8887";
 		//final String prot = "[\"protocolOne\"]";
-			
+
 		final Tree tree = new Tree();
 		final ClickHandler click = new ClickHandler() {
 			@Override
@@ -448,23 +448,23 @@ public class Seab implements EntryPoint {
 				}
 			}
 		};
-		
+
 		CheckBox allCazy = new CheckBox("All CAZY");
 		final TreeItem ti = new TreeItem( allCazy );
 		allCazy.addClickHandler( click );
-		
+
 		CheckBox allCog = new CheckBox("All COG");
 		TreeItem ticog = new TreeItem( allCog );
 		allCog.addClickHandler( click );
-		
+
 		CheckBox allKegg = new CheckBox("All KEGG");
 		final TreeItem tikegg = new TreeItem( allKegg );
 		allKegg.addClickHandler( click );
-		
+
 		tree.addItem( ti );
 		tree.addItem( ticog );
 		tree.addItem( tikegg );
-		
+
 		/*CheckBox ghs = new CheckBox("GHs");
 		ghs.addClickHandler( click );
 		CheckBox pls = new CheckBox("PLs");
@@ -483,7 +483,7 @@ public class Seab implements EntryPoint {
 		}
 		ti.addItem( ghti );
 		ti.addItem( plti );*/
-		
+
 		final ListBox	spec = new ListBox( true );
 		/*spec.addItem("MAT493");
 		spec.addItem("MAT4553");
@@ -499,49 +499,49 @@ public class Seab implements EntryPoint {
 		spec.addItem("MAT4726");
 		spec.addItem("MAT4784");*/
 		spec.setSize(120+"px", 180+"px");
-		
+
 		//String[] cazy = new String[] {};
 		reloadData( spec, click, ti, tikegg );
-		
+
 		final RootPanel rp = RootPanel.get();
 		Style st = rp.getElement().getStyle();
 		st.setBorderWidth(0.0, Unit.PX);
 		st.setMargin(0.0, Unit.PX);
 		st.setPadding(0.0, Unit.PX);
-		
+
 		int w = Window.getClientWidth();
 		int h = Window.getClientHeight();
 		//rp.setWidth( w+"px" );
-		
+
 		final CellTable<Sequence> table = new CellTable<Sequence>(50);
 		final MultiSelectionModel<Sequence> multisel = new MultiSelectionModel<Sequence>();
 		table.setSelectionModel( multisel );
 		final VerticalPanel vp = new VerticalPanel();
-		
+
 		final TextArea ta = new TextArea();
 		int cw = 320;
 		int ch = 170;
 		ta.setSize(cw+"px", ch+"px");
-		
+
 		final TextArea results = new TextArea();
 		results.getElement().setId("mytextarea");
 		//ßresults.getElement().getStyle().set
 		results.setReadOnly( true );
 		results.setSize(w+"px", "320px");
-		
+
 		Button blast = new Button("Blast");
 		blast.addClickHandler( new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {
 				final WebSocket ws = newWebSocket( host );
-				ws.setOnopen( new EventListener() {		
+				ws.setOnopen( new EventListener() {
 					@Override
 					public void handleEvent(Event evt) {
 						Browser.getWindow().getConsole().log("log");
 						ws.send( ta.getText() );
 					}
 				});
-				ws.setOnmessage( new EventListener() {		
+				ws.setOnmessage( new EventListener() {
 					@Override
 					public void handleEvent(Event evt) {
 						String str = getEventData( evt );
@@ -552,18 +552,18 @@ public class Seab implements EntryPoint {
 				ws.setOnerror( new EventListener() {
 					@Override
 					public void handleEvent(Event evt) {
-						
+
 					}
 				});
 			}
 		});
-		
+
 		vp.setWidth(w+"px");
 		//vp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );
 		//vp.setVerticalAlignment( VerticalPanel.ALIGN_MIDDLE );
 		//HorizontalPanel hp = new HorizontalPanel();
 		//hp.add(  );
-		
+
 	    TextColumn<Sequence> nameColumn = new TextColumn<Sequence>() {
 	      @Override
 	      public String getValue(Sequence contact) {
@@ -578,7 +578,7 @@ public class Seab implements EntryPoint {
 		      }
 		};
 		symbolColumn.setSortable( true );
-	    
+
 		SafeHtmlCell	cazycell = new SafeHtmlCell();
 		Column<Sequence,SafeHtml> cazyColumn = new Column<Sequence,SafeHtml>( cazycell ) {
 	      @Override
@@ -598,7 +598,7 @@ public class Seab implements EntryPoint {
 	      }
 		};
 		cazyColumn.setSortable( true );
-	    
+
 	    /*TextColumn<Sequence> ecColumn = new TextColumn<Sequence>() {
 	      @Override
 	      public String getValue(Sequence contact) {
@@ -618,7 +618,7 @@ public class Seab implements EntryPoint {
 	      }
 		};
 		ecColumn.setSortable( true );
-		
+
 		/*SafeHtmlCell	gocell = new SafeHtmlCell();
 		Column<Sequence,SafeHtml> goColumn = new Column<Sequence,SafeHtml>( gocell ) {
 	      @Override
@@ -629,7 +629,7 @@ public class Seab implements EntryPoint {
 	      }
 		};
 		goColumn.setSortable( true );*/
-		
+
 		SafeHtmlCell	keggcell = new SafeHtmlCell();
 		Column<Sequence,SafeHtml> keggColumn = new Column<Sequence,SafeHtml>( keggcell ) {
 		      @Override
@@ -639,14 +639,14 @@ public class Seab implements EntryPoint {
 		    	  for( String s : ss ) {
 		    		  String strim = s.trim();
 		    		  int k = strim.indexOf('=');
-		    		  
+
 		    		  sb.appendHtmlConstant( "<a title=\""+strim.substring(k+1)+"\" target=\"_blank\" href=\"http://www.genome.jp/kegg-bin/show_pathway?map=map"+strim.substring(0,k)+"&show_description=show\">"+strim.substring(0,k)+"</a><br>" );
 		    	  }
 			      return sb.toSafeHtml();
 		      }
 		};
 		keggColumn.setSortable( true );
-			
+
 		TextColumn<Sequence> cogColumn = new TextColumn<Sequence>() {
 	      @Override
 	      public String getValue(Sequence contact) {
@@ -654,7 +654,7 @@ public class Seab implements EntryPoint {
 	      }
 		};
 		cogColumn.setSortable( true );
-		
+
 		SafeHtmlCell	gocell = new SafeHtmlCell();
 		Column<Sequence,SafeHtml> goColumn = new Column<Sequence,SafeHtml>( gocell ) {
 	      @Override
@@ -672,7 +672,7 @@ public class Seab implements EntryPoint {
 	      }
 		};
 		goColumn.setSortable( true );
-		
+
 		NumberCell numcell = new NumberCell(NumberFormat.getScientificFormat());
 		//numcell.
 		Column<Sequence, Number> evColumn = new Column<Sequence, Number>( numcell ) {
@@ -689,7 +689,7 @@ public class Seab implements EntryPoint {
 		      }
 			};
 			specColumn.setSortable( true );
-			
+
 			NumberCell copycell = new NumberCell(NumberFormat.getDecimalFormat());
 			//numcell.
 			Column<Sequence, Number> copyColumn = new Column<Sequence, Number>( copycell ) {
@@ -699,7 +699,7 @@ public class Seab implements EntryPoint {
 			      }
 				};
 			copyColumn.setSortable( true );
-		
+
 		table.addColumn( nameColumn, "Name" );
 		table.addColumn( symbolColumn, "Symbol" );
 		table.addColumn( cazyColumn, "Cazy" );
@@ -710,10 +710,10 @@ public class Seab implements EntryPoint {
 		table.addColumn( evColumn, "evalue" );
 		table.addColumn( specColumn, "Species" );
 		table.addColumn( copyColumn, "Copies" );
-		
+
 		//for( int i = 0; i < spec.getItemCount(); i++ ) {
 		//	final String specstr = spec.getItemText(i);
-			
+
 			/*TextColumn<Sequence> specColumn = new TextColumn<Sequence>() {
 			      @Override
 			      public String getValue(Sequence contact) {
@@ -727,19 +727,19 @@ public class Seab implements EntryPoint {
 				public Boolean getValue(Sequence object) {
 					return object.req;
 				}
-				
+
 			};
 				table.addColumn( cColumn, "Request sequence" );
 		//}
-			
+
 		Label label = new Label("evalue:");
 		final DoubleBox eval = new DoubleBox();
 		eval.setValue(0.00001);
 		eval.setText("0.00001");
-		
+
 		ScrollPanel treesp = new ScrollPanel( tree );
 		treesp.setSize(320+"px", 180+"px");
-		
+
 		HorizontalPanel hp = new HorizontalPanel();
 		hp.setSpacing(3);
 		hp.add( treesp );
@@ -747,10 +747,10 @@ public class Seab implements EntryPoint {
 		hp.add( ta );
 		hp.add( label );
 		hp.add( eval );
-		
+
 		final List<Sequence> l = new ArrayList<Sequence>();
 		//l.addAll( Arrays.asList( new Sequence[] {new Sequence("name","cazy","ec"), new Sequence("a","q","r"), new Sequence("n","c","e"), new Sequence("n","c","e")} ) );
-		
+
 		ListDataProvider<Sequence> dataProvider = new ListDataProvider<Sequence>();
 
 	    // Connect the table to the data provider.
@@ -762,7 +762,7 @@ public class Seab implements EntryPoint {
 	    for (Sequence contact : l) {
 	      list.add(contact);
 	    }
-	    
+
 	    ListHandler<Sequence> columnSortHandler = new ListHandler<Sequence>(list);
         columnSortHandler.setComparator(nameColumn,
             new Comparator<Sequence>() {
@@ -843,7 +843,7 @@ public class Seab implements EntryPoint {
               }
             });
         table.addColumnSortHandler(cogSortHandler);
-        
+
         ListHandler<Sequence> evalSortHandler = new ListHandler<Sequence>(list);
         evalSortHandler.setComparator(evColumn,
             new Comparator<Sequence>() {
@@ -860,7 +860,7 @@ public class Seab implements EntryPoint {
               }
             });
         table.addColumnSortHandler(evalSortHandler);
-        
+
         ListHandler<Sequence> specSortHandler = new ListHandler<Sequence>(list);
         specSortHandler.setComparator(specColumn,
             new Comparator<Sequence>() {
@@ -881,10 +881,10 @@ public class Seab implements EntryPoint {
 	        // We know that the data is sorted alphabetically by default.
 	    //table.getColumnSortList().push(nameColumn);
 
-	    
+
 		/*table.setRowCount(l.size(), true);
 		table.setVisibleRange(0, 3);
-		
+
 		AsyncDataProvider<Sequence> dataProvider = new AsyncDataProvider<Sequence>() {
 		      @Override
 		      protected void onRangeChanged(HasData<Sequence> display) {
@@ -928,7 +928,7 @@ public class Seab implements EntryPoint {
 
 		    // Connect the list to the data provider.
 		    dataProvider.addDataDisplay(table);*/
-		
+
 	    Button clear = new Button("Clear");
 	    clear.addClickHandler( new ClickHandler() {
 			@Override
@@ -937,32 +937,32 @@ public class Seab implements EntryPoint {
 				Browser.getWindow().getConsole().log("sel size: "+selset.size());
 				if( selset == null || selset.size() == 0 ) list.clear();
 				else list.removeAll( selset );
-				
+
 				multisel.clear();
 			}
 		});
-	    
+
 	    final DialogBox pp = new DialogBox( true );
 		final VerticalPanel	vsp = new VerticalPanel();
 		vsp.setSpacing( 10 );
 		vsp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );
 		final ProgressElement pe = (ProgressElement)DOM.createElement("progress");
-		
+
 		pe.getStyle().setWidth(400+"px");
 		pe.getStyle().setHeight(50+"px");
-		
+
 		//Widget sp = new Widget();
 		final SimplePanel sp = new SimplePanel();
 		sp.setSize(400+"px", 50+"px");
 		sp.getElement().appendChild( (Node)pe );
-	        
+
 		Button fetch = new Button("Fetch");
 		fetch.addClickHandler( new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {
 				vsp.clear();
 				pp.clear();
-				
+
 				final WebSocket ws = newWebSocket( host );
 				ws.setOnopen( new EventListener() {
 					@Override
@@ -971,7 +971,7 @@ public class Seab implements EntryPoint {
 						vsp.add( sp );
 						pp.add( vsp );
 						pp.center();
-						
+
 						String blast = ta.getText();
 						if( blast.length() > 0 ) {
 							if( blast.startsWith(">") ) {
@@ -1002,7 +1002,7 @@ public class Seab implements EntryPoint {
 									else if( addstr.length() > 0 ) treestr += ","+addstr;
 								}
 							}
-							
+
 							String str = "";
 							for( int i = 0; i < spec.getItemCount(); i++ ) {
 								if( spec.isItemSelected(i) ) {
@@ -1021,7 +1021,7 @@ public class Seab implements EntryPoint {
 					public void handleEvent(Event evt) {
 						String message = getEventData( evt );
 						if( message.contains("new connection") ) {
-							
+
 						} else if( message.equals("close") ) {
 							ws.close();
 						} else {
@@ -1044,21 +1044,21 @@ public class Seab implements EntryPoint {
 				});
 			}
 		});
-		
+
 		table.setWidth(w+"px");
-		
+
 		final HorizontalPanel buttonparent = new HorizontalPanel();
 		buttonparent.setWidth(w+"px");
 		buttonparent.setHorizontalAlignment( HorizontalPanel.ALIGN_CENTER );
-		
+
 		final HorizontalPanel buttonhp = new HorizontalPanel();
 		buttonhp.setHorizontalAlignment( HorizontalPanel.ALIGN_CENTER );
 		buttonhp.setSpacing(5);
 		buttonhp.add( fetch );
 		buttonhp.add( clear );
-		
+
 		buttonparent.add( buttonhp );
-		
+
 		Button reqButton = new Button("Request sequences");
 		reqButton.addClickHandler( new ClickHandler() {
 			@Override
@@ -1081,7 +1081,7 @@ public class Seab implements EntryPoint {
 					public void handleEvent(Event evt) {
 						String message = getEventData( evt );
 						if( message.contains("new connection") ) {
-							
+
 						} else {
 							PopupPanel pp = new PopupPanel();
 							pp.setSize(640+"px", 400+"px");
@@ -1101,7 +1101,7 @@ public class Seab implements EntryPoint {
 			}
 		});
 		buttonhp.add( reqButton );
-		
+
 		Button pancore = new Button("Pan core");
 		pancore.addClickHandler( new ClickHandler() {
 			@Override
@@ -1124,17 +1124,17 @@ public class Seab implements EntryPoint {
 					public void handleEvent(Event evt) {
 						String message = getEventData( evt );
 						if( message.contains("new connection") ) {
-							
+
 						} else {
 							//atob(message);
 							SimplePanel sip = new SimplePanel();
 							//vp.add( sip );
-							
+
 							Browser.getWindow().getConsole().log( message );
 							JSONValue jval = JSONParser.parseLenient( message );
-							
+
 							drawPancoreChart( jval.isArray().getJavaScriptObject(), sip.getElement() );
-							
+
 							//ScrollPanel sp = new ScrollPanel( sip );
 							//sp.add( img );
 							PopupPanel pop = new PopupPanel();
@@ -1153,7 +1153,7 @@ public class Seab implements EntryPoint {
 			}
 		});
 		buttonhp.add( pancore );
-		
+
 		Button cogchart = new Button("Cog chart");
 		cogchart.addClickHandler( new ClickHandler() {
 			@Override
@@ -1176,15 +1176,15 @@ public class Seab implements EntryPoint {
 					public void handleEvent(Event evt) {
 						String message = getEventData( evt );
 						if( message.contains("new connection") ) {
-							
+
 						} else {
 							//atob(message);
 							SimplePanel sip = new SimplePanel();
 							//vp.add( sip );
-							
+
 							Browser.getWindow().getConsole().log( message );
 							JSONValue jval = JSONParser.parseLenient( message );
-							
+
 							//ScrollPanel sp = new ScrollPanel( sip );
 							//sp.add( img );
 							PopupPanel pop = new PopupPanel();
@@ -1192,10 +1192,10 @@ public class Seab implements EntryPoint {
 							pop.setAutoHideEnabled( true );
 							pop.add( sip );
 							//pop.setSize("512px", "384px");
-							
+
 							drawCogChart( jval.isArray().getJavaScriptObject(), sip.getElement() );
 							pop.center();
-							
+
 							ws.close();
 						}
 					}
@@ -1207,14 +1207,14 @@ public class Seab implements EntryPoint {
 			}
 		});
 		buttonhp.add( cogchart );
-		
+
 		Button aniMatrix = new Button("ANIMatrix");
 		aniMatrix.addClickHandler( new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {
 				vsp.clear();
 				pp.clear();
-				
+
 				final WebSocket ws = newWebSocket( host );
 				ws.setOnopen( new EventListener() {
 					@Override
@@ -1223,7 +1223,7 @@ public class Seab implements EntryPoint {
 						vsp.add( sp );
 						pp.add( vsp );
 						pp.center();
-						
+
 						String str = "";
 						for( int i = 0; i < spec.getItemCount(); i++ ) {
 							if( spec.isItemSelected(i) ) {
@@ -1240,10 +1240,10 @@ public class Seab implements EntryPoint {
 					public void handleEvent(Event evt) {
 						String message = getEventData( evt );
 						if( message.contains("new connection") ) {
-							
+
 						} else {
 							pp.clear();
-							
+
 							//pp.hide();
 							//atob(message);
 							String dataurl = "data:image/png;base64,"+message;
@@ -1254,15 +1254,15 @@ public class Seab implements EntryPoint {
 								public void onLoad(LoadEvent event) {
 									int nw = img.getWidth()/2;
 									int nh = img.getHeight()/2;
-									
+
 									img.setSize(nw+"px", nh+"px");
-									
+
 									sp.setSize( Math.min(800,nw)+"px", Math.min(600,nh)+"px");
 									//sp.add( img );
 									pp.center();
 								}
 							});
-							
+
 							pp.add( sp );
 							pp.center();
 							ws.close();
@@ -1276,7 +1276,7 @@ public class Seab implements EntryPoint {
 			}
 		});
 		buttonhp.add( aniMatrix );
-		
+
 		Button neighbourBut = new Button("Neighbourhood");
 		neighbourBut.addClickHandler( new ClickHandler() {
 			@Override
@@ -1299,7 +1299,7 @@ public class Seab implements EntryPoint {
 					public void handleEvent(Event evt) {
 						String message = getEventData( evt );
 						if( message.contains("new connection") ) {
-							
+
 						} else {
 							//atob(message);
 							String dataurl = "data:image/png;base64,"+message;
@@ -1308,7 +1308,7 @@ public class Seab implements EntryPoint {
 							final DialogBox pop = new DialogBox();
 							pop.clear();
 							pop.setAutoHideEnabled( true );
-							
+
 							img.addLoadHandler( new LoadHandler() {
 								@Override
 								public void onLoad(LoadEvent event) {
@@ -1333,7 +1333,7 @@ public class Seab implements EntryPoint {
 			}
 		});
 		buttonhp.add( neighbourBut );
-		
+
 		Button statBut = new Button("Statistics");
 		statBut.addClickHandler( new ClickHandler() {
 			@Override
@@ -1358,12 +1358,12 @@ public class Seab implements EntryPoint {
 					public void handleEvent(Event evt) {
 						String message = getEventData( evt );
 						if( message.contains("new connection") ) {
-							
+
 						} else {
 							String htmlstr = atob(message);
 							//String dataurl = "data:text/html;base64,"+message;
 							HTML html = new HTML( htmlstr );
-							
+
 							ScrollPanel sp = new ScrollPanel( html );
 							sp.setSize(800+"px", 600+"px");
 							//sp.add( img );
@@ -1382,8 +1382,7 @@ public class Seab implements EntryPoint {
 			}
 		});
 		buttonhp.add( statBut );
-		
-		//final Button bb = new Button();
+
 		Button drawTree = new Button("Draw tree");
 		drawTree.addClickHandler( new ClickHandler() {
 			@Override
@@ -1406,11 +1405,12 @@ public class Seab implements EntryPoint {
 					public void handleEvent(Event evt) {
 						String message = getEventData( evt );
 						if( message.contains("new connection") ) {
-							
+
 						} else {
+							String host = Browser.getWindow().getLocation().getHost();
+							Browser.getWindow().getConsole().log( "host " + host );
 							treestr = message;
-							//bb.click();
-							//click( bb.getElement() );
+							myPopup = Browser.getWindow().open("http://webconnectron.appspot.com/Treedraw.html?callback="+host,"TreeDraw");
 							//Browser.getWindow().getConsole().log( myPopup.getLocation().getProtocol() );
 							ws.close();
 						}
@@ -1423,42 +1423,32 @@ public class Seab implements EntryPoint {
 			}
 		});
 		buttonhp.add( drawTree );
-		
-		/*bb.setVisible(false);
-		buttonhp.add( bb );
-		bb.addClickHandler( new ClickHandler() {
-			@Override
-			public void onClick(ClickEvent event) {
-				final String thehost = Browser.getWindow().getLocation().getHost();
-				myPopup = Browser.getWindow().open("http://webconnectron.appspot.com/Treedraw.html?callback="+thehost,"TreeDraw","_blank");
-			}
-		});
-		
+
 		/*final DialogBox pp = new DialogBox( true );
 		final VerticalPanel	vsp = new VerticalPanel();
 		vsp.setSpacing( 10 );
 		vsp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );
 		final ProgressElement pe = (ProgressElement)DOM.createElement("progress");
-		
+
 		pe.getStyle().setWidth(400+"px");
 		pe.getStyle().setHeight(50+"px");
-		
+
 		//Widget sp = new Widget();
 		final SimplePanel sp = new SimplePanel();
 		sp.setSize(400+"px", 50+"px");
 		sp.getElement().appendChild( (Node)pe );*/
-		
+
 		//final HTML html = HTML.wrap( pe );
-		
+
 		//final HTML html = new HTML("<progress></progress>");
 		//pp.setAutoHideEnabled( true );
-		
+
 		Button geneAtlas = new Button("Gene atlas");
 		geneAtlas.addClickHandler( new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {
 				Button button = new Button("Generate atlas");
-				
+
 				HorizontalPanel hp = new HorizontalPanel();
 				hp.setSpacing( 10 );
 				final RadioButton reference = new RadioButton("ref");
@@ -1467,7 +1457,7 @@ public class Seab implements EntryPoint {
 				noref.setText("No reference");
 				hp.add( reference );
 				hp.add( noref );
-				
+
 				HorizontalPanel chp = new HorizontalPanel();
 				chp.setSpacing( 10 );
 				final RadioButton relation = new RadioButton("color");
@@ -1476,23 +1466,23 @@ public class Seab implements EntryPoint {
 				synteny.setText("Synteny color");
 				chp.add( relation );
 				chp.add( synteny );
-				
+
 				reference.setValue( true );
 				relation.setValue( true );
-				
+
 				vsp.clear();
 				//vsp.add( new Label("...") );
 				//vsp.add( sp );
-				
+
 				vsp.add( hp );
 				vsp.add( chp );
 				vsp.add( button );
-				
+
 				pp.clear();
 				//sp.getElement().appendChild( pe );
 				pp.add( vsp );
 				pp.center();
-				
+
 				button.addClickHandler( new ClickHandler() {
 					@Override
 					public void onClick(ClickEvent event) {
@@ -1506,23 +1496,23 @@ public class Seab implements EntryPoint {
 									if( str == null ) str = seq.id;
 									else str += ","+seq.id;
 								}*/
-								
+
 								vsp.clear();
 								vsp.add( new Label("Generating atlas ...") );
 								vsp.add( sp );
-								
+
 								pp.clear();
 								//sp.getElement().appendChild( pe );
 								pp.add( vsp );
 								pp.center();
-								
+
 								int selind = spec.getSelectedIndex();
 								String specstr = selind == -1 ? "" : spec.getItemText( selind );
 								if( relation.getValue() ) ws.send("geneatlas:"+specstr);
 								else if( synteny.getValue() ) {
 									String kegg = "";
 									//asdf
-									
+
 									for( int i = 0; i < tree.getItemCount(); i++ ) {
 										TreeItem ti = tree.getItem(i);
 										CheckBox wcb = (CheckBox)ti.getWidget();
@@ -1535,7 +1525,7 @@ public class Seab implements EntryPoint {
 											else if( addstr.length() > 0 ) kegg += ","+addstr;
 										}
 									}
-									
+
 									if( kegg.length() > 0 ) kegg = "kegg:"+kegg;
 									ws.send("syntgrad:"+specstr+kegg);
 								}
@@ -1546,22 +1536,22 @@ public class Seab implements EntryPoint {
 							public void handleEvent(Event evt) {
 								final String message = getEventData( evt );
 								if( message.contains("new connection") ) {
-									
+
 								} else {
 									//atob(message);
 									String dataurl = "data:image/png;base64,"+message;
 									final Image img = new Image( dataurl );
 									final ScrollPanel scp = new ScrollPanel( img );
-									img.addLoadHandler( new LoadHandler() {		
+									img.addLoadHandler( new LoadHandler() {
 										@Override
 										public void onLoad(LoadEvent event) {
 											int nw = img.getWidth()/2;
 											int nh = img.getHeight()/2;
-											
+
 											Browser.getWindow().getConsole().log("browse " + nw + "  " + nh + "  " + message);
-											
+
 											img.setSize(nw+"px", nh+"px");
-											
+
 											//scp.getElement().removeAllChildren();
 											scp.setSize( Math.min(800,nw)+"px", Math.min(600,nh)+"px");
 											//sp.add( img );
@@ -1572,7 +1562,7 @@ public class Seab implements EntryPoint {
 									pp.clear();
 									pp.add( scp );
 									pp.center();
-									
+
 									ws.close();
 								}
 							}
@@ -1586,7 +1576,7 @@ public class Seab implements EntryPoint {
 			}
 		});
 		buttonhp.add( geneAtlas );
-		
+
 		Button antismash = new Button("Antismash");
 		antismash.addClickHandler( new ClickHandler() {
 			@Override
@@ -1600,7 +1590,7 @@ public class Seab implements EntryPoint {
 			}
 		});
 		buttonhp.add( antismash );
-		
+
 		Button ipath = new Button("iPath2");
 		ipath.addClickHandler( new ClickHandler() {
 			@Override
@@ -1611,7 +1601,7 @@ public class Seab implements EntryPoint {
 					specstr += "_GenBan";
 				}*/
 				Browser.getWindow().open("http://pathways.embl.de/iPath2.cgi", "iPath2");
-				
+
 				Set<String> ts = new TreeSet<String>();
 				for( Sequence s : list ) {
 					if( s.cog != null && s.cog.length() > 0 ) ts.add( s.cog );
@@ -1623,7 +1613,7 @@ public class Seab implements EntryPoint {
 					str += s + "\t#ff0000\n";
 				}
 				ta.setText( str );
-				
+
 				//ScrollPanel sp = new ScrollPanel( ta );
 				ta.setSize(400+"px", 300+"px");
 				//sp.add( img );
@@ -1634,7 +1624,7 @@ public class Seab implements EntryPoint {
 			}
 		});
 		buttonhp.add( ipath );
-		
+
 		multisel.addSelectionChangeHandler( new Handler() {
 			@Override
 			public void onSelectionChange(SelectionChangeEvent event) {
@@ -1646,7 +1636,7 @@ public class Seab implements EntryPoint {
 				results.setText(str);
 			}
 		});
-		
+
 		final SimplePanel spanc = new SimplePanel();
 		spanc.getElement().getStyle().setTextAlign( TextAlign.RIGHT );
 		final Anchor anchor = new Anchor();
@@ -1663,36 +1653,36 @@ public class Seab implements EntryPoint {
 				else anchor.setText( "Logout" );
 				anchor.setHref( result );
 			}
-			
+
 			@Override
 			public void onFailure(Throwable caught) {}
 		});
-		
+
 		HTML title = new HTML("<h2>Blast Server</h2>");
 		title.addClickHandler( new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {
 				DialogBox db = new DialogBox();
 				db.setAutoHideEnabled( true );
-				
+
 				Label lb = new Label("Server url:");
 				final TextBox tb = new TextBox();
 				tb.setValue( host );
-				
+
 				HorizontalPanel hp = new HorizontalPanel();
 				hp.setVerticalAlignment( HorizontalPanel.ALIGN_MIDDLE );
 				hp.add( lb );
 				hp.add( tb );
-				
+
 				db.addCloseHandler( new CloseHandler<PopupPanel>() {
 					@Override
 					public void onClose(CloseEvent<PopupPanel> event) {
 						host = tb.getValue();
-						
+
 						reloadData( spec, click, ti, tikegg );
 					}
 				});
-				
+
 				db.add( hp );
 				db.center();
 			}
@@ -1701,42 +1691,42 @@ public class Seab implements EntryPoint {
 		//title.setWidth(100+"px");
 		final HorizontalPanel hpa = new HorizontalPanel();
 		hpa.setWidth(w+"px");
-		
+
 		final HorizontalPanel hpa1 = new HorizontalPanel();
 		final HorizontalPanel hpa2 = new HorizontalPanel();
 		hpa2.setWidth("100%");
 		hpa1.setVerticalAlignment( HorizontalPanel.ALIGN_MIDDLE );
 		hpa2.setVerticalAlignment( HorizontalPanel.ALIGN_MIDDLE );
-		
+
 		hpa2.setHorizontalAlignment( HorizontalPanel.ALIGN_RIGHT );
 		hpa2.getElement().getStyle().setTextAlign( TextAlign.RIGHT );
-		
+
 		hpa.add( hpa1 );
 		hpa.add( hpa2 );
-		
+
 		//hpa.setVerticalAlignment( HorizontalPanel.ALIGN_MIDDLE );
 		//hpa.setHorizontalAlignment( HorizontalPanel.ALIGN_LEFT );
 		//hpa.getElement().getStyle().setFloat( Float.LEFT );
-		
+
 		hpa.getElement().getStyle().setPaddingTop(10.0, Unit.PX);
 		hpa.getElement().getStyle().setPaddingLeft(10.0, Unit.PX);
 		hpa.getElement().getStyle().setPaddingRight(10.0, Unit.PX);
-		
+
 		hpa.getElement().getStyle().setProperty("background", "linear-gradient(gray,white)");
 		//hpa.getElement().getStyle().setPaddingRight(20.0, Unit.PX);
 		//hpa.setWidth(w+"px");
 		//hpa.setHorizontalAlignment( HorizontalPanel.ALIGN_RIGHT );
-		
+
 		Image img = new Image( "seabiotech.png" );
 		Image mimg = new Image( "matis.png" );
 		mimg.setSize(64+"px", 64+"px");
-		
+
 		hpa1.add( img );
 		hpa1.add( title );
 		hpa2.add( mimg );
 		hpa2.add( spanc );
 		vp.add( hpa );
-		
+
 		vp.add( hp );
 		vp.add( buttonparent );
 		vp.add( table );
@@ -1744,7 +1734,7 @@ public class Seab implements EntryPoint {
 		//vp.add( ta );
 		//vp.add( blast );
 		vp.add( results );
-		
+
 		Window.addResizeHandler( new ResizeHandler() {
 			@Override
 			public void onResize(ResizeEvent event) {
@@ -1755,11 +1745,11 @@ public class Seab implements EntryPoint {
 				results.setWidth(w+"px");
 				table.setWidth(w+"px");
 				buttonparent.setWidth(w+"px");
-				
+
 				wnd.getConsole().log( anchor.getElement().getStyle().getWidth() );
 			}
 		});
-		
+
 		rp.add( vp );
 	}
 }
