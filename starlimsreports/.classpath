@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="/opt/sqljdbc_2.0/enu/sqljdbc4.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/opt/poi-3.6/poi-3.6-20091214.jar"/>
-	<classpathentry kind="lib" path="/opt/poi-3.6/poi-ooxml-3.6-20091214.jar"/>
-	<classpathentry kind="lib" path="/opt/swingx-1.6/swingx-1.6.jar"/>
+	<classpathentry kind="lib" path="poi-3.15.jar"/>
+	<classpathentry kind="lib" path="poi-ooxml-3.15.jar"/>
+	<classpathentry kind="lib" path="sqljdbc4.jar"/>
+	<classpathentry kind="lib" path="swingx-all-1.6.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

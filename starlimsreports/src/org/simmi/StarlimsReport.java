@@ -140,9 +140,14 @@ public class StarlimsReport extends JApplet {
 	}
 	
 	public static void main(String[] args) {
-		/*StarlimsReport	slrp = new StarlimsReport();
+		StarlimsReport	slrp = new StarlimsReport();
+		JFrame frame = new JFrame();
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(800, 600);
+		slrp.initGUI(frame);
+		frame.setVisible( true );
 		
-		Display display = new Display();
+		/*Display display = new Display();
 		Shell shell = new Shell( display );
 		shell.setSize(800, 600);
 		
@@ -428,7 +433,7 @@ public class StarlimsReport extends JApplet {
 		
 		try {
 			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=MATIS;user=simmi;password=mirodc30;";
+			String connectionUrl = "jdbc:sqlserver://navision.rf.is:1433;databaseName=NAV90_Matis;user=simmi;password=mirodc30;";
 			con = DriverManager.getConnection(connectionUrl);
 			loadInvoice();
 			load();
@@ -1196,7 +1201,7 @@ public class StarlimsReport extends JApplet {
 	}
 	
 	public void loadInvoice() throws SQLException {
-		String sql = "select f.FOLDERNO, f.[INVOICE_DATETIME] from [srv-starlimsdat].[PROD_UPG_DATA].[dbo].[NL_INVOICES] f";
+		String sql = "select f.FOLDERNO, f.[INVOICE_DATETIME] from [srv-sql2014].[PROD_UPG_DATA].[dbo].[NL_INVOICES] f";
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
 		ResultSet 			rs = ps.executeQuery();
@@ -1210,7 +1215,7 @@ public class StarlimsReport extends JApplet {
 	}
 	
 	public void loadResult( String folderno ) throws SQLException {
-		String sql = "select ot.[ORDNO], sp.PROGNAME, mi.[Unit Price], mi.[Description] from [srv-starlimsdat].[PROD_UPG_DATA].[dbo].[ORDTASK] ot, [srv-starlimsdat].[PROD_UPG_DATA].[dbo].[NL_TESTS_ARTICLES] ta, [MATIS].[dbo].[Matís ohf_$Item] mi, [srv-starlimsdat].[PROD_UPG_DATA].[dbo].[SAMPLE_PROGRAMS] sp where sp.[SP_CODE] = ot.[SP_CODE] and ot.[ORDNO] like '"+folderno+"%'"
+		String sql = "select ot.[ORDNO], sp.PROGNAME, mi.[Unit Price], mi.[Description] from [srv-sql2014].[PROD_UPG_DATA].[dbo].[ORDTASK] ot, [srv-sql2014].[PROD_UPG_DATA].[dbo].[NL_TESTS_ARTICLES] ta, [NAV90_Matis].[dbo].[Matís ohf_$Item] mi, [srv-sql2014].[PROD_UPG_DATA].[dbo].[SAMPLE_PROGRAMS] sp where sp.[SP_CODE] = ot.[SP_CODE] and ot.[ORDNO] like '"+folderno+"%'"
 			+" and ta.[TESTCODE] = ot.[TESTCODE] and convert(int,mi.[No_]) = convert(int,ta.[ARTICLENO])";
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
@@ -1235,7 +1240,7 @@ public class StarlimsReport extends JApplet {
 		}
 		folderstr += ")";
 		
-		String sql = "select ot.[ORDNO], sp.PROGNAME, mi.[Unit Price], mi.[Description], ot.[FOLDERNO] from [srv-starlimsdat].[PROD_UPG_DATA].[dbo].[ORDTASK] ot, [srv-starlimsdat].[PROD_UPG_DATA].[dbo].[NL_TESTS_ARTICLES] ta, [MATIS].[dbo].[Matís ohf_$Item] mi, [srv-starlimsdat].[PROD_UPG_DATA].[dbo].[SAMPLE_PROGRAMS] sp where sp.[SP_CODE] = ot.[SP_CODE] and ot.[FOLDERNO] in "+folderstr
+		String sql = "select ot.[ORDNO], sp.PROGNAME, mi.[Unit Price], mi.[Description], ot.[FOLDERNO] from [srv-sql2014].[PROD_UPG_DATA].[dbo].[ORDTASK] ot, [srv-sql2014].[PROD_UPG_DATA].[dbo].[NL_TESTS_ARTICLES] ta, [NAV90_Matis].[dbo].[Matís ohf_$Item] mi, [srv-sql2014].[PROD_UPG_DATA].[dbo].[SAMPLE_PROGRAMS] sp where sp.[SP_CODE] = ot.[SP_CODE] and ot.[FOLDERNO] in "+folderstr
 			+" and ta.[TESTCODE] = ot.[TESTCODE] and convert(int,mi.[No_]) = convert(int,ta.[ARTICLENO])";
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
@@ -1254,7 +1259,7 @@ public class StarlimsReport extends JApplet {
 	}
 	
 	public void loadResults( String folderno ) throws SQLException {
-		String sql = "select ot.[ORDNO], sp.PROGNAME, mi.[Unit Price], mi.[Description] from [srv-starlimsdat].[PROD_UPG_DATA].[dbo].[ORDTASK] ot, [srv-starlimsdat].[PROD_UPG_DATA].[dbo].[NL_TESTS_ARTICLES] ta, [MATIS].[dbo].[Matís ohf_$Item] mi, [srv-starlimsdat].[PROD_UPG_DATA].[dbo].[SAMPLE_PROGRAMS] sp where sp.[SP_CODE] = ot.[SP_CODE] and ot.[FOLDERNO] = '"+folderno+"'"
+		String sql = "select ot.[ORDNO], sp.PROGNAME, mi.[Unit Price], mi.[Description] from [srv-sql2014].[PROD_UPG_DATA].[dbo].[ORDTASK] ot, [srv-sql2014].[PROD_UPG_DATA].[dbo].[NL_TESTS_ARTICLES] ta, [NAV90_Matis].[dbo].[Matís ohf_$Item] mi, [srv-sql2014].[PROD_UPG_DATA].[dbo].[SAMPLE_PROGRAMS] sp where sp.[SP_CODE] = ot.[SP_CODE] and ot.[FOLDERNO] = '"+folderno+"'"
 			+" and ta.[TESTCODE] = ot.[TESTCODE] and convert(int,mi.[No_]) = convert(int,ta.[ARTICLENO])";
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
@@ -1273,7 +1278,7 @@ public class StarlimsReport extends JApplet {
 	}
 	
 	public void load() throws SQLException {
-		String sql = "select f.FOLDERNO, rc.COMPNAME, f.RASCLIENTID, rc.ADRESS, rc.CITY, f.RASPROJECTNO, f.DRAWDATE from [srv-starlimsdat].[PROD_UPG_DATA].[dbo].[Folders] f, [srv-starlimsdat].[PROD_UPG_DATA].[dbo].[RASCLIENTS] rc where f.[RASCLIENTID] = rc.[RASCLIENTID]";
+		String sql = "select f.FOLDERNO, rc.COMPNAME, f.RASCLIENTID, rc.ADRESS, rc.CITY, f.RASPROJECTNO, f.DRAWDATE from [srv-sql2014].[PROD_UPG_DATA].[dbo].[Folders] f, [srv-sql2014].[PROD_UPG_DATA].[dbo].[RASCLIENTS] rc where f.[RASCLIENTID] = rc.[RASCLIENTID]";
 		
 		PreparedStatement 	ps = con.prepareStatement(sql);
 		ResultSet 			rs = ps.executeQuery();
